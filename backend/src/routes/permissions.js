@@ -13,14 +13,15 @@
  */
 
 const express = require("express");
+const mongoose = require("mongoose");
 const { body, validationResult, param } = require("express-validator");
-const {
-  ApiPermission,
-  PagePermission,
-  RoleApiPermission,
-  RolePagePermission,
-} = require("../models");
 const { authenticate, requireApiPermission } = require("../middleware/auth");
+const { PagePermission, ApiPermission } = require("../models/Permission");
+const {
+  RoleSidebarMenuItem,
+  RolePagePermission,
+  RoleApiPermission,
+} = require("../models/JunctionTables");
 
 const router = express.Router();
 
@@ -659,5 +660,402 @@ router.delete(
     }
   }
 );
+
+/**
+ * @route   GET /api/permissions/roles
+ * @desc    Get all roles for permissions management
+ * @access  Private - requires authentication
+ */
+router.get("/roles", authenticate, async (req, res) => {
+  try {
+    const Role = require("../models/Role");
+    const roles = await Role.find().select("role").sort({ role: 1 });
+
+    res.json({
+      success: true,
+      data: roles,
+    });
+  } catch (error) {
+    console.error("Error fetching roles for permissions:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching roles",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
+});
+
+/**
+ * @route   GET /api/permissions/menu-items
+ * @desc    Get all menu items with role assignments
+ * @access  Private - requires authentication
+ */
+router.get("/menu-items", authenticate, async (req, res) => {
+  try {
+    const SidebarMenuItem = require("../models/SidebarMenuItem");
+    const { roleId } = req.query;
+
+    // Get all menu items first
+    const allMenuItems = await SidebarMenuItem.find()
+      .sort({ m_order: 1 })
+      .lean();
+
+    let assignedMenuItems = [];
+
+    // If roleId is provided, get the actual assigned menu items using aggregation
+    if (roleId) {
+      const Role = require("../models/Role");
+
+      const roleMenuItems = await Role.aggregate([
+        { $match: { _id: new mongoose.Types.ObjectId(roleId) } },
+        {
+          $lookup: {
+            from: "role_sidebar_menu_items",
+            localField: "_id",
+            foreignField: "role_id",
+            as: "links",
+          },
+        },
+        { $unwind: { path: "$links", preserveNullAndEmptyArrays: true } },
+        {
+          $lookup: {
+            from: "sidebar_menu_items",
+            localField: "links.sidebar_menu_item_id",
+            foreignField: "_id",
+            as: "menuDocs",
+          },
+        },
+        { $unwind: { path: "$menuDocs", preserveNullAndEmptyArrays: true } },
+        {
+          $group: {
+            _id: "$_id",
+            role: { $first: "$role" },
+            assignedMenuItemIds: { $addToSet: "$menuDocs._id" },
+          },
+        },
+      ]);
+
+      if (roleMenuItems.length > 0 && roleMenuItems[0].assignedMenuItemIds) {
+        assignedMenuItems = roleMenuItems[0].assignedMenuItemIds
+          .filter((id) => id !== null)
+          .map((id) => id.toString());
+      }
+    }
+
+    // Add assignment status to all menu items and clean up labels
+    const menuItemsWithAssignments = allMenuItems.map((item) => ({
+      _id: item._id,
+      name: item.label, // Display clean label as 'name' for consistency with permissions
+      href: item.href,
+      m_order: item.m_order,
+      icon: item.icon,
+      parent_id: item.parent_id,
+      is_submenu: item.is_submenu,
+      assigned: assignedMenuItems.includes(item._id.toString()),
+    }));
+
+    res.json({
+      success: true,
+      data: menuItemsWithAssignments,
+    });
+  } catch (error) {
+    console.error("Error fetching menu items for permissions:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching menu items",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
+});
+
+/**
+ * @route   GET /api/permissions/page-permissions
+ * @desc    Get all page permissions with role assignments
+ * @access  Private - requires authentication
+ */
+router.get("/page-permissions", authenticate, async (req, res) => {
+  try {
+    const { roleId } = req.query;
+
+    // Get all page permissions first
+    const allPagePermissions = await PagePermission.find()
+      .sort({ pg_permissions: 1 })
+      .lean();
+
+    let assignedPermissions = [];
+
+    // If roleId is provided, get the actual assigned permissions using aggregation
+    if (roleId) {
+      const Role = require("../models/Role");
+
+      const rolePermissions = await Role.aggregate([
+        { $match: { _id: new mongoose.Types.ObjectId(roleId) } },
+        {
+          $lookup: {
+            from: "role_pg_permissions",
+            localField: "_id",
+            foreignField: "role_id",
+            as: "links",
+          },
+        },
+        { $unwind: { path: "$links", preserveNullAndEmptyArrays: true } },
+        {
+          $lookup: {
+            from: "pg_permissions",
+            localField: "links.pg_permission_id",
+            foreignField: "_id",
+            as: "permDocs",
+          },
+        },
+        { $unwind: { path: "$permDocs", preserveNullAndEmptyArrays: true } },
+        {
+          $group: {
+            _id: "$_id",
+            role: { $first: "$role" },
+            assignedPermissionIds: { $addToSet: "$permDocs._id" },
+          },
+        },
+      ]);
+
+      if (
+        rolePermissions.length > 0 &&
+        rolePermissions[0].assignedPermissionIds
+      ) {
+        assignedPermissions = rolePermissions[0].assignedPermissionIds
+          .filter((id) => id !== null)
+          .map((id) => id.toString());
+      }
+    }
+
+    // Add assignment status to all permissions
+    const permissionsWithAssignments = allPagePermissions.map((perm) => ({
+      ...perm,
+      assigned: assignedPermissions.includes(perm._id.toString()),
+    }));
+
+    res.json({
+      success: true,
+      data: permissionsWithAssignments,
+    });
+  } catch (error) {
+    console.error("Error fetching page permissions:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching page permissions",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
+});
+
+/**
+ * @route   GET /api/permissions/api-permissions
+ * @desc    Get all API permissions with role assignments
+ * @access  Private - requires authentication
+ */
+router.get("/api-permissions", authenticate, async (req, res) => {
+  try {
+    const { roleId } = req.query;
+
+    // Get all API permissions first
+    const allApiPermissions = await ApiPermission.find()
+      .sort({ api_permissions: 1 })
+      .lean();
+
+    let assignedPermissions = [];
+
+    // If roleId is provided, get the actual assigned permissions using aggregation
+    if (roleId) {
+      const Role = require("../models/Role");
+
+      const rolePermissions = await Role.aggregate([
+        { $match: { _id: new mongoose.Types.ObjectId(roleId) } },
+        {
+          $lookup: {
+            from: "role_api_permissions",
+            localField: "_id",
+            foreignField: "role_id",
+            as: "links",
+          },
+        },
+        { $unwind: { path: "$links", preserveNullAndEmptyArrays: true } },
+        {
+          $lookup: {
+            from: "api_permissions",
+            localField: "links.api_permission_id",
+            foreignField: "_id",
+            as: "permDocs",
+          },
+        },
+        { $unwind: { path: "$permDocs", preserveNullAndEmptyArrays: true } },
+        {
+          $group: {
+            _id: "$_id",
+            role: { $first: "$role" },
+            assignedPermissionIds: { $addToSet: "$permDocs._id" },
+          },
+        },
+      ]);
+
+      if (
+        rolePermissions.length > 0 &&
+        rolePermissions[0].assignedPermissionIds
+      ) {
+        assignedPermissions = rolePermissions[0].assignedPermissionIds
+          .filter((id) => id !== null)
+          .map((id) => id.toString());
+      }
+    }
+
+    // Add assignment status to all permissions
+    const permissionsWithAssignments = allApiPermissions.map((perm) => ({
+      ...perm,
+      assigned: assignedPermissions.includes(perm._id.toString()),
+    }));
+
+    res.json({
+      success: true,
+      data: permissionsWithAssignments,
+    });
+  } catch (error) {
+    console.error("Error fetching API permissions:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching API permissions",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
+});
+
+/**
+ * @route   POST /api/permissions/assign-menus
+ * @desc    Assign menu items to role
+ * @access  Private - requires authentication
+ */
+router.post("/assign-menus", authenticate, async (req, res) => {
+  try {
+    const { RoleSidebarMenuItem } = require("../models/JunctionTables");
+    const { roleId, menuItemIds } = req.body;
+
+    if (!roleId || !Array.isArray(menuItemIds)) {
+      return res.status(400).json({
+        success: false,
+        message: "Role ID and menu item IDs array are required",
+      });
+    }
+
+    // Remove existing assignments for this role
+    await RoleSidebarMenuItem.deleteMany({ role_id: roleId });
+
+    // Create new assignments
+    const assignments = menuItemIds.map((menuItemId) => ({
+      role_id: roleId,
+      sidebar_menu_item_id: menuItemId,
+    }));
+
+    if (assignments.length > 0) {
+      await RoleSidebarMenuItem.insertMany(assignments);
+    }
+
+    res.json({
+      success: true,
+      message: `Successfully assigned ${assignments.length} menu items to role`,
+    });
+  } catch (error) {
+    console.error("Error assigning menu items:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error assigning menu items",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
+});
+
+/**
+ * @route   POST /api/permissions/assign-pages
+ * @desc    Assign page permissions to role
+ * @access  Private - requires authentication
+ */
+router.post("/assign-pages", authenticate, async (req, res) => {
+  try {
+    const { RolePagePermission } = require("../models/JunctionTables");
+    const { roleId, permissionIds } = req.body;
+
+    if (!roleId || !Array.isArray(permissionIds)) {
+      return res.status(400).json({
+        success: false,
+        message: "Role ID and permission IDs array are required",
+      });
+    }
+
+    // Remove existing assignments for this role
+    await RolePagePermission.deleteMany({ role_id: roleId });
+
+    // Create new assignments
+    const assignments = permissionIds.map((permissionId) => ({
+      role_id: roleId,
+      pg_permission_id: permissionId,
+    }));
+
+    if (assignments.length > 0) {
+      await RolePagePermission.insertMany(assignments);
+    }
+
+    res.json({
+      success: true,
+      message: `Successfully assigned ${assignments.length} page permissions to role`,
+    });
+  } catch (error) {
+    console.error("Error assigning page permissions:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error assigning page permissions",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
+});
+
+/**
+ * @route   POST /api/permissions/assign-apis
+ * @desc    Assign API permissions to role
+ * @access  Private - requires authentication
+ */
+router.post("/assign-apis", authenticate, async (req, res) => {
+  try {
+    const { RoleApiPermission } = require("../models/JunctionTables");
+    const { roleId, permissionIds } = req.body;
+
+    if (!roleId || !Array.isArray(permissionIds)) {
+      return res.status(400).json({
+        success: false,
+        message: "Role ID and permission IDs array are required",
+      });
+    }
+
+    // Remove existing assignments for this role
+    await RoleApiPermission.deleteMany({ role_id: roleId });
+
+    // Create new assignments
+    const assignments = permissionIds.map((permissionId) => ({
+      role_id: roleId,
+      api_permission_id: permissionId,
+    }));
+
+    if (assignments.length > 0) {
+      await RoleApiPermission.insertMany(assignments);
+    }
+
+    res.json({
+      success: true,
+      message: `Successfully assigned ${assignments.length} API permissions to role`,
+    });
+  } catch (error) {
+    console.error("Error assigning API permissions:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error assigning API permissions",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
+});
 
 module.exports = router;

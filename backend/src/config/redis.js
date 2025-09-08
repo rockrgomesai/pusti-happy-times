@@ -353,7 +353,7 @@ const blacklistToken = async (
     }
 
     const key = `blacklisted_token:${token}`;
-    await redisClient.setex(key, expireInSeconds, reason);
+    await redisClient.setEx(key, expireInSeconds, reason);
     return true;
   } catch (error) {
     console.error("❌ Error blacklisting token:", error.message);
@@ -373,10 +373,73 @@ const updateUserActivity = async (userId) => {
 
     const key = `user_activity:${userId}`;
     const timestamp = new Date().toISOString();
-    await redisClient.setex(key, 24 * 60 * 60, timestamp); // Expire after 24 hours
+    await redisClient.setEx(key, 24 * 60 * 60, timestamp); // Expire after 24 hours
     return true;
   } catch (error) {
     console.error("❌ Error updating user activity:", error.message);
+    return false;
+  }
+};
+
+/**
+ * Remove user's refresh tokens
+ * @param {string} userId - User ID to remove refresh tokens for
+ */
+const removeRefreshToken = async (userId) => {
+  try {
+    if (!redisClient || !redisClient.isReady) {
+      return false;
+    }
+
+    const keys = await redisClient.keys(`refresh_token:${userId}:*`);
+    if (keys.length > 0) {
+      await redisClient.del(keys);
+    }
+    return true;
+  } catch (error) {
+    console.error("❌ Error removing refresh tokens:", error.message);
+    return false;
+  }
+};
+
+/**
+ * Get stored refresh token for user
+ * @param {string} userId - User ID to get refresh token for
+ * @returns {string|null} Stored refresh token or null
+ */
+const getRefreshToken = async (userId) => {
+  try {
+    if (!redisClient || !redisClient.isReady) {
+      return null;
+    }
+
+    const keys = await redisClient.keys(`refresh_token:${userId}:*`);
+    if (keys.length > 0) {
+      const token = await redisClient.get(keys[0]);
+      return token;
+    }
+    return null;
+  } catch (error) {
+    console.error("❌ Error getting refresh token:", error.message);
+    return null;
+  }
+};
+
+/**
+ * Clear user activity data
+ * @param {string} userId - User ID to clear activity for
+ */
+const clearUserActivity = async (userId) => {
+  try {
+    if (!redisClient || !redisClient.isReady) {
+      return false;
+    }
+
+    const key = `user_activity:${userId}`;
+    await redisClient.del(key);
+    return true;
+  } catch (error) {
+    console.error("❌ Error clearing user activity:", error.message);
     return false;
   }
 };
@@ -413,5 +476,8 @@ module.exports = {
   isTokenBlacklisted,
   blacklistToken,
   updateUserActivity,
+  removeRefreshToken,
+  getRefreshToken,
+  clearUserActivity,
   closeRedisConnection,
 };

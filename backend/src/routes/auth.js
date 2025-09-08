@@ -306,14 +306,29 @@ router.post("/logout", authenticate, async (req, res) => {
     const userId = req.user._id.toString();
     const accessToken = req.token;
 
-    // Blacklist current access token
-    await redis.blacklistToken(accessToken);
+    // Blacklist current access token (with error handling)
+    try {
+      await redis.blacklistToken(accessToken, 24 * 60 * 60, "logged_out");
+    } catch (redisError) {
+      console.error("Error blacklisting token during logout:", redisError);
+      // Continue with logout even if Redis fails
+    }
 
-    // Remove refresh token from Redis
-    await redis.removeRefreshToken(userId);
+    // Remove refresh tokens from Redis (with error handling)
+    try {
+      await redis.removeRefreshToken(userId);
+    } catch (redisError) {
+      console.error("Error removing refresh tokens during logout:", redisError);
+      // Continue with logout even if Redis fails
+    }
 
-    // Clear user activity
-    await redis.clearUserActivity(userId);
+    // Clear user activity (with error handling)
+    try {
+      await redis.clearUserActivity(userId);
+    } catch (redisError) {
+      console.error("Error clearing user activity during logout:", redisError);
+      // Continue with logout even if Redis fails
+    }
 
     res.json({
       success: true,

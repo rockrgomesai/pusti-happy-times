@@ -25,6 +25,7 @@ import {
   ExitToApp,
   Lock,
 } from '@mui/icons-material';
+import { useRouter } from 'next/navigation';
 import { useTheme as useCustomTheme } from '@/theme/ThemeProvider';
 import { useAuth } from '@/contexts/AuthContext';
 import { Sidebar } from './Sidebar';
@@ -40,6 +41,7 @@ const FOOTER_HEIGHT = 32; // 50% of navbar height
 
 export function Layout({ children }: LayoutProps) {
   const theme = useTheme();
+  const router = useRouter();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const { mode, toggleTheme } = useCustomTheme();
   const { user, logout } = useAuth();
@@ -72,8 +74,7 @@ export function Layout({ children }: LayoutProps) {
 
   const handleChangePassword = () => {
     handleMenuClose();
-    // TODO: Open change password modal
-    console.log('Change password clicked');
+    router.push('/admin/password');
   };
 
   return (

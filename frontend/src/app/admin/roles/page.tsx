@@ -390,71 +390,66 @@ export default function RolesPage() {
   return (
     <Box sx={{ p: 3 }}>
       {/* Header */}
-      <Box sx={{ mb: 3 }}>
-        <Typography variant="h4" component="h1" gutterBottom>
-          Role Management
-        </Typography>
-        <Typography variant="body1" color="text.secondary">
-          Manage system roles and their permissions
-        </Typography>
-      </Box>
-
-      {/* Controls */}
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          mb: 3,
-          flexWrap: 'wrap',
-          gap: 2,
-        }}
-      >
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1 }}>
-          {/* Search */}
-          <TextField
-            placeholder="Search roles..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            size="small"
-            InputProps={{
-              startAdornment: <SearchIcon sx={{ mr: 1, color: 'action.active' }} />,
-            }}
-            sx={{ minWidth: 200 }}
-          />
-
-          {/* View Toggle */}
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <Tooltip title="Card View">
-              <IconButton
-                onClick={() => setViewMode('cards')}
-                color={viewMode === 'cards' ? 'primary' : 'default'}
-                size="small"
-              >
-                <ViewModuleIcon />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="List View">
-              <IconButton
-                onClick={() => setViewMode('list')}
-                color={viewMode === 'list' ? 'primary' : 'default'}
-                size="small"
-              >
-                <ViewListIcon />
-              </IconButton>
-            </Tooltip>
-          </Box>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          <SecurityIcon sx={{ mr: 2, color: 'primary.main' }} />
+          <Typography variant="h4" component="h1" fontWeight="bold">
+            Role Management
+          </Typography>
         </Box>
-
-        {/* Add Role Button */}
         <Button
           variant="contained"
           startIcon={<AddIcon />}
           onClick={handleAddRole}
-          sx={{ whiteSpace: 'nowrap' }}
         >
           Add Role
         </Button>
+      </Box>
+
+      {/* Controls */}
+      <Box sx={{ 
+        mb: 3, 
+        display: 'flex', 
+        gap: 2, 
+        flexWrap: 'wrap',
+        alignItems: 'center',
+        justifyContent: 'space-between'
+      }}>
+        <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
+          {/* Search */}
+          <TextField
+            size="small"
+            placeholder="Search roles..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            InputProps={{
+              startAdornment: <SearchIcon sx={{ mr: 1, color: 'text.secondary' }} />,
+            }}
+            sx={{ minWidth: 200 }}
+          />
+        </Box>
+
+        {/* View Toggle */}
+        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          <Tooltip title="Card View">
+            <IconButton
+              onClick={() => setViewMode('cards')}
+              color={viewMode === 'cards' ? 'primary' : 'default'}
+              size="small"
+            >
+              <ViewModuleIcon />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="List View">
+            <IconButton
+              onClick={() => setViewMode('list')}
+              color={viewMode === 'list' ? 'primary' : 'default'}
+              size="small"
+            >
+              <ViewListIcon />
+            </IconButton>
+          </Tooltip>
+        </Box>
       </Box>
 
       {/* Content */}
