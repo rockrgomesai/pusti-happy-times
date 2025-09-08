@@ -1,0 +1,194 @@
+import axios, { AxiosResponse, AxiosError } from 'axios';
+import Cookies from 'js-cookie';
+
+// API base configuration
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+
+// Create axios instance
+const api = axios.create({
+  baseURL: API_BASE_URL,
+  timeout: 10000,
+  withCredentials: true,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// Token management
+export const tokenManager = {
+  getAccessToken: (): string | undefined => {
+    if (typeof window === 'undefined') return undefined;
+    return Cookies.get('accessToken');
+  },
+  
+  getRefreshToken: (): string | undefined => {
+    if (typeof window === 'undefined') return undefined;
+    return Cookies.get('refreshToken');
+  },
+  
+  setTokens: (accessToken: string, refreshToken: string): void => {
+    if (typeof window === 'undefined') return;
+    Cookies.set('accessToken', accessToken, { 
+      expires: 1, // 1 day
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict'
+    });
+    Cookies.set('refreshToken', refreshToken, { 
+      expires: 7, // 7 days
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict'
+    });
+  },
+  
+  clearTokens: (): void => {
+    if (typeof window === 'undefined') return;
+    Cookies.remove('accessToken');
+    Cookies.remove('refreshToken');
+  },
+  
+  isAuthenticated: (): boolean => {
+    if (typeof window === 'undefined') return false;
+    return !!tokenManager.getAccessToken();
+  }
+};
+
+// Request interceptor to add auth token
+api.interceptors.request.use(
+  (config) => {
+    const token = tokenManager.getAccessToken();
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// Response interceptor to handle token refresh
+api.interceptors.response.use(
+  (response: AxiosResponse) => {
+    return response;
+  },
+  async (error: AxiosError) => {
+    const originalRequest = error.config as AxiosError['config'] & { _retry?: boolean };
+    
+    if (error.response?.status === 401 && !originalRequest?._retry) {
+      if (originalRequest) {
+        originalRequest._retry = true;
+      }
+      
+      const refreshToken = tokenManager.getRefreshToken();
+      if (refreshToken) {
+        try {
+          const response = await axios.post(`${API_BASE_URL}/api/auth/refresh`, {
+            refreshToken
+          });
+          
+          const { accessToken, refreshToken: newRefreshToken } = response.data.data;
+          tokenManager.setTokens(accessToken, newRefreshToken);
+          
+          // Retry the original request with new token
+          originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+          return api(originalRequest);
+        } catch (refreshError) {
+          // Refresh failed, redirect to login
+          tokenManager.clearTokens();
+          window.location.href = '/login';
+          return Promise.reject(refreshError);
+        }
+      } else {
+        // No refresh token, redirect to login
+        tokenManager.clearTokens();
+        window.location.href = '/login';
+      }
+    }
+    
+    return Promise.reject(error);
+  }
+);
+
+// API endpoints
+export const authAPI = {
+  login: async (credentials: { username: string; password: string }) => {
+    try {
+      console.log('🔐 Making login request to:', `${API_BASE_URL}/api/auth/login`);
+      console.log('🔐 Frontend origin:', typeof window !== 'undefined' ? window.location.origin : 'SSR');
+      console.log('🔐 Credentials username:', credentials.username);
+      console.log('🔐 Credentials password length:', credentials.password.length);
+      console.log('🔐 Credentials password first 3 chars:', credentials.password.substring(0, 3));
+      console.log('🔐 Credentials password last 3 chars:', credentials.password.substring(credentials.password.length - 3));
+      console.log('🔐 Raw credentials object:', { username: credentials.username, password: credentials.password });
+      
+      const response = await api.post('/api/auth/login', credentials);
+      console.log('🔐 Login response status:', response.status);
+      console.log('🔐 Login response data:', response.data);
+      
+      return response.data;
+    } catch (error) {
+      console.error('🔐 Login error:', error);
+      if (error instanceof Error && 'response' in error) {
+        const axiosError = error as AxiosError;
+        console.error('🔐 Error response status:', axiosError.response?.status);
+        console.error('🔐 Error response data:', axiosError.response?.data);
+        console.error('🔐 Error response headers:', axiosError.response?.headers);
+        console.error('🔐 Error request config:', axiosError.config);
+        console.error('🔐 Error message:', axiosError.message);
+      }
+      throw error;
+    }
+  },
+  
+  logout: async () => {
+    const response = await api.post('/api/auth/logout');
+    tokenManager.clearTokens();
+    return response.data;
+  },
+  
+  refreshToken: async () => {
+    const refreshToken = tokenManager.getRefreshToken();
+    const response = await api.post('/api/auth/refresh', { refreshToken });
+    return response.data;
+  },
+  
+  changePassword: async (passwordData: { 
+    currentPassword: string; 
+    newPassword: string; 
+    confirmPassword: string; 
+  }) => {
+    const response = await api.put('/api/auth/change-password', passwordData);
+    return response.data;
+  }
+};
+
+// Generic API functions
+export const apiClient = {
+  get: async <T = unknown>(url: string, params?: Record<string, unknown>): Promise<T> => {
+    const response = await api.get(url, { params });
+    return response.data;
+  },
+  
+  post: async <T = unknown>(url: string, data?: Record<string, unknown>): Promise<T> => {
+    const response = await api.post(url, data);
+    return response.data;
+  },
+  
+  put: async <T = unknown>(url: string, data?: Record<string, unknown>): Promise<T> => {
+    const response = await api.put(url, data);
+    return response.data;
+  },
+  
+  delete: async <T = unknown>(url: string): Promise<T> => {
+    const response = await api.delete(url);
+    return response.data;
+  }
+};
+
+// Health check
+export const healthCheck = async () => {
+  const response = await axios.get(`${API_BASE_URL}/api/health`);
+  return response.data;
+};
+
+export default api;

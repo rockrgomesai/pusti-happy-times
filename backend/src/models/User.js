@@ -1,0 +1,209 @@
+/**
+ * User Model
+ * Pusti Happy Times - User Management Schema
+ * 
+ * This model defines the structure for user accounts with comprehensive
+ * validation, security features, and audit trail functionality.
+ * 
+ * Database Schema: username, password, role_id, email, active + audit fields
+ */
+
+const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
+
+/**
+ * User Schema Definition
+ * Matches the actual database schema
+ */
+const userSchema = new mongoose.Schema({
+  // Username - unique identifier for login (matches database schema)
+  username: {
+    type: String,
+    required: [true, 'Username is required'],
+    unique: true,
+    trim: true
+  },
+
+  // Password - hashed and validated (matches database schema)
+  password: {
+    type: String,
+    required: [true, 'Password is required'],
+    select: false // Exclude password from queries by default
+  },
+
+  // Role reference (matches database schema)
+  role_id: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Role',
+    required: [true, 'User role is required']
+  },
+
+  // Email address - unique and required (matches database schema)
+  email: {
+    type: String,
+    required: [true, 'Email is required'],
+    unique: true,
+    trim: true,
+    lowercase: true,
+    validate: {
+      validator: function(value) {
+        // Email validation regex
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+      },
+      message: 'Please provide a valid email address'
+    }
+  },
+
+  // Account status (matches database schema)
+  active: {
+    type: Boolean,
+    required: [true, 'Active status is required'],
+    default: true
+  },
+
+  // Audit fields (matches database schema)
+  created_at: {
+    type: Date,
+    required: [true, 'Created at is required'],
+    default: Date.now
+  },
+
+  created_by: {
+    type: mongoose.Schema.Types.ObjectId,
+    required: [true, 'Created by is required'],
+    ref: 'User'
+  },
+
+  updated_at: {
+    type: Date,
+    required: [true, 'Updated at is required'],
+    default: Date.now
+  },
+
+  updated_by: {
+    type: mongoose.Schema.Types.ObjectId,
+    required: [true, 'Updated by is required'],
+    ref: 'User'
+  }
+}, {
+  // Schema options
+  timestamps: false, // Using manual audit fields
+  versionKey: false, // Disable __v field
+  collection: 'users' // Explicit collection name
+});
+
+/**
+ * Indexes for Performance Optimization
+ */
+// Unique indexes (automatically created due to unique: true)
+// username, email
+
+/**
+ * Password hashing middleware
+ */
+userSchema.pre('save', async function(next) {
+  // Only hash password if it's been modified (or is new)
+  if (!this.isModified('password')) {
+    return next();
+  }
+
+  try {
+    // Hash password with bcrypt
+    const saltRounds = 10;
+    this.password = await bcrypt.hash(this.password, saltRounds);
+    
+    // Update audit fields
+    if (!this.isNew) {
+      this.updated_at = new Date();
+    }
+    
+    next();
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * Instance Methods
+ */
+
+/**
+ * Compare password for authentication
+ * @param {String} candidatePassword - The password to compare
+ * @returns {Boolean} True if password matches, false otherwise
+ */
+userSchema.methods.comparePassword = async function(candidatePassword) {
+  try {
+    return await bcrypt.compare(candidatePassword, this.password);
+  } catch (error) {
+    throw new Error('Password comparison failed');
+  }
+};
+
+/**
+ * Get user information without sensitive data
+ * @returns {Object} User information for API responses
+ */
+userSchema.methods.toJSON = function() {
+  const user = this.toObject();
+  delete user.password;
+  return user;
+};
+
+/**
+ * Static Methods
+ */
+
+/**
+ * Find user by username
+ * @param {String} username - Username to search for
+ * @returns {Object|null} User document or null
+ */
+userSchema.statics.findByUsername = async function(username) {
+  try {
+    return await this.findOne({ username: username.toLowerCase() });
+  } catch (error) {
+    throw new Error(`Error finding user: ${error.message}`);
+  }
+};
+
+/**
+ * Find user by email
+ * @param {String} email - Email to search for
+ * @returns {Object|null} User document or null
+ */
+userSchema.statics.findByEmail = async function(email) {
+  try {
+    return await this.findOne({ email: email.toLowerCase() });
+  } catch (error) {
+    throw new Error(`Error finding user: ${error.message}`);
+  }
+};
+
+/**
+ * Find user with password (for authentication)
+ * @param {String} username - Username to search for
+ * @returns {Object|null} User document with password or null
+ */
+userSchema.statics.findByUsernameWithPassword = async function(username) {
+  try {
+    return await this.findOne({ username: username.toLowerCase() }).select('+password');
+  } catch (error) {
+    throw new Error(`Error finding user: ${error.message}`);
+  }
+};
+
+/**
+ * Get all active users
+ * @returns {Array} Array of active user documents
+ */
+userSchema.statics.findActiveUsers = async function() {
+  try {
+    return await this.find({ active: true }).populate('role_id', 'role');
+  } catch (error) {
+    throw new Error(`Error fetching users: ${error.message}`);
+  }
+};
+
+// Export the model
+module.exports = mongoose.model('User', userSchema);

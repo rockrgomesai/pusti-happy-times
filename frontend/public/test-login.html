@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Direct Login Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .container { max-width: 600px; margin: 0 auto; }
+        button { padding: 10px 20px; margin: 10px; font-size: 16px; }
+        .result { margin-top: 20px; padding: 10px; border: 1px solid #ccc; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Direct Login Test</h1>
+        <p>This bypasses Next.js completely and tests the raw backend API.</p>
+        
+        <button onclick="testLogin()">Test Login</button>
+        <button onclick="testWithOrigin()">Test Login with Origin Header</button>
+        <button onclick="testWithCredentials()">Test Login with Credentials</button>
+        
+        <div id="result"></div>
+    </div>
+
+    <script>
+        async function testLogin() {
+            showResult('Testing basic login...', 'info');
+            
+            try {
+                const response = await fetch('http://localhost:5000/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        username: 'SuperAdmin',
+                        password: 'sadmin123'
+                    }),
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showResult(`✅ SUCCESS: ${data.message}`, 'success');
+                    console.log('Success data:', data);
+                } else {
+                    showResult(`❌ FAILED: ${data.message}`, 'error');
+                    console.log('Error data:', data);
+                }
+            } catch (error) {
+                showResult(`❌ ERROR: ${error.message}`, 'error');
+                console.error('Test error:', error);
+            }
+        }
+
+        async function testWithOrigin() {
+            showResult('Testing login with Origin header...', 'info');
+            
+            try {
+                const response = await fetch('http://localhost:5000/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Origin': 'http://localhost:3001'
+                    },
+                    body: JSON.stringify({
+                        username: 'SuperAdmin',
+                        password: 'sadmin123'
+                    }),
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showResult(`✅ SUCCESS: ${data.message}`, 'success');
+                    console.log('Success data:', data);
+                } else {
+                    showResult(`❌ FAILED: ${data.message}`, 'error');
+                    console.log('Error data:', data);
+                }
+            } catch (error) {
+                showResult(`❌ ERROR: ${error.message}`, 'error');
+                console.error('Test error:', error);
+            }
+        }
+
+        async function testWithCredentials() {
+            showResult('Testing login with credentials...', 'info');
+            
+            try {
+                const response = await fetch('http://localhost:5000/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Origin': 'http://localhost:3001'
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        username: 'SuperAdmin',
+                        password: 'sadmin123'
+                    }),
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showResult(`✅ SUCCESS: ${data.message}`, 'success');
+                    console.log('Success data:', data);
+                } else {
+                    showResult(`❌ FAILED: ${data.message}`, 'error');
+                    console.log('Error data:', data);
+                }
+            } catch (error) {
+                showResult(`❌ ERROR: ${error.message}`, 'error');
+                console.error('Test error:', error);
+            }
+        }
+
+        function showResult(message, type) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.textContent = message;
+            resultDiv.className = `result ${type}`;
+        }
+    </script>
+</body>
+</html>
