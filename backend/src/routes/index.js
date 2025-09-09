@@ -47,6 +47,95 @@ router.get("/health", (req, res) => {
 });
 
 /**
+ * System Stats (Lightweight)
+ * @route   GET /api/stats/summary
+ * @desc    Basic aggregate counts for dashboard (cached in-memory per process)
+ * @access  Private (authenticated users)
+ */
+let __lastStatsCache = null;
+let __lastStatsAt = 0;
+
+async function buildStatsPayload() {
+  const { User, Brand, Role } = require("../models");
+  const [userCount, brandCount, roleCount] = await Promise.all([
+    User.countDocuments().catch((e) => {
+      console.error("[STATS] user count error", e);
+      return 0;
+    }),
+    Brand.countDocuments().catch((e) => {
+      console.error("[STATS] brand count error", e);
+      return 0;
+    }),
+    Role.countDocuments().catch((e) => {
+      console.error("[STATS] role count error", e);
+      return 0;
+    }),
+  ]);
+
+  const uptimeSeconds = Math.floor(process.uptime());
+  const health = uptimeSeconds > 0 ? "OK" : "INIT";
+
+  return {
+    users: userCount,
+    brands: brandCount,
+    roles: roleCount,
+    systemHealth: health,
+    uptimeSeconds,
+    generatedAt: new Date().toISOString(),
+  };
+}
+
+// Protected (authenticated) detailed stats
+router.get("/stats/summary", authenticate, async (req, res) => {
+  try {
+    const now = Date.now();
+    if (__lastStatsCache && now - __lastStatsAt < 15000) {
+      console.log("[STATS] cache hit (protected)", {
+        user: req.user?.username,
+        role: req.user?.role?.role,
+      });
+      return res.json({ success: true, cached: true, data: __lastStatsCache });
+    }
+    const data = await buildStatsPayload();
+    __lastStatsCache = data;
+    __lastStatsAt = now;
+    console.log("[STATS] fresh build (protected)", {
+      ...data,
+      user: req.user?.username,
+    });
+    res.json({ success: true, cached: false, data });
+  } catch (err) {
+    console.error("Error building stats summary (protected):", err);
+    res.status(500).json({ success: false, message: "Failed to fetch stats" });
+  }
+});
+
+// Public lightweight stats (no auth) - omits uptime for privacy if desired
+router.get("/stats/public", async (req, res) => {
+  try {
+    const now = Date.now();
+    if (__lastStatsCache && now - __lastStatsAt < 15000) {
+      console.log("[STATS] cache hit (public)");
+      return res.json({
+        success: true,
+        cached: true,
+        data: { ...__lastStatsCache },
+      });
+    }
+    const data = await buildStatsPayload();
+    __lastStatsCache = data;
+    __lastStatsAt = now;
+    console.log("[STATS] fresh build (public)");
+    res.json({ success: true, cached: false, data });
+  } catch (err) {
+    console.error("Error building stats summary (public):", err);
+    res
+      .status(500)
+      .json({ success: false, message: "Failed to fetch public stats" });
+  }
+});
+
+/**
  * API Information
  * @route   GET /api/info
  * @desc    API information and documentation

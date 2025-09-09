@@ -152,6 +152,42 @@ app.get("/health", (req, res) => {
   });
 });
 
+/**
+ * Public Stats (fallback)
+ * This duplicates router-based stats to ensure availability even if router cache not refreshed.
+ */
+let __rootStatsCache = null;
+let __rootStatsAt = 0;
+app.get("/api/stats/public", async (req, res) => {
+  try {
+    const now = Date.now();
+    if (__rootStatsCache && now - __rootStatsAt < 15000) {
+      return res.json({ success: true, cached: true, data: __rootStatsCache });
+    }
+    const { User, Brand, Role } = require("./src/models");
+    const [users, brands, roles] = await Promise.all([
+      User.countDocuments().catch(() => 0),
+      Brand.countDocuments().catch(() => 0),
+      Role.countDocuments().catch(() => 0),
+    ]);
+    const data = {
+      users,
+      brands,
+      roles,
+      systemHealth: process.uptime() > 0 ? "OK" : "INIT",
+      uptimeSeconds: Math.floor(process.uptime()),
+      generatedAt: new Date().toISOString(),
+      source: "root-fallback",
+    };
+    __rootStatsCache = data;
+    __rootStatsAt = now;
+    res.json({ success: true, cached: false, data });
+  } catch (e) {
+    console.error("/api/stats/public root fallback error", e);
+    res.status(500).json({ success: false, message: "Failed to build stats" });
+  }
+});
+
 // API Routes
 app.use("/api", apiRoutes);
 

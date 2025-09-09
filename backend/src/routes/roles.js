@@ -292,15 +292,19 @@ router.post(
       });
     } catch (error) {
       console.error("Error creating role:", error);
-
-      // Handle duplicate key errors
+      if (error.name === "ValidationError") {
+        return res.status(400).json({
+          success: false,
+          message: "Validation error creating role",
+          errors: Object.values(error.errors).map((e) => e.message),
+        });
+      }
       if (error.code === 11000) {
         return res.status(400).json({
           success: false,
           message: "Role already exists",
         });
       }
-
       res.status(500).json({
         success: false,
         message: "Error creating role",
@@ -365,15 +369,19 @@ router.put(
       });
     } catch (error) {
       console.error("Error updating role:", error);
-
-      // Handle duplicate key errors
+      if (error.name === "ValidationError") {
+        return res.status(400).json({
+          success: false,
+          message: "Validation error updating role",
+          errors: Object.values(error.errors).map((e) => e.message),
+        });
+      }
       if (error.code === 11000) {
         return res.status(400).json({
           success: false,
           message: "Role name already exists",
         });
       }
-
       res.status(500).json({
         success: false,
         message: "Error updating role",

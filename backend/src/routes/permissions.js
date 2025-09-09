@@ -863,47 +863,24 @@ router.get("/api-permissions", authenticate, async (req, res) => {
 
     let assignedPermissions = [];
 
-    // If roleId is provided, get the actual assigned permissions using aggregation
+    // If roleId is provided, get assigned permissions (distinct) from junction table
     if (roleId) {
-      const Role = require("../models/Role");
-
-      const rolePermissions = await Role.aggregate([
-        { $match: { _id: new mongoose.Types.ObjectId(roleId) } },
-        {
-          $lookup: {
-            from: "role_api_permissions",
-            localField: "_id",
-            foreignField: "role_id",
-            as: "links",
-          },
-        },
-        { $unwind: { path: "$links", preserveNullAndEmptyArrays: true } },
-        {
-          $lookup: {
-            from: "api_permissions",
-            localField: "links.api_permission_id",
-            foreignField: "_id",
-            as: "permDocs",
-          },
-        },
-        { $unwind: { path: "$permDocs", preserveNullAndEmptyArrays: true } },
-        {
-          $group: {
-            _id: "$_id",
-            role: { $first: "$role" },
-            assignedPermissionIds: { $addToSet: "$permDocs._id" },
-          },
-        },
-      ]);
-
-      if (
-        rolePermissions.length > 0 &&
-        rolePermissions[0].assignedPermissionIds
-      ) {
-        assignedPermissions = rolePermissions[0].assignedPermissionIds
-          .filter((id) => id !== null)
-          .map((id) => id.toString());
+      let roleObjectId = roleId;
+      if (mongoose.Types.ObjectId.isValid(roleId)) {
+        roleObjectId = new mongoose.Types.ObjectId(roleId);
       }
+      const idList = await RoleApiPermission.distinct("api_permission_id", {
+        role_id: roleObjectId,
+      });
+      assignedPermissions = idList
+        .filter((id) => id)
+        .map((id) => id.toString());
+      console.log(
+        "[api-permissions] roleId",
+        roleId,
+        "distinct assigned count",
+        assignedPermissions.length
+      );
     }
 
     // Add assignment status to all permissions
@@ -923,6 +900,31 @@ router.get("/api-permissions", authenticate, async (req, res) => {
       message: "Error fetching API permissions",
       error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
+  }
+});
+
+/**
+ * @route GET /api/permissions/debug/api-permissions/:roleId
+ * @desc  Debug raw junction mappings for a role (temporary)
+ * @access Private (development aid)
+ */
+router.get("/debug/api-permissions/:roleId", authenticate, async (req, res) => {
+  try {
+    const { roleId } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(roleId)) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid roleId" });
+    }
+    const docs = await RoleApiPermission.find({
+      role_id: new mongoose.Types.ObjectId(roleId),
+    })
+      .select("role_id api_permission_id")
+      .lean();
+    return res.json({ success: true, count: docs.length, data: docs });
+  } catch (e) {
+    console.error("Debug fetch error", e);
+    res.status(500).json({ success: false, message: "Debug error" });
   }
 });
 
@@ -1053,6 +1055,53 @@ router.post("/assign-apis", authenticate, async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Error assigning API permissions",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
+});
+
+/**
+ * @route   POST /api/permissions/assign-apis-upsert
+ * @desc    Upsert API permissions to role (no deletes)
+ * @access  Private - requires authentication
+ */
+router.post("/assign-apis-upsert", authenticate, async (req, res) => {
+  try {
+    const { RoleApiPermission } = require("../models/JunctionTables");
+    const { roleId, permissionIds } = req.body;
+
+    if (!roleId || !Array.isArray(permissionIds)) {
+      return res.status(400).json({
+        success: false,
+        message: "Role ID and permission IDs array are required",
+      });
+    }
+
+    // Upsert each mapping; do not delete any existing assignments
+    let upserts = 0;
+    for (const permissionId of permissionIds) {
+      const result = await RoleApiPermission.updateOne(
+        { role_id: roleId, api_permission_id: permissionId },
+        { $setOnInsert: { role_id: roleId, api_permission_id: permissionId } },
+        { upsert: true }
+      );
+      // result.upsertedCount is not available on updateOne; infer via matchedCount
+      if (result.matchedCount === 0) {
+        upserts += 1;
+      }
+    }
+
+    return res.json({
+      success: true,
+      message: `Upserted ${upserts} API permission(s) for role`,
+      upserts,
+      totalRequested: permissionIds.length,
+    });
+  } catch (error) {
+    console.error("Error upserting API permissions:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error upserting API permissions",
       error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }

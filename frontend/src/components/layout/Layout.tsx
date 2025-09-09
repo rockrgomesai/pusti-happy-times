@@ -135,7 +135,8 @@ export function Layout({ children }: LayoutProps) {
             component="div"
             sx={{
               fontWeight: 700,
-              color: 'inherit',
+              // Force brand color (dark yellow) in both light and dark modes
+              color: '#C9A100',
               mr: 2,
               flexGrow: { xs: 1, md: 0 },
             }}

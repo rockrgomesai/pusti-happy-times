@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Box,
   Grid as Grid,
@@ -18,6 +18,7 @@ import {
   TrendingUp,
 } from '@mui/icons-material';
 import { useAuth } from '@/contexts/AuthContext';
+import api from '@/lib/api';
 
 interface StatCardProps {
   title: string;
@@ -77,32 +78,50 @@ export default function DashboardPage() {
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const { user } = useAuth();
 
-  const stats = [
-    {
-      title: 'Total Users',
-      value: 156,
-      icon: <People fontSize="large" />,
-      color: theme.palette.primary.main,
-    },
-    {
-      title: 'Active Brands',
-      value: 12,
-      icon: <Business fontSize="large" />,
-      color: theme.palette.success.main,
-    },
-    {
-      title: 'System Health',
-      value: '99.9%',
-      icon: <TrendingUp fontSize="large" />,
-      color: theme.palette.warning.main,
-    },
-    {
-      title: 'Online Users',
-      value: 24,
-      icon: <DashboardIcon fontSize="large" />,
-      color: theme.palette.secondary.main,
-    },
-  ];
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [stats, setStats] = useState([
+    { title: 'Total Users', value: '—', icon: <People fontSize="large" />, color: theme.palette.primary.main },
+    { title: 'Active Brands', value: '—', icon: <Business fontSize="large" />, color: theme.palette.success.main },
+    { title: 'System Health', value: '—', icon: <TrendingUp fontSize="large" />, color: theme.palette.warning.main },
+    { title: 'Roles', value: '—', icon: <DashboardIcon fontSize="large" />, color: theme.palette.secondary.main },
+  ]);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      setLoading(true);
+      setError(null);
+      try {
+  console.log('[Dashboard] Fetching /api/stats/public ...');
+  const res = await api.get('/api/stats/public');
+  console.log('[Dashboard] Public stats response:', res.status, res.data);
+  const d = res.data?.data || {};
+        if (cancelled) return;
+        setStats([
+          { title: 'Total Users', value: d.users ?? 0, icon: <People fontSize="large" />, color: theme.palette.primary.main },
+          { title: 'Active Brands', value: d.brands ?? 0, icon: <Business fontSize="large" />, color: theme.palette.success.main },
+          { title: 'System Health', value: d.systemHealth === 'OK' ? '100%' : '—', icon: <TrendingUp fontSize="large" />, color: theme.palette.warning.main },
+          { title: 'Roles', value: d.roles ?? 0, icon: <DashboardIcon fontSize="large" />, color: theme.palette.secondary.main },
+        ]);
+      } catch (e: unknown) {
+        if (cancelled) return;
+        let msg = 'Failed to load stats';
+        if (typeof e === 'object' && e && 'response' in e) {
+          interface AxiosLikeError { response?: { data?: { message?: string } } }
+          const resp = (e as AxiosLikeError).response;
+          msg = resp?.data?.message || msg;
+        }
+        console.error('[Dashboard] Stats fetch error:', e);
+        setError(msg);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+    load();
+    const interval = setInterval(load, 30000); // refresh every 30s
+    return () => { cancelled = true; clearInterval(interval); };
+  }, [theme.palette]);
 
   return (
     <Box>
@@ -112,12 +131,17 @@ export default function DashboardPage() {
           Dashboard
         </Typography>
         <Typography variant="body1" color="text.secondary">
-          Welcome back, {user?.firstName}! Here&apos;s what&apos;s happening with your system today.
+          Welcome back, {user?.username}! Here&apos;s what&apos;s happening with your system today.
         </Typography>
       </Box>
 
       {/* Stats Grid */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
+      {error && (
+        <Box sx={{ mb: 2 }}>
+          <Typography variant="body2" color="error">{error}</Typography>
+        </Box>
+      )}
+      <Grid container spacing={3} sx={{ mb: 4, opacity: loading ? 0.6 : 1, transition: 'opacity 0.3s ease' }}>
         {stats.map((stat, index) => (
           <Grid key={index} size={{ xs: 12, sm: 6, lg: 3 }}>
             <StatCard

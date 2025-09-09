@@ -24,14 +24,9 @@ const roleSchema = new mongoose.Schema(
       required: [true, "Role name is required"],
       unique: true,
       trim: true,
-      validate: {
-        validator: function (value) {
-          // Only allow predefined roles
-          const allowedRoles = ["SuperAdmin", "SalesAdmin", "Distributor"];
-          return allowedRoles.includes(value);
-        },
-        message: "Role must be one of: SuperAdmin, SalesAdmin, Distributor",
-      },
+      minlength: [2, "Role must be at least 2 characters"],
+      maxlength: [50, "Role must be at most 50 characters"],
+      match: [/^[a-zA-Z0-9\s_-]+$/, "Invalid characters in role name"],
     },
   },
   {

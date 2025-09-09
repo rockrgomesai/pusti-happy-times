@@ -111,6 +111,7 @@ export default function PermissionsPage() {
       
       if (menuResponse.data.success) {
         setMenuItems(menuResponse.data.data);
+        console.log(menuResponse.data.data);
       }
 
       // Fetch page permissions from pg_permissions collection
@@ -191,17 +192,27 @@ export default function PermissionsPage() {
       const selectedMenuIds = menuItems
         .filter((item) => item.assigned)
         .map((item) => item._id);
-
-      // TODO: Implement actual assignment API call
-      setMessage({
-        type: "success",
-        text: `Would assign ${selectedMenuIds.length} menu items to role`,
+      await api.post('/api/permissions/assign-menus', {
+        roleId: selectedRole,
+        menuItemIds: selectedMenuIds,
       });
+      setMessage({
+        type: 'success',
+        text: `Assigned ${selectedMenuIds.length} menu item(s)`,
+      });
+      // Refresh to reflect persisted assignments
+      await fetchPermissions();
     } catch (error) {
       console.error("Error assigning menus:", error);
       setMessage({
         type: "error",
-        text: "Failed to assign menu permissions",
+        text:
+          (typeof error === "object" &&
+            error !== null &&
+            "response" in error &&
+            typeof (error as { response?: { data?: { message?: string } } }).response?.data?.message === "string"
+            ? (error as { response?: { data?: { message?: string } } }).response!.data!.message!
+            : "Failed to assign menu permissions"),
       });
     } finally {
       setLoading(false);
@@ -216,12 +227,15 @@ export default function PermissionsPage() {
       const selectedPermissionIds = pagePermissions
         .filter((perm) => perm.assigned)
         .map((perm) => perm._id);
-
-      // TODO: Implement actual assignment API call
-      setMessage({
-        type: "success",
-        text: `Would assign ${selectedPermissionIds.length} page permissions to role`,
+      await api.post('/api/permissions/assign-pages', {
+        roleId: selectedRole,
+        permissionIds: selectedPermissionIds,
       });
+      setMessage({
+        type: 'success',
+        text: `Assigned ${selectedPermissionIds.length} page permission(s)`,
+      });
+      await fetchPermissions();
     } catch (error) {
       console.error("Error assigning page permissions:", error);
       setMessage({
@@ -241,12 +255,16 @@ export default function PermissionsPage() {
       const selectedPermissionIds = apiPermissions
         .filter((perm) => perm.assigned)
         .map((perm) => perm._id);
-
-      // TODO: Implement actual assignment API call
-      setMessage({
-        type: "success",
-        text: `Would assign ${selectedPermissionIds.length} API permissions to role`,
+      await api.post('/api/permissions/assign-apis-upsert', {
+        roleId: selectedRole,
+        permissionIds: selectedPermissionIds,
       });
+      setMessage({
+        type: 'success',
+        text: `Assigned ${selectedPermissionIds.length} API permission(s)`,
+      });
+      // Refresh to reflect latest assignments
+      await fetchPermissions();
     } catch (error) {
       console.error("Error assigning API permissions:", error);
       setMessage({
@@ -428,20 +446,31 @@ export default function PermissionsPage() {
                         backgroundColor: 'background.paper'
                       }}
                     >
-                      <FormGroup>
+                      <Box
+                        sx={{
+                          display: 'grid',
+                          gridTemplateColumns: {
+                            xs: '1fr',
+                            sm: '1fr 1fr',
+                            md: '1fr 1fr 1fr 1fr',
+                          },
+                          gap: 1,
+                        }}
+                      >
                         {apiPermissions.map((perm) => (
-                          <FormControlLabel
-                            key={perm._id}
-                            control={
-                              <Checkbox
-                                checked={perm.assigned || false}
-                                onChange={() => handleApiPermissionToggle(perm._id)}
-                              />
-                            }
-                            label={perm.api_permissions}
-                          />
+                          <FormGroup key={perm._id}>
+                            <FormControlLabel
+                              control={
+                                <Checkbox
+                                  checked={perm.assigned || false}
+                                  onChange={() => handleApiPermissionToggle(perm._id)}
+                                />
+                              }
+                              label={perm.api_permissions}
+                            />
+                          </FormGroup>
                         ))}
-                      </FormGroup>
+                      </Box>
                     </Box>
                     <Button
                       variant="contained"
