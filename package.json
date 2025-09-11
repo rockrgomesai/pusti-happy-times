@@ -1,0 +1,37 @@
+{
+  "name": "pusti-ht-mern",
+  "version": "1.0.0",
+  "description": "Pusti Happy Times MERN Stack Application",
+  "scripts": {
+    "dev": "concurrently \"npm run backend:dev\" \"npm run frontend:dev\"",
+    "backend:dev": "cd backend && npm run dev",
+    "frontend:dev": "cd frontend && npm run dev",
+    "build": "cd frontend && npm run build",
+    "start": "concurrently \"npm run backend:start\" \"npm run frontend:start\"",
+    "backend:start": "cd backend && npm start",
+  "frontend:start": "cd frontend && npm start",
+
+  "docker:up": "docker-compose -f docker-compose.yml -f docker-compose.dev.yml up -d mongodb redis",
+  "docker:down": "docker-compose -f docker-compose.yml -f docker-compose.dev.yml down",
+  "docker:logs": "docker-compose -f docker-compose.yml -f docker-compose.dev.yml logs -f",
+
+  "start:backend-only": "cd backend && npm start",
+  "start:frontend-only": "cd frontend && npm start",
+  "start:all": "npm run docker:up && concurrently \"npm run backend:start\" \"npm run frontend:start\"",
+  "dev:all": "npm run docker:up && concurrently \"npm run backend:dev\" \"npm run frontend:dev\"",
+  "seed:categories": "cd backend && npm run seed:categories",
+  "seed:menu:categories": "cd backend && npm run seed:menu:categories"
+  },
+  "keywords": [
+    "mern",
+    "nodejs",
+    "nextjs",
+    "mongodb",
+    "redis"
+  ],
+  "author": "Pusti Happy Times Team",
+  "license": "ISC",
+  "devDependencies": {
+    "concurrently": "^8.2.0"
+  }
+}

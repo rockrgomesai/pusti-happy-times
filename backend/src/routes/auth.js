@@ -276,7 +276,7 @@ router.post("/refresh", refreshTokenValidation, async (req, res) => {
     await redis.storeRefreshToken(
       user._id.toString(),
       tokens.refreshToken,
-      process.env.JWT_REFRESH_EXPIRES_IN || "7d"
+      process.env.JWT_REFRESH_EXPIRES_IN || "8h"
     );
 
     res.json({

@@ -27,6 +27,7 @@ import {
   Lock,
   Inventory,
   BookmarkBorder,
+  Layers,
 } from '@mui/icons-material';
 import { useRouter, usePathname } from 'next/navigation';
 import { apiClient } from '@/lib/api';
@@ -66,6 +67,7 @@ const iconMap: Record<string, React.ComponentType> = {
   FaTags: LocalOffer,
   FaBox: Inventory,
   FaUserTag: BookmarkBorder, // User tagging/roles icon
+  FaLayerGroup: Layers,
 };
 
 // Transform database menu structure to frontend structure

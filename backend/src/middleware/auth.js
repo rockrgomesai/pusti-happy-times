@@ -1,10 +1,10 @@
 /**
  * Authentication Middleware
  * Pusti Happy Times - JWT Authentication & Authorization
- *
+ * 
  * This middleware handles JWT token validation, user authentication,
  * and role-based authorization for the application.
- *
+ * 
  * Features:
  * - JWT token validation and refresh
  * - User session management
@@ -14,9 +14,9 @@
  * - Request rate limiting
  */
 
-const jwt = require("jsonwebtoken");
-const { User, Role } = require("../models");
-const redis = require("../config/redis");
+const jwt = require('jsonwebtoken');
+const { User, Role } = require('../models');
+const redis = require('../config/redis');
 
 /**
  * JWT Token Management
@@ -28,11 +28,15 @@ class TokenManager {
    * @returns {string} JWT access token
    */
   static generateAccessToken(payload) {
-    return jwt.sign(payload, process.env.JWT_ACCESS_SECRET, {
-      expiresIn: process.env.JWT_ACCESS_EXPIRES_IN || "15m",
-      issuer: process.env.JWT_ISSUER || "pusti-ht",
-      audience: process.env.JWT_AUDIENCE || "pusti-ht-users",
-    });
+    return jwt.sign(
+      payload,
+      process.env.JWT_ACCESS_SECRET,
+      { 
+        expiresIn: process.env.JWT_ACCESS_EXPIRES_IN || '15m',
+        issuer: process.env.JWT_ISSUER || 'pusti-ht',
+        audience: process.env.JWT_AUDIENCE || 'pusti-ht-users'
+      }
+    );
   }
 
   /**
@@ -41,11 +45,15 @@ class TokenManager {
    * @returns {string} JWT refresh token
    */
   static generateRefreshToken(payload) {
-    return jwt.sign(payload, process.env.JWT_REFRESH_SECRET, {
-      expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || "7d",
-      issuer: process.env.JWT_ISSUER || "pusti-ht",
-      audience: process.env.JWT_AUDIENCE || "pusti-ht-users",
-    });
+    return jwt.sign(
+      payload,
+      process.env.JWT_REFRESH_SECRET,
+      { 
+        expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d',
+        issuer: process.env.JWT_ISSUER || 'pusti-ht',
+        audience: process.env.JWT_AUDIENCE || 'pusti-ht-users'
+      }
+    );
   }
 
   /**
@@ -55,8 +63,8 @@ class TokenManager {
    */
   static verifyAccessToken(token) {
     return jwt.verify(token, process.env.JWT_ACCESS_SECRET, {
-      issuer: process.env.JWT_ISSUER || "pusti-ht",
-      audience: process.env.JWT_AUDIENCE || "pusti-ht-users",
+      issuer: process.env.JWT_ISSUER || 'pusti-ht',
+      audience: process.env.JWT_AUDIENCE || 'pusti-ht-users'
     });
   }
 
@@ -67,8 +75,8 @@ class TokenManager {
    */
   static verifyRefreshToken(token) {
     return jwt.verify(token, process.env.JWT_REFRESH_SECRET, {
-      issuer: process.env.JWT_ISSUER || "pusti-ht",
-      audience: process.env.JWT_AUDIENCE || "pusti-ht-users",
+      issuer: process.env.JWT_ISSUER || 'pusti-ht',
+      audience: process.env.JWT_AUDIENCE || 'pusti-ht-users'
     });
   }
 
@@ -82,20 +90,20 @@ class TokenManager {
       userId: user._id,
       username: user.username,
       roleId: user.role_id,
-      tokenType: "access",
+      tokenType: 'access'
     };
 
     const refreshPayload = {
       userId: user._id,
       username: user.username,
-      tokenType: "refresh",
+      tokenType: 'refresh'
     };
 
     return {
       accessToken: this.generateAccessToken(payload),
       refreshToken: this.generateRefreshToken(refreshPayload),
-      expiresIn: process.env.JWT_ACCESS_EXPIRES_IN || "15m",
-      tokenType: "Bearer",
+      expiresIn: process.env.JWT_ACCESS_EXPIRES_IN || '15m',
+      tokenType: 'Bearer'
     };
   }
 }
@@ -108,11 +116,11 @@ const authenticate = async (req, res, next) => {
   try {
     // Extract token from Authorization header
     const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return res.status(401).json({
         success: false,
-        message: "Access token required",
-        code: "TOKEN_REQUIRED",
+        message: 'Access token required',
+        code: 'TOKEN_REQUIRED'
       });
     }
 
@@ -123,51 +131,42 @@ const authenticate = async (req, res, next) => {
     try {
       decoded = TokenManager.verifyAccessToken(token);
     } catch (tokenError) {
-      if (tokenError.name === "TokenExpiredError") {
+      if (tokenError.name === 'TokenExpiredError') {
         return res.status(401).json({
           success: false,
-          message: "Access token expired",
-          code: "TOKEN_EXPIRED",
+          message: 'Access token expired',
+          code: 'TOKEN_EXPIRED'
         });
-      } else if (tokenError.name === "JsonWebTokenError") {
+      } else if (tokenError.name === 'JsonWebTokenError') {
         return res.status(401).json({
           success: false,
-          message: "Invalid access token",
-          code: "TOKEN_INVALID",
+          message: 'Invalid access token',
+          code: 'TOKEN_INVALID'
         });
       }
       throw tokenError;
     }
 
-    // Check if token is blacklisted (with fallback if Redis is not available)
-    let isBlacklisted = false;
-    try {
-      isBlacklisted = await redis.isTokenBlacklisted(token);
-    } catch (redisError) {
-      console.warn(
-        "Redis check failed, assuming token is not blacklisted:",
-        redisError.message
-      );
-    }
-
+    // Check if token is blacklisted
+    const isBlacklisted = await redis.isTokenBlacklisted(token);
     if (isBlacklisted) {
       return res.status(401).json({
         success: false,
-        message: "Token has been revoked",
-        code: "TOKEN_REVOKED",
+        message: 'Token has been revoked',
+        code: 'TOKEN_REVOKED'
       });
     }
 
     // Load user with role information
     const user = await User.findById(decoded.userId)
-      .populate("role_id")
-      .select("+lastLogin +lastLoginIP");
+      .populate('role_id')
+      .select('+lastLogin +lastLoginIP');
 
     if (!user) {
       return res.status(401).json({
         success: false,
-        message: "User not found",
-        code: "USER_NOT_FOUND",
+        message: 'User not found',
+        code: 'USER_NOT_FOUND'
       });
     }
 
@@ -175,17 +174,27 @@ const authenticate = async (req, res, next) => {
     if (!user.active) {
       return res.status(401).json({
         success: false,
-        message: "Account is deactivated",
-        code: "ACCOUNT_INACTIVE",
+        message: 'Account is deactivated',
+        code: 'ACCOUNT_INACTIVE'
       });
     }
 
-    // Check if role exists
-    if (!user.role_id) {
+    // Check if account is locked
+    if (user.isAccountLocked()) {
+      return res.status(423).json({
+        success: false,
+        message: 'Account is temporarily locked due to failed login attempts',
+        code: 'ACCOUNT_LOCKED',
+        lockUntil: user.lockUntil
+      });
+    }
+
+    // Check if role is active
+    if (!user.role_id || !user.role_id.active) {
       return res.status(403).json({
         success: false,
-        message: "User role not found",
-        code: "ROLE_NOT_FOUND",
+        message: 'User role is inactive',
+        code: 'ROLE_INACTIVE'
       });
     }
 
@@ -194,20 +203,16 @@ const authenticate = async (req, res, next) => {
     req.token = token;
     req.tokenPayload = decoded;
 
-    // Update last activity timestamp in Redis (with fallback if Redis is not available)
-    try {
-      await redis.updateUserActivity(user._id.toString());
-    } catch (redisError) {
-      console.warn("Redis activity update failed:", redisError.message);
-    }
+    // Update last activity timestamp in Redis
+    await redis.updateUserActivity(user._id.toString());
 
     next();
   } catch (error) {
-    console.error("Authentication error:", error);
+    console.error('Authentication error:', error);
     return res.status(500).json({
       success: false,
-      message: "Authentication failed",
-      code: "AUTH_ERROR",
+      message: 'Authentication failed',
+      code: 'AUTH_ERROR'
     });
   }
 };
@@ -219,8 +224,8 @@ const authenticate = async (req, res, next) => {
 const optionalAuthenticate = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
-
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
       // No token provided, continue without user
       req.user = null;
       req.token = null;
@@ -246,19 +251,19 @@ const requireRole = (...allowedRoles) => {
     if (!req.user) {
       return res.status(401).json({
         success: false,
-        message: "Authentication required",
-        code: "AUTH_REQUIRED",
+        message: 'Authentication required',
+        code: 'AUTH_REQUIRED'
       });
     }
 
-    const userRole = req.user.role_id?.role;
+    const userRole = req.user.role_id?.name;
     if (!allowedRoles.includes(userRole)) {
       return res.status(403).json({
         success: false,
-        message: "Insufficient permissions",
-        code: "INSUFFICIENT_PERMISSIONS",
+        message: 'Insufficient permissions',
+        code: 'INSUFFICIENT_PERMISSIONS',
         required: allowedRoles,
-        current: userRole,
+        current: userRole
       });
     }
 
@@ -276,34 +281,34 @@ const requirePermission = (permissionType, permissionCode) => {
       if (!req.user) {
         return res.status(401).json({
           success: false,
-          message: "Authentication required",
-          code: "AUTH_REQUIRED",
+          message: 'Authentication required',
+          code: 'AUTH_REQUIRED'
         });
       }
 
       const hasPermission = await checkUserPermission(
-        req.user,
-        permissionType,
+        req.user, 
+        permissionType, 
         permissionCode
       );
 
       if (!hasPermission) {
         return res.status(403).json({
           success: false,
-          message: "Permission denied",
-          code: "PERMISSION_DENIED",
+          message: 'Permission denied',
+          code: 'PERMISSION_DENIED',
           required: permissionCode,
-          type: permissionType,
+          type: permissionType
         });
       }
 
       next();
     } catch (error) {
-      console.error("Permission check error:", error);
+      console.error('Permission check error:', error);
       return res.status(500).json({
         success: false,
-        message: "Permission check failed",
-        code: "PERMISSION_ERROR",
+        message: 'Permission check failed',
+        code: 'PERMISSION_ERROR'
       });
     }
   };
@@ -311,45 +316,43 @@ const requirePermission = (permissionType, permissionCode) => {
 
 /**
  * API Permission Middleware
- * Checks API-specific permissions based on permission string
+ * Checks API-specific permissions based on endpoint and method
  */
-const requireApiPermission = (permissionString) => {
+const requireApiPermission = (endpoint, method = null) => {
   return async (req, res, next) => {
     try {
       if (!req.user) {
         return res.status(401).json({
           success: false,
-          message: "Authentication required",
-          code: "AUTH_REQUIRED",
+          message: 'Authentication required',
+          code: 'AUTH_REQUIRED'
         });
       }
 
-      // SuperAdmin has access to everything
-      if (req.user.role_id?.role === "SuperAdmin") {
-        return next();
-      }
-
+      const requestMethod = method || req.method;
       const hasPermission = await checkApiPermission(
         req.user,
-        permissionString
+        endpoint,
+        requestMethod
       );
 
       if (!hasPermission) {
         return res.status(403).json({
           success: false,
-          message: "API access denied",
-          code: "API_ACCESS_DENIED",
-          permission: permissionString,
+          message: 'API access denied',
+          code: 'API_ACCESS_DENIED',
+          endpoint: endpoint,
+          method: requestMethod
         });
       }
 
       next();
     } catch (error) {
-      console.error("API permission check error:", error);
+      console.error('API permission check error:', error);
       return res.status(500).json({
         success: false,
-        message: "API permission check failed",
-        code: "API_PERMISSION_ERROR",
+        message: 'API permission check failed',
+        code: 'API_PERMISSION_ERROR'
       });
     }
   };
@@ -359,13 +362,13 @@ const requireApiPermission = (permissionString) => {
  * Self-only Access Middleware
  * Ensures user can only access their own data
  */
-const requireSelfOnly = (userIdParam = "userId") => {
+const requireSelfOnly = (userIdParam = 'userId') => {
   return (req, res, next) => {
     if (!req.user) {
       return res.status(401).json({
         success: false,
-        message: "Authentication required",
-        code: "AUTH_REQUIRED",
+        message: 'Authentication required',
+        code: 'AUTH_REQUIRED'
       });
     }
 
@@ -375,11 +378,11 @@ const requireSelfOnly = (userIdParam = "userId") => {
     if (requestedUserId !== currentUserId) {
       // Check if user has admin privileges
       const userRole = req.user.role_id?.name;
-      if (!["SuperAdmin", "SalesAdmin"].includes(userRole)) {
+      if (!['SuperAdmin', 'SalesAdmin'].includes(userRole)) {
         return res.status(403).json({
           success: false,
-          message: "Access denied: can only access own data",
-          code: "SELF_ACCESS_ONLY",
+          message: 'Access denied: can only access own data',
+          code: 'SELF_ACCESS_ONLY'
         });
       }
     }
@@ -401,55 +404,52 @@ const requireSelfOnly = (userIdParam = "userId") => {
  */
 async function checkUserPermission(user, permissionType, permissionCode) {
   try {
-    // SuperAdmin has all permissions
-    if (user.role_id?.role === "SuperAdmin") {
-      return true;
-    }
-
-    const {
-      RoleSidebarMenuItem,
-      RolePagePermission,
-      RoleApiPermission,
-    } = require("../models");
-
-    const {
-      SidebarMenuItem,
-      PagePermission,
-      ApiPermission,
-    } = require("../models");
+    const { 
+      RoleMenuPermission, 
+      RolePagePermission, 
+      RoleApiPermission 
+    } = require('../models/JunctionTables');
 
     let JunctionModel;
-    let PermissionModel;
     let permissionField;
 
-    // Determine which models to use
+    // Determine which junction table to use
     switch (permissionType.toLowerCase()) {
-      case "menu":
-        JunctionModel = RoleSidebarMenuItem;
-        PermissionModel = SidebarMenuItem;
-        permissionField = "sidebar_menu_item_id";
+      case 'menu':
+        JunctionModel = RoleMenuPermission;
+        permissionField = 'menu_permission_id';
         break;
-      case "page":
+      case 'page':
         JunctionModel = RolePagePermission;
-        PermissionModel = PagePermission;
-        permissionField = "page_permission_id";
+        permissionField = 'page_permission_id';
         break;
-      case "api":
+      case 'api':
         JunctionModel = RoleApiPermission;
-        PermissionModel = ApiPermission;
-        permissionField = "api_permission_id";
+        permissionField = 'api_permission_id';
         break;
       default:
         return false;
     }
 
     // Find permission by code
-    const permission = await PermissionModel.findOne({
-      [permissionType === "menu"
-        ? "label"
-        : permissionType === "page"
-          ? "pg_permissions"
-          : "api_permissions"]: permissionCode,
+    const { MenuPermission, PagePermission, ApiPermission } = require('../models/Permission');
+    let PermissionModel;
+
+    switch (permissionType.toLowerCase()) {
+      case 'menu':
+        PermissionModel = MenuPermission;
+        break;
+      case 'page':
+        PermissionModel = PagePermission;
+        break;
+      case 'api':
+        PermissionModel = ApiPermission;
+        break;
+    }
+
+    const permission = await PermissionModel.findOne({ 
+      code: permissionCode, 
+      active: true 
     });
 
     if (!permission) {
@@ -460,29 +460,33 @@ async function checkUserPermission(user, permissionType, permissionCode) {
     const rolePermission = await JunctionModel.findOne({
       role_id: user.role_id._id,
       [permissionField]: permission._id,
+      active: true
     });
 
-    return !!rolePermission;
+    return rolePermission ? rolePermission.isValid() : false;
   } catch (error) {
-    console.error("Permission check error:", error);
+    console.error('Permission check error:', error);
     return false;
   }
 }
 
 /**
- * Check API permission with our database structure
+ * Check API permission with method validation
  * @param {Object} user - User document with role populated
- * @param {string} permissionString - Permission string like 'read:user', 'create:brand', etc.
+ * @param {string} endpoint - API endpoint
+ * @param {string} method - HTTP method
  * @returns {Promise<boolean>} True if user has permission
  */
-async function checkApiPermission(user, permissionString) {
+async function checkApiPermission(user, endpoint, method) {
   try {
-    const { ApiPermission } = require("../models");
-    const { RoleApiPermission } = require("../models");
+    const { ApiPermission } = require('../models/Permission');
+    const { RoleApiPermission } = require('../models/JunctionTables');
 
-    // Find API permission by permission string
+    // Find API permission for endpoint
     const apiPermission = await ApiPermission.findOne({
-      api_permissions: permissionString,
+      endpoint: endpoint,
+      methods: method.toUpperCase(),
+      active: true
     });
 
     if (!apiPermission) {
@@ -493,11 +497,18 @@ async function checkApiPermission(user, permissionString) {
     const rolePermission = await RoleApiPermission.findOne({
       role_id: user.role_id._id,
       api_permission_id: apiPermission._id,
+      active: true
     });
 
-    return !!rolePermission;
+    if (!rolePermission || !rolePermission.isValid()) {
+      return false;
+    }
+
+    // Check if method is allowed for this role
+    const allowedMethods = rolePermission.accessControls?.allowedMethods || [];
+    return allowedMethods.includes(method.toUpperCase());
   } catch (error) {
-    console.error("API permission check error:", error);
+    console.error('API permission check error:', error);
     return false;
   }
 }
@@ -521,5 +532,5 @@ module.exports = {
 
   // Utility functions
   checkUserPermission,
-  checkApiPermission,
+  checkApiPermission
 };

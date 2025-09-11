@@ -1,10 +1,10 @@
 /**
  * Redis Configuration Module
  * Pusti Happy Times - Redis Connection and Caching
- *
+ * 
  * This module handles Redis connection for caching, session management,
  * and temporary data storage including failed login attempts tracking.
- *
+ * 
  * Features:
  * - Redis connection with automatic reconnection
  * - Connection event handling and monitoring
@@ -14,7 +14,7 @@
  * - Production-optimized configuration
  */
 
-const redis = require("redis");
+const redis = require('redis');
 
 let redisClient = null;
 
@@ -25,31 +25,28 @@ let redisClient = null;
 const connectRedis = async () => {
   try {
     // Determine Redis URL based on environment
-    const redisURL =
-      process.env.NODE_ENV === "production"
-        ? process.env.REDIS_URL
-        : process.env.REDIS_URL_LOCAL || process.env.REDIS_URL;
+    const redisURL = process.env.NODE_ENV === 'production' 
+      ? process.env.REDIS_URL 
+      : process.env.REDIS_URL_LOCAL || process.env.REDIS_URL;
 
     if (!redisURL) {
-      console.warn(
-        "⚠️ Redis URL not found in environment variables. Skipping Redis connection."
-      );
+      console.warn('⚠️ Redis URL not found in environment variables. Skipping Redis connection.');
       return null;
     }
 
-    console.log("🔄 Connecting to Redis...");
+    console.log('🔄 Connecting to Redis...');
 
     // Create Redis client with configuration
     redisClient = redis.createClient({
       url: redisURL,
       retry_strategy: (options) => {
         // Retry connection with exponential backoff
-        if (options.error && options.error.code === "ECONNREFUSED") {
-          console.error("❌ Redis server connection refused");
+        if (options.error && options.error.code === 'ECONNREFUSED') {
+          console.error('❌ Redis server connection refused');
         }
         if (options.total_retry_time > 1000 * 60 * 60) {
           // End reconnecting after a specific timeout and flush all commands
-          return new Error("Redis retry time exhausted");
+          return new Error('Redis retry time exhausted');
         }
         if (options.attempt > 10) {
           // End reconnecting with built in error
@@ -62,20 +59,20 @@ const connectRedis = async () => {
         connectTimeout: 10000,
         commandTimeout: 5000,
         lazyConnect: true,
-      },
+      }
     });
 
     // Redis event handlers
-    redisClient.on("connect", () => {
-      console.log("🔄 Redis client connecting...");
+    redisClient.on('connect', () => {
+      console.log('🔄 Redis client connecting...');
     });
 
-    redisClient.on("ready", () => {
+    redisClient.on('ready', () => {
       console.log(`
       ╔══════════════════════════════════════════════════════════════╗
       ║                     🔴 REDIS CONNECTED 🔴                    ║
       ╠══════════════════════════════════════════════════════════════╣
-      ║  URL:         ${redisURL.replace(/\/\/.*@/, "//***:***@").padEnd(47)} ║
+      ║  URL:         ${(redisURL.replace(/\/\/.*@/, '//***:***@')).padEnd(47)} ║
       ║  Status:      Ready for operations                           ║
       ║  Environment: ${process.env.NODE_ENV?.toUpperCase().padEnd(47)} ║
       ║  Use Cases:   Caching, Sessions, Login Attempts             ║
@@ -83,37 +80,38 @@ const connectRedis = async () => {
       `);
     });
 
-    redisClient.on("error", (error) => {
-      console.error("❌ Redis connection error:", error.message);
-
+    redisClient.on('error', (error) => {
+      console.error('❌ Redis connection error:', error.message);
+      
       // Log additional error details in development
-      if (process.env.NODE_ENV === "development") {
-        console.error("Full Redis error details:", error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Full Redis error details:', error);
       }
     });
 
-    redisClient.on("end", () => {
-      console.log("⚠️ Redis connection ended");
+    redisClient.on('end', () => {
+      console.log('⚠️ Redis connection ended');
     });
 
-    redisClient.on("reconnecting", () => {
-      console.log("🔄 Redis client reconnecting...");
+    redisClient.on('reconnecting', () => {
+      console.log('🔄 Redis client reconnecting...');
     });
 
     // Connect to Redis
     await redisClient.connect();
 
     return redisClient;
+
   } catch (error) {
-    console.error("❌ Redis connection failed:", error.message);
-
+    console.error('❌ Redis connection failed:', error.message);
+    
     // Log additional error details in development
-    if (process.env.NODE_ENV === "development") {
-      console.error("Full error details:", error);
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Full error details:', error);
     }
-
+    
     // Don't exit process for Redis failures - app can work without Redis
-    console.warn("⚠️ Application will continue without Redis caching");
+    console.warn('⚠️ Application will continue without Redis caching');
     return null;
   }
 };
@@ -134,26 +132,27 @@ const checkRedisHealth = async () => {
   try {
     if (!redisClient || !redisClient.isReady) {
       return {
-        status: "unhealthy",
-        message: "Redis client not connected",
-        connected: false,
+        status: 'unhealthy',
+        message: 'Redis client not connected',
+        connected: false
       };
     }
 
     // Test Redis with ping
     const pong = await redisClient.ping();
-
+    
     return {
-      status: "healthy",
-      message: "Redis connection active",
+      status: 'healthy',
+      message: 'Redis connection active',
       connected: true,
-      response: pong,
+      response: pong
     };
+    
   } catch (error) {
     return {
-      status: "unhealthy",
+      status: 'unhealthy',
       message: error.message,
-      connected: false,
+      connected: false
     };
   }
 };
@@ -172,15 +171,16 @@ const checkRedisHealth = async () => {
 const setCache = async (key, value, expireInSeconds = 3600) => {
   try {
     if (!redisClient || !redisClient.isReady) {
-      console.warn("⚠️ Redis not available for caching");
+      console.warn('⚠️ Redis not available for caching');
       return false;
     }
 
     const serializedValue = JSON.stringify(value);
     await redisClient.setEx(key, expireInSeconds, serializedValue);
     return true;
+    
   } catch (error) {
-    console.error("❌ Error setting cache:", error.message);
+    console.error('❌ Error setting cache:', error.message);
     return false;
   }
 };
@@ -198,8 +198,9 @@ const getCache = async (key) => {
 
     const value = await redisClient.get(key);
     return value ? JSON.parse(value) : null;
+    
   } catch (error) {
-    console.error("❌ Error getting cache:", error.message);
+    console.error('❌ Error getting cache:', error.message);
     return null;
   }
 };
@@ -216,8 +217,9 @@ const deleteCache = async (key) => {
 
     await redisClient.del(key);
     return true;
+    
   } catch (error) {
-    console.error("❌ Error deleting cache:", error.message);
+    console.error('❌ Error deleting cache:', error.message);
     return false;
   }
 };
@@ -240,18 +242,16 @@ const trackFailedLogin = async (username) => {
 
     const key = `failed_login:${username}`;
     const attempts = await redisClient.incr(key);
-
+    
     // Set expiration for the key (5 minutes lockout)
     if (attempts === 1) {
-      await redisClient.expire(
-        key,
-        parseInt(process.env.LOCKOUT_TIME) / 1000 || 300
-      );
+      await redisClient.expire(key, parseInt(process.env.LOCKOUT_TIME) / 1000 || 300);
     }
-
+    
     return attempts;
+    
   } catch (error) {
-    console.error("❌ Error tracking failed login:", error.message);
+    console.error('❌ Error tracking failed login:', error.message);
     return 0;
   }
 };
@@ -270,8 +270,9 @@ const getFailedLoginAttempts = async (username) => {
     const key = `failed_login:${username}`;
     const attempts = await redisClient.get(key);
     return parseInt(attempts) || 0;
+    
   } catch (error) {
-    console.error("❌ Error getting failed login attempts:", error.message);
+    console.error('❌ Error getting failed login attempts:', error.message);
     return 0;
   }
 };
@@ -289,8 +290,9 @@ const clearFailedLoginAttempts = async (username) => {
     const key = `failed_login:${username}`;
     await redisClient.del(key);
     return true;
+    
   } catch (error) {
-    console.error("❌ Error clearing failed login attempts:", error.message);
+    console.error('❌ Error clearing failed login attempts:', error.message);
     return false;
   }
 };
@@ -305,141 +307,9 @@ const isUserLockedOut = async (username) => {
     const attempts = await getFailedLoginAttempts(username);
     const maxAttempts = parseInt(process.env.MAX_LOGIN_ATTEMPTS) || 3;
     return attempts >= maxAttempts;
+    
   } catch (error) {
-    console.error("❌ Error checking lockout status:", error.message);
-    return false;
-  }
-};
-
-/**
- * Token Blacklisting Functions
- * Functions to manage blacklisted tokens for security
- */
-
-/**
- * Check if a token is blacklisted
- * @param {string} token - JWT token to check
- * @returns {boolean} True if token is blacklisted
- */
-const isTokenBlacklisted = async (token) => {
-  try {
-    if (!redisClient || !redisClient.isReady) {
-      return false; // If Redis is down, assume token is not blacklisted
-    }
-
-    const key = `blacklisted_token:${token}`;
-    const result = await redisClient.get(key);
-    return result !== null;
-  } catch (error) {
-    console.error("❌ Error checking token blacklist:", error.message);
-    return false;
-  }
-};
-
-/**
- * Add a token to the blacklist
- * @param {string} token - JWT token to blacklist
- * @param {number} expireInSeconds - Token expiration time in seconds
- * @param {string} reason - Reason for blacklisting
- */
-const blacklistToken = async (
-  token,
-  expireInSeconds = 24 * 60 * 60,
-  reason = "logged_out"
-) => {
-  try {
-    if (!redisClient || !redisClient.isReady) {
-      return false;
-    }
-
-    const key = `blacklisted_token:${token}`;
-    await redisClient.setEx(key, expireInSeconds, reason);
-    return true;
-  } catch (error) {
-    console.error("❌ Error blacklisting token:", error.message);
-    return false;
-  }
-};
-
-/**
- * Update user activity timestamp
- * @param {string} userId - User ID to update activity for
- */
-const updateUserActivity = async (userId) => {
-  try {
-    if (!redisClient || !redisClient.isReady) {
-      return false;
-    }
-
-    const key = `user_activity:${userId}`;
-    const timestamp = new Date().toISOString();
-    await redisClient.setEx(key, 24 * 60 * 60, timestamp); // Expire after 24 hours
-    return true;
-  } catch (error) {
-    console.error("❌ Error updating user activity:", error.message);
-    return false;
-  }
-};
-
-/**
- * Remove user's refresh tokens
- * @param {string} userId - User ID to remove refresh tokens for
- */
-const removeRefreshToken = async (userId) => {
-  try {
-    if (!redisClient || !redisClient.isReady) {
-      return false;
-    }
-
-    const keys = await redisClient.keys(`refresh_token:${userId}:*`);
-    if (keys.length > 0) {
-      await redisClient.del(keys);
-    }
-    return true;
-  } catch (error) {
-    console.error("❌ Error removing refresh tokens:", error.message);
-    return false;
-  }
-};
-
-/**
- * Get stored refresh token for user
- * @param {string} userId - User ID to get refresh token for
- * @returns {string|null} Stored refresh token or null
- */
-const getRefreshToken = async (userId) => {
-  try {
-    if (!redisClient || !redisClient.isReady) {
-      return null;
-    }
-
-    const keys = await redisClient.keys(`refresh_token:${userId}:*`);
-    if (keys.length > 0) {
-      const token = await redisClient.get(keys[0]);
-      return token;
-    }
-    return null;
-  } catch (error) {
-    console.error("❌ Error getting refresh token:", error.message);
-    return null;
-  }
-};
-
-/**
- * Clear user activity data
- * @param {string} userId - User ID to clear activity for
- */
-const clearUserActivity = async (userId) => {
-  try {
-    if (!redisClient || !redisClient.isReady) {
-      return false;
-    }
-
-    const key = `user_activity:${userId}`;
-    await redisClient.del(key);
-    return true;
-  } catch (error) {
-    console.error("❌ Error clearing user activity:", error.message);
+    console.error('❌ Error checking lockout status:', error.message);
     return false;
   }
 };
@@ -451,16 +321,16 @@ const closeRedisConnection = async () => {
   try {
     if (redisClient && redisClient.isReady) {
       await redisClient.quit();
-      console.log("✅ Redis connection closed gracefully");
+      console.log('✅ Redis connection closed gracefully');
     }
   } catch (error) {
-    console.error("❌ Error closing Redis connection:", error);
+    console.error('❌ Error closing Redis connection:', error);
   }
 };
 
 // Handle application termination
-process.on("SIGINT", closeRedisConnection);
-process.on("SIGTERM", closeRedisConnection);
+process.on('SIGINT', closeRedisConnection);
+process.on('SIGTERM', closeRedisConnection);
 
 module.exports = {
   connectRedis,
@@ -473,11 +343,5 @@ module.exports = {
   getFailedLoginAttempts,
   clearFailedLoginAttempts,
   isUserLockedOut,
-  isTokenBlacklisted,
-  blacklistToken,
-  updateUserActivity,
-  removeRefreshToken,
-  getRefreshToken,
-  clearUserActivity,
-  closeRedisConnection,
+  closeRedisConnection
 };

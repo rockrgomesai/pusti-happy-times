@@ -4,6 +4,27 @@ import Cookies from 'js-cookie';
 // API base configuration
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
+// Simple API online/offline status broadcaster
+type ApiStatusListener = (online: boolean) => void;
+export const apiStatus = {
+  online: true,
+  listeners: [] as ApiStatusListener[],
+  set(online: boolean) {
+    if (this.online !== online) {
+      this.online = online;
+      this.listeners.forEach((fn) => {
+        try { fn(online); } catch { /* noop */ }
+      });
+    }
+  },
+  onChange(fn: ApiStatusListener) {
+    this.listeners.push(fn);
+    return () => {
+      this.listeners = this.listeners.filter((l) => l !== fn);
+    };
+  },
+};
+
 // Create axios instance
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -69,11 +90,30 @@ api.interceptors.request.use(
 // Response interceptor to handle token refresh
 api.interceptors.response.use(
   (response: AxiosResponse) => {
+    // mark API online on any successful response
+    apiStatus.set(true);
     return response;
   },
   async (error: AxiosError) => {
-    const originalRequest = error.config as AxiosError['config'] & { _retry?: boolean };
-    
+    const originalRequest = error.config as AxiosError['config'] & { _retry?: boolean; _retryCount?: number };
+
+    // Detect network error (no response object)
+    const isNetworkErr = !error.response || (error as any).message === 'Network Error';
+    if (isNetworkErr) {
+      apiStatus.set(false);
+      const method = (originalRequest?.method || 'get').toString().toUpperCase();
+      // Retry only idempotent requests (GET/HEAD/OPTIONS) up to 3 times with backoff
+      const canRetry = method === 'GET' || method === 'HEAD' || method === 'OPTIONS';
+      if (canRetry && originalRequest) {
+        originalRequest._retryCount = (originalRequest._retryCount || 0) + 1;
+        if (originalRequest._retryCount <= 3) {
+          const delayMs = 500 * originalRequest._retryCount; // 500ms, 1000ms, 1500ms
+          await new Promise((r) => setTimeout(r, delayMs));
+          return api(originalRequest);
+        }
+      }
+    }
+
     if (error.response?.status === 401 && !originalRequest?._retry) {
       if (originalRequest) {
         originalRequest._retry = true;

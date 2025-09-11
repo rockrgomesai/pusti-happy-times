@@ -25,6 +25,7 @@ const authRoutes = require("./auth");
 const userRoutes = require("./users");
 const roleRoutes = require("./roles");
 const brandRoutes = require("./brands");
+const categoryRoutes = require("./categories");
 const menuRoutes = require("./menu-items");
 const permissionRoutes = require("./permissions");
 
@@ -154,6 +155,7 @@ router.get("/info", (req, res) => {
         users: "/api/users",
         roles: "/api/roles",
         brands: "/api/brands",
+  categories: "/api/categories",
         menu: "/api/menu-items",
         permissions: "/api/permissions",
       },
@@ -207,6 +209,7 @@ router.use("/roles", requireRole("SuperAdmin", "SalesAdmin"), roleRoutes);
  * @access  Private (authenticated users)
  */
 router.use("/brands", brandRoutes);
+router.use("/categories", categoryRoutes);
 
 /**
  * Menu Management Routes

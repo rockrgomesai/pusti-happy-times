@@ -33,7 +33,7 @@ export function Footer() {
           textAlign: 'center',
         }}
       >
-        © {currentYear} Pusti Happy Times. All rights reserved.
+        © {currentYear} Pusti Happy Times. All rights reserved. Developed by <a href="https://techknowgram.com" target="_blank" rel="noopener noreferrer">TechKnowGram</a>.  
       </Typography>
     </Box>
   );

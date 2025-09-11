@@ -18,6 +18,7 @@ const mongoose = require("mongoose");
 const Role = require("./Role");
 const User = require("./User");
 const Brand = require("./Brand");
+const Category = require("./Category");
 const SidebarMenuItem = require("./SidebarMenuItem");
 const { ApiPermission, PagePermission } = require("./Permission");
 
@@ -37,6 +38,7 @@ const models = {
   Role,
   User,
   Brand,
+  Category,
   SidebarMenuItem,
 
   // Permission models
@@ -153,6 +155,7 @@ module.exports = {
   Role,
   User,
   Brand,
+  Category,
   SidebarMenuItem,
 
   // Permission models

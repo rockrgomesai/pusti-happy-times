@@ -90,12 +90,6 @@
 - **Card Actions**: Action icons positioned in card footer
 - **Permission-Based**: All action icons protected by api_permissions and user role
 
-### Data Overflow Handling
-- **Card View Scrolling**: When card content exceeds available space, implement vertical scrollable view within the card instead of stretching the card vertically
-- **List View Horizontal Scroll**: When data columns exceed screen width, enable horizontal scrolling for the data area
-- **Frozen Action Column**: In list view, the action buttons (View, Edit, Delete) must remain always visible on the right side as a frozen column, even during horizontal scrolling
-- **Responsive Data Display**: Maintain data readability and action accessibility across all device sizes
-
 ### Form Interface
 - **Popup/Modal Forms**: Overlay forms for create/edit operations
 - **Close Button**: 'X' button positioned in top right corner
@@ -201,7 +195,7 @@
 - **API Endpoint Protection**: Role-based api_permissions for all endpoints (except logout/refresh)
 - **Page Access Authorization**: Database-driven page permissions verification
 - **Login Security**: Username/password authentication with failed attempt tracking
-- **Account Lockout Logic**: Temporary 5-minute lockout after 3 failed attempts (Not now, before deployment)
+- **Account Lockout Logic**: Temporary 5-minute lockout after 3 failed attempts
 - **Token Expiry Middleware**: Automatic redirection on expired tokens
 - **Login Flow Management**: Preserve intended routes for post-login redirection
 - **Date Management**: ISO format storage with UI format conversion

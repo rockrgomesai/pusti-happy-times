@@ -18,7 +18,7 @@ import {
   TrendingUp,
 } from '@mui/icons-material';
 import { useAuth } from '@/contexts/AuthContext';
-import api from '@/lib/api';
+import api, { apiStatus } from '@/lib/api';
 
 interface StatCardProps {
   title: string;
@@ -86,8 +86,11 @@ export default function DashboardPage() {
     { title: 'System Health', value: '—', icon: <TrendingUp fontSize="large" />, color: theme.palette.warning.main },
     { title: 'Roles', value: '—', icon: <DashboardIcon fontSize="large" />, color: theme.palette.secondary.main },
   ]);
+  const [apiOnline, setApiOnline] = useState(true);
 
   useEffect(() => {
+    // subscribe to API status changes
+    const off = apiStatus.onChange((online) => setApiOnline(online));
     let cancelled = false;
     async function load() {
       setLoading(true);
@@ -120,7 +123,7 @@ export default function DashboardPage() {
     }
     load();
     const interval = setInterval(load, 30000); // refresh every 30s
-    return () => { cancelled = true; clearInterval(interval); };
+    return () => { cancelled = true; clearInterval(interval); off(); };
   }, [theme.palette]);
 
   return (
@@ -134,6 +137,22 @@ export default function DashboardPage() {
           Welcome back, {user?.username}! Here&apos;s what&apos;s happening with your system today.
         </Typography>
       </Box>
+
+      {/* API Offline Banner */}
+      {!apiOnline && (
+        <Card sx={{ mb: 2, borderColor: 'warning.main' }} variant="outlined">
+          <CardContent>
+            <Box display="flex" alignItems="center" justifyContent="space-between" gap={2}>
+              <Typography color="warning.main" fontWeight={600}>
+                API is currently unreachable. Retrying in background...
+              </Typography>
+              <Button variant="contained" color="warning" size="small" onClick={() => window.location.reload()}>
+                Retry Now
+              </Button>
+            </Box>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Stats Grid */}
       {error && (
