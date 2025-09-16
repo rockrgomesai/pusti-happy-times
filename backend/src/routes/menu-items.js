@@ -95,12 +95,26 @@ const buildMenuHierarchy = (menuItems) => {
 
   // Create a map of all items
   menuItems.forEach((item) => {
-    menuMap.set(item._id.toString(), { ...item.toObject(), children: [] });
+  const base = typeof item.toObject === 'function' ? item.toObject() : item; // support lean objects
+    if (!base || !base._id) {
+      console.warn('[user-menu] Skipping item without _id during map build:', base);
+      return;
+    }
+    menuMap.set(base._id.toString(), { ...base, children: [] });
   });
 
   // Build hierarchy
   menuItems.forEach((item) => {
-    const menuItem = menuMap.get(item._id.toString());
+    if (!item || !item._id) {
+      console.warn('[user-menu] Skipping hierarchy item without _id:', item);
+      return;
+    }
+    const key = item._id.toString();
+    const menuItem = menuMap.get(key);
+    if (!menuItem) {
+      console.warn('[user-menu] Item missing in map (possibly skipped earlier):', key);
+      return;
+    }
 
     if (item.parent_id) {
       // Handle both populated and non-populated parent_id
@@ -203,22 +217,46 @@ router.get("/user-menu", authenticate, async (req, res) => {
     // Get menu items accessible to user's role
     const roleMenuItems = await RoleSidebarMenuItem.find({
       role_id: userRoleId,
-    }).populate({
-      path: "sidebar_menu_item_id",
-      populate: {
-        path: "parent_id",
-        select: "label",
-      },
-    });
+    })
+      .populate({
+        path: "sidebar_menu_item_id",
+        populate: {
+          path: "parent_id",
+          select: "label",
+        },
+      })
+      .lean();
 
-    const menuItems = roleMenuItems.map((item) => item.sidebar_menu_item_id);
+    // Extract populated menu item documents, filter out any null (dangling assignments)
+    const menuItems = roleMenuItems
+      .map((item) => item.sidebar_menu_item_id)
+      .filter(Boolean);
 
-    // Build hierarchical menu structure
-    const hierarchicalMenu = buildMenuHierarchy(menuItems);
+    console.log('[user-menu] role:', userRoleId.toString(), 'assignments:', roleMenuItems.length, 'resolved items:', menuItems.length);
+    if (menuItems.length) {
+      console.log('[user-menu] sample item keys:', Object.keys(menuItems[0]));
+    }
+
+    if (menuItems.length === 0) {
+      return res.json({ success: true, data: [] });
+    }
+
+    // Build hierarchical menu structure with defensive guard
+    let safeHierarchy = [];
+    try {
+      safeHierarchy = buildMenuHierarchy(menuItems);
+    } catch (hierErr) {
+      console.error('[user-menu] Hierarchy build failed:', hierErr);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to build menu hierarchy',
+        code: 'HIERARCHY_ERROR'
+      });
+    }
 
     res.json({
       success: true,
-      data: hierarchicalMenu,
+      data: safeHierarchy,
     });
   } catch (error) {
     console.error("Error fetching user menu:", error);

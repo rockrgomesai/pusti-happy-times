@@ -28,6 +28,12 @@ const roleSchema = new mongoose.Schema(
       maxlength: [50, "Role must be at most 50 characters"],
       match: [/^[a-zA-Z0-9\s_-]+$/, "Invalid characters in role name"],
     },
+    // Role status - whether role is active
+    active: {
+      type: Boolean,
+      default: true,
+      required: true,
+    },
   },
   {
     // Schema options

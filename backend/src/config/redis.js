@@ -332,6 +332,65 @@ const closeRedisConnection = async () => {
 process.on('SIGINT', closeRedisConnection);
 process.on('SIGTERM', closeRedisConnection);
 
+/**
+ * Check if a token is blacklisted
+ * @param {string} token - JWT token to check
+ * @returns {boolean} True if token is blacklisted
+ */
+const isTokenBlacklisted = async (token) => {
+  try {
+    if (!redisClient || !redisClient.isReady) {
+      console.warn('⚠️ Redis not available for token blacklist check - failing open');
+      return false; // Fail open if Redis unavailable
+    }
+    
+    const result = await redisClient.get(`blacklist:${token}`);
+    return result !== null;
+    
+  } catch (error) {
+    console.error('❌ Error checking token blacklist:', error.message);
+    return false; // Fail open on error
+  }
+};
+
+/**
+ * Add token to blacklist
+ * @param {string} token - JWT token to blacklist
+ * @param {number} expiry - Token expiry time in seconds
+ */
+const blacklistToken = async (token, expiry = 86400) => {
+  try {
+    if (!redisClient || !redisClient.isReady) {
+      console.warn('⚠️ Redis not available for token blacklisting');
+      return;
+    }
+    
+    await redisClient.setEx(`blacklist:${token}`, expiry, 'revoked');
+    
+  } catch (error) {
+    console.error('❌ Error blacklisting token:', error.message);
+  }
+};
+
+/**
+ * Update user activity timestamp
+ * @param {string} userId - User ID to update activity for
+ */
+const updateUserActivity = async (userId) => {
+  try {
+    if (!redisClient || !redisClient.isReady) {
+      console.warn('⚠️ Redis not available for user activity tracking');
+      return;
+    }
+    
+    const timestamp = new Date().toISOString();
+    await redisClient.setEx(`activity:${userId}`, 86400, timestamp); // 24 hour TTL
+    
+  } catch (error) {
+    console.error('❌ Error updating user activity:', error.message);
+  }
+};
+
 module.exports = {
   connectRedis,
   getClient,
@@ -343,5 +402,8 @@ module.exports = {
   getFailedLoginAttempts,
   clearFailedLoginAttempts,
   isUserLockedOut,
+  isTokenBlacklisted,
+  blacklistToken,
+  updateUserActivity,
   closeRedisConnection
 };

@@ -1,0 +1,1 @@
+This will be replaced by an actual mongodump archive via script.

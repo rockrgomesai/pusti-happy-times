@@ -16,6 +16,9 @@
  * - Rate limiting and security headers
  */
 
+// Load environment variables first
+require("dotenv").config({ path: __dirname + "/.env" });
+
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
@@ -25,7 +28,6 @@ const compression = require("compression");
 const mongoSanitize = require("express-mongo-sanitize");
 const hpp = require("hpp");
 const morgan = require("morgan");
-require("dotenv").config({ path: __dirname + "/.env" });
 
 // Import custom modules
 const { connectDB } = require("./src/config/database");

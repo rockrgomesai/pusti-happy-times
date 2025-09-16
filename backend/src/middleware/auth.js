@@ -208,7 +208,11 @@ const authenticate = async (req, res, next) => {
 
     next();
   } catch (error) {
-    console.error('Authentication error:', error);
+    console.error('Authentication error:', error.name || 'UnknownError');
+    console.error('Error message:', error.message);
+    console.error('Error at:', error.stack?.split('\n')[1]?.trim());
+    
+    // Don't expose detailed error information to client
     return res.status(500).json({
       success: false,
       message: 'Authentication failed',

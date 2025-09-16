@@ -151,6 +151,34 @@ userSchema.methods.toJSON = function() {
 };
 
 /**
+ * Return a safe subset of user profile fields for API responses.
+ * Mirrors legacy getSafeProfile usage in auth routes.
+ * @returns {Object} Safe profile data
+ */
+userSchema.methods.getSafeProfile = function() {
+  return {
+    id: this._id,
+    username: this.username,
+    email: this.email,
+    active: this.active,
+    created_at: this.created_at,
+    created_by: this.created_by,
+    updated_at: this.updated_at,
+    updated_by: this.updated_by
+  };
+};
+
+/**
+ * Check if account is locked due to failed login attempts
+ * @returns {boolean} True if account is locked
+ */
+userSchema.methods.isAccountLocked = function() {
+  // For now, return false since we don't have lockUntil field
+  // This can be expanded when implementing account lockout features
+  return !!(this.lockUntil && this.lockUntil > Date.now());
+};
+
+/**
  * Static Methods
  */
 
