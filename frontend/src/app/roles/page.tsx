@@ -88,7 +88,7 @@ export default function RolesPage() {
   const loadRoles = async () => {
     try {
       setLoading(true);
-      const response = await api.get('/api/roles');
+      const response = await api.get('/roles');
       if (response.data.success) {
         setRoles(response.data.data);
       } else {
@@ -123,7 +123,7 @@ export default function RolesPage() {
           throw new Error(response.data.message || 'Failed to update role');
         }
       } else {
-        const response = await api.post('/api/roles', data);
+        const response = await api.post('/roles', data);
         if (response.data.success) {
           toast.success('Role created successfully');
         } else {

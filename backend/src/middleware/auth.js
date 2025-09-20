@@ -260,7 +260,7 @@ const requireRole = (...allowedRoles) => {
       });
     }
 
-    const userRole = req.user.role_id?.name;
+    const userRole = req.user.role_id?.role;
     if (!allowedRoles.includes(userRole)) {
       return res.status(403).json({
         success: false,
@@ -320,9 +320,9 @@ const requirePermission = (permissionType, permissionCode) => {
 
 /**
  * API Permission Middleware
- * Checks API-specific permissions based on endpoint and method
+ * Checks API-specific permissions based on permission code
  */
-const requireApiPermission = (endpoint, method = null) => {
+const requireApiPermission = (permissionCode) => {
   return async (req, res, next) => {
     try {
       if (!req.user) {
@@ -333,11 +333,9 @@ const requireApiPermission = (endpoint, method = null) => {
         });
       }
 
-      const requestMethod = method || req.method;
       const hasPermission = await checkApiPermission(
         req.user,
-        endpoint,
-        requestMethod
+        permissionCode
       );
 
       if (!hasPermission) {
@@ -345,8 +343,7 @@ const requireApiPermission = (endpoint, method = null) => {
           success: false,
           message: 'API access denied',
           code: 'API_ACCESS_DENIED',
-          endpoint: endpoint,
-          method: requestMethod
+          permission: permissionCode
         });
       }
 
@@ -477,40 +474,37 @@ async function checkUserPermission(user, permissionType, permissionCode) {
 /**
  * Check API permission with method validation
  * @param {Object} user - User document with role populated
- * @param {string} endpoint - API endpoint
- * @param {string} method - HTTP method
+ * @param {string} permissionCode - Permission code like 'read:user', 'create:role'
+ * @param {string} method - HTTP method (optional, not used in current schema)
  * @returns {Promise<boolean>} True if user has permission
  */
-async function checkApiPermission(user, endpoint, method) {
+async function checkApiPermission(user, permissionCode, method) {
   try {
     const { ApiPermission } = require('../models/Permission');
     const { RoleApiPermission } = require('../models/JunctionTables');
 
-    // Find API permission for endpoint
+    // Find API permission by permission code
     const apiPermission = await ApiPermission.findOne({
-      endpoint: endpoint,
-      methods: method.toUpperCase(),
-      active: true
+      api_permissions: permissionCode
     });
 
     if (!apiPermission) {
+      console.log(`Permission '${permissionCode}' not found in api_permissions`);
       return false;
     }
 
     // Check if role has this API permission
     const rolePermission = await RoleApiPermission.findOne({
       role_id: user.role_id._id,
-      api_permission_id: apiPermission._id,
-      active: true
+      api_permission_id: apiPermission._id
     });
 
-    if (!rolePermission || !rolePermission.isValid()) {
+    if (!rolePermission) {
+      console.log(`Role ${user.role_id._id} does not have permission '${permissionCode}'`);
       return false;
     }
 
-    // Check if method is allowed for this role
-    const allowedMethods = rolePermission.accessControls?.allowedMethods || [];
-    return allowedMethods.includes(method.toUpperCase());
+    return true;
   } catch (error) {
     console.error('API permission check error:', error);
     return false;

@@ -97,7 +97,7 @@ export default function DashboardPage() {
       setError(null);
       try {
   console.log('[Dashboard] Fetching /api/stats/public ...');
-  const res = await api.get('/api/stats/public');
+  const res = await api.get('/stats/public');
   console.log('[Dashboard] Public stats response:', res.status, res.data);
   const d = res.data?.data || {};
         if (cancelled) return;

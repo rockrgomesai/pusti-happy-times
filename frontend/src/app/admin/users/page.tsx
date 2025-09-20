@@ -128,7 +128,7 @@ export default function UsersPage() {
   const loadUsers = async () => {
     try {
       setLoading(true);
-      const response = await api.get('/api/users');
+      const response = await api.get('/users');
       
       // Extract users array from API response
       const usersData = response.data?.data && Array.isArray(response.data.data) 
@@ -148,7 +148,7 @@ export default function UsersPage() {
   // Load roles for dropdown
   const loadRoles = async () => {
     try {
-      const response = await api.get('/api/roles');
+      const response = await api.get('/roles');
       const rolesData = response.data?.data && Array.isArray(response.data.data) 
         ? response.data.data 
         : [];
@@ -259,7 +259,7 @@ export default function UsersPage() {
         await api.put(`/api/users/${editingUser._id}`, submitData);
         toast.success('User updated successfully');
       } else {
-        await api.post('/api/users', submitData);
+        await api.post('/users', submitData);
         toast.success('User created successfully');
       }
       

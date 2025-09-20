@@ -27,7 +27,7 @@ export const apiStatus = {
 
 // Create axios instance
 const api = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: API_BASE_URL + '/api/v1',
   timeout: 10000,
   withCredentials: true,
   headers: {
@@ -122,7 +122,7 @@ api.interceptors.response.use(
       const refreshToken = tokenManager.getRefreshToken();
       if (refreshToken) {
         try {
-          const response = await axios.post(`${API_BASE_URL}/api/auth/refresh`, {
+          const response = await axios.post(`${API_BASE_URL}/api/v1/auth/refresh`, {
             refreshToken
           });
           
@@ -153,7 +153,7 @@ api.interceptors.response.use(
 export const authAPI = {
   login: async (credentials: { username: string; password: string }) => {
     try {
-      console.log('🔐 Making login request to:', `${API_BASE_URL}/api/auth/login`);
+      console.log('🔐 Making login request to:', `${API_BASE_URL}/api/v1/auth/login`);
       console.log('🔐 Frontend origin:', typeof window !== 'undefined' ? window.location.origin : 'SSR');
       console.log('🔐 Credentials username:', credentials.username);
       console.log('🔐 Credentials password length:', credentials.password.length);
@@ -161,7 +161,7 @@ export const authAPI = {
       console.log('🔐 Credentials password last 3 chars:', credentials.password.substring(credentials.password.length - 3));
       console.log('🔐 Raw credentials object:', { username: credentials.username, password: credentials.password });
       
-      const response = await api.post('/api/auth/login', credentials);
+      const response = await api.post('/auth/login', credentials);
       console.log('🔐 Login response status:', response.status);
       console.log('🔐 Login response data:', response.data);
       
@@ -181,14 +181,14 @@ export const authAPI = {
   },
   
   logout: async () => {
-    const response = await api.post('/api/auth/logout');
+    const response = await api.post('/auth/logout');
     tokenManager.clearTokens();
     return response.data;
   },
   
   refreshToken: async () => {
     const refreshToken = tokenManager.getRefreshToken();
-    const response = await api.post('/api/auth/refresh', { refreshToken });
+    const response = await api.post('/auth/refresh', { refreshToken });
     return response.data;
   },
   
@@ -197,7 +197,7 @@ export const authAPI = {
     newPassword: string; 
     confirmPassword: string; 
   }) => {
-    const response = await api.put('/api/auth/change-password', passwordData);
+    const response = await api.put('/auth/change-password', passwordData);
     return response.data;
   }
 };

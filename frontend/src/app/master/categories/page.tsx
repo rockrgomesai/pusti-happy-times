@@ -90,7 +90,7 @@ function useApiPermissions() {
           }
         }
 
-        const me = await api.get('/api/auth/me');
+        const me = await api.get('/auth/me');
         const apiUser = me?.data?.data?.user || me?.data?.user || me?.data?.data;
         const role = apiUser?.role ?? apiUser?.roles ?? apiUser?.Role ?? apiUser?.Roles;
         const roleObj = Array.isArray(role) ? role[0] : role;
@@ -164,7 +164,7 @@ export default function CategoriesPage() {
 
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
-  const [viewMode, setViewMode] = useState<'cards' | 'list'>('list');
+  const [viewMode, setViewMode] = useState<'cards' | 'list'>('cards');
   const [searchTerm, setSearchTerm] = useState('');
   const [openDialog, setOpenDialog] = useState(false);
   const [editing, setEditing] = useState<Category | null>(null);
@@ -199,7 +199,7 @@ export default function CategoriesPage() {
   const loadCategories = async () => {
     try {
       setLoading(true);
-      const res = await api.get('/api/categories', { params: { page: 1, limit: 1000, sort: 'category' } });
+      const res = await api.get('/categories', { params: { page: 1, limit: 1000, sort: 'category' } });
       const arr = Array.isArray(res?.data?.data) ? res.data.data : (Array.isArray(res?.data) ? res.data : []);
       setCategories(arr as Category[]);
     } catch (err) {
@@ -269,7 +269,7 @@ export default function CategoriesPage() {
         await api.put(`/api/categories/${editing._id}`, payload);
         toast.success('Category updated');
       } else {
-        await api.post('/api/categories', payload);
+        await api.post('/categories', payload);
         toast.success('Category created');
       }
       setOpenDialog(false);

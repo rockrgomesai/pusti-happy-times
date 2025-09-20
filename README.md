@@ -109,7 +109,7 @@ A full-stack MERN (MongoDB, Express.js, React/Next.js, Node.js) application with
 - **Database**: `mongodb://admin:password123@mongodb:27017/pusti_db`
 - **Redis**: `redis://redis:6379`
 - **Frontend**: `http://localhost:3000`
-- **Backend API**: `http://localhost:5000/api`
+- **Backend API**: `http://localhost:5000/api/v1`
 - **Mongo Express**: `http://localhost:8081`
 
 ## 🔧 Development Setup
@@ -129,7 +129,7 @@ FRONTEND_URL=http://localhost:3000
 
 #### Frontend (.env.local)
 ```env
-NEXT_PUBLIC_API_URL=http://localhost:5000/api
+NEXT_PUBLIC_API_URL=http://localhost:5000/api/v1
 NEXT_PUBLIC_APP_NAME=Pusti Happy Times
 NODE_ENV=development
 ```
@@ -185,6 +185,49 @@ pusti-ht-mern/
 └── README.md               # Project documentation
 ```
 
+## 🧪 Testing
+
+All testing files are organized in dedicated testing directories to maintain clean separation from production code:
+
+### Testing Structure
+```
+backend/tests/              # Backend testing files
+├── unit/                   # Unit tests for functions/modules
+├── integration/            # Integration tests
+├── api/                    # API endpoint tests
+├── models/                 # Database model tests
+├── middleware/             # Middleware tests
+└── helpers/                # Test utilities and fixtures
+
+frontend/tests/             # Frontend testing files
+├── unit/                   # Component unit tests
+├── integration/            # Component integration tests  
+├── e2e/                    # End-to-end tests
+├── components/             # Component-specific tests
+├── pages/                  # Page component tests
+└── helpers/                # Test utilities and fixtures
+```
+
+### Testing Commands
+```bash
+# Backend tests
+cd backend && npm test                    # Run all backend tests
+cd backend && npm run test:watch          # Watch mode
+cd backend && npm run test:coverage       # With coverage
+
+# Frontend tests  
+cd frontend && npm test                   # Run all frontend tests
+cd frontend && npm run test:watch         # Watch mode
+cd frontend && npm run test:e2e           # End-to-end tests
+```
+
+### Testing Guidelines
+- **Test Organization**: All test files must be placed in respective `tests/` folders
+- **Clean Production**: Test files are isolated from production builds
+- **Naming Conventions**: Use `*.test.js`, `*.spec.js` or `__tests__/` directories
+- **Coverage**: Maintain high test coverage for critical application paths
+- **Documentation**: Tests serve as living documentation of expected behavior
+
 ## 🔐 Authentication & Security
 
 - **JWT Authentication** with access/refresh token pattern
@@ -208,7 +251,7 @@ pusti-ht-mern/
 
 4. **Database management** via Mongo Express at http://localhost:8081
 
-5. **API testing** with backend at http://localhost:5000/api
+5. **API testing** with backend at http://localhost:5000/api/v1
 
 6. **Frontend preview** at http://localhost:3000
 

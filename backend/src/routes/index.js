@@ -25,6 +25,7 @@ const authRoutes = require("./auth");
 const userRoutes = require("./users");
 const roleRoutes = require("./roles");
 const brandRoutes = require("./brands");
+const transportRoutes = require("./transports");
 const categoryRoutes = require("./categories");
 const menuRoutes = require("./menu-items");
 const permissionRoutes = require("./permissions");
@@ -209,6 +210,15 @@ router.use("/roles", requireRole("SuperAdmin", "SalesAdmin"), roleRoutes);
  * @access  Private (authenticated users)
  */
 router.use("/brands", brandRoutes);
+
+/**
+ * Transport Management Routes
+ * @route   /api/transports/*
+ * @desc    Transport CRUD operations and management
+ * @access  Private (authenticated users)
+ */
+router.use("/transports", transportRoutes);
+
 router.use("/categories", categoryRoutes);
 
 /**

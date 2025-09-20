@@ -118,7 +118,7 @@ export default function UsersPage() {
   const loadUsers = async () => {
     try {
       setLoading(true);
-      const response = await api.get('/api/users');
+      const response = await api.get('/users');
       setUsers(response.data);
     } catch (error) {
       toast.error('Failed to load users');
@@ -130,7 +130,7 @@ export default function UsersPage() {
 
   const loadRoles = async () => {
     try {
-      const response = await api.get('/api/roles');
+      const response = await api.get('/roles');
       setRoles(response.data);
     } catch (error) {
       console.error('Error loading roles:', error);
@@ -234,7 +234,7 @@ export default function UsersPage() {
         await api.put(`/api/users/${editingUser._id}`, data);
         toast.success('User updated successfully');
       } else {
-        await api.post('/api/users', data);
+        await api.post('/users', data);
         toast.success('User created successfully');
       }
       

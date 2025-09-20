@@ -215,6 +215,34 @@
 - Git workflow with feature branches
 - Code review requirements
 
+## Testing Strategy & Organization
+
+### Testing File Structure
+All testing files must be organized in dedicated testing directories to maintain clean separation from production code:
+
+- **Backend Tests**: `backend/tests/` - All backend testing files (unit tests, integration tests, API tests, etc.)
+- **Frontend Tests**: `frontend/tests/` - All frontend testing files (component tests, integration tests, e2e tests, etc.)
+
+### Testing File Guidelines
+- **No Test Files in Root**: Testing files should never be placed in the root backend or frontend directories
+- **Dedicated Test Folders**: Use the designated `tests/` folders for all testing-related files
+- **Test File Naming**: Follow conventional naming patterns (`*.test.js`, `*.spec.js`, `__tests__/` directories)
+- **Clean Production Build**: Testing files are isolated to prevent inclusion in production builds
+- **Test Organization**: Group tests by feature/module within the tests directories for better maintainability
+
+### Testing Types
+- **Unit Tests**: Individual component/function testing
+- **Integration Tests**: Module interaction testing
+- **API Tests**: Backend endpoint testing
+- **E2E Tests**: End-to-end user workflow testing
+- **Component Tests**: Frontend component behavior testing
+
+### Testing Principles
+- **Test Coverage**: Maintain high test coverage for critical application paths
+- **Test Isolation**: Each test should be independent and not rely on other tests
+- **Mock Strategy**: Use appropriate mocking for external dependencies
+- **Test Documentation**: Tests should serve as living documentation of expected behavior
+
 ## Security Considerations
 - Password hashing with bcrypt
 - **JWT with Refresh Token**: Enhanced security with token rotation

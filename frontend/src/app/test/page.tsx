@@ -12,7 +12,7 @@ export default function TestPage() {
     setLoading(true);
     try {
       // Test health endpoint
-      const response = await fetch('http://localhost:5000/api/health');
+      const response = await fetch('http://localhost:5000/health');
       const data = await response.json();
       setResult(`Health Check Success: ${JSON.stringify(data, null, 2)}`);
     } catch (error) {

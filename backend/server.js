@@ -3,7 +3,13 @@
  * Pusti Happy Times - MERN Stack Application
  *
  * This file initializes the Express server with comprehensive security,
- * database connections, middleware, and route configurations.
+ * database connections, midd    console.error("/api/v1/stats/public root fallback error", e);
+    res.status(500).json({ success: false, message: "Stats error" });
+  }
+});
+
+// API Routes
+app.use("/api/v1", apiRoutes); and route configurations.
  *
  * Features:
  * - Express.js server with security middleware
@@ -160,7 +166,7 @@ app.get("/health", (req, res) => {
  */
 let __rootStatsCache = null;
 let __rootStatsAt = 0;
-app.get("/api/stats/public", async (req, res) => {
+app.get("/api/v1/stats/public", async (req, res) => {
   try {
     const now = Date.now();
     if (__rootStatsCache && now - __rootStatsAt < 15000) {
@@ -191,7 +197,7 @@ app.get("/api/stats/public", async (req, res) => {
 });
 
 // API Routes
-app.use("/api", apiRoutes);
+app.use("/api/v1", apiRoutes);
 
 /**
  * Error Handling Middleware

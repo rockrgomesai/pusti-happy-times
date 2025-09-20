@@ -73,7 +73,7 @@ export default function AdminPasswordPage() {
       setSubmitError('');
       
       // Call API to change password
-      const response = await api.put('/api/auth/change-password', {
+      const response = await api.put('/auth/change-password', {
         currentPassword: data.currentPassword,
         newPassword: data.newPassword,
       });

@@ -28,6 +28,7 @@ import {
   Inventory,
   BookmarkBorder,
   Layers,
+  LocalShipping,
 } from '@mui/icons-material';
 import { useRouter, usePathname } from 'next/navigation';
 import { apiClient } from '@/lib/api';
@@ -68,13 +69,14 @@ const iconMap: Record<string, React.ComponentType> = {
   FaBox: Inventory,
   FaUserTag: BookmarkBorder, // User tagging/roles icon
   FaLayerGroup: Layers,
+  FaTruck: LocalShipping, // Transport/shipping icon
 };
 
 // Transform database menu structure to frontend structure
 const transformDatabaseMenuItems = (dbItems: unknown[]): MenuItem[] => {
   if (!Array.isArray(dbItems)) return [];
   
-  return dbItems.map((item: Record<string, any>) => ({
+  return (dbItems as Record<string, any>[]).map((item) => ({
     _id: item._id || item.id,
     label: item.label,
     href: item.href,
@@ -92,14 +94,14 @@ export function Sidebar({ onItemClick }: SidebarProps) {
   const pathname = usePathname();
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [openItems, setOpenItems] = useState<Set<string>>(new Set());
+  const [openItem, setOpenItem] = useState<string | null>(null);
 
   const fetchMenuItems = useCallback(async () => {
     try {
       setLoading(true);
       
       // Fetch from API
-      const response = await apiClient.get('/api/menu-items/user-menu') as { success: boolean; data: unknown[] };
+      const response = await apiClient.get('/menu-items/user-menu') as { success: boolean; data: unknown[] };
       if (response?.success && response?.data) {
         // Transform database structure to frontend structure
         const transformedItems = transformDatabaseMenuItems(response.data);
@@ -126,15 +128,10 @@ export function Sidebar({ onItemClick }: SidebarProps) {
       router.push(item.href);
       onItemClick?.();
     } else if (item.children) {
-      // Toggle submenu
-      setOpenItems(prev => {
-        const newSet = new Set(prev);
-        if (newSet.has(item._id)) {
-          newSet.delete(item._id);
-        } else {
-          newSet.add(item._id);
-        }
-        return newSet;
+      // Toggle submenu - only one can be open at a time
+      setOpenItem(prev => {
+        // If clicking the same item, close it; otherwise open the new one
+        return prev === item._id ? null : item._id;
       });
     }
   };
@@ -157,7 +154,7 @@ export function Sidebar({ onItemClick }: SidebarProps) {
 
   const renderMenuItem = (item: MenuItem, isChild = false) => {
     const hasChildren = item.children && item.children.length > 0;
-    const isOpen = openItems.has(item._id);
+    const isOpen = openItem === item._id;
     const itemIsActive = isActive(item.href);
 
     return (

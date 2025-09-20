@@ -87,7 +87,7 @@ export default function PermissionsPage() {
 
   const fetchRoles = async () => {
     try {
-      const response = await api.get("/api/roles");
+      const response = await api.get("/roles");
       const rolesData = response.data?.data && Array.isArray(response.data.data) 
         ? response.data.data 
         : [];
@@ -107,7 +107,7 @@ export default function PermissionsPage() {
     setLoading(true);
     try {
       // Fetch menu items with role assignments
-      const menuResponse = await api.get(`/api/permissions/menu-items?roleId=${selectedRole}`);
+      const menuResponse = await api.get(`/permissions/menu-items?roleId=${selectedRole}`);
       
       if (menuResponse.data.success) {
         setMenuItems(menuResponse.data.data);
@@ -115,14 +115,14 @@ export default function PermissionsPage() {
       }
 
       // Fetch page permissions from pg_permissions collection
-      const pageResponse = await api.get(`/api/permissions/page-permissions?roleId=${selectedRole}`);
+      const pageResponse = await api.get(`/permissions/page-permissions?roleId=${selectedRole}`);
       
       if (pageResponse.data.success) {
         setPagePermissions(pageResponse.data.data);
       }
       
       // Fetch API permissions from api_permissions collection
-      const apiResponse = await api.get(`/api/permissions/api-permissions?roleId=${selectedRole}`);
+      const apiResponse = await api.get(`/permissions/api-permissions?roleId=${selectedRole}`);
       
       if (apiResponse.data.success) {
         setApiPermissions(apiResponse.data.data);
@@ -192,7 +192,7 @@ export default function PermissionsPage() {
       const selectedMenuIds = menuItems
         .filter((item) => item.assigned)
         .map((item) => item._id);
-      await api.post('/api/permissions/assign-menus', {
+      await api.post('/permissions/assign-menus', {
         roleId: selectedRole,
         menuItemIds: selectedMenuIds,
       });
@@ -227,7 +227,7 @@ export default function PermissionsPage() {
       const selectedPermissionIds = pagePermissions
         .filter((perm) => perm.assigned)
         .map((perm) => perm._id);
-      await api.post('/api/permissions/assign-pages', {
+      await api.post('/permissions/assign-pages', {
         roleId: selectedRole,
         permissionIds: selectedPermissionIds,
       });
@@ -255,7 +255,7 @@ export default function PermissionsPage() {
       const selectedPermissionIds = apiPermissions
         .filter((perm) => perm.assigned)
         .map((perm) => perm._id);
-      await api.post('/api/permissions/assign-apis-upsert', {
+      await api.post('/permissions/assign-apis-upsert', {
         roleId: selectedRole,
         permissionIds: selectedPermissionIds,
       });

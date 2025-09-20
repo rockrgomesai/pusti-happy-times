@@ -105,7 +105,7 @@ export default function BrandsPage() {
   const loadBrands = async () => {
     try {
       setLoading(true);
-      const response = await api.get('/api/brands');
+      const response = await api.get('/brands');
       setBrands(response.data);
     } catch (error) {
       toast.error('Failed to load brands');
@@ -187,7 +187,7 @@ export default function BrandsPage() {
         await api.put(`/api/brands/${editingBrand._id}`, data);
         toast.success('Brand updated successfully');
       } else {
-        await api.post('/api/brands', data);
+        await api.post('/brands', data);
         toast.success('Brand created successfully');
       }
       
