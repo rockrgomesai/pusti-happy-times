@@ -71,12 +71,12 @@ const getCurrentUserId = (req) => {
 /**
  * @route   GET /api/brands
  * @desc    Get all brands
- * @access  Private - requires read:brand permission
+ * @access  Private - requires brands:read permission
  */
 router.get(
   "/",
   authenticate,
-  requireApiPermission("read:brand"),
+  requireApiPermission("brands:read"),
   async (req, res) => {
     try {
       const { page = 1, limit = 10, sort = "brand" } = req.query;
@@ -129,12 +129,12 @@ router.get(
 /**
  * @route   GET /api/brands/:id
  * @desc    Get brand by ID
- * @access  Private - requires read:brand permission
+ * @access  Private - requires brands:read permission
  */
 router.get(
   "/:id",
   authenticate,
-  requireApiPermission("read:brand"),
+  requireApiPermission("brands:read"),
   idValidation,
   handleValidationErrors,
   async (req, res) => {
@@ -169,12 +169,12 @@ router.get(
 /**
  * @route   POST /api/brands
  * @desc    Create new brand
- * @access  Private - requires create:brand permission
+ * @access  Private - requires brands:create permission
  */
 router.post(
   "/",
   authenticate,
-  requireApiPermission("create:brand"),
+  requireApiPermission("brands:create"),
   brandValidation,
   handleValidationErrors,
   async (req, res) => {
@@ -233,12 +233,12 @@ router.post(
 /**
  * @route   PUT /api/brands/:id
  * @desc    Update brand
- * @access  Private - requires update:brand permission
+ * @access  Private - requires brands:update permission
  */
 router.put(
   "/:id",
   authenticate,
-  requireApiPermission("update:brand"),
+  requireApiPermission("brands:update"),
   idValidation,
   brandValidation,
   handleValidationErrors,
@@ -313,12 +313,12 @@ router.put(
 /**
  * @route   DELETE /api/brands/:id
  * @desc    Delete brand
- * @access  Private - requires delete:brand permission
+ * @access  Private - requires brands:delete permission
  */
 router.delete(
   "/:id",
   authenticate,
-  requireApiPermission("delete:brand"),
+  requireApiPermission("brands:delete"),
   idValidation,
   handleValidationErrors,
   async (req, res) => {

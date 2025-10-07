@@ -73,6 +73,62 @@ interface Category {
   updatedAt?: string; updated_at?: string;
 }
 
+type PermissionSource =
+  | string
+  | {
+      api_permissions?: string;
+      permission?: string;
+      key?: string;
+      name?: string;
+    };
+
+const extractPermissionName = (entry: PermissionSource): string | undefined => {
+  if (typeof entry === 'string') {
+    return entry;
+  }
+  return (
+    entry.api_permissions ||
+    entry.permission ||
+    entry.key ||
+    entry.name
+  );
+};
+
+const getErrorMessage = (error: unknown, fallback: string): string => {
+  if (error && typeof error === 'object' && 'response' in error) {
+    const response = (error as { response?: { data?: { message?: string } } }).response;
+    const message = response?.data?.message;
+    if (typeof message === 'string' && message.trim()) {
+      return message;
+    }
+  }
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+  return fallback;
+};
+
+const getComparableValue = (item: Category, key: keyof Category): string | number | boolean | null => {
+  if (key === 'createdAt') {
+    const source = item.createdAt || item.created_at;
+    const timestamp = source ? new Date(source).getTime() : Number.NaN;
+    return Number.isNaN(timestamp) ? null : timestamp;
+  }
+  if (key === 'updatedAt') {
+    const source = item.updatedAt || item.updated_at;
+    const timestamp = source ? new Date(source).getTime() : Number.NaN;
+    return Number.isNaN(timestamp) ? null : timestamp;
+  }
+  const value = item[key];
+  if (value == null) {
+    return null;
+  }
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+    return value;
+  }
+  return String(value);
+};
+
 // Lightweight API permissions hook
 function useApiPermissions() {
   const { user } = useAuth();
@@ -112,11 +168,15 @@ function useApiPermissions() {
           const d = res?.data;
           const dd = d?.data ?? d;
           if (Array.isArray(dd)) {
-            list = dd.map((p: any) => typeof p === 'string' ? p : (p?.api_permissions || p?.permission || p?.key || p?.name)).filter(Boolean);
+            list = dd
+              .map((p) => extractPermissionName(p as PermissionSource))
+              .filter((value): value is string => Boolean(value));
           } else if (Array.isArray(dd?.permissions)) {
-            list = dd.permissions as string[];
+            const permissions = dd.permissions as unknown[];
+            list = permissions.filter((value): value is string => typeof value === 'string');
           } else if (Array.isArray(d?.permissions)) {
-            list = d.permissions as string[];
+            const permissions = d.permissions as unknown[];
+            list = permissions.filter((value): value is string => typeof value === 'string');
           }
           if (!cancelled) setPerms(new Set(list));
           return;
@@ -146,6 +206,10 @@ const categorySchema = z.object({
 
 type CategoryFormData = z.infer<typeof categorySchema>;
 
+type CategoryPayload = Pick<CategoryFormData, 'category' | 'parent' | 'isActive' | 'slug'> & {
+  sortOrder: number;
+};
+
 // Simple slugify utility
 function slugify(input: string): string {
   return input
@@ -158,9 +222,9 @@ function slugify(input: string): string {
 
 export default function CategoriesPage() {
   const { has } = useApiPermissions();
-  const canCreate = has('create:category');
-  const canUpdate = has('update:category');
-  const canDelete = has('delete:category');
+  const canCreate = has('categories:create');
+  const canUpdate = has('categories:update');
+  const canDelete = has('categories:delete');
 
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -186,8 +250,6 @@ export default function CategoriesPage() {
 
   // Auto-generate slug from category if not manually edited
   const watchCategory = watch('category');
-  const watchParent = watch('parent');
-  const watchSlug = watch('slug');
   useEffect(() => {
     if (!slugTouched) {
       const nextSlug = slugify(watchCategory || '');
@@ -202,7 +264,7 @@ export default function CategoriesPage() {
       const res = await api.get('/categories', { params: { page: 1, limit: 1000, sort: 'category' } });
       const arr = Array.isArray(res?.data?.data) ? res.data.data : (Array.isArray(res?.data) ? res.data : []);
       setCategories(arr as Category[]);
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('Error loading categories', err);
       toast.error('Failed to load categories');
       setCategories([]);
@@ -242,17 +304,23 @@ export default function CategoriesPage() {
   const sorted = useMemo(() => {
     const arr = [...filtered];
     arr.sort((a, b) => {
-      let av: any = a[orderBy];
-      let bv: any = b[orderBy];
-      if (orderBy === 'createdAt' || orderBy === 'updatedAt') {
-        av = new Date(a.createdAt || a.created_at || '').getTime() || 0;
-        bv = new Date(b.updatedAt || b.updated_at || '').getTime() || 0;
-      }
+      const av = getComparableValue(a, orderBy);
+      const bv = getComparableValue(b, orderBy);
+
       if (av == null && bv == null) return 0;
       if (av == null) return order === 'asc' ? -1 : 1;
       if (bv == null) return order === 'asc' ? 1 : -1;
-      if (typeof av === 'string' && typeof bv === 'string') { av = av.toLowerCase(); bv = bv.toLowerCase(); }
-      return order === 'asc' ? (av < bv ? -1 : av > bv ? 1 : 0) : (av > bv ? -1 : av < bv ? 1 : 0);
+
+      const valueA = typeof av === 'string' ? av.toLowerCase() : av;
+      const valueB = typeof bv === 'string' ? bv.toLowerCase() : bv;
+
+      if (valueA < valueB) {
+        return order === 'asc' ? -1 : 1;
+      }
+      if (valueA > valueB) {
+        return order === 'asc' ? 1 : -1;
+      }
+      return 0;
     });
     return arr;
   }, [filtered, order, orderBy]);
@@ -264,7 +332,13 @@ export default function CategoriesPage() {
   // CRUD
   const onSubmit = async (data: CategoryFormData) => {
     try {
-      const payload: any = { category: data.category, parent: data.parent, isActive: data.isActive, sortOrder: Number(data.sortOrder ?? 0), slug: data.slug };
+      const payload: CategoryPayload = {
+        category: data.category,
+        parent: data.parent,
+        isActive: data.isActive,
+        sortOrder: Number(data.sortOrder ?? 0),
+        slug: data.slug,
+      };
       if (editing) {
         await api.put(`/api/categories/${editing._id}`, payload);
         toast.success('Category updated');
@@ -277,8 +351,8 @@ export default function CategoriesPage() {
       setSlugTouched(false);
       reset({ category: '', parent: null, isActive: true, sortOrder: 0, slug: '' });
       loadCategories();
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message || err?.message || 'Failed to save category');
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err, 'Failed to save category'));
     }
   };
 
@@ -290,8 +364,8 @@ export default function CategoriesPage() {
       setDeleteConfirmOpen(false);
       setToDelete(null);
       loadCategories();
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message || err?.message || 'Failed to delete category');
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err, 'Failed to delete category'));
     }
   };
 

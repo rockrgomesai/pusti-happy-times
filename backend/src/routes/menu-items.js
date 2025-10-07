@@ -221,8 +221,8 @@ router.get("/user-menu", authenticate, async (req, res) => {
       .populate({
         path: "sidebar_menu_item_id",
         populate: {
-          path: "parent_id",
-          select: "label",
+          path: "parentMenuItem",
+          select: "title",
         },
       })
       .lean();

@@ -29,6 +29,7 @@ const transportRoutes = require("./transports");
 const categoryRoutes = require("./categories");
 const menuRoutes = require("./menu-items");
 const permissionRoutes = require("./permissions");
+const designationRoutes = require("./designationRoutes");
 
 const router = express.Router();
 
@@ -210,6 +211,14 @@ router.use("/roles", requireRole("SuperAdmin", "SalesAdmin"), roleRoutes);
  * @access  Private (authenticated users)
  */
 router.use("/brands", brandRoutes);
+
+/**
+ * Designation Management Routes
+ * @route   /api/designations/*
+ * @desc    Job designation CRUD operations and management
+ * @access  Private (authenticated users)
+ */
+router.use("/designations", designationRoutes);
 
 /**
  * Transport Management Routes

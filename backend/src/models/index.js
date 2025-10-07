@@ -18,6 +18,7 @@ const mongoose = require("mongoose");
 const Role = require("./Role");
 const User = require("./User");
 const Brand = require("./Brand");
+const Designation = require("./Designation");
 const Transport = require("./Transport");
 const Category = require("./Category");
 const SidebarMenuItem = require("./SidebarMenuItem");
@@ -39,6 +40,7 @@ const models = {
   Role,
   User,
   Brand,
+  Designation,
   Transport,
   Category,
   SidebarMenuItem,
@@ -62,6 +64,7 @@ const validateModels = () => {
     "Role",
     "User",
     "Brand",
+    "Designation",
     "SidebarMenuItem",
     "ApiPermission",
     "PagePermission",
@@ -157,6 +160,7 @@ module.exports = {
   Role,
   User,
   Brand,
+  Designation,
   Transport,
   Category,
   SidebarMenuItem,

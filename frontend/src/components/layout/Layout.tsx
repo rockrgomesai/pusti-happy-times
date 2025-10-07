@@ -36,8 +36,9 @@ interface LayoutProps {
 }
 
 const DRAWER_WIDTH = 280;
-const NAVBAR_HEIGHT = 64;
-const FOOTER_HEIGHT = 32; // 50% of navbar height
+const NAVBAR_HEIGHT = 56; // Reduced from 64 to 56
+const FOOTER_HEIGHT = 28; // 50% of navbar height
+const DRAWER_TOP_OFFSET = 5; // Minimal breathing room between navbar and drawer
 
 export function Layout({ children }: LayoutProps) {
   const theme = useTheme();
@@ -77,6 +78,10 @@ export function Layout({ children }: LayoutProps) {
     router.push('/admin/password');
   };
 
+  const drawerTopOffset = isMobile
+    ? NAVBAR_HEIGHT + DRAWER_TOP_OFFSET
+    : DRAWER_TOP_OFFSET;
+
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
       {/* Navbar */}
@@ -87,7 +92,7 @@ export function Layout({ children }: LayoutProps) {
           height: NAVBAR_HEIGHT,
         }}
       >
-        <Toolbar sx={{ height: NAVBAR_HEIGHT }}>
+        <Toolbar sx={{ height: NAVBAR_HEIGHT, minHeight: NAVBAR_HEIGHT }}>
           {/* Hamburger Menu */}
           <Tooltip title={sidebarOpen ? "Hide sidebar" : "Show sidebar"} arrow>
             <IconButton
@@ -230,7 +235,7 @@ export function Layout({ children }: LayoutProps) {
       </AppBar>
 
       {/* Main Content Area */}
-      <Box sx={{ display: 'flex', flex: 1, mt: `${NAVBAR_HEIGHT}px` }}>
+  <Box sx={{ display: 'flex', flex: 1, mt: `${NAVBAR_HEIGHT}px` }}>
         {/* Sidebar */}
         <Drawer
           variant={isMobile ? 'temporary' : 'persistent'}
@@ -246,8 +251,8 @@ export function Layout({ children }: LayoutProps) {
             '& .MuiDrawer-paper': {
               width: DRAWER_WIDTH,
               boxSizing: 'border-box',
-              top: NAVBAR_HEIGHT,
-              height: `calc(100vh - ${NAVBAR_HEIGHT}px - ${FOOTER_HEIGHT}px)`,
+              top: `${drawerTopOffset}px`, // Maintain a small gap from the navbar
+              height: `calc(100vh - ${drawerTopOffset}px - ${FOOTER_HEIGHT}px)`, // Adjust height accordingly
               overflowY: 'auto',
               position: isMobile ? 'fixed' : 'relative',
               zIndex: theme.zIndex.drawer,
@@ -264,8 +269,9 @@ export function Layout({ children }: LayoutProps) {
           component="main"
           sx={{
             flexGrow: 1,
-            p: { xs: 2, sm: 3, md: 4 },
-            minHeight: `calc(100vh - ${NAVBAR_HEIGHT}px - ${FOOTER_HEIGHT}px)`,
+            p: { xs: 0.5, sm: 0.75, md: 1 }, // Further reduced padding to minimize gaps
+            pt: { xs: 0.5, sm: 0.5, md: 0.5 }, // Minimal top padding 
+            minHeight: `calc(100vh - ${NAVBAR_HEIGHT}px - ${FOOTER_HEIGHT}px)`, // Account for navbar and footer heights
             transition: theme.transitions.create(['margin'], {
               easing: theme.transitions.easing.sharp,
               duration: theme.transitions.duration.standard,

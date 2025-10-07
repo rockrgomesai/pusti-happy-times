@@ -474,7 +474,7 @@ async function checkUserPermission(user, permissionType, permissionCode) {
 /**
  * Check API permission with method validation
  * @param {Object} user - User document with role populated
- * @param {string} permissionCode - Permission code like 'read:user', 'create:role'
+ * @param {string} permissionCode - Permission code like 'users:read', 'roles:create'
  * @param {string} method - HTTP method (optional, not used in current schema)
  * @returns {Promise<boolean>} True if user has permission
  */

@@ -88,12 +88,12 @@ const handleValidationErrors = (req, res, next) => {
 /**
  * @route   GET /api/permissions/api
  * @desc    Get all API permissions
- * @access  Private - requires read:permission
+ * @access  Private - requires permissions:read
  */
 router.get(
   "/api",
   authenticate,
-  requireApiPermission("read:permission"),
+  requireApiPermission("permissions:read"),
   async (req, res) => {
     try {
       const { page = 1, limit = 20, sort = "api_permissions" } = req.query;
@@ -144,12 +144,12 @@ router.get(
 /**
  * @route   GET /api/permissions/api/:id
  * @desc    Get API permission by ID
- * @access  Private - requires read:permission
+ * @access  Private - requires permissions:read
  */
 router.get(
   "/api/:id",
   authenticate,
-  requireApiPermission("read:permission"),
+  requireApiPermission("permissions:read"),
   idValidation,
   handleValidationErrors,
   async (req, res) => {
@@ -190,12 +190,12 @@ router.get(
 /**
  * @route   POST /api/permissions/api
  * @desc    Create new API permission
- * @access  Private - requires create:permission
+ * @access  Private - requires permissions:create
  */
 router.post(
   "/api",
   authenticate,
-  requireApiPermission("create:permission"),
+  requireApiPermission("permissions:create"),
   apiPermissionValidation,
   handleValidationErrors,
   async (req, res) => {
@@ -249,12 +249,12 @@ router.post(
 /**
  * @route   PUT /api/permissions/api/:id
  * @desc    Update API permission
- * @access  Private - requires update:permission
+ * @access  Private - requires permissions:update
  */
 router.put(
   "/api/:id",
   authenticate,
-  requireApiPermission("update:permission"),
+  requireApiPermission("permissions:update"),
   idValidation,
   apiPermissionValidation,
   handleValidationErrors,
@@ -322,12 +322,12 @@ router.put(
 /**
  * @route   DELETE /api/permissions/api/:id
  * @desc    Delete API permission
- * @access  Private - requires delete:permission
+ * @access  Private - requires permissions:delete
  */
 router.delete(
   "/api/:id",
   authenticate,
-  requireApiPermission("delete:permission"),
+  requireApiPermission("permissions:delete"),
   idValidation,
   handleValidationErrors,
   async (req, res) => {
@@ -378,12 +378,12 @@ router.delete(
 /**
  * @route   GET /api/permissions/page
  * @desc    Get all page permissions
- * @access  Private - requires read:permission
+ * @access  Private - requires permissions:read
  */
 router.get(
   "/page",
   authenticate,
-  requireApiPermission("read:permission"),
+  requireApiPermission("permissions:read"),
   async (req, res) => {
     try {
       const { page = 1, limit = 20, sort = "pg_permissions" } = req.query;
@@ -434,12 +434,12 @@ router.get(
 /**
  * @route   GET /api/permissions/page/:id
  * @desc    Get page permission by ID
- * @access  Private - requires read:permission
+ * @access  Private - requires permissions:read
  */
 router.get(
   "/page/:id",
   authenticate,
-  requireApiPermission("read:permission"),
+  requireApiPermission("permissions:read"),
   idValidation,
   handleValidationErrors,
   async (req, res) => {
@@ -480,12 +480,12 @@ router.get(
 /**
  * @route   POST /api/permissions/page
  * @desc    Create new page permission
- * @access  Private - requires create:permission
+ * @access  Private - requires permissions:create
  */
 router.post(
   "/page",
   authenticate,
-  requireApiPermission("create:permission"),
+  requireApiPermission("permissions:create"),
   pagePermissionValidation,
   handleValidationErrors,
   async (req, res) => {
@@ -539,12 +539,12 @@ router.post(
 /**
  * @route   PUT /api/permissions/page/:id
  * @desc    Update page permission
- * @access  Private - requires update:permission
+ * @access  Private - requires permissions:update
  */
 router.put(
   "/page/:id",
   authenticate,
-  requireApiPermission("update:permission"),
+  requireApiPermission("permissions:update"),
   idValidation,
   pagePermissionValidation,
   handleValidationErrors,
@@ -612,12 +612,12 @@ router.put(
 /**
  * @route   DELETE /api/permissions/page/:id
  * @desc    Delete page permission
- * @access  Private - requires delete:permission
+ * @access  Private - requires permissions:delete
  */
 router.delete(
   "/page/:id",
   authenticate,
-  requireApiPermission("delete:permission"),
+  requireApiPermission("permissions:delete"),
   idValidation,
   handleValidationErrors,
   async (req, res) => {

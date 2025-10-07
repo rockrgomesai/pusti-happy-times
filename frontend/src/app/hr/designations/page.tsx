@@ -9,6 +9,8 @@ import {
   CardContent,
   CardActions,
   IconButton,
+  Switch,
+  FormControlLabel,
   Avatar,
   Tooltip,
   Dialog,
@@ -36,8 +38,8 @@ import {
   ViewList as ViewListIcon,
   ViewModule as ViewModuleIcon,
   Search as SearchIcon,
-  Business as BusinessIcon,
-  Store as StoreIcon,
+  Work as WorkIcon,
+  AccountBox as AccountBoxIcon,
 } from '@mui/icons-material';
 import { TablePagination } from '@mui/material';
 import { useForm, Controller } from 'react-hook-form';
@@ -46,40 +48,42 @@ import { z } from 'zod';
 import { toast } from 'react-hot-toast';
 import api from '@/lib/api';
 
-// Brand type definition
-interface Brand {
+// Designation type definition
+interface Designation {
   _id: string;
-  brand: string;
-  created_at: string;
-  updated_at: string;
-  created_by: string | null;
-  updated_by: string | null;
+  name: string;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+  createdBy: string | null;
+  updatedBy: string | null;
 }
 
-// Brand form schema
-const brandSchema = z.object({
-  brand: z.string().min(2, 'Brand name must be at least 2 characters'),
+// Designation form schema
+const designationSchema = z.object({
+  name: z.string().min(2, 'Designation name must be at least 2 characters'),
+  active: z.boolean(),
 });
 
-type BrandFormData = z.infer<typeof brandSchema>;
+type DesignationFormData = z.infer<typeof designationSchema>;
 
-export default function BrandsPage() {
+export default function DesignationsPage() {
   // State management
-  const [brands, setBrands] = useState<Brand[]>([]);
+  const [designations, setDesignations] = useState<Designation[]>([]);
   const [loading, setLoading] = useState(true);
-  const [viewMode, setViewMode] = useState<'cards' | 'list'>('list');
+  const [viewMode, setViewMode] = useState<'cards' | 'list'>('cards');
   const [searchTerm, setSearchTerm] = useState('');
   const [openDialog, setOpenDialog] = useState(false);
-  const [editingBrand, setEditingBrand] = useState<Brand | null>(null);
+  const [editingDesignation, setEditingDesignation] = useState<Designation | null>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-  const [brandToDelete, setBrandToDelete] = useState<string | null>(null);
+  const [designationToDelete, setDesignationToDelete] = useState<string | null>(null);
   
   // Pagination state
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   
   // Sorting state
-  const [sortBy, setSortBy] = useState<string>('created_at');
+  const [sortBy, setSortBy] = useState<string>('createdAt');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
 
   // Form setup
@@ -88,29 +92,41 @@ export default function BrandsPage() {
     handleSubmit,
     reset,
     formState: { errors, isSubmitting },
-  } = useForm<BrandFormData>({
-    resolver: zodResolver(brandSchema),
+  } = useForm<DesignationFormData>({
+    resolver: zodResolver(designationSchema),
     defaultValues: {
-      brand: '',
+      name: '',
+      active: true,
     },
   });
 
-  // Load brands
-  const loadBrands = async () => {
+  // Load designations
+  const loadDesignations = async () => {
     try {
       setLoading(true);
-      const response = await api.get('/brands');
-      setBrands(response.data);
+      const response = await api.get('/designations');
+      
+      // Handle API response structure (designations returns data in response.data.data)
+      if (response.data && response.data.success && Array.isArray(response.data.data)) {
+        setDesignations(response.data.data);
+      } else if (Array.isArray(response.data)) {
+        // Fallback for direct array response (like brands)
+        setDesignations(response.data);
+      } else {
+        console.warn('Unexpected response structure:', response.data);
+        setDesignations([]);
+      }
     } catch (error) {
-      toast.error('Failed to load brands');
-      console.error('Error loading brands:', error);
+      toast.error('Failed to load designations');
+      console.error('Error loading designations:', error);
+      setDesignations([]); // Ensure designations is always an array
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadBrands();
+    loadDesignations();
   }, []);
 
   // Reset page when filters change
@@ -118,21 +134,21 @@ export default function BrandsPage() {
     setPage(0);
   }, [searchTerm]);
 
-  // Filter brands based on search and filters
-  const filteredBrands = brands.filter((brand) => {
+  // Filter designations based on search and filters
+  const filteredDesignations = Array.isArray(designations) ? designations.filter((designation) => {
     const matchesSearch = 
-      brand.brand.toLowerCase().includes(searchTerm.toLowerCase());
+      designation.name.toLowerCase().includes(searchTerm.toLowerCase());
     
     return matchesSearch;
-  });
+  }) : [];
 
-  // Sort filtered brands
-  const sortedBrands = [...filteredBrands].sort((a, b) => {
-    let aValue: unknown = a[sortBy as keyof Brand];
-    let bValue: unknown = b[sortBy as keyof Brand];
+  // Sort filtered designations
+  const sortedDesignations = [...filteredDesignations].sort((a, b) => {
+    let aValue: unknown = a[sortBy as keyof Designation];
+    let bValue: unknown = b[sortBy as keyof Designation];
     
     // Handle date values
-    if (sortBy === 'created_at' || sortBy === 'updated_at') {
+    if (sortBy === 'createdAt' || sortBy === 'updatedAt') {
       aValue = new Date(aValue as string);
       bValue = new Date(bValue as string);
     }
@@ -149,7 +165,7 @@ export default function BrandsPage() {
   });
 
   // Get paginated data
-  const paginatedBrands = sortedBrands.slice(
+  const paginatedDesignations = sortedDesignations.slice(
     page * rowsPerPage,
     page * rowsPerPage + rowsPerPage
   );
@@ -175,61 +191,65 @@ export default function BrandsPage() {
   };
 
   // Handle form submission
-  const onSubmit = async (data: BrandFormData) => {
+  const onSubmit = async (data: DesignationFormData) => {
     try {
-      if (editingBrand) {
-        await api.put(`/api/brands/${editingBrand._id}`, data);
-        toast.success('Brand updated successfully');
+      if (editingDesignation) {
+        await api.put(`/designations/${editingDesignation._id}`, data);
+        toast.success('Designation updated successfully');
       } else {
-        await api.post('/brands', data);
-        toast.success('Brand created successfully');
+        await api.post('/designations', data);
+        toast.success('Designation created successfully');
       }
       
       setOpenDialog(false);
       reset();
-      setEditingBrand(null);
-      loadBrands();
+      setEditingDesignation(null);
+      loadDesignations();
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to save brand';
+      const errorMessage = error instanceof Error ? error.message : 'Failed to save designation';
       toast.error(errorMessage);
     }
   };
 
-  // Handle delete brand
-  const handleDeleteBrand = async () => {
-    if (!brandToDelete) return;
+  // Handle delete designation
+  const handleDeleteDesignation = async () => {
+    if (!designationToDelete) return;
     
     try {
-      await api.delete(`/api/brands/${brandToDelete}`);
-      toast.success('Brand deleted successfully');
+      await api.delete(`/designations/${designationToDelete}`);
+      toast.success('Designation deleted successfully');
       setDeleteConfirmOpen(false);
-      setBrandToDelete(null);
-      loadBrands();
+      setDesignationToDelete(null);
+      loadDesignations();
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to delete brand';
+      const errorMessage = error instanceof Error ? error.message : 'Failed to delete designation';
       toast.error(errorMessage);
     }
   };
 
-  // Handle edit brand
-  const handleEditBrand = (brand: Brand) => {
-    setEditingBrand(brand);
+  // Handle edit designation
+  const handleEditDesignation = (designation: Designation) => {
+    setEditingDesignation(designation);
     reset({
-      brand: brand.brand,
+      name: designation.name,
+      active: designation.active,
     });
     setOpenDialog(true);
   };
 
-  // Handle add new brand
-  const handleAddBrand = () => {
-    setEditingBrand(null);
+  // Handle add new designation
+  const handleAddDesignation = () => {
+    setEditingDesignation(null);
     reset();
     setOpenDialog(true);
   };
 
   // Format date
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-BD', {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return 'Invalid Date';
+    return date.toLocaleDateString('en-BD', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
@@ -268,7 +288,7 @@ export default function BrandsPage() {
         <Table>
           <TableHead>
             <TableRow>
-              {['Brand', 'Created', 'Actions'].map((header) => (
+              {['Designation', 'Status', 'Created', 'Actions'].map((header) => (
                 <TableCell key={header}>
                   <Skeleton variant="text" />
                 </TableCell>
@@ -278,7 +298,7 @@ export default function BrandsPage() {
           <TableBody>
             {Array.from({ length: 5 }).map((_, index) => (
               <TableRow key={index}>
-                {Array.from({ length: 3 }).map((_, cellIndex) => (
+                {Array.from({ length: 4 }).map((_, cellIndex) => (
                   <TableCell key={cellIndex}>
                     <Skeleton variant="text" />
                   </TableCell>
@@ -296,8 +316,8 @@ export default function BrandsPage() {
     <Box>
       <Box sx={{ maxHeight: 'calc(100vh - 400px)', overflow: 'auto', pr: 1 }}>
         <Grid container spacing={3}>
-          {paginatedBrands.map((brand) => (
-            <Grid key={brand._id} size={{ xs: 12, sm: 6, md: 4 }}>
+          {paginatedDesignations.map((designation) => (
+            <Grid key={designation._id} size={{ xs: 12, sm: 6, md: 4 }}>
               <Card
                 sx={{
                   height: '100%',
@@ -315,40 +335,47 @@ export default function BrandsPage() {
                     <Avatar 
                       sx={{ 
                         mr: 2, 
-                        bgcolor: 'primary.main',
+                        bgcolor: designation.active ? 'primary.main' : 'grey.400',
                         width: 48, 
                         height: 48 
                       }} 
                     >
-                      <BusinessIcon />
+                      <WorkIcon />
                     </Avatar>
                     <Box sx={{ flex: 1, minWidth: 0 }}>
                       <Typography variant="h6" noWrap>
-                        {brand.brand}
+                        {designation.name}
+                      </Typography>
+                      <Typography 
+                        variant="caption" 
+                        color={designation.active ? 'success.main' : 'error.main'}
+                        sx={{ fontWeight: 'medium' }}
+                      >
+                        {designation.active ? 'Active' : 'Inactive'}
                       </Typography>
                     </Box>
                   </Box>
                   
                   <Typography variant="body2" color="text.secondary">
-                    Created: {formatDate(brand.created_at)}
+                    Created: {formatDate(designation.createdAt)}
                   </Typography>
                 </CardContent>
                 
                 <CardActions sx={{ justifyContent: 'flex-end', pt: 0 }}>
-                  <Tooltip title="Edit Brand">
+                  <Tooltip title="Edit Designation">
                     <IconButton
                       size="small"
-                      onClick={() => handleEditBrand(brand)}
+                      onClick={() => handleEditDesignation(designation)}
                       color="primary"
                     >
                       <EditIcon />
                     </IconButton>
                   </Tooltip>
-                  <Tooltip title="Delete Brand">
+                  <Tooltip title="Delete Designation">
                     <IconButton
                       size="small"
                       onClick={() => {
-                        setBrandToDelete(brand._id);
+                        setDesignationToDelete(designation._id);
                         setDeleteConfirmOpen(true);
                       }}
                       color="error"
@@ -364,7 +391,7 @@ export default function BrandsPage() {
       </Box>
       <TablePagination
         component="div"
-        count={sortedBrands.length}
+        count={sortedDesignations.length}
         page={page}
         onPageChange={handleChangePage}
         rowsPerPage={rowsPerPage}
@@ -389,9 +416,9 @@ export default function BrandsPage() {
             <TableRow sx={{ '& .MuiTableCell-root': { backgroundColor: 'grey.50' } }}>
               <TableCell sx={{ fontWeight: 'bold', backgroundColor: 'grey.50' }}>
                 <TableSortLabel
-                  active={sortBy === 'brand'}
-                  direction={sortBy === 'brand' ? sortDirection : 'asc'}
-                  onClick={() => handleSort('brand')}
+                  active={sortBy === 'name'}
+                  direction={sortBy === 'name' ? sortDirection : 'asc'}
+                  onClick={() => handleSort('name')}
                   hideSortIcon={false}
                   sx={{
                     fontWeight: 'bold',
@@ -416,14 +443,46 @@ export default function BrandsPage() {
                     }
                   }}
                 >
-                  Brand
+                  Designation
                 </TableSortLabel>
               </TableCell>
               <TableCell sx={{ fontWeight: 'bold', backgroundColor: 'grey.50' }}>
                 <TableSortLabel
-                  active={sortBy === 'created_at'}
-                  direction={sortBy === 'created_at' ? sortDirection : 'asc'}
-                  onClick={() => handleSort('created_at')}
+                  active={sortBy === 'active'}
+                  direction={sortBy === 'active' ? sortDirection : 'asc'}
+                  onClick={() => handleSort('active')}
+                  hideSortIcon={false}
+                  sx={{
+                    fontWeight: 'bold',
+                    cursor: 'pointer',
+                    '& .MuiTableSortLabel-icon': {
+                      fontSize: '1.2rem !important',
+                      color: 'text.primary !important',
+                      opacity: '1 !important',
+                      visibility: 'visible !important',
+                    },
+                    '&:hover': {
+                      backgroundColor: 'action.hover',
+                    },
+                    '&:hover .MuiTableSortLabel-icon': {
+                      opacity: '1 !important',
+                      color: 'primary.main !important',
+                    },
+                    '&.Mui-active .MuiTableSortLabel-icon': {
+                      color: 'primary.main !important',
+                      opacity: '1 !important',
+                      fontSize: '1.3rem !important',
+                    }
+                  }}
+                >
+                  Status
+                </TableSortLabel>
+              </TableCell>
+              <TableCell sx={{ fontWeight: 'bold', backgroundColor: 'grey.50' }}>
+                <TableSortLabel
+                  active={sortBy === 'createdAt'}
+                  direction={sortBy === 'createdAt' ? sortDirection : 'asc'}
+                  onClick={() => handleSort('createdAt')}
                   hideSortIcon={false}
                   sx={{
                     fontWeight: 'bold',
@@ -466,30 +525,25 @@ export default function BrandsPage() {
             </TableRow>
           </TableHead>
           <TableBody>
-            {paginatedBrands.map((brand) => (
-              <TableRow key={brand._id} hover>
+            {paginatedDesignations.map((designation) => (
+              <TableRow key={designation._id} hover>
                 <TableCell>
-                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                    <Avatar 
-                      sx={{ 
-                        mr: 2, 
-                        width: 40, 
-                        height: 40,
-                        bgcolor: 'primary.main'
-                      }} 
-                    >
-                      <BusinessIcon />
-                    </Avatar>
-                    <Box>
-                      <Typography variant="body2" fontWeight="medium">
-                        {brand.brand}
-                      </Typography>
-                    </Box>
-                  </Box>
+                  <Typography variant="body2" fontWeight="medium">
+                    {designation.name}
+                  </Typography>
+                </TableCell>
+                <TableCell>
+                  <Typography 
+                    variant="body2" 
+                    color={designation.active ? 'success.main' : 'error.main'}
+                    sx={{ fontWeight: 'medium' }}
+                  >
+                    {designation.active ? 'Active' : 'Inactive'}
+                  </Typography>
                 </TableCell>
                 <TableCell>
                   <Typography variant="body2">
-                    {formatDate(brand.created_at)}
+                    {formatDate(designation.createdAt)}
                   </Typography>
                 </TableCell>
                 <TableCell 
@@ -501,20 +555,20 @@ export default function BrandsPage() {
                   }}
                 >
                   <Box sx={{ display: 'flex', gap: 1 }}>
-                    <Tooltip title="Edit Brand">
+                    <Tooltip title="Edit Designation">
                       <IconButton
                         size="small"
-                        onClick={() => handleEditBrand(brand)}
+                        onClick={() => handleEditDesignation(designation)}
                         color="primary"
                       >
                         <EditIcon />
                       </IconButton>
                     </Tooltip>
-                    <Tooltip title="Delete Brand">
+                    <Tooltip title="Delete Designation">
                       <IconButton
                         size="small"
                         onClick={() => {
-                          setBrandToDelete(brand._id);
+                          setDesignationToDelete(designation._id);
                           setDeleteConfirmOpen(true);
                         }}
                         color="error"
@@ -531,7 +585,7 @@ export default function BrandsPage() {
       </TableContainer>
       <TablePagination
         component="div"
-        count={sortedBrands.length}
+        count={sortedDesignations.length}
         page={page}
         onPageChange={handleChangePage}
         rowsPerPage={rowsPerPage}
@@ -569,10 +623,10 @@ export default function BrandsPage() {
       {/* Header */}
       <Box sx={{ mb: 3 }}>
         <Typography variant="h4" gutterBottom>
-          Brand Management
+          Designation Management
         </Typography>
         <Typography variant="body1" color="text.secondary">
-          Manage brands and their information
+          Manage job designations and their information
         </Typography>
       </Box>
 
@@ -589,7 +643,7 @@ export default function BrandsPage() {
           {/* Search */}
           <TextField
             size="small"
-            placeholder="Search brands..."
+            placeholder="Search designations..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             InputProps={{
@@ -606,9 +660,9 @@ export default function BrandsPage() {
           <Button
             variant="contained"
             startIcon={<AddIcon />}
-            onClick={handleAddBrand}
+            onClick={handleAddDesignation}
           >
-            Add Brand
+            Add Designation
           </Button>
           
           {/* View Mode Toggle Buttons */}
@@ -649,26 +703,26 @@ export default function BrandsPage() {
 
       {/* Results Count */}
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-        {loading ? 'Loading...' : `${sortedBrands.length} brand(s) found`}
+        {loading ? 'Loading...' : `${sortedDesignations.length} designation(s) found`}
       </Typography>
 
       {/* Content */}
       {loading ? renderSkeleton() : (
         <>
-          {sortedBrands.length === 0 ? (
+          {sortedDesignations.length === 0 ? (
             <Box sx={{ 
               textAlign: 'center', 
               py: 8,
               color: 'text.secondary'
             }}>
-              <StoreIcon sx={{ fontSize: 64, mb: 2, opacity: 0.5 }} />
+              <AccountBoxIcon sx={{ fontSize: 64, mb: 2, opacity: 0.5 }} />
               <Typography variant="h6" gutterBottom>
-                No brands found
+                No designations found
               </Typography>
               <Typography variant="body2">
                 {searchTerm
                   ? 'Try adjusting your search criteria'
-                  : 'Get started by adding your first brand'
+                  : 'Get started by adding your first designation'
                 }
               </Typography>
             </Box>
@@ -681,8 +735,8 @@ export default function BrandsPage() {
       {/* Floating Action Button for mobile */}
       <Fab
         color="primary"
-        aria-label="add brand"
-        onClick={handleAddBrand}
+        aria-label="add designation"
+        onClick={handleAddDesignation}
         sx={{
           position: 'fixed',
           bottom: 16,
@@ -693,7 +747,7 @@ export default function BrandsPage() {
         <AddIcon />
       </Fab>
 
-      {/* Brand Form Dialog */}
+      {/* Designation Form Dialog */}
       <Dialog 
         open={openDialog} 
         onClose={() => setOpenDialog(false)}
@@ -704,23 +758,40 @@ export default function BrandsPage() {
         }}
       >
         <DialogTitle>
-          {editingBrand ? 'Edit Brand' : 'Add New Brand'}
+          {editingDesignation ? 'Edit Designation' : 'Add New Designation'}
         </DialogTitle>
         <form onSubmit={handleSubmit(onSubmit)}>
           <DialogContent>
             <Grid container spacing={2}>
               <Grid size={12}>
                 <Controller
-                  name="brand"
+                  name="name"
                   control={control}
                   render={({ field }) => (
                     <TextField
                       {...field}
-                      label="Brand Name"
+                      label="Designation Name"
                       fullWidth
-                      error={!!errors.brand}
-                      helperText={errors.brand?.message}
+                      error={!!errors.name}
+                      helperText={errors.name?.message}
                       margin="normal"
+                    />
+                  )}
+                />
+              </Grid>
+              <Grid size={12}>
+                <Controller
+                  name="active"
+                  control={control}
+                  render={({ field }) => (
+                    <FormControlLabel
+                      control={
+                        <Switch
+                          checked={field.value}
+                          onChange={field.onChange}
+                        />
+                      }
+                      label="Active"
                     />
                   )}
                 />
@@ -736,7 +807,7 @@ export default function BrandsPage() {
               variant="contained"
               disabled={isSubmitting}
             >
-              {isSubmitting ? 'Saving...' : (editingBrand ? 'Update' : 'Create')}
+              {isSubmitting ? 'Saving...' : (editingDesignation ? 'Update' : 'Create')}
             </Button>
           </DialogActions>
         </form>
@@ -753,8 +824,8 @@ export default function BrandsPage() {
             This action cannot be undone.
           </Alert>
           <Typography>
-            Are you sure you want to delete this brand? This will also affect 
-            any products associated with this brand.
+            Are you sure you want to delete this designation? This will also affect 
+            any employees associated with this designation.
           </Typography>
         </DialogContent>
         <DialogActions>
@@ -762,7 +833,7 @@ export default function BrandsPage() {
             Cancel
           </Button>
           <Button 
-            onClick={handleDeleteBrand}
+            onClick={handleDeleteDesignation}
             color="error"
             variant="contained"
           >

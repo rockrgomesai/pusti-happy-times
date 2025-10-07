@@ -133,12 +133,12 @@ const getCurrentUserId = (req) => {
 /**
  * @route   GET /api/users
  * @desc    Get all users
- * @access  Private - requires read:user permission
+ * @access  Private - requires users:read permission
  */
 router.get(
   "/",
   authenticate,
-  requireApiPermission("read:user"),
+  requireApiPermission("users:read"),
   async (req, res) => {
     try {
       const { page = 1, limit = 10, sort = "username" } = req.query;
@@ -192,12 +192,12 @@ router.get(
 /**
  * @route   GET /api/users/:id
  * @desc    Get user by ID
- * @access  Private - requires read:user permission
+ * @access  Private - requires users:read permission
  */
 router.get(
   "/:id",
   authenticate,
-  requireApiPermission("read:user"),
+  requireApiPermission("users:read"),
   idValidation,
   handleValidationErrors,
   async (req, res) => {
@@ -233,12 +233,12 @@ router.get(
 /**
  * @route   POST /api/users
  * @desc    Create new user
- * @access  Private - requires create:user permission
+ * @access  Private - requires users:create permission
  */
 router.post(
   "/",
   authenticate,
-  requireApiPermission("create:user"),
+  requireApiPermission("users:create"),
   userCreateValidation,
   handleValidationErrors,
   async (req, res) => {
@@ -314,12 +314,12 @@ router.post(
 /**
  * @route   PUT /api/users/:id
  * @desc    Update user
- * @access  Private - requires update:user permission
+ * @access  Private - requires users:update permission
  */
 router.put(
   "/:id",
   authenticate,
-  requireApiPermission("update:user"),
+  requireApiPermission("users:update"),
   idValidation,
   userUpdateValidation,
   handleValidationErrors,
@@ -492,12 +492,12 @@ router.post(
 /**
  * @route   DELETE /api/users/:id
  * @desc    Delete user
- * @access  Private - requires delete:user permission
+ * @access  Private - requires users:delete permission
  */
 router.delete(
   "/:id",
   authenticate,
-  requireApiPermission("delete:user"),
+  requireApiPermission("users:delete"),
   idValidation,
   handleValidationErrors,
   async (req, res) => {

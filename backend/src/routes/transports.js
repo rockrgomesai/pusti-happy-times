@@ -71,12 +71,12 @@ const getCurrentUserId = (req) => {
 /**
  * @route   GET /api/transports
  * @desc    Get all transports
- * @access  Private - requires read:transport permission
+ * @access  Private - requires transports:delete permission
  */
 router.get(
   "/",
   authenticate,
-  requireApiPermission("read:transport"),
+  requireApiPermission("transports:delete"),
   async (req, res) => {
     try {
       const { page = 1, limit = 10, sort = "transport" } = req.query;
@@ -129,12 +129,12 @@ router.get(
 /**
  * @route   GET /api/transports/:id
  * @desc    Get transport by ID
- * @access  Private - requires read:transport permission
+ * @access  Private - requires transports:delete permission
  */
 router.get(
   "/:id",
   authenticate,
-  requireApiPermission("read:transport"),
+  requireApiPermission("transports:delete"),
   idValidation,
   handleValidationErrors,
   async (req, res) => {
@@ -169,12 +169,12 @@ router.get(
 /**
  * @route   POST /api/transports
  * @desc    Create new transport
- * @access  Private - requires create:transport permission
+ * @access  Private - requires transports:create permission
  */
 router.post(
   "/",
   authenticate,
-  requireApiPermission("create:transport"),
+  requireApiPermission("transports:create"),
   transportValidation,
   handleValidationErrors,
   async (req, res) => {
@@ -233,12 +233,12 @@ router.post(
 /**
  * @route   PUT /api/transports/:id
  * @desc    Update transport
- * @access  Private - requires update:transport permission
+ * @access  Private - requires transports:update permission
  */
 router.put(
   "/:id",
   authenticate,
-  requireApiPermission("update:transport"),
+  requireApiPermission("transports:update"),
   idValidation,
   transportValidation,
   handleValidationErrors,
@@ -313,12 +313,12 @@ router.put(
 /**
  * @route   DELETE /api/transports/:id
  * @desc    Delete transport
- * @access  Private - requires delete:transport permission
+ * @access  Private - requires transports:delete permission
  */
 router.delete(
   "/:id",
   authenticate,
-  requireApiPermission("delete:transport"),
+  requireApiPermission("transports:delete"),
   idValidation,
   handleValidationErrors,
   async (req, res) => {

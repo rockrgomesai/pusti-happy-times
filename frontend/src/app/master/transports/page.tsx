@@ -15,7 +15,6 @@ import {
   DialogContent,
   DialogActions,
   TextField,
-  Alert,
   Fab,
   Grid,
   Skeleton,
@@ -64,6 +63,20 @@ const transportSchema = z.object({
 
 type TransportFormData = z.infer<typeof transportSchema>;
 
+const getTransportErrorMessage = (error: unknown, fallback: string): string => {
+  if (error && typeof error === 'object' && 'response' in error) {
+    const response = (error as { response?: { data?: { message?: string } } }).response;
+    const message = response?.data?.message;
+    if (typeof message === 'string' && message.trim()) {
+      return message;
+    }
+  }
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+  return fallback;
+};
+
 export default function TransportsPage() {
   // State management
   const [transports, setTransports] = useState<Transport[]>([]);
@@ -106,7 +119,7 @@ export default function TransportsPage() {
         : [];
       
       setTransports(transportsData);
-    } catch (error) {
+    } catch (error: unknown) {
       toast.error('Failed to load transports');
       console.error('Error loading transports:', error);
       setTransports([]);
@@ -199,9 +212,8 @@ export default function TransportsPage() {
       reset();
       setEditingTransport(null);
       loadTransports();
-    } catch (error: any) {
-      const errorMessage = error.response?.data?.message || 'Failed to save transport';
-      toast.error(errorMessage);
+    } catch (error: unknown) {
+      toast.error(getTransportErrorMessage(error, 'Failed to save transport'));
     }
   };
 
@@ -228,9 +240,8 @@ export default function TransportsPage() {
       setDeleteConfirmOpen(false);
       setTransportToDelete(null);
       loadTransports();
-    } catch (error: any) {
-      const errorMessage = error.response?.data?.message || 'Failed to delete transport';
-      toast.error(errorMessage);
+    } catch (error: unknown) {
+      toast.error(getTransportErrorMessage(error, 'Failed to delete transport'));
     }
   };
 

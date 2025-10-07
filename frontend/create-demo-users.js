@@ -1,3 +1,4 @@
+/* eslint-disable */
 // MongoDB script to create demo superadmin user
 // Connect to MongoDB and run this script
 

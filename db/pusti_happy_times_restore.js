@@ -358,15 +358,15 @@ db.api_permissions.insertMany([
   { _id: ObjectId('68be4d6e95fe0273f8fa3350'), api_permissions: 'auth:login' },
   { _id: ObjectId('68be4d6e95fe0273f8fa3351'), api_permissions: 'auth:refresh' },
   { _id: ObjectId('68be4d6e95fe0273f8fa3352'), api_permissions: 'auth:logout' },
-  { _id: ObjectId('68be4d6e95fe0273f8fa3353'), api_permissions: 'create:user' },
-  { _id: ObjectId('68be4d6e95fe0273f8fa3354'), api_permissions: 'read:user' },
-  { _id: ObjectId('68be4d6e95fe0273f8fa3355'), api_permissions: 'update:user' },
-  { _id: ObjectId('68be4d6e95fe0273f8fa3356'), api_permissions: 'delete:user' },
+  { _id: ObjectId('68be4d6e95fe0273f8fa3353'), api_permissions: 'users:create' },
+  { _id: ObjectId('68be4d6e95fe0273f8fa3354'), api_permissions: 'users:read' },
+  { _id: ObjectId('68be4d6e95fe0273f8fa3355'), api_permissions: 'users:update' },
+  { _id: ObjectId('68be4d6e95fe0273f8fa3356'), api_permissions: 'users:delete' },
   { _id: ObjectId('68be4d6e95fe0273f8fa3357'), api_permissions: 'change:password' },
-  { _id: ObjectId('68be4d6e95fe0273f8fa3358'), api_permissions: 'create:brand' },
-  { _id: ObjectId('68be4d6e95fe0273f8fa3359'), api_permissions: 'read:brand' },
-  { _id: ObjectId('68be4d6e95fe0273f8fa335a'), api_permissions: 'update:brand' },
-  { _id: ObjectId('68be4d6e95fe0273f8fa335b'), api_permissions: 'delete:brand' }
+  { _id: ObjectId('68be4d6e95fe0273f8fa3358'), api_permissions: 'brands:create' },
+  { _id: ObjectId('68be4d6e95fe0273f8fa3359'), api_permissions: 'brands:read' },
+  { _id: ObjectId('68be4d6e95fe0273f8fa335a'), api_permissions: 'brands:update' },
+  { _id: ObjectId('68be4d6e95fe0273f8fa335b'), api_permissions: 'brands:delete' }
 ]);
 
 // Insert roles_api_permissions data (SuperAdmin - all permissions)

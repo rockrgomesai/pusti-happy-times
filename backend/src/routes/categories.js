@@ -56,7 +56,7 @@ const getCurrentUserId = (req) => req.user?.id || req.user?._id;
 router.get(
   '/',
   authenticate,
-  requireApiPermission('read:category'),
+  requireApiPermission('categories:read'),
   async (req, res) => {
     try {
       const { page = 1, limit = 10, sort = 'category' } = req.query;
@@ -107,7 +107,7 @@ router.get(
 router.get(
   '/:id',
   authenticate,
-  requireApiPermission('read:category'),
+  requireApiPermission('categories:read'),
   idValidation,
   handleValidationErrors,
   async (req, res) => {
@@ -136,7 +136,7 @@ router.get(
 router.post(
   '/',
   authenticate,
-  requireApiPermission('create:category'),
+  requireApiPermission('categories:create'),
   categoryValidation,
   handleValidationErrors,
   async (req, res) => {
@@ -195,7 +195,7 @@ router.post(
 router.put(
   '/:id',
   authenticate,
-  requireApiPermission('update:category'),
+  requireApiPermission('categories:update'),
   idValidation,
   categoryValidation,
   handleValidationErrors,
@@ -267,7 +267,7 @@ router.put(
 router.delete(
   '/:id',
   authenticate,
-  requireApiPermission('delete:category'),
+  requireApiPermission('categories:delete'),
   idValidation,
   handleValidationErrors,
   async (req, res) => {

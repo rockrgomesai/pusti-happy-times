@@ -10,7 +10,6 @@ import {
   ListItemText,
   Collapse,
   Skeleton,
-  Typography,
 } from '@mui/material';
 import {
   Dashboard,
@@ -49,8 +48,29 @@ interface SidebarProps {
   onItemClick?: () => void;
 }
 
+interface RawMenuItem {
+  _id?: string;
+  id?: string;
+  label?: string;
+  href?: string | null;
+  icon?: string;
+  m_order?: number;
+  mOrder?: number;
+  parent_id?: string | null;
+  parentId?: string | null;
+  is_submenu?: boolean;
+  isSubmenu?: boolean;
+  isActive?: boolean;
+  children?: RawMenuItem[];
+}
+
+interface MenuApiResponse {
+  success?: boolean;
+  data?: RawMenuItem[] | null;
+}
+
 // Icon mapping for database icons - extend this as needed
-const iconMap: Record<string, React.ComponentType> = {
+const iconMap: Record<string, typeof Dashboard> = {
   // Frontend mock icons
   dashboard: Dashboard,
   people: People,
@@ -70,23 +90,39 @@ const iconMap: Record<string, React.ComponentType> = {
   FaUserTag: BookmarkBorder, // User tagging/roles icon
   FaLayerGroup: Layers,
   FaTruck: LocalShipping, // Transport/shipping icon
+  FaPeople: People, // HR/People management icon
+  FaUserTie: AdminPanelSettings, // Designations/Titles icon
 };
 
 // Transform database menu structure to frontend structure
-const transformDatabaseMenuItems = (dbItems: unknown[]): MenuItem[] => {
-  if (!Array.isArray(dbItems)) return [];
-  
-  return (dbItems as Record<string, any>[]).map((item) => ({
-    _id: item._id || item.id,
-    label: item.label,
-    href: item.href,
-    icon: item.icon,
-    mOrder: item.m_order || item.mOrder || 0,
-    parentId: item.parent_id || item.parentId,
-    isSubmenu: item.is_submenu || item.isSubmenu || false,
-    isActive: true,
-    children: item.children ? transformDatabaseMenuItems(item.children) : undefined
-  }));
+const transformDatabaseMenuItems = (dbItems: RawMenuItem[] | null | undefined): MenuItem[] => {
+  if (!Array.isArray(dbItems)) {
+    return [];
+  }
+
+  return dbItems.reduce<MenuItem[]>((acc, item) => {
+    const id = item._id ?? item.id;
+    const label = item.label;
+    if (!id || !label) {
+      return acc;
+    }
+
+    const children = transformDatabaseMenuItems(item.children);
+
+    acc.push({
+      _id: id,
+      label,
+      href: item.href ?? null,
+      icon: item.icon ?? 'dashboard',
+      mOrder: item.m_order ?? item.mOrder ?? 0,
+      parentId: item.parent_id ?? item.parentId ?? null,
+      isSubmenu: item.is_submenu ?? item.isSubmenu ?? false,
+      isActive: item.isActive ?? true,
+      children: children.length > 0 ? children : undefined,
+    });
+
+    return acc;
+  }, []);
 };
 
 export function Sidebar({ onItemClick }: SidebarProps) {
@@ -101,10 +137,11 @@ export function Sidebar({ onItemClick }: SidebarProps) {
       setLoading(true);
       
       // Fetch from API
-      const response = await apiClient.get('/menu-items/user-menu') as { success: boolean; data: unknown[] };
-      if (response?.success && response?.data) {
+      const response = await apiClient.get<MenuApiResponse>('/menu-items/user-menu');
+      if (response?.success && Array.isArray(response.data)) {
         // Transform database structure to frontend structure
-        const transformedItems = transformDatabaseMenuItems(response.data);
+        const rawItems = response.data as RawMenuItem[];
+        const transformedItems = transformDatabaseMenuItems(rawItems);
         setMenuItems(transformedItems);
       } else {
         console.error('Failed to fetch menu items: Invalid response format');
@@ -164,7 +201,7 @@ export function Sidebar({ onItemClick }: SidebarProps) {
             onClick={() => handleItemClick(item)}
             selected={itemIsActive}
             sx={{
-              minHeight: 48,
+              minHeight: 32,
               px: 2.5,
               pl: isChild ? 4 : 2.5,
               py: 1,
@@ -224,7 +261,7 @@ export function Sidebar({ onItemClick }: SidebarProps) {
 
   if (loading) {
     return (
-      <Box sx={{ p: 2 }}>
+      <Box sx={{ p: 1 }}> {/* Reduced padding from 2 to 1 */}
         {[...Array(5)].map((_, index) => (
           <Skeleton
             key={index}
@@ -247,14 +284,7 @@ export function Sidebar({ onItemClick }: SidebarProps) {
         borderColor: 'divider',
       }}
     >
-      {/* Sidebar Header */}
-      <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
-        <Typography variant="h6" sx={{ fontWeight: 600, color: 'text.primary' }}>
-          Navigation
-        </Typography>
-      </Box>
-
-      <List sx={{ pt: 0 }}>
+      <List sx={{ pt: 0, pb: 0 }}> {/* Removed bottom padding */}
         {menuItems
           .filter(item => item.isActive)
           .sort((a, b) => a.mOrder - b.mOrder)

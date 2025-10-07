@@ -98,7 +98,7 @@ api.interceptors.response.use(
     const originalRequest = error.config as AxiosError['config'] & { _retry?: boolean; _retryCount?: number };
 
     // Detect network error (no response object)
-    const isNetworkErr = !error.response || (error as any).message === 'Network Error';
+  const isNetworkErr = !error.response || error.message === 'Network Error';
     if (isNetworkErr) {
       apiStatus.set(false);
       const method = (originalRequest?.method || 'get').toString().toUpperCase();

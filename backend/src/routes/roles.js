@@ -82,12 +82,12 @@ const getCurrentUserId = (req) => {
 /**
  * @route   GET /api/roles
  * @desc    Get all roles
- * @access  Private - requires read:role permission
+ * @access  Private - requires roles:read permission
  */
 router.get(
   "/",
   authenticate,
-  requireApiPermission("read:role"),
+  requireApiPermission("roles:read"),
   async (req, res) => {
     try {
       const { page = 1, limit = 10, sort = "role" } = req.query;
@@ -149,12 +149,12 @@ router.get(
 /**
  * @route   GET /api/roles/:id
  * @desc    Get role by ID
- * @access  Private - requires read:role permission
+ * @access  Private - requires roles:read permission
  */
 router.get(
   "/:id",
   authenticate,
-  requireApiPermission("read:role"),
+  requireApiPermission("roles:read"),
   idValidation,
   handleValidationErrors,
   async (req, res) => {
@@ -193,12 +193,12 @@ router.get(
 /**
  * @route   GET /api/roles/:id/permissions
  * @desc    Get all permissions for a role
- * @access  Private - requires read:role permission
+ * @access  Private - requires roles:read permission
  */
 router.get(
   "/:id/permissions",
   authenticate,
-  requireApiPermission("read:role"),
+  requireApiPermission("roles:read"),
   idValidation,
   handleValidationErrors,
   async (req, res) => {
@@ -257,12 +257,12 @@ router.get(
 /**
  * @route   POST /api/roles
  * @desc    Create new role
- * @access  Private - requires create:role permission
+ * @access  Private - requires roles:create permission
  */
 router.post(
   "/",
   authenticate,
-  requireApiPermission("create:role"),
+  requireApiPermission("roles:create"),
   roleValidation,
   handleValidationErrors,
   async (req, res) => {
@@ -318,12 +318,12 @@ router.post(
 /**
  * @route   PUT /api/roles/:id
  * @desc    Update role
- * @access  Private - requires update:role permission
+ * @access  Private - requires roles:update permission
  */
 router.put(
   "/:id",
   authenticate,
-  requireApiPermission("update:role"),
+  requireApiPermission("roles:update"),
   idValidation,
   roleValidation,
   handleValidationErrors,
@@ -395,12 +395,12 @@ router.put(
 /**
  * @route   DELETE /api/roles/:id
  * @desc    Delete role
- * @access  Private - requires delete:role permission
+ * @access  Private - requires roles:delete permission
  */
 router.delete(
   "/:id",
   authenticate,
-  requireApiPermission("delete:role"),
+  requireApiPermission("roles:delete"),
   idValidation,
   handleValidationErrors,
   async (req, res) => {
@@ -452,12 +452,12 @@ router.delete(
 /**
  * @route   POST /api/roles/:id/permissions/api
  * @desc    Assign API permissions to role
- * @access  Private - requires update:role permission
+ * @access  Private - requires roles:update permission
  */
 router.post(
   "/:id/permissions/api",
   authenticate,
-  requireApiPermission("update:role"),
+  requireApiPermission("roles:update"),
   idValidation,
   body("apiPermissionIds")
     .isArray()
@@ -521,12 +521,12 @@ router.post(
 /**
  * @route   POST /api/roles/:id/permissions/page
  * @desc    Assign page permissions to role
- * @access  Private - requires update:role permission
+ * @access  Private - requires roles:update permission
  */
 router.post(
   "/:id/permissions/page",
   authenticate,
-  requireApiPermission("update:role"),
+  requireApiPermission("roles:update"),
   idValidation,
   body("pagePermissionIds")
     .isArray()
@@ -590,12 +590,12 @@ router.post(
 /**
  * @route   POST /api/roles/:id/permissions/sidebar
  * @desc    Assign sidebar menu permissions to role
- * @access  Private - requires update:role permission
+ * @access  Private - requires roles:update permission
  */
 router.post(
   "/:id/permissions/sidebar",
   authenticate,
-  requireApiPermission("update:role"),
+  requireApiPermission("roles:update"),
   idValidation,
   body("sidebarMenuIds")
     .isArray()

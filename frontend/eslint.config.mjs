@@ -18,6 +18,10 @@ const eslintConfig = [
       "out/**",
       "build/**",
       "next-env.d.ts",
+      "create-demo-users.js",
+      "update-passwords.js",
+      "fix-passwords.js",
+      "generate-passwords.js",
     ],
   },
 ];
