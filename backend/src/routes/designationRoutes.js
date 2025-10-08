@@ -15,7 +15,7 @@
 
 const express = require('express');
 const { body, query, param } = require('express-validator');
-const { authenticate } = require('../middleware/auth');
+const { authenticate, requireApiPermission } = require('../middleware/auth');
 const {
   getAllDesignations,
   getActiveDesignations,
@@ -25,7 +25,8 @@ const {
   deleteDesignation,
   restoreDesignation,
   searchDesignations,
-  getDesignationStats
+  getDesignationStats,
+  getDesignationMeta
 } = require('../controllers/designationController');
 
 const router = express.Router();
@@ -106,6 +107,13 @@ const searchValidation = [
 /**
  * Routes Definition
  */
+
+/**
+ * @route   GET /api/designations/meta
+ * @desc    Get designation metadata and validation rules
+ * @access  Private
+ */
+router.get('/meta', authenticate, requireApiPermission('designations:read'), getDesignationMeta);
 
 /**
  * @route   GET /api/designations/stats

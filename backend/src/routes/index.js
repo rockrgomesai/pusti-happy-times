@@ -32,6 +32,7 @@ const categoryRoutes = require("./categories");
 const menuRoutes = require("./menu-items");
 const permissionRoutes = require("./permissions");
 const designationRoutes = require("./designationRoutes");
+const employeeRoutes = require("./employees");
 
 const router = express.Router();
 
@@ -161,6 +162,7 @@ router.get("/info", (req, res) => {
         brands: "/api/brands",
         factories: "/api/factories",
         depots: "/api/depots",
+        employees: "/api/employees",
         categories: "/api/categories",
         menu: "/api/menu-items",
         permissions: "/api/permissions",
@@ -239,6 +241,14 @@ router.use("/depots", depotRoutes);
  * @access  Private (authenticated users)
  */
 router.use("/designations", designationRoutes);
+
+/**
+ * Employee Management Routes
+ * @route   /api/employees/*
+ * @desc    Employee CRUD operations and management
+ * @access  Private (authenticated users)
+ */
+router.use("/employees", employeeRoutes);
 
 /**
  * Transport Management Routes

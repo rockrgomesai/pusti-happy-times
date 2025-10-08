@@ -29,6 +29,7 @@ import {
   BookmarkBorder,
   Layers,
   LocalShipping,
+  Badge as BadgeIcon,
 } from '@mui/icons-material';
 import { useRouter, usePathname } from 'next/navigation';
 import { apiClient } from '@/lib/api';
@@ -94,6 +95,8 @@ const iconMap: Record<string, typeof Dashboard> = {
   FaFactory: FactoryIcon,
   FaPeople: People, // HR/People management icon
   FaUserTie: AdminPanelSettings, // Designations/Titles icon
+  FaIdBadge: BadgeIcon,
+  FaAddressCard: BadgeIcon,
 };
 
 // Transform database menu structure to frontend structure

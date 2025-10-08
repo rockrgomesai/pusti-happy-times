@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
   Box,
   Typography,
@@ -53,6 +53,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'react-hot-toast';
 import api from '@/lib/api';
+import ColumnVisibilityMenu from '@/components/common/ColumnVisibilityMenu';
+import { calculateTableMinWidth } from '@/lib/tableUtils';
 
 // User type definition (matches backend model exactly)
 interface User {
@@ -87,6 +89,17 @@ const userSchema = z.object({
 
 type UserFormData = z.infer<typeof userSchema>;
 
+const USER_COLUMN_STORAGE_KEY = 'admin-users-visible-columns-v1';
+
+interface UserColumnDefinition {
+  id: string;
+  label: string;
+  sortableKey?: keyof User;
+  align?: 'inherit' | 'left' | 'center' | 'right' | 'justify';
+  alwaysVisible?: boolean;
+  renderCell: (user: User) => React.ReactNode;
+}
+
 export default function UsersPage() {
   // State management
   const [users, setUsers] = useState<User[]>([]);
@@ -106,6 +119,9 @@ export default function UsersPage() {
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<string | null>(null);
+  const [visibleUserColumnIds, setVisibleUserColumnIds] = useState<string[]>([]);
+  const [persistedUserColumnIds, setPersistedUserColumnIds] = useState<string[]>([]);
+  const userColumnStateHydratedRef = useRef(false);
 
   // Form setup
   const {
@@ -290,7 +306,7 @@ export default function UsersPage() {
   };
 
   // Handle edit user
-  const handleEditUser = (user: User) => {
+  const handleEditUser = useCallback((user: User) => {
     setEditingUser(user);
     reset({
       username: user.username,
@@ -300,7 +316,7 @@ export default function UsersPage() {
       active: user.active,
     });
     setOpenDialog(true);
-  };
+  }, [reset]);
 
   // Handle add new user
   const handleAddUser = () => {
@@ -310,18 +326,210 @@ export default function UsersPage() {
   };
 
   // Format date
-  const formatDate = (dateString: string) => {
+  const formatDate = useCallback((dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-BD', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
     });
-  };
+  }, []);
 
   // Get status chip color
-  const getStatusColor = (active: boolean) => {
+  const getStatusColor = useCallback((active: boolean) => {
     return active ? 'success' : 'error';
-  };
+  }, []);
+
+  const userColumns = useMemo<UserColumnDefinition[]>(
+    () => [
+      {
+        id: 'username',
+        label: 'Username',
+        sortableKey: 'username',
+        renderCell: (user) => (
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <PersonIcon sx={{ mr: 1, color: 'primary.main', fontSize: 20 }} />
+            <Typography variant="body1" fontWeight="medium">
+              {user.username}
+            </Typography>
+          </Box>
+        ),
+      },
+      {
+        id: 'email',
+        label: 'Email',
+        sortableKey: 'email',
+        renderCell: (user) => user.email,
+      },
+      {
+        id: 'role',
+        label: 'Role',
+        sortableKey: 'role_id',
+        renderCell: (user) => (
+          <Typography variant="body2" color="primary.main">
+            {user.role_id.role}
+          </Typography>
+        ),
+      },
+      {
+        id: 'status',
+        label: 'Status',
+        sortableKey: 'active',
+        renderCell: (user) => (
+          <Chip
+            label={user.active ? 'Active' : 'Inactive'}
+            color={getStatusColor(user.active)}
+            size="small"
+          />
+        ),
+      },
+      {
+        id: 'created_at',
+        label: 'Created Date',
+        sortableKey: 'created_at',
+        renderCell: (user) => formatDate(user.created_at),
+      },
+      {
+        id: 'actions',
+        label: 'Actions',
+        alwaysVisible: true,
+        align: 'right',
+        renderCell: (user) => (
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
+            <Tooltip title="Edit User">
+              <IconButton size="small" onClick={() => handleEditUser(user)} color="primary">
+                <EditIcon />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Delete User">
+              <IconButton
+                size="small"
+                onClick={() => {
+                  setUserToDelete(user._id);
+                  setDeleteConfirmOpen(true);
+                }}
+                color="error"
+              >
+                <DeleteIcon />
+              </IconButton>
+            </Tooltip>
+          </Box>
+        ),
+      },
+    ],
+    [formatDate, getStatusColor, handleEditUser]
+  );
+
+  const selectableUserColumnIds = useMemo(
+    () => userColumns.filter((column) => !column.alwaysVisible).map((column) => column.id),
+    [userColumns]
+  );
+
+  const sanitizeUserSelection = useCallback(
+    (ids: string[]) => selectableUserColumnIds.filter((id) => ids.includes(id)),
+    [selectableUserColumnIds]
+  );
+
+  const handleVisibleUserColumnsChange = useCallback(
+    (nextSelected: string[]) => {
+      const sanitized = sanitizeUserSelection(nextSelected);
+      setVisibleUserColumnIds(sanitized.length ? sanitized : selectableUserColumnIds);
+    },
+    [sanitizeUserSelection, selectableUserColumnIds]
+  );
+
+  const userColumnVisibilityOptions = useMemo(
+    () => userColumns.map(({ id, label, alwaysVisible }) => ({ id, label, alwaysVisible })),
+    [userColumns]
+  );
+
+  useEffect(() => {
+    if (!selectableUserColumnIds.length) {
+      setVisibleUserColumnIds([]);
+      setPersistedUserColumnIds([]);
+      return;
+    }
+
+    if (!userColumnStateHydratedRef.current) {
+      userColumnStateHydratedRef.current = true;
+
+      let initialSelection = selectableUserColumnIds;
+
+      try {
+        const stored = window.localStorage.getItem(USER_COLUMN_STORAGE_KEY);
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed)) {
+            const sanitized = sanitizeUserSelection(parsed);
+            if (sanitized.length) {
+              initialSelection = sanitized;
+            }
+          }
+        }
+      } catch (error) {
+        console.warn('Failed to read user column preferences', error);
+      }
+
+      setVisibleUserColumnIds(initialSelection);
+      setPersistedUserColumnIds(initialSelection);
+      return;
+    }
+
+    setVisibleUserColumnIds((previous) => {
+      const sanitizedPrevious = sanitizeUserSelection(previous);
+      if (sanitizedPrevious.length) {
+        return sanitizedPrevious;
+      }
+      return selectableUserColumnIds;
+    });
+
+    setPersistedUserColumnIds((previous) => {
+      const sanitizedPrevious = sanitizeUserSelection(previous);
+      if (sanitizedPrevious.length) {
+        return sanitizedPrevious;
+      }
+      return selectableUserColumnIds;
+    });
+  }, [sanitizeUserSelection, selectableUserColumnIds]);
+
+  const userHasUnsavedChanges = useMemo(() => {
+    if (visibleUserColumnIds.length !== persistedUserColumnIds.length) {
+      return true;
+    }
+    const persistedSet = new Set(persistedUserColumnIds);
+    return visibleUserColumnIds.some((id) => !persistedSet.has(id));
+  }, [persistedUserColumnIds, visibleUserColumnIds]);
+
+  const handleSaveUserColumnSelection = useCallback(() => {
+    const sanitized = sanitizeUserSelection(visibleUserColumnIds);
+    setVisibleUserColumnIds(sanitized);
+    setPersistedUserColumnIds(sanitized);
+    try {
+      window.localStorage.setItem(USER_COLUMN_STORAGE_KEY, JSON.stringify(sanitized));
+      toast.success('Column selection saved');
+    } catch (error) {
+      console.warn('Failed to persist user column preferences', error);
+      toast.error('Failed to save column selection');
+    }
+  }, [sanitizeUserSelection, visibleUserColumnIds]);
+
+  const visibleUserColumns = useMemo(() => {
+    if (!visibleUserColumnIds.length || !selectableUserColumnIds.length) {
+      return userColumns;
+    }
+
+    return userColumns.filter(
+      (column) => column.alwaysVisible || visibleUserColumnIds.includes(column.id)
+    );
+  }, [selectableUserColumnIds, userColumns, visibleUserColumnIds]);
+
+  const userTableMinWidth = useMemo(
+    () => calculateTableMinWidth(visibleUserColumns.length || userColumns.length),
+    [userColumns, visibleUserColumns]
+  );
+
+  const menuSelectedUserColumnIds = visibleUserColumnIds.length
+    ? visibleUserColumnIds
+    : selectableUserColumnIds;
 
   // Render cards view
   const renderCardsView = () => (
@@ -418,135 +626,43 @@ export default function UsersPage() {
   // Render list view
   const renderListView = () => (
     <TableContainer component={Paper}>
-      <Table>
+      <Table sx={{ minWidth: userTableMinWidth }}>
         <TableHead>
           <TableRow>
-            <TableCell>
-              <TableSortLabel
-                active={orderBy === 'username'}
-                direction={orderBy === 'username' ? order : 'asc'}
-                onClick={() => handleSort('username')}
-                sx={{
-                  fontWeight: 'bold',
-                  '& .MuiTableSortLabel-icon': {
-                    fontSize: '1.2rem',
-                  },
-                }}
-              >
-                Username
-              </TableSortLabel>
-            </TableCell>
-            <TableCell>
-              <TableSortLabel
-                active={orderBy === 'email'}
-                direction={orderBy === 'email' ? order : 'asc'}
-                onClick={() => handleSort('email')}
-                sx={{
-                  fontWeight: 'bold',
-                  '& .MuiTableSortLabel-icon': {
-                    fontSize: '1.2rem',
-                  },
-                }}
-              >
-                Email
-              </TableSortLabel>
-            </TableCell>
-            <TableCell>
-              <TableSortLabel
-                active={orderBy === 'role_id'}
-                direction={orderBy === 'role_id' ? order : 'asc'}
-                onClick={() => handleSort('role_id')}
-                sx={{
-                  fontWeight: 'bold',
-                  '& .MuiTableSortLabel-icon': {
-                    fontSize: '1.2rem',
-                  },
-                }}
-              >
-                Role
-              </TableSortLabel>
-            </TableCell>
-            <TableCell>
-              <TableSortLabel
-                active={orderBy === 'active'}
-                direction={orderBy === 'active' ? order : 'asc'}
-                onClick={() => handleSort('active')}
-                sx={{
-                  fontWeight: 'bold',
-                  '& .MuiTableSortLabel-icon': {
-                    fontSize: '1.2rem',
-                  },
-                }}
-              >
-                Status
-              </TableSortLabel>
-            </TableCell>
-            <TableCell>
-              <TableSortLabel
-                active={orderBy === 'created_at'}
-                direction={orderBy === 'created_at' ? order : 'asc'}
-                onClick={() => handleSort('created_at')}
-                sx={{
-                  fontWeight: 'bold',
-                  '& .MuiTableSortLabel-icon': {
-                    fontSize: '1.2rem',
-                  },
-                }}
-              >
-                Created Date
-              </TableSortLabel>
-            </TableCell>
-            <TableCell align="right" sx={{ fontWeight: 'bold' }}>Actions</TableCell>
+            {visibleUserColumns.map((column) => {
+              const isSortable = Boolean(column.sortableKey);
+              return (
+                <TableCell key={column.id} align={column.align}>
+                  {isSortable ? (
+                    <TableSortLabel
+                      active={orderBy === column.sortableKey}
+                      direction={orderBy === column.sortableKey ? order : 'asc'}
+                      onClick={() => column.sortableKey && handleSort(column.sortableKey)}
+                      sx={{
+                        fontWeight: 'bold',
+                        '& .MuiTableSortLabel-icon': {
+                          fontSize: '1.2rem',
+                        },
+                      }}
+                    >
+                      {column.label}
+                    </TableSortLabel>
+                  ) : (
+                    <Typography sx={{ fontWeight: 'bold' }}>{column.label}</Typography>
+                  )}
+                </TableCell>
+              );
+            })}
           </TableRow>
         </TableHead>
         <TableBody>
           {paginatedUsers.map((user) => (
             <TableRow key={user._id} hover>
-              <TableCell>
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  <PersonIcon sx={{ mr: 1, color: 'primary.main', fontSize: 20 }} />
-                  <Typography variant="body1" fontWeight="medium">
-                    {user.username}
-                  </Typography>
-                </Box>
-              </TableCell>
-              <TableCell>{user.email}</TableCell>
-              <TableCell>
-                <Typography variant="body2" color="primary.main">
-                  {user.role_id.role}
-                </Typography>
-              </TableCell>
-              <TableCell>
-                <Chip
-                  label={user.active ? 'Active' : 'Inactive'}
-                  color={getStatusColor(user.active)}
-                  size="small"
-                />
-              </TableCell>
-              <TableCell>{formatDate(user.created_at)}</TableCell>
-              <TableCell align="right">
-                <Tooltip title="Edit User">
-                  <IconButton
-                    size="small"
-                    onClick={() => handleEditUser(user)}
-                    color="primary"
-                  >
-                    <EditIcon />
-                  </IconButton>
-                </Tooltip>
-                <Tooltip title="Delete User">
-                  <IconButton
-                    size="small"
-                    onClick={() => {
-                      setUserToDelete(user._id);
-                      setDeleteConfirmOpen(true);
-                    }}
-                    color="error"
-                  >
-                    <DeleteIcon />
-                  </IconButton>
-                </Tooltip>
-              </TableCell>
+              {visibleUserColumns.map((column) => (
+                <TableCell key={column.id} align={column.align}>
+                  {column.renderCell(user)}
+                </TableCell>
+              ))}
             </TableRow>
           ))}
         </TableBody>
@@ -640,28 +756,39 @@ export default function UsersPage() {
           </FormControl>
         </Box>
         
-        <ToggleButtonGroup
-          value={viewMode}
-          exclusive
-          onChange={(event, newViewMode) => {
-            if (newViewMode !== null) {
-              setViewMode(newViewMode);
-            }
-          }}
-          aria-label="view mode"
-          size="small"
-        >
-          <ToggleButton value="cards" aria-label="card view">
-            <Tooltip title="Card View">
-              <ViewModuleIcon />
-            </Tooltip>
-          </ToggleButton>
-          <ToggleButton value="list" aria-label="list view">
-            <Tooltip title="List View">
-              <ViewListIcon />
-            </Tooltip>
-          </ToggleButton>
-        </ToggleButtonGroup>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+          <ColumnVisibilityMenu
+            options={userColumnVisibilityOptions}
+            selected={menuSelectedUserColumnIds}
+            onChange={handleVisibleUserColumnsChange}
+            onSaveSelection={handleSaveUserColumnSelection}
+            saveDisabled={!userHasUnsavedChanges}
+            minSelectable={1}
+          />
+
+          <ToggleButtonGroup
+            value={viewMode}
+            exclusive
+            onChange={(event, newViewMode) => {
+              if (newViewMode !== null) {
+                setViewMode(newViewMode);
+              }
+            }}
+            aria-label="view mode"
+            size="small"
+          >
+            <ToggleButton value="cards" aria-label="card view">
+              <Tooltip title="Card View">
+                <ViewModuleIcon />
+              </Tooltip>
+            </ToggleButton>
+            <ToggleButton value="list" aria-label="list view">
+              <Tooltip title="List View">
+                <ViewListIcon />
+              </Tooltip>
+            </ToggleButton>
+          </ToggleButtonGroup>
+        </Box>
       </Box>
 
       {/* Main Content */}

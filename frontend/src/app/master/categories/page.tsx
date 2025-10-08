@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Box,
   Typography,
@@ -52,6 +52,10 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'react-hot-toast';
 import api from '@/lib/api';
+import ExportMenu from '@/components/common/ExportMenu';
+import ColumnVisibilityMenu from '@/components/common/ColumnVisibilityMenu';
+import { ExportColumn, formatDateForExport } from '@/lib/exportUtils';
+import { calculateTableMinWidth } from '@/lib/tableUtils';
 import { useAuth } from '@/contexts/AuthContext';
 
 // Backend model shape (fields used by UI)
@@ -210,6 +214,20 @@ type CategoryPayload = Pick<CategoryFormData, 'category' | 'parent' | 'isActive'
   sortOrder: number;
 };
 
+type CategoryOrderKey = 'category' | 'depth' | 'isActive' | 'sortOrder';
+
+interface CategoryColumnDefinition {
+  id: string;
+  label: string;
+  sortableKey?: CategoryOrderKey;
+  align?: 'inherit' | 'left' | 'center' | 'right' | 'justify';
+  alwaysVisible?: boolean;
+  minWidth?: number;
+  renderCell: (category: Category) => React.ReactNode;
+}
+
+const CATEGORY_COLUMN_STORAGE_KEY = 'master:categories:visibleColumns';
+
 // Simple slugify utility
 function slugify(input: string): string {
   return input
@@ -236,10 +254,47 @@ export default function CategoriesPage() {
   const [toDelete, setToDelete] = useState<string | null>(null);
 
   // Sorting and pagination
-  const [orderBy, setOrderBy] = useState<keyof Category>('category');
+  const [orderBy, setOrderBy] = useState<CategoryOrderKey>('category');
   const [order, setOrder] = useState<'asc' | 'desc'>('asc');
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [visibleCategoryColumnIds, setVisibleCategoryColumnIds] = useState<string[]>([]);
+  const [persistedCategoryColumnIds, setPersistedCategoryColumnIds] = useState<string[]>([]);
+  const categoryColumnStateHydratedRef = useRef(false);
+
+  const categoryExportColumns = useMemo<ExportColumn<Category>[]>(
+    () => [
+      {
+        header: 'Category',
+        accessor: (row) => row.category,
+      },
+      {
+        header: 'Slug',
+        accessor: (row) => row.slug,
+      },
+      {
+        header: 'Parent',
+        accessor: (row) => row.parent ?? '',
+      },
+      {
+        header: 'Active',
+        accessor: (row) => (row.isActive ? 'Yes' : 'No'),
+      },
+      {
+        header: 'Sort Order',
+        accessor: (row) => String(row.sortOrder ?? ''),
+      },
+      {
+        header: 'Created Date',
+        accessor: (row) => formatDateForExport(row.createdAt ?? row.created_at ?? ''),
+      },
+      {
+        header: 'Updated Date',
+        accessor: (row) => formatDateForExport(row.updatedAt ?? row.updated_at ?? ''),
+      },
+    ],
+    []
+  );
 
   const { control, handleSubmit, reset, formState: { errors, isSubmitting }, watch, setValue } = useForm<CategoryFormData>({
     resolver: zodResolver(categorySchema),
@@ -294,7 +349,7 @@ export default function CategoriesPage() {
     );
   }, [categories, searchTerm]);
 
-  const handleSort = (prop: keyof Category) => {
+  const handleSort = (prop: CategoryOrderKey) => {
     const isAsc = orderBy === prop && order === 'asc';
     setOrder(isAsc ? 'desc' : 'asc');
     setOrderBy(prop);
@@ -324,6 +379,8 @@ export default function CategoriesPage() {
     });
     return arr;
   }, [filtered, order, orderBy]);
+
+  const fetchAllCategories = useCallback(async () => [...sorted], [sorted]);
 
   const paginated = sorted.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
   const handleChangePage = (_: unknown, newPage: number) => setPage(newPage);
@@ -369,15 +426,227 @@ export default function CategoriesPage() {
     }
   };
 
-  const beginEdit = (c: Category) => {
-    setEditing(c);
-    setSlugTouched(true);
-    reset({ category: c.category, parent: c.parent || null, isActive: !!c.isActive, sortOrder: c.sortOrder ?? 0, slug: c.slug || '' });
+  const beginEdit = useCallback(
+    (c: Category) => {
+      setEditing(c);
+      setSlugTouched(true);
+      reset({
+        category: c.category,
+        parent: c.parent || null,
+        isActive: !!c.isActive,
+        sortOrder: c.sortOrder ?? 0,
+        slug: c.slug || '',
+      });
+      setOpenDialog(true);
+    },
+    [reset]
+  );
+
+  const beginAdd = useCallback(() => {
+    setEditing(null);
+    setSlugTouched(false);
+    reset({ category: '', parent: null, isActive: true, sortOrder: 0, slug: '' });
     setOpenDialog(true);
-  };
-  const beginAdd = () => { setEditing(null); setSlugTouched(false); reset({ category: '', parent: null, isActive: true, sortOrder: 0, slug: '' }); setOpenDialog(true); };
+  }, [reset]);
 
   const fmtDate = (v?: string) => { if (!v) return '-'; const d = new Date(v); return Number.isNaN(d.getTime()) ? '-' : d.toLocaleDateString('en-BD', { year: 'numeric', month: 'short', day: 'numeric' }); };
+
+  const categoryColumns = useMemo<CategoryColumnDefinition[]>(
+    () => [
+      {
+        id: 'category',
+        label: 'Category',
+        sortableKey: 'category',
+        minWidth: 200,
+        renderCell: (category) => (
+          <Typography variant="body1" fontWeight="medium">
+            {category.category}
+          </Typography>
+        ),
+      },
+      {
+        id: 'slug',
+        label: 'Slug',
+        minWidth: 180,
+        renderCell: (category) => category.slug,
+      },
+      {
+        id: 'fullSlug',
+        label: 'Full Slug',
+        minWidth: 220,
+        renderCell: (category) => category.fullSlug,
+      },
+      {
+        id: 'depth',
+        label: 'Depth',
+        sortableKey: 'depth',
+        renderCell: (category) => category.depth,
+      },
+      {
+        id: 'hasChildren',
+        label: 'Has Children',
+        renderCell: (category) => (category.hasChildren ? 'Yes' : 'No'),
+      },
+      {
+        id: 'isActive',
+        label: 'Active',
+        sortableKey: 'isActive',
+        renderCell: (category) => (category.isActive ? 'Yes' : 'No'),
+      },
+      {
+        id: 'sortOrder',
+        label: 'Sort',
+        sortableKey: 'sortOrder',
+        renderCell: (category) => category.sortOrder ?? 0,
+      },
+      {
+        id: 'parent',
+        label: 'Parent',
+        minWidth: 220,
+        renderCell: (category) =>
+          category.parent ? idToCategory.get(category.parent)?.fullSlug ?? category.parent : '-',
+      },
+      {
+        id: 'actions',
+        label: 'Actions',
+        alwaysVisible: true,
+        align: 'right',
+        minWidth: 140,
+        renderCell: (category) => (
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
+            {canUpdate && (
+              <Tooltip title="Edit Category">
+                <IconButton size="small" onClick={() => beginEdit(category)} color="primary">
+                  <EditIcon />
+                </IconButton>
+              </Tooltip>
+            )}
+            {canDelete && (
+              <Tooltip title="Delete Category">
+                <IconButton
+                  size="small"
+                  onClick={() => {
+                    setToDelete(category._id);
+                    setDeleteConfirmOpen(true);
+                  }}
+                  color="error"
+                >
+                  <DeleteIcon />
+                </IconButton>
+              </Tooltip>
+            )}
+          </Box>
+        ),
+      },
+    ],
+    [beginEdit, canDelete, canUpdate, idToCategory]
+  );
+
+  const selectableCategoryColumnIds = useMemo(
+    () => categoryColumns.filter((column) => !column.alwaysVisible).map((column) => column.id),
+    [categoryColumns]
+  );
+
+  const handleVisibleCategoryColumnsChange = useCallback(
+    (nextSelected: string[]) => {
+      const sanitized = selectableCategoryColumnIds.filter((id) => nextSelected.includes(id));
+      setVisibleCategoryColumnIds(sanitized.length ? sanitized : selectableCategoryColumnIds);
+    },
+    [selectableCategoryColumnIds]
+  );
+
+  const sanitizeCategorySelection = useCallback(
+    (ids: string[]) => selectableCategoryColumnIds.filter((id) => ids.includes(id)),
+    [selectableCategoryColumnIds]
+  );
+
+  const categoryColumnVisibilityOptions = useMemo(
+    () => categoryColumns.map(({ id, label, alwaysVisible }) => ({ id, label, alwaysVisible })),
+    [categoryColumns]
+  );
+
+  useEffect(() => {
+    if (!selectableCategoryColumnIds.length) {
+      setVisibleCategoryColumnIds([]);
+      setPersistedCategoryColumnIds([]);
+      return;
+    }
+
+    if (!categoryColumnStateHydratedRef.current) {
+      categoryColumnStateHydratedRef.current = true;
+
+      let initialSelection = selectableCategoryColumnIds;
+
+      try {
+        const stored = window.localStorage.getItem(CATEGORY_COLUMN_STORAGE_KEY);
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed)) {
+            const sanitized = sanitizeCategorySelection(parsed);
+            if (sanitized.length) {
+              initialSelection = sanitized;
+            }
+          }
+        }
+      } catch (error) {
+        console.warn('Failed to read category column preferences', error);
+      }
+
+      setVisibleCategoryColumnIds(initialSelection);
+      setPersistedCategoryColumnIds(initialSelection);
+      return;
+    }
+
+    setVisibleCategoryColumnIds((previous) => {
+      const sanitizedPrevious = sanitizeCategorySelection(previous);
+      if (sanitizedPrevious.length) {
+        return sanitizedPrevious;
+      }
+      return selectableCategoryColumnIds;
+    });
+
+    setPersistedCategoryColumnIds((previous) => {
+      const sanitizedPrevious = sanitizeCategorySelection(previous);
+      if (sanitizedPrevious.length) {
+        return sanitizedPrevious;
+      }
+      return selectableCategoryColumnIds;
+    });
+  }, [sanitizeCategorySelection, selectableCategoryColumnIds]);
+
+  const categoryHasUnsavedChanges = useMemo(() => {
+    if (visibleCategoryColumnIds.length !== persistedCategoryColumnIds.length) {
+      return true;
+    }
+    const persistedSet = new Set(persistedCategoryColumnIds);
+    return visibleCategoryColumnIds.some((id) => !persistedSet.has(id));
+  }, [persistedCategoryColumnIds, visibleCategoryColumnIds]);
+
+  const handleSaveCategoryColumnSelection = useCallback(() => {
+    const sanitized = sanitizeCategorySelection(visibleCategoryColumnIds);
+    setVisibleCategoryColumnIds(sanitized);
+    setPersistedCategoryColumnIds(sanitized);
+    try {
+      window.localStorage.setItem(CATEGORY_COLUMN_STORAGE_KEY, JSON.stringify(sanitized));
+      toast.success('Column selection saved');
+    } catch (error) {
+      console.warn('Failed to persist category column preferences', error);
+      toast.error('Failed to save column selection');
+    }
+  }, [sanitizeCategorySelection, visibleCategoryColumnIds]);
+
+  const visibleCategoryColumns = useMemo(
+    () =>
+      categoryColumns.filter(
+        (column) => column.alwaysVisible || visibleCategoryColumnIds.includes(column.id)
+      ),
+    [categoryColumns, visibleCategoryColumnIds]
+  );
+
+  const categoryTableMinWidth = useMemo(
+    () => calculateTableMinWidth(visibleCategoryColumns.length, 180, 1160),
+    [visibleCategoryColumns.length]
+  );
 
   const renderCards = () => (
     <>
@@ -416,52 +685,87 @@ export default function CategoriesPage() {
 
   const renderList = () => (
     <TableContainer component={Paper} sx={{ overflowX: 'auto', position: 'relative' }}>
-      <Table>
+      <Table sx={{ minWidth: categoryTableMinWidth }}>
         <TableHead>
           <TableRow>
-            <TableCell><TableSortLabel active={orderBy === 'category'} direction={orderBy === 'category' ? order : 'asc'} onClick={() => handleSort('category')}>Category</TableSortLabel></TableCell>
-            <TableCell>Slug</TableCell>
-            <TableCell>Full Slug</TableCell>
-            <TableCell><TableSortLabel active={orderBy === 'depth'} direction={orderBy === 'depth' ? order : 'asc'} onClick={() => handleSort('depth')}>Depth</TableSortLabel></TableCell>
-            <TableCell>Has Children</TableCell>
-            <TableCell><TableSortLabel active={orderBy === 'isActive'} direction={orderBy === 'isActive' ? order : 'asc'} onClick={() => handleSort('isActive')}>Active</TableSortLabel></TableCell>
-            <TableCell><TableSortLabel active={orderBy === 'sortOrder'} direction={orderBy === 'sortOrder' ? order : 'asc'} onClick={() => handleSort('sortOrder')}>Sort</TableSortLabel></TableCell>
-            <TableCell>Parent</TableCell>
-            <TableCell align="right" sx={{
-              position: 'sticky',
-              right: 0,
-              backgroundColor: 'background.paper',
-              zIndex: 3,
-              minWidth: 120,
-            }}>Actions</TableCell>
+            {visibleCategoryColumns.map((column) => {
+              const isActions = column.id === 'actions';
+              const sortableKey = column.sortableKey;
+              return (
+                <TableCell
+                  key={column.id}
+                  align={column.align}
+                  sx={{
+                    fontWeight: 'bold',
+                    backgroundColor: 'background.paper',
+                    whiteSpace: 'nowrap',
+                    minWidth: column.minWidth,
+                    ...(isActions
+                      ? {
+                          position: 'sticky',
+                          right: 0,
+                          zIndex: 4,
+                          boxShadow: (theme) => `-4px 0 8px -4px ${theme.palette.grey[300]}`,
+                        }
+                      : {}),
+                  }}
+                >
+                  {sortableKey ? (
+                    <TableSortLabel
+                      active={orderBy === sortableKey}
+                      direction={orderBy === sortableKey ? order : 'asc'}
+                      onClick={() => handleSort(sortableKey)}
+                      sx={{ fontWeight: 'bold' }}
+                    >
+                      {column.label}
+                    </TableSortLabel>
+                  ) : (
+                    column.label
+                  )}
+                </TableCell>
+              );
+            })}
           </TableRow>
         </TableHead>
         <TableBody>
-          {paginated.map((c) => (
-            <TableRow key={c._id} hover>
-              <TableCell><Typography variant="body1" fontWeight="medium">{c.category}</Typography></TableCell>
-              <TableCell>{c.slug}</TableCell>
-              <TableCell>{c.fullSlug}</TableCell>
-              <TableCell>{c.depth}</TableCell>
-              <TableCell>{c.hasChildren ? 'Yes' : 'No'}</TableCell>
-              <TableCell>{c.isActive ? 'Yes' : 'No'}</TableCell>
-              <TableCell>{c.sortOrder ?? 0}</TableCell>
-              <TableCell>{c.parent ? (idToCategory.get(c.parent)?.fullSlug || c.parent) : '-'}</TableCell>
-              <TableCell align="right" sx={{
-                position: 'sticky',
-                right: 0,
-                backgroundColor: 'background.paper',
-                zIndex: 2,
-                minWidth: 120,
-              }}>
-                {canUpdate && (<Tooltip title="Edit Category"><IconButton size="small" onClick={() => beginEdit(c)} color="primary"><EditIcon /></IconButton></Tooltip>)}
-                {canDelete && (<Tooltip title="Delete Category"><IconButton size="small" onClick={() => { setToDelete(c._id); setDeleteConfirmOpen(true); }} color="error"><DeleteIcon /></IconButton></Tooltip>)}
-              </TableCell>
+          {paginated.map((category) => (
+            <TableRow key={category._id} hover>
+              {visibleCategoryColumns.map((column) => {
+                const isActions = column.id === 'actions';
+                return (
+                  <TableCell
+                    key={column.id}
+                    align={column.align}
+                    sx={{
+                      backgroundColor: 'background.paper',
+                      minWidth: column.minWidth,
+                      ...(isActions
+                        ? {
+                            position: 'sticky',
+                            right: 0,
+                            zIndex: 3,
+                            boxShadow: (theme) => `-4px 0 8px -4px ${theme.palette.grey[200]}`,
+                          }
+                        : {}),
+                    }}
+                  >
+                    {column.renderCell(category)}
+                  </TableCell>
+                );
+              })}
             </TableRow>
           ))}
         </TableBody>
       </Table>
-      <TablePagination rowsPerPageOptions={[5, 10, 25, 50]} component="div" count={sorted.length} rowsPerPage={rowsPerPage} page={page} onPageChange={handleChangePage} onRowsPerPageChange={handleChangeRowsPerPage} />
+      <TablePagination
+        rowsPerPageOptions={[5, 10, 25, 50]}
+        component="div"
+        count={sorted.length}
+        rowsPerPage={rowsPerPage}
+        page={page}
+        onPageChange={handleChangePage}
+        onRowsPerPageChange={handleChangeRowsPerPage}
+      />
     </TableContainer>
   );
 
@@ -475,13 +779,42 @@ export default function CategoriesPage() {
         {canCreate && (<Button variant="contained" startIcon={<AddIcon />} onClick={beginAdd}>Add Category</Button>)}
       </Box>
 
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
-        <TextField size="small" placeholder="Search categories (name, slug, full slug)" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} InputProps={{ startAdornment: (<InputAdornment position="start"><SearchIcon /></InputAdornment>) }} sx={{ minWidth: 280 }} />
-        <ToggleButtonGroup value={viewMode} exclusive onChange={(_, v) => { if (v) setViewMode(v); }} aria-label="view mode" size="small">
-          <ToggleButton value="cards" aria-label="card view"><Tooltip title="Card View"><ViewModuleIcon /></Tooltip></ToggleButton>
-          <ToggleButton value="list" aria-label="list view"><Tooltip title="List View"><ViewListIcon /></Tooltip></ToggleButton>
-        </ToggleButtonGroup>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3, flexWrap: 'wrap', gap: 2 }}>
+        <TextField
+          size="small"
+          placeholder="Search categories (name, slug, full slug)"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          InputProps={{ startAdornment: (<InputAdornment position="start"><SearchIcon /></InputAdornment>) }}
+          sx={{ minWidth: 280 }}
+        />
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <ExportMenu
+            title="Category Report"
+            fileBaseName="categories"
+            currentRows={paginated}
+            columns={categoryExportColumns}
+            onFetchAll={fetchAllCategories}
+            disabled={loading || (categories.length === 0 && paginated.length === 0)}
+          />
+          <ColumnVisibilityMenu
+            options={categoryColumnVisibilityOptions}
+            selected={visibleCategoryColumnIds}
+            onChange={handleVisibleCategoryColumnsChange}
+            onSaveSelection={handleSaveCategoryColumnSelection}
+            saveDisabled={!categoryHasUnsavedChanges}
+            minSelectable={1}
+          />
+          <ToggleButtonGroup value={viewMode} exclusive onChange={(_, v) => { if (v) setViewMode(v); }} aria-label="view mode" size="small">
+            <ToggleButton value="cards" aria-label="card view"><Tooltip title="Card View"><ViewModuleIcon /></Tooltip></ToggleButton>
+            <ToggleButton value="list" aria-label="list view"><Tooltip title="List View"><ViewListIcon /></Tooltip></ToggleButton>
+          </ToggleButtonGroup>
+        </Box>
       </Box>
+
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+        Showing {filtered.length} of {categories.length} categories
+      </Typography>
 
       {loading ? (
         <Box sx={{

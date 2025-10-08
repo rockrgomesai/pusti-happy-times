@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
   Box,
   Typography,
@@ -45,6 +45,10 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'react-hot-toast';
 import api from '@/lib/api';
+import ExportMenu from '@/components/common/ExportMenu';
+import ColumnVisibilityMenu from '@/components/common/ColumnVisibilityMenu';
+import { ExportColumn, formatDateForExport } from '@/lib/exportUtils';
+import { calculateTableMinWidth } from '@/lib/tableUtils';
 
 // Transport type definition (matches backend model exactly)
 interface Transport {
@@ -62,6 +66,22 @@ const transportSchema = z.object({
 });
 
 type TransportFormData = z.infer<typeof transportSchema>;
+
+type Order = 'asc' | 'desc';
+
+type OrderableKeys = 'transport' | 'created_at' | 'updated_at' | 'created_by' | 'updated_by';
+
+interface TransportColumnDefinition {
+  id: string;
+  label: string;
+  sortableKey?: OrderableKeys;
+  align?: 'inherit' | 'left' | 'center' | 'right' | 'justify';
+  alwaysVisible?: boolean;
+  minWidth?: number;
+  renderCell: (transport: Transport) => React.ReactNode;
+}
+
+const TRANSPORT_COLUMN_STORAGE_KEY = 'master:transports:visibleColumns';
 
 const getTransportErrorMessage = (error: unknown, fallback: string): string => {
   if (error && typeof error === 'object' && 'response' in error) {
@@ -89,10 +109,39 @@ export default function TransportsPage() {
   const [transportToDelete, setTransportToDelete] = useState<string | null>(null);
 
   // Sorting and pagination state
-  const [orderBy, setOrderBy] = useState<keyof Transport>('transport');
-  const [order, setOrder] = useState<'asc' | 'desc'>('asc');
+  const [orderBy, setOrderBy] = useState<OrderableKeys>('transport');
+  const [order, setOrder] = useState<Order>('asc');
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [visibleTransportColumnIds, setVisibleTransportColumnIds] = useState<string[]>([]);
+  const [persistedTransportColumnIds, setPersistedTransportColumnIds] = useState<string[]>([]);
+  const transportColumnStateHydratedRef = useRef(false);
+
+  const transportExportColumns = useMemo<ExportColumn<Transport>[]>(
+    () => [
+      {
+        header: 'Transport Name',
+        accessor: (row) => row.transport,
+      },
+      {
+        header: 'Created By',
+        accessor: (row) => row.created_by?.username ?? '',
+      },
+      {
+        header: 'Updated By',
+        accessor: (row) => row.updated_by?.username ?? '',
+      },
+      {
+        header: 'Created Date',
+        accessor: (row) => formatDateForExport(row.created_at),
+      },
+      {
+        header: 'Updated Date',
+        accessor: (row) => formatDateForExport(row.updated_at),
+      },
+    ],
+    []
+  );
 
   // Form setup
   const {
@@ -108,7 +157,7 @@ export default function TransportsPage() {
   });
 
   // Load transports
-  const loadTransports = async () => {
+  const loadTransports = useCallback(async () => {
     try {
       setLoading(true);
       const response = await api.get('/transports');
@@ -126,112 +175,497 @@ export default function TransportsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     loadTransports();
-  }, []);
+  }, [loadTransports]);
 
   // Filter transports based on search term
-  const filteredTransports = transports.filter((transport) =>
-    transport.transport.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredTransports = useMemo(() => {
+    const query = searchTerm.trim().toLowerCase();
+    if (!query) {
+      return transports;
+    }
+    return transports.filter((transport) =>
+      transport.transport.toLowerCase().includes(query)
+    );
+  }, [transports, searchTerm]);
 
   // Sorting function
-  const handleSort = (property: keyof Transport) => {
-    const isAsc = orderBy === property && order === 'asc';
-    setOrder(isAsc ? 'desc' : 'asc');
-    setOrderBy(property);
-    setPage(0); // Reset to first page when sorting
-  };
-
-  // Sort the filtered transports
-  const sortedTransports = [...filteredTransports].sort((a, b) => {
-    let aValue: unknown, bValue: unknown;
-    
-    if (orderBy === 'created_at' || orderBy === 'updated_at') {
-      aValue = new Date(a[orderBy]).getTime();
-      bValue = new Date(b[orderBy]).getTime();
-    } else {
-      aValue = a[orderBy];
-      bValue = b[orderBy];
-    }
-    
-    // Handle null/undefined values
-    if (aValue == null && bValue == null) return 0;
-    if (aValue == null) return order === 'asc' ? -1 : 1;
-    if (bValue == null) return order === 'asc' ? 1 : -1;
-    
-    // Convert to comparable values
-    let aCompare: string | number = String(aValue);
-    let bCompare: string | number = String(bValue);
-    
-    if (typeof aValue === 'string' && typeof bValue === 'string') {
-      aCompare = aValue.toLowerCase();
-      bCompare = bValue.toLowerCase();
-    } else if (typeof aValue === 'number' && typeof bValue === 'number') {
-      aCompare = aValue;
-      bCompare = bValue;
-    }
-    
-    if (order === 'asc') {
-      return aCompare < bCompare ? -1 : aCompare > bCompare ? 1 : 0;
-    } else {
-      return aCompare > bCompare ? -1 : aCompare < bCompare ? 1 : 0;
-    }
-  });
-
-  // Paginate the sorted transports
-  const paginatedTransports = sortedTransports.slice(
-    page * rowsPerPage,
-    page * rowsPerPage + rowsPerPage
+  const handleSort = useCallback(
+    (property: OrderableKeys) => {
+      const isAsc = orderBy === property && order === 'asc';
+      setOrder(isAsc ? 'desc' : 'asc');
+      setOrderBy(property);
+      setPage(0);
+    },
+    [order, orderBy]
   );
 
-  // Pagination handlers
-  const handleChangePage = (event: unknown, newPage: number) => {
-    setPage(newPage);
-  };
+  // Sort the filtered transports
+  const sortedTransports = useMemo(() => {
+    const next = [...filteredTransports];
+    next.sort((a, b) => {
+      let aValue: unknown;
+      let bValue: unknown;
 
-  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
+      if (orderBy === 'created_at' || orderBy === 'updated_at') {
+        aValue = new Date(a[orderBy]).getTime();
+        bValue = new Date(b[orderBy]).getTime();
+      } else if (orderBy === 'created_by' || orderBy === 'updated_by') {
+        const aUser = orderBy === 'created_by' ? a.created_by : a.updated_by;
+        const bUser = orderBy === 'created_by' ? b.created_by : b.updated_by;
+        aValue = aUser?.username ?? '';
+        bValue = bUser?.username ?? '';
+      } else {
+        aValue = a[orderBy];
+        bValue = b[orderBy];
+      }
+
+      if (aValue == null && bValue == null) return 0;
+      if (aValue == null) return order === 'asc' ? -1 : 1;
+      if (bValue == null) return order === 'asc' ? 1 : -1;
+
+      let aCompare: string | number = String(aValue);
+      let bCompare: string | number = String(bValue);
+
+      if (typeof aValue === 'string' && typeof bValue === 'string') {
+        aCompare = aValue.toLowerCase();
+        bCompare = bValue.toLowerCase();
+      } else if (typeof aValue === 'number' && typeof bValue === 'number') {
+        aCompare = aValue;
+        bCompare = bValue;
+      }
+
+      if (order === 'asc') {
+        return aCompare < bCompare ? -1 : aCompare > bCompare ? 1 : 0;
+      }
+      return aCompare > bCompare ? -1 : aCompare < bCompare ? 1 : 0;
+    });
+    return next;
+  }, [filteredTransports, order, orderBy]);
+
+  const fetchAllTransports = useCallback(async () => [...sortedTransports], [sortedTransports]);
+
+  // Paginate the sorted transports
+  const paginatedTransports = useMemo(
+    () =>
+      sortedTransports.slice(
+        page * rowsPerPage,
+        page * rowsPerPage + rowsPerPage
+      ),
+    [sortedTransports, page, rowsPerPage]
+  );
+
+  const handleChangePage = useCallback((_event: unknown, newPage: number) => {
+    setPage(newPage);
+  }, []);
+
+  const handleChangeRowsPerPage = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     setRowsPerPage(parseInt(event.target.value, 10));
     setPage(0);
-  };
+  }, []);
 
-  // Handle form submission
-  const onSubmit = async (data: TransportFormData) => {
-    try {
-      if (editingTransport) {
-        await api.put(`/transports/${editingTransport._id}`, data);
-        toast.success('Transport updated successfully');
-      } else {
-        await api.post('/transports', data);
-        toast.success('Transport created successfully');
-      }
-      
-      setOpenDialog(false);
-      reset();
-      setEditingTransport(null);
-      loadTransports();
-    } catch (error: unknown) {
-      toast.error(getTransportErrorMessage(error, 'Failed to save transport'));
-    }
-  };
+  const formatDate = useCallback((dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-BD', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
+  }, []);
 
-  // Handle edit
-  const handleEdit = (transport: Transport) => {
-    setEditingTransport(transport);
-    reset({ transport: transport.transport });
-    setOpenDialog(true);
-  };
+  const handleEdit = useCallback(
+    (transport: Transport) => {
+      setEditingTransport(transport);
+      reset({ transport: transport.transport });
+      setOpenDialog(true);
+    },
+    [reset]
+  );
 
-  // Handle delete confirmation
-  const handleDeleteClick = (transportId: string) => {
+  const handleDeleteClick = useCallback((transportId: string) => {
     setTransportToDelete(transportId);
     setDeleteConfirmOpen(true);
-  };
+  }, []);
+
+  const transportColumns = useMemo<TransportColumnDefinition[]>(
+    () => [
+      {
+        id: 'transport',
+        label: 'Transport Name',
+        sortableKey: 'transport',
+        minWidth: 220,
+        renderCell: (transport) => (
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <TransportIcon sx={{ color: 'primary.main' }} />
+            <Typography variant="body1" fontWeight="medium" sx={{ whiteSpace: 'nowrap' }}>
+              {transport.transport}
+            </Typography>
+          </Box>
+        ),
+      },
+      {
+        id: 'created_by',
+        label: 'Created By',
+        sortableKey: 'created_by',
+        minWidth: 180,
+        renderCell: (transport) => transport.created_by?.username ?? '-',
+      },
+      {
+        id: 'updated_by',
+        label: 'Updated By',
+        sortableKey: 'updated_by',
+        minWidth: 180,
+        renderCell: (transport) => transport.updated_by?.username ?? '-',
+      },
+      {
+        id: 'created_at',
+        label: 'Created Date',
+        sortableKey: 'created_at',
+        minWidth: 180,
+        renderCell: (transport) => formatDate(transport.created_at),
+      },
+      {
+        id: 'updated_at',
+        label: 'Updated Date',
+        sortableKey: 'updated_at',
+        minWidth: 180,
+        renderCell: (transport) => formatDate(transport.updated_at),
+      },
+      {
+        id: 'actions',
+        label: 'Actions',
+        align: 'right',
+        alwaysVisible: true,
+        minWidth: 160,
+        renderCell: (transport) => (
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
+            <Tooltip title="Edit">
+              <IconButton size="small" onClick={() => handleEdit(transport)} color="primary">
+                <EditIcon />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Delete">
+              <IconButton
+                size="small"
+                onClick={() => handleDeleteClick(transport._id)}
+                color="error"
+              >
+                <DeleteIcon />
+              </IconButton>
+            </Tooltip>
+          </Box>
+        ),
+      },
+    ],
+    [formatDate, handleDeleteClick, handleEdit]
+  );
+
+  const selectableTransportColumnIds = useMemo(
+    () => transportColumns.filter((column) => !column.alwaysVisible).map((column) => column.id),
+    [transportColumns]
+  );
+
+  const handleVisibleTransportColumnsChange = useCallback(
+    (nextSelected: string[]) => {
+      const sanitized = selectableTransportColumnIds.filter((id) => nextSelected.includes(id));
+      setVisibleTransportColumnIds(sanitized.length ? sanitized : selectableTransportColumnIds);
+    },
+    [selectableTransportColumnIds]
+  );
+
+  const transportColumnVisibilityOptions = useMemo(
+    () => transportColumns.map(({ id, label, alwaysVisible }) => ({ id, label, alwaysVisible })),
+    [transportColumns]
+  );
+
+  const sanitizeTransportSelection = useCallback(
+    (ids: string[]) => selectableTransportColumnIds.filter((id) => ids.includes(id)),
+    [selectableTransportColumnIds]
+  );
+
+  useEffect(() => {
+    if (!selectableTransportColumnIds.length) {
+      setVisibleTransportColumnIds([]);
+      setPersistedTransportColumnIds([]);
+      return;
+    }
+
+    if (!transportColumnStateHydratedRef.current) {
+      transportColumnStateHydratedRef.current = true;
+
+      let initialSelection = selectableTransportColumnIds;
+
+      try {
+        const stored = window.localStorage.getItem(TRANSPORT_COLUMN_STORAGE_KEY);
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed)) {
+            const sanitized = sanitizeTransportSelection(parsed);
+            if (sanitized.length) {
+              initialSelection = sanitized;
+            }
+          }
+        }
+      } catch (error) {
+        console.warn('Failed to read transport column preferences', error);
+      }
+
+      setVisibleTransportColumnIds(initialSelection);
+      setPersistedTransportColumnIds(initialSelection);
+      return;
+    }
+
+    setVisibleTransportColumnIds((previous) => {
+      const sanitizedPrevious = sanitizeTransportSelection(previous);
+      if (sanitizedPrevious.length) {
+        return sanitizedPrevious;
+      }
+      return selectableTransportColumnIds;
+    });
+
+    setPersistedTransportColumnIds((previous) => {
+      const sanitizedPrevious = sanitizeTransportSelection(previous);
+      if (sanitizedPrevious.length) {
+        return sanitizedPrevious;
+      }
+      return selectableTransportColumnIds;
+    });
+  }, [sanitizeTransportSelection, selectableTransportColumnIds]);
+
+  const transportHasUnsavedChanges = useMemo(() => {
+    if (visibleTransportColumnIds.length !== persistedTransportColumnIds.length) {
+      return true;
+    }
+    const persistedSet = new Set(persistedTransportColumnIds);
+    return visibleTransportColumnIds.some((id) => !persistedSet.has(id));
+  }, [persistedTransportColumnIds, visibleTransportColumnIds]);
+
+  const handleSaveTransportColumnSelection = useCallback(() => {
+    const sanitized = sanitizeTransportSelection(visibleTransportColumnIds);
+    setVisibleTransportColumnIds(sanitized);
+    setPersistedTransportColumnIds(sanitized);
+    try {
+      window.localStorage.setItem(TRANSPORT_COLUMN_STORAGE_KEY, JSON.stringify(sanitized));
+      toast.success('Column selection saved');
+    } catch (error) {
+      console.warn('Failed to persist transport column preferences', error);
+      toast.error('Failed to save column selection');
+    }
+  }, [sanitizeTransportSelection, visibleTransportColumnIds]);
+
+  const visibleTransportColumns = useMemo(
+    () =>
+      transportColumns.filter(
+        (column) => column.alwaysVisible || visibleTransportColumnIds.includes(column.id)
+      ),
+    [transportColumns, visibleTransportColumnIds]
+  );
+
+  const transportTableMinWidth = useMemo(
+    () => calculateTableMinWidth(visibleTransportColumns.length, 160, 900),
+    [visibleTransportColumns.length]
+  );
+
+  const renderCardsView = useCallback(
+    () => (
+      <>
+        <Grid container spacing={3}>
+          {paginatedTransports.map((transport) => (
+            <Grid size={{ xs: 12, sm: 6, md: 4 }} key={transport._id}>
+              <Card
+                sx={{
+                  height: '100%',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  '&:hover': {
+                    boxShadow: (theme) => theme.shadows[4],
+                    transform: 'translateY(-2px)',
+                  },
+                  transition: 'all 0.2s ease-in-out',
+                }}
+              >
+                <CardContent sx={{ flexGrow: 1 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                    <TransportIcon sx={{ mr: 1, color: 'primary.main' }} />
+                    <Typography variant="h6" component="h3" noWrap>
+                      {transport.transport}
+                    </Typography>
+                  </Box>
+
+                  <Typography variant="body2" color="text.secondary">
+                    Created: {formatDate(transport.created_at)}
+                  </Typography>
+
+                  {transport.created_by && (
+                    <Typography variant="body2" color="text.secondary">
+                      By: {transport.created_by.username}
+                    </Typography>
+                  )}
+                </CardContent>
+
+                <CardActions sx={{ justifyContent: 'flex-end', p: 2 }}>
+                  <Tooltip title="Edit">
+                    <IconButton size="small" onClick={() => handleEdit(transport)} color="primary">
+                      <EditIcon />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title="Delete">
+                    <IconButton
+                      size="small"
+                      onClick={() => handleDeleteClick(transport._id)}
+                      color="error"
+                    >
+                      <DeleteIcon />
+                    </IconButton>
+                  </Tooltip>
+                </CardActions>
+              </Card>
+            </Grid>
+          ))}
+        </Grid>
+
+        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
+          <TablePagination
+            rowsPerPageOptions={[5, 10, 25, 50]}
+            component="div"
+            count={sortedTransports.length}
+            rowsPerPage={rowsPerPage}
+            page={page}
+            onPageChange={handleChangePage}
+            onRowsPerPageChange={handleChangeRowsPerPage}
+          />
+        </Box>
+      </>
+    ),
+    [paginatedTransports, sortedTransports, rowsPerPage, page, handleChangePage, handleChangeRowsPerPage, formatDate, handleEdit, handleDeleteClick]
+  );
+
+  const renderListView = useCallback(
+    () => (
+      <TableContainer component={Paper} sx={{ overflowX: 'auto' }}>
+        <Table sx={{ minWidth: transportTableMinWidth }}>
+          <TableHead>
+            <TableRow>
+              {visibleTransportColumns.map((column) => {
+                const isActions = column.id === 'actions';
+                const sortableKey = column.sortableKey;
+                return (
+                  <TableCell
+                    key={column.id}
+                    align={column.align}
+                    sx={{
+                      fontWeight: 'bold',
+                      whiteSpace: 'nowrap',
+                      backgroundColor: 'background.paper',
+                      minWidth: column.minWidth,
+                      ...(isActions
+                        ? {
+                            position: 'sticky',
+                            right: 0,
+                            zIndex: 4,
+                            boxShadow: (theme) => `-4px 0 8px -4px ${theme.palette.grey[300]}`,
+                          }
+                        : {}),
+                    }}
+                  >
+                    {sortableKey ? (
+                      <TableSortLabel
+                        active={orderBy === sortableKey}
+                        direction={orderBy === sortableKey ? order : 'asc'}
+                        onClick={() => handleSort(sortableKey)}
+                        sx={{ fontWeight: 'bold' }}
+                      >
+                        {column.label}
+                      </TableSortLabel>
+                    ) : (
+                      column.label
+                    )}
+                  </TableCell>
+                );
+              })}
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {paginatedTransports.map((transport) => (
+              <TableRow key={transport._id} hover>
+                {visibleTransportColumns.map((column) => {
+                  const isActions = column.id === 'actions';
+                  return (
+                    <TableCell
+                      key={column.id}
+                      align={column.align}
+                      sx={{
+                        backgroundColor: 'background.paper',
+                        minWidth: column.minWidth,
+                        ...(isActions
+                          ? {
+                              position: 'sticky',
+                              right: 0,
+                              zIndex: 3,
+                              boxShadow: (theme) => `-4px 0 8px -4px ${theme.palette.grey[200]}`,
+                            }
+                          : {}),
+                      }}
+                    >
+                      {column.renderCell(transport)}
+                    </TableCell>
+                  );
+                })}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+        <TablePagination
+          rowsPerPageOptions={[5, 10, 25, 50]}
+          component="div"
+          count={sortedTransports.length}
+          rowsPerPage={rowsPerPage}
+          page={page}
+          onPageChange={handleChangePage}
+          onRowsPerPageChange={handleChangeRowsPerPage}
+          sx={{
+            '& .MuiTablePagination-toolbar': {
+              paddingLeft: 2,
+              paddingRight: 2,
+            },
+            '& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows': {
+              fontSize: '0.875rem',
+              fontWeight: 500,
+            },
+          }}
+        />
+      </TableContainer>
+    ),
+    [visibleTransportColumns, transportTableMinWidth, orderBy, order, paginatedTransports, sortedTransports, rowsPerPage, page, handleChangePage, handleChangeRowsPerPage, handleSort]
+  );
+
+  // Handle form submission
+  const onSubmit = useCallback(
+    async (data: TransportFormData) => {
+      try {
+        if (editingTransport) {
+          await api.put(`/transports/${editingTransport._id}`, data);
+          toast.success('Transport updated successfully');
+        } else {
+          await api.post('/transports', data);
+          toast.success('Transport created successfully');
+        }
+
+        setOpenDialog(false);
+        reset();
+        setEditingTransport(null);
+        loadTransports();
+      } catch (error: unknown) {
+        toast.error(getTransportErrorMessage(error, 'Failed to save transport'));
+      }
+    },
+    [editingTransport, reset, loadTransports]
+  );
 
   // Handle actual delete
-  const handleDeleteConfirm = async () => {
+  const handleDeleteConfirm = useCallback(async () => {
     if (!transportToDelete) return;
 
     try {
@@ -243,7 +677,7 @@ export default function TransportsPage() {
     } catch (error: unknown) {
       toast.error(getTransportErrorMessage(error, 'Failed to delete transport'));
     }
-  };
+  }, [transportToDelete, loadTransports]);
 
   // Handle dialog close
   const handleDialogClose = () => {
@@ -253,10 +687,10 @@ export default function TransportsPage() {
   };
 
   // Handle delete cancel
-  const handleDeleteCancel = () => {
+  const handleDeleteCancel = useCallback(() => {
     setDeleteConfirmOpen(false);
     setTransportToDelete(null);
-  };
+  }, []);
 
   // Loading skeleton
   if (loading) {
@@ -310,6 +744,7 @@ export default function TransportsPage() {
         gap: 2
       }}>
         <TextField
+          size="small"
           placeholder="Search transports..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
@@ -322,20 +757,41 @@ export default function TransportsPage() {
           }}
           sx={{ minWidth: 250 }}
         />
-        
-        <ToggleButtonGroup
-          value={viewMode}
-          exclusive
-          onChange={(_, newMode) => newMode && setViewMode(newMode)}
-          aria-label="view mode"
-        >
-          <ToggleButton value="cards" aria-label="card view">
-            <ViewModuleIcon />
-          </ToggleButton>
-          <ToggleButton value="list" aria-label="list view">
-            <ViewListIcon />
-          </ToggleButton>
-        </ToggleButtonGroup>
+
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <ExportMenu
+            title="Transport Report"
+            fileBaseName="transports"
+            currentRows={paginatedTransports}
+            columns={transportExportColumns}
+            onFetchAll={fetchAllTransports}
+            disabled={loading || (transports.length === 0 && paginatedTransports.length === 0)}
+          />
+
+          <ColumnVisibilityMenu
+            options={transportColumnVisibilityOptions}
+            selected={visibleTransportColumnIds}
+            onChange={handleVisibleTransportColumnsChange}
+            onSaveSelection={handleSaveTransportColumnSelection}
+            saveDisabled={!transportHasUnsavedChanges}
+            minSelectable={1}
+          />
+
+          <ToggleButtonGroup
+            value={viewMode}
+            exclusive
+            onChange={(_, newMode) => newMode && setViewMode(newMode)}
+            aria-label="view mode"
+            size="small"
+          >
+            <ToggleButton value="cards" aria-label="card view">
+              <ViewModuleIcon />
+            </ToggleButton>
+            <ToggleButton value="list" aria-label="list view">
+              <ViewListIcon />
+            </ToggleButton>
+          </ToggleButtonGroup>
+        </Box>
       </Box>
 
       {/* Results Summary */}
@@ -344,161 +800,7 @@ export default function TransportsPage() {
       </Typography>
 
       {/* Content based on view mode */}
-      {viewMode === 'cards' ? (
-        <>
-          {/* Card View */}
-          <Grid container spacing={3}>
-            {paginatedTransports.map((transport) => (
-              <Grid size={{ xs: 12, sm: 6, md: 4 }} key={transport._id}>
-                <Card 
-                  sx={{ 
-                    height: '100%', 
-                    display: 'flex', 
-                    flexDirection: 'column',
-                    '&:hover': {
-                      boxShadow: (theme) => theme.shadows[4],
-                      transform: 'translateY(-2px)',
-                    },
-                    transition: 'all 0.2s ease-in-out',
-                  }}
-                >
-                  <CardContent sx={{ flexGrow: 1 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                      <TransportIcon sx={{ mr: 1, color: 'primary.main' }} />
-                      <Typography variant="h6" component="h3" noWrap>
-                        {transport.transport}
-                      </Typography>
-                    </Box>
-                    
-                    <Typography variant="body2" color="text.secondary">
-                      Created: {new Date(transport.created_at).toLocaleDateString()}
-                    </Typography>
-                    
-                    {transport.created_by && (
-                      <Typography variant="body2" color="text.secondary">
-                        By: {transport.created_by.username}
-                      </Typography>
-                    )}
-                  </CardContent>
-                  
-                  <CardActions sx={{ justifyContent: 'flex-end', p: 2 }}>
-                    <Tooltip title="Edit">
-                      <IconButton
-                        size="small"
-                        onClick={() => handleEdit(transport)}
-                        color="primary"
-                      >
-                        <EditIcon />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Delete">
-                      <IconButton
-                        size="small"
-                        onClick={() => handleDeleteClick(transport._id)}
-                        color="error"
-                      >
-                        <DeleteIcon />
-                      </IconButton>
-                    </Tooltip>
-                  </CardActions>
-                </Card>
-              </Grid>
-            ))}
-          </Grid>
-          
-          {/* Pagination for Card View */}
-          <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
-            <TablePagination
-              rowsPerPageOptions={[5, 10, 25]}
-              component="div"
-              count={filteredTransports.length}
-              rowsPerPage={rowsPerPage}
-              page={page}
-              onPageChange={handleChangePage}
-              onRowsPerPageChange={handleChangeRowsPerPage}
-            />
-          </Box>
-        </>
-      ) : (
-        /* Table View */
-        <Paper sx={{ width: '100%', mb: 2 }}>
-          <TableContainer>
-            <Table sx={{ minWidth: 750 }} aria-labelledby="tableTitle">
-              <TableHead>
-                <TableRow>
-                  <TableCell>
-                    <TableSortLabel
-                      active={orderBy === 'transport'}
-                      direction={orderBy === 'transport' ? order : 'asc'}
-                      onClick={() => handleSort('transport')}
-                    >
-                      Transport Name
-                    </TableSortLabel>
-                  </TableCell>
-                  <TableCell>
-                    <TableSortLabel
-                      active={orderBy === 'created_at'}
-                      direction={orderBy === 'created_at' ? order : 'asc'}
-                      onClick={() => handleSort('created_at')}
-                    >
-                      Created Date
-                    </TableSortLabel>
-                  </TableCell>
-                  <TableCell>Created By</TableCell>
-                  <TableCell align="right">Actions</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {paginatedTransports.map((transport) => (
-                  <TableRow key={transport._id} hover>
-                    <TableCell>
-                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        <TransportIcon sx={{ mr: 1, color: 'primary.main' }} />
-                        {transport.transport}
-                      </Box>
-                    </TableCell>
-                    <TableCell>
-                      {new Date(transport.created_at).toLocaleDateString()}
-                    </TableCell>
-                    <TableCell>
-                      {transport.created_by?.username || 'Unknown'}
-                    </TableCell>
-                    <TableCell align="right">
-                      <Tooltip title="Edit">
-                        <IconButton
-                          size="small"
-                          onClick={() => handleEdit(transport)}
-                          color="primary"
-                        >
-                          <EditIcon />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title="Delete">
-                        <IconButton
-                          size="small"
-                          onClick={() => handleDeleteClick(transport._id)}
-                          color="error"
-                        >
-                          <DeleteIcon />
-                        </IconButton>
-                      </Tooltip>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-          <TablePagination
-            rowsPerPageOptions={[5, 10, 25]}
-            component="div"
-            count={filteredTransports.length}
-            rowsPerPage={rowsPerPage}
-            page={page}
-            onPageChange={handleChangePage}
-            onRowsPerPageChange={handleChangeRowsPerPage}
-          />
-        </Paper>
-      )}
+      {viewMode === 'cards' ? renderCardsView() : renderListView()}
 
       {/* Empty State */}
       {filteredTransports.length === 0 && !loading && (

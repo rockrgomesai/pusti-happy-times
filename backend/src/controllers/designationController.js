@@ -16,6 +16,8 @@
 const Designation = require('../models/Designation');
 const { validationResult } = require('express-validator');
 
+const NAME_PATTERN = /^[a-zA-Z0-9\s\-\.\,\&']+$/;
+
 /**
  * Utility function to handle validation errors
  * @param {Request} req - Express request object
@@ -473,6 +475,57 @@ const getDesignationStats = async (req, res) => {
   }
 };
 
+/**
+ * Get designation metadata
+ * GET /api/designations/meta
+ */
+const getDesignationMeta = (req, res) => {
+  try {
+    const namePath = Designation.schema.path('name');
+    const activePath = Designation.schema.path('active');
+
+    const resolveRuleValue = (rule) => {
+      if (Array.isArray(rule)) {
+        return rule[0];
+      }
+      return rule;
+    };
+
+    const minLength = resolveRuleValue(namePath?.options?.minlength) || 1;
+    const maxLength = resolveRuleValue(namePath?.options?.maxlength) || 100;
+    const defaultActive =
+      typeof activePath?.defaultValue === 'function'
+        ? activePath.defaultValue()
+        : activePath?.defaultValue;
+
+    res.status(200).json({
+      success: true,
+      message: 'Designation metadata retrieved successfully',
+      data: {
+        defaults: {
+          active: typeof defaultActive === 'undefined' ? true : defaultActive
+        },
+        validation: {
+          name: {
+            minLength,
+            maxLength,
+            pattern: NAME_PATTERN.source,
+            description:
+              'Allows letters, numbers, spaces, hyphen (-), period (.), comma (,), ampersand (&), and apostrophe (\')'
+          }
+        }
+      }
+    });
+  } catch (error) {
+    console.error('❌ Error generating designation metadata:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to generate designation metadata',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+
 module.exports = {
   getAllDesignations,
   getActiveDesignations,
@@ -482,5 +535,6 @@ module.exports = {
   deleteDesignation,
   restoreDesignation,
   searchDesignations,
-  getDesignationStats
+  getDesignationStats,
+  getDesignationMeta
 };

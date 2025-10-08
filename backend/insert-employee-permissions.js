@@ -1,6 +1,5 @@
 /**
  * Insert Employee API Permissions
- * Script to add employee-related permissions to the api_permissions collection
  */
 
 require('dotenv').config();

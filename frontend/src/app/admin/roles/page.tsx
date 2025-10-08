@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
   Box,
   Typography,
@@ -41,6 +41,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'react-hot-toast';
 import api from '@/lib/api';
+import ColumnVisibilityMenu from '@/components/common/ColumnVisibilityMenu';
+import { calculateTableMinWidth } from '@/lib/tableUtils';
 
 // Role type definition matching backend
 interface Role {
@@ -60,6 +62,16 @@ const roleSchema = z.object({
 
 type RoleFormData = z.infer<typeof roleSchema>;
 
+const ROLE_COLUMN_STORAGE_KEY = 'admin-roles-visible-columns-v1';
+
+interface RoleColumnDefinition {
+  id: string;
+  label: string;
+  align?: 'inherit' | 'left' | 'center' | 'right' | 'justify';
+  alwaysVisible?: boolean;
+  renderCell: (role: Role) => React.ReactNode;
+}
+
 export default function RolesPage() {
   // State management
   const [roles, setRoles] = useState<Role[]>([]);
@@ -70,6 +82,9 @@ export default function RolesPage() {
   const [editingRole, setEditingRole] = useState<Role | null>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [roleToDelete, setRoleToDelete] = useState<string | null>(null);
+  const [visibleRoleColumnIds, setVisibleRoleColumnIds] = useState<string[]>([]);
+  const [persistedRoleColumnIds, setPersistedRoleColumnIds] = useState<string[]>([]);
+  const roleColumnStateHydratedRef = useRef(false);
 
   // Form setup
   const {
@@ -162,13 +177,13 @@ export default function RolesPage() {
   };
 
   // Handle edit role
-  const handleEditRole = (role: Role) => {
+  const handleEditRole = useCallback((role: Role) => {
     setEditingRole(role);
     reset({
       role: role.role,
     });
     setOpenDialog(true);
-  };
+  }, [reset]);
 
   // Handle add new role
   const handleAddRole = () => {
@@ -178,14 +193,199 @@ export default function RolesPage() {
   };
 
   // Format date
-  const formatDate = (dateString?: string) => {
+  const formatDate = useCallback((dateString?: string) => {
     if (!dateString) return 'N/A';
     return new Date(dateString).toLocaleDateString('en-BD', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
     });
-  };
+  }, []);
+
+  const roleColumns = useMemo<RoleColumnDefinition[]>(
+    () => [
+      {
+        id: 'role',
+        label: 'Role Name',
+        renderCell: (role) => (
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <SecurityIcon sx={{ mr: 2, color: 'primary.main' }} />
+            <Typography variant="body1" fontWeight="medium">
+              {role.role}
+            </Typography>
+          </Box>
+        ),
+      },
+      {
+        id: 'userCount',
+        label: 'Users',
+        align: 'center',
+        renderCell: (role) => (
+          <Chip
+            icon={<GroupIcon />}
+            label={role.userCount ?? 0}
+            size="small"
+            variant="outlined"
+          />
+        ),
+      },
+      {
+        id: 'createdAt',
+        label: 'Created',
+        align: 'center',
+        renderCell: (role) => (
+          <Typography variant="body2" color="text.secondary">
+            {formatDate(role.createdAt)}
+          </Typography>
+        ),
+      },
+      {
+        id: 'actions',
+        label: 'Actions',
+        align: 'center',
+        alwaysVisible: true,
+        renderCell: (role) => (
+          <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1 }}>
+            <Tooltip title="Edit Role">
+              <IconButton
+                onClick={() => handleEditRole(role)}
+                size="small"
+                color="primary"
+              >
+                <EditIcon />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Delete Role">
+              <IconButton
+                onClick={() => {
+                  setRoleToDelete(role._id);
+                  setDeleteConfirmOpen(true);
+                }}
+                size="small"
+                color="error"
+                disabled={role.role === 'SuperAdmin'}
+              >
+                <DeleteIcon />
+              </IconButton>
+            </Tooltip>
+          </Box>
+        ),
+      },
+    ],
+    [formatDate, handleEditRole]
+  );
+
+  const selectableRoleColumnIds = useMemo(
+    () => roleColumns.filter((column) => !column.alwaysVisible).map((column) => column.id),
+    [roleColumns]
+  );
+
+  const sanitizeRoleSelection = useCallback(
+    (ids: string[]) => selectableRoleColumnIds.filter((id) => ids.includes(id)),
+    [selectableRoleColumnIds]
+  );
+
+  const handleVisibleRoleColumnsChange = useCallback(
+    (nextSelected: string[]) => {
+      const sanitized = sanitizeRoleSelection(nextSelected);
+      setVisibleRoleColumnIds(sanitized.length ? sanitized : selectableRoleColumnIds);
+    },
+    [sanitizeRoleSelection, selectableRoleColumnIds]
+  );
+
+  const roleColumnVisibilityOptions = useMemo(
+    () => roleColumns.map(({ id, label, alwaysVisible }) => ({ id, label, alwaysVisible })),
+    [roleColumns]
+  );
+
+  useEffect(() => {
+    if (!selectableRoleColumnIds.length) {
+      setVisibleRoleColumnIds([]);
+      setPersistedRoleColumnIds([]);
+      return;
+    }
+
+    if (!roleColumnStateHydratedRef.current) {
+      roleColumnStateHydratedRef.current = true;
+
+      let initialSelection = selectableRoleColumnIds;
+
+      try {
+        const stored = window.localStorage.getItem(ROLE_COLUMN_STORAGE_KEY);
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed)) {
+            const sanitized = sanitizeRoleSelection(parsed);
+            if (sanitized.length) {
+              initialSelection = sanitized;
+            }
+          }
+        }
+      } catch (error) {
+        console.warn('Failed to read role column preferences', error);
+      }
+
+      setVisibleRoleColumnIds(initialSelection);
+      setPersistedRoleColumnIds(initialSelection);
+      return;
+    }
+
+    setVisibleRoleColumnIds((previous) => {
+      const sanitizedPrevious = sanitizeRoleSelection(previous);
+      if (sanitizedPrevious.length) {
+        return sanitizedPrevious;
+      }
+      return selectableRoleColumnIds;
+    });
+
+    setPersistedRoleColumnIds((previous) => {
+      const sanitizedPrevious = sanitizeRoleSelection(previous);
+      if (sanitizedPrevious.length) {
+        return sanitizedPrevious;
+      }
+      return selectableRoleColumnIds;
+    });
+  }, [sanitizeRoleSelection, selectableRoleColumnIds]);
+
+  const roleHasUnsavedChanges = useMemo(() => {
+    if (visibleRoleColumnIds.length !== persistedRoleColumnIds.length) {
+      return true;
+    }
+    const persistedSet = new Set(persistedRoleColumnIds);
+    return visibleRoleColumnIds.some((id) => !persistedSet.has(id));
+  }, [persistedRoleColumnIds, visibleRoleColumnIds]);
+
+  const handleSaveRoleColumnSelection = useCallback(() => {
+    const sanitized = sanitizeRoleSelection(visibleRoleColumnIds);
+    setVisibleRoleColumnIds(sanitized);
+    setPersistedRoleColumnIds(sanitized);
+    try {
+      window.localStorage.setItem(ROLE_COLUMN_STORAGE_KEY, JSON.stringify(sanitized));
+      toast.success('Column selection saved');
+    } catch (error) {
+      console.warn('Failed to persist role column preferences', error);
+      toast.error('Failed to save column selection');
+    }
+  }, [sanitizeRoleSelection, visibleRoleColumnIds]);
+
+  const visibleRoleColumns = useMemo(() => {
+    if (!visibleRoleColumnIds.length || !selectableRoleColumnIds.length) {
+      return roleColumns;
+    }
+
+    return roleColumns.filter(
+      (column) => column.alwaysVisible || visibleRoleColumnIds.includes(column.id)
+    );
+  }, [roleColumns, selectableRoleColumnIds, visibleRoleColumnIds]);
+
+  const roleTableMinWidth = useMemo(
+    () => calculateTableMinWidth(visibleRoleColumns.length || roleColumns.length, 160, 640),
+    [roleColumns, visibleRoleColumns]
+  );
+
+  const menuSelectedRoleColumnIds = visibleRoleColumnIds.length
+    ? visibleRoleColumnIds
+    : selectableRoleColumnIds;
 
   // Render loading skeleton
   const renderSkeleton = () => {
@@ -212,13 +412,15 @@ export default function RolesPage() {
       );
     }
 
+    const skeletonColumns = visibleRoleColumns;
+
     return (
       <TableContainer component={Paper}>
-        <Table>
+        <Table sx={{ minWidth: roleTableMinWidth }}>
           <TableHead>
             <TableRow>
-              {['Role Name', 'Users', 'Created', 'Actions'].map((header) => (
-                <TableCell key={header}>
+              {skeletonColumns.map((column) => (
+                <TableCell key={column.id} align={column.align}>
                   <Skeleton variant="text" />
                 </TableCell>
               ))}
@@ -227,8 +429,8 @@ export default function RolesPage() {
           <TableBody>
             {Array.from({ length: 5 }).map((_, index) => (
               <TableRow key={index}>
-                {Array.from({ length: 4 }).map((_, cellIndex) => (
-                  <TableCell key={cellIndex}>
+                {skeletonColumns.map((column) => (
+                  <TableCell key={column.id} align={column.align}>
                     <Skeleton variant="text" />
                   </TableCell>
                 ))}
@@ -322,63 +524,24 @@ export default function RolesPage() {
   const renderListView = () => (
     <Box sx={{ maxHeight: 'calc(100vh - 300px)', overflow: 'auto' }}>
       <TableContainer component={Paper}>
-        <Table stickyHeader>
+        <Table stickyHeader sx={{ minWidth: roleTableMinWidth }}>
           <TableHead>
             <TableRow>
-              <TableCell>Role Name</TableCell>
-              <TableCell align="center">Users</TableCell>
-              <TableCell align="center">Created</TableCell>
-              <TableCell align="center">Actions</TableCell>
+              {visibleRoleColumns.map((column) => (
+                <TableCell key={column.id} align={column.align}>
+                  <Typography sx={{ fontWeight: 'bold' }}>{column.label}</Typography>
+                </TableCell>
+              ))}
             </TableRow>
           </TableHead>
           <TableBody>
             {filteredRoles.map((role) => (
               <TableRow key={role._id}>
-                <TableCell>
-                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                    <SecurityIcon sx={{ mr: 2, color: 'primary.main' }} />
-                    <Typography variant="body1" fontWeight="medium">
-                      {role.role}
-                    </Typography>
-                  </Box>
-                </TableCell>
-                <TableCell align="center">
-                  <Chip
-                    icon={<GroupIcon />}
-                    label={role.userCount || 0}
-                    size="small"
-                    variant="outlined"
-                  />
-                </TableCell>
-                <TableCell align="center">
-                  <Typography variant="body2" color="text.secondary">
-                    {formatDate(role.createdAt)}
-                  </Typography>
-                </TableCell>
-                <TableCell align="center">
-                  <Tooltip title="Edit Role">
-                    <IconButton 
-                      onClick={() => handleEditRole(role)}
-                      size="small"
-                      color="primary"
-                    >
-                      <EditIcon />
-                    </IconButton>
-                  </Tooltip>
-                  <Tooltip title="Delete Role">
-                    <IconButton 
-                      onClick={() => {
-                        setRoleToDelete(role._id);
-                        setDeleteConfirmOpen(true);
-                      }}
-                      size="small"
-                      color="error"
-                      disabled={role.role === 'SuperAdmin'} // Prevent deleting SuperAdmin
-                    >
-                      <DeleteIcon />
-                    </IconButton>
-                  </Tooltip>
-                </TableCell>
+                {visibleRoleColumns.map((column) => (
+                  <TableCell key={column.id} align={column.align}>
+                    {column.renderCell(role)}
+                  </TableCell>
+                ))}
               </TableRow>
             ))}
           </TableBody>
@@ -429,8 +592,17 @@ export default function RolesPage() {
           />
         </Box>
 
-        {/* View Toggle */}
-        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+        {/* View Toggle and Column Controls */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+          <ColumnVisibilityMenu
+            options={roleColumnVisibilityOptions}
+            selected={menuSelectedRoleColumnIds}
+            onChange={handleVisibleRoleColumnsChange}
+            onSaveSelection={handleSaveRoleColumnSelection}
+            saveDisabled={!roleHasUnsavedChanges}
+            minSelectable={1}
+          />
+
           <Tooltip title="Card View">
             <IconButton
               onClick={() => setViewMode('cards')}

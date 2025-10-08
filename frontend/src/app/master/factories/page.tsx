@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
   Box,
   Typography,
@@ -46,6 +46,10 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'react-hot-toast';
 import api from '@/lib/api';
+import ExportMenu from '@/components/common/ExportMenu';
+import ColumnVisibilityMenu from '@/components/common/ColumnVisibilityMenu';
+import { ExportColumn, formatDateForExport } from '@/lib/exportUtils';
+import { calculateTableMinWidth } from '@/lib/tableUtils';
 
 // Factory type definition (matches backend model exactly)
 interface Factory {
@@ -66,7 +70,19 @@ type FactoryFormData = z.infer<typeof factorySchema>;
 
 type Order = 'asc' | 'desc';
 
-type OrderableKeys = keyof Pick<Factory, 'name' | 'created_at' | 'updated_at' | 'created_by'>;
+type OrderableKeys = keyof Pick<Factory, 'name' | 'created_at' | 'updated_at' | 'created_by' | 'updated_by'>;
+
+interface FactoryColumnDefinition {
+  id: string;
+  label: string;
+  sortableKey?: OrderableKeys;
+  align?: 'inherit' | 'left' | 'center' | 'right' | 'justify';
+  alwaysVisible?: boolean;
+  minWidth?: number;
+  renderCell: (factory: Factory) => React.ReactNode;
+}
+
+const FACTORY_COLUMN_STORAGE_KEY = 'master:factories:visibleColumns';
 
 export default function FactoriesPage() {
   // State management
@@ -84,6 +100,35 @@ export default function FactoriesPage() {
   const [order, setOrder] = useState<Order>('asc');
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [visibleFactoryColumnIds, setVisibleFactoryColumnIds] = useState<string[]>([]);
+  const [persistedFactoryColumnIds, setPersistedFactoryColumnIds] = useState<string[]>([]);
+  const factoryColumnStateHydratedRef = useRef(false);
+
+  const factoryExportColumns = useMemo<ExportColumn<Factory>[]>(
+    () => [
+      {
+        header: 'Factory Name',
+        accessor: (row) => row.name,
+      },
+      {
+        header: 'Created By',
+        accessor: (row) => row.created_by?.username ?? '',
+      },
+      {
+        header: 'Updated By',
+        accessor: (row) => row.updated_by?.username ?? '',
+      },
+      {
+        header: 'Created Date',
+        accessor: (row) => formatDateForExport(row.created_at),
+      },
+      {
+        header: 'Updated Date',
+        accessor: (row) => formatDateForExport(row.updated_at),
+      },
+    ],
+    []
+  );
 
   // Form setup
   const {
@@ -123,9 +168,13 @@ export default function FactoriesPage() {
   }, []);
 
   // Filter factories based on search term
-  const filteredFactories = factories.filter((factory) =>
-    factory.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredFactories = useMemo(() => {
+    const query = searchTerm.trim().toLowerCase();
+    if (!query) {
+      return factories;
+    }
+    return factories.filter((factory) => factory.name.toLowerCase().includes(query));
+  }, [factories, searchTerm]);
 
   // Sorting function
   const handleSort = (property: OrderableKeys) => {
@@ -136,46 +185,58 @@ export default function FactoriesPage() {
   };
 
   // Sort the filtered factories
-  const sortedFactories = [...filteredFactories].sort((a, b) => {
-    let aValue: unknown;
-    let bValue: unknown;
+  const sortedFactories = useMemo(() => {
+    const next = [...filteredFactories];
+    next.sort((a, b) => {
+      let aValue: unknown;
+      let bValue: unknown;
 
-    if (orderBy === 'created_at' || orderBy === 'updated_at') {
-      aValue = new Date(a[orderBy]).getTime();
-      bValue = new Date(b[orderBy]).getTime();
-    } else if (orderBy === 'created_by') {
-      aValue = a.created_by?.username ?? '';
-      bValue = b.created_by?.username ?? '';
-    } else {
-      aValue = a[orderBy];
-      bValue = b[orderBy];
-    }
+      if (orderBy === 'created_at' || orderBy === 'updated_at') {
+        aValue = new Date(a[orderBy]).getTime();
+        bValue = new Date(b[orderBy]).getTime();
+      } else if (orderBy === 'created_by' || orderBy === 'updated_by') {
+        const aUser = orderBy === 'created_by' ? a.created_by : a.updated_by;
+        const bUser = orderBy === 'created_by' ? b.created_by : b.updated_by;
+        aValue = aUser?.username ?? '';
+        bValue = bUser?.username ?? '';
+      } else {
+        aValue = a[orderBy];
+        bValue = b[orderBy];
+      }
 
-    if (aValue == null && bValue == null) return 0;
-    if (aValue == null) return order === 'asc' ? -1 : 1;
-    if (bValue == null) return order === 'asc' ? 1 : -1;
+      if (aValue == null && bValue == null) return 0;
+      if (aValue == null) return order === 'asc' ? -1 : 1;
+      if (bValue == null) return order === 'asc' ? 1 : -1;
 
-    let aCompare: string | number = String(aValue);
-    let bCompare: string | number = String(bValue);
+      let aCompare: string | number = String(aValue);
+      let bCompare: string | number = String(bValue);
 
-    if (typeof aValue === 'string' && typeof bValue === 'string') {
-      aCompare = aValue.toLowerCase();
-      bCompare = bValue.toLowerCase();
-    } else if (typeof aValue === 'number' && typeof bValue === 'number') {
-      aCompare = aValue;
-      bCompare = bValue;
-    }
+      if (typeof aValue === 'string' && typeof bValue === 'string') {
+        aCompare = aValue.toLowerCase();
+        bCompare = bValue.toLowerCase();
+      } else if (typeof aValue === 'number' && typeof bValue === 'number') {
+        aCompare = aValue;
+        bCompare = bValue;
+      }
 
-    if (order === 'asc') {
-      return aCompare < bCompare ? -1 : aCompare > bCompare ? 1 : 0;
-    }
-    return aCompare > bCompare ? -1 : aCompare < bCompare ? 1 : 0;
-  });
+      if (order === 'asc') {
+        return aCompare < bCompare ? -1 : aCompare > bCompare ? 1 : 0;
+      }
+      return aCompare > bCompare ? -1 : aCompare < bCompare ? 1 : 0;
+    });
+    return next;
+  }, [filteredFactories, order, orderBy]);
+
+  const fetchAllFactories = useCallback(async () => [...sortedFactories], [sortedFactories]);
 
   // Paginate the sorted factories
-  const paginatedFactories = sortedFactories.slice(
-    page * rowsPerPage,
-    page * rowsPerPage + rowsPerPage
+  const paginatedFactories = useMemo(
+    () =>
+      sortedFactories.slice(
+        page * rowsPerPage,
+        page * rowsPerPage + rowsPerPage
+      ),
+    [sortedFactories, page, rowsPerPage]
   );
 
   // Pagination handlers
@@ -226,29 +287,211 @@ export default function FactoriesPage() {
   };
 
   // Handle edit factory
-  const handleEditFactory = (factory: Factory) => {
-    setEditingFactory(factory);
-    reset({
-      name: factory.name,
-    });
-    setOpenDialog(true);
-  };
+  const handleEditFactory = useCallback(
+    (factory: Factory) => {
+      setEditingFactory(factory);
+      reset({
+        name: factory.name,
+      });
+      setOpenDialog(true);
+    },
+    [reset]
+  );
 
   // Handle add new factory
-  const handleAddFactory = () => {
+  const handleAddFactory = useCallback(() => {
     setEditingFactory(null);
     reset();
     setOpenDialog(true);
-  };
+  }, [reset]);
 
   // Format date helper
-  const formatDate = (dateString: string) => {
+  const formatDate = useCallback((dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-BD', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
     });
-  };
+  }, []);
+
+  const factoryColumns = useMemo<FactoryColumnDefinition[]>(
+    () => [
+      {
+        id: 'name',
+        label: 'Factory Name',
+        sortableKey: 'name',
+        minWidth: 220,
+        renderCell: (factory) => (
+          <Typography variant="body1" fontWeight="medium">
+            {factory.name}
+          </Typography>
+        ),
+      },
+      {
+        id: 'created_by',
+        label: 'Created By',
+        sortableKey: 'created_by',
+        minWidth: 180,
+        renderCell: (factory) => factory.created_by?.username ?? '-',
+      },
+      {
+        id: 'updated_by',
+        label: 'Updated By',
+        sortableKey: 'updated_by',
+        minWidth: 180,
+        renderCell: (factory) => factory.updated_by?.username ?? '-',
+      },
+      {
+        id: 'created_at',
+        label: 'Created Date',
+        sortableKey: 'created_at',
+        minWidth: 180,
+        renderCell: (factory) => formatDate(factory.created_at),
+      },
+      {
+        id: 'updated_at',
+        label: 'Updated Date',
+        sortableKey: 'updated_at',
+        minWidth: 180,
+        renderCell: (factory) => formatDate(factory.updated_at),
+      },
+      {
+        id: 'actions',
+        label: 'Actions',
+        alwaysVisible: true,
+        align: 'right',
+        minWidth: 160,
+        renderCell: (factory) => (
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
+            <Tooltip title="Edit Factory">
+              <IconButton size="small" onClick={() => handleEditFactory(factory)} color="primary">
+                <EditIcon />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Delete Factory">
+              <IconButton
+                size="small"
+                onClick={() => {
+                  setFactoryToDelete(factory._id);
+                  setDeleteConfirmOpen(true);
+                }}
+                color="error"
+              >
+                <DeleteIcon />
+              </IconButton>
+            </Tooltip>
+          </Box>
+        ),
+      },
+    ],
+    [formatDate, handleEditFactory]
+  );
+
+  const selectableFactoryColumnIds = useMemo(
+    () => factoryColumns.filter((column) => !column.alwaysVisible).map((column) => column.id),
+    [factoryColumns]
+  );
+
+  const handleVisibleFactoryColumnsChange = useCallback(
+    (nextSelected: string[]) => {
+      const sanitized = selectableFactoryColumnIds.filter((id) => nextSelected.includes(id));
+      setVisibleFactoryColumnIds(sanitized.length ? sanitized : selectableFactoryColumnIds);
+    },
+    [selectableFactoryColumnIds]
+  );
+
+  const sanitizeFactorySelection = useCallback(
+    (ids: string[]) => selectableFactoryColumnIds.filter((id) => ids.includes(id)),
+    [selectableFactoryColumnIds]
+  );
+
+  const factoryColumnVisibilityOptions = useMemo(
+    () => factoryColumns.map(({ id, label, alwaysVisible }) => ({ id, label, alwaysVisible })),
+    [factoryColumns]
+  );
+
+  useEffect(() => {
+    if (!selectableFactoryColumnIds.length) {
+      setVisibleFactoryColumnIds([]);
+      setPersistedFactoryColumnIds([]);
+      return;
+    }
+
+    if (!factoryColumnStateHydratedRef.current) {
+      factoryColumnStateHydratedRef.current = true;
+
+      let initialSelection = selectableFactoryColumnIds;
+
+      try {
+        const stored = window.localStorage.getItem(FACTORY_COLUMN_STORAGE_KEY);
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed)) {
+            const sanitized = sanitizeFactorySelection(parsed);
+            if (sanitized.length) {
+              initialSelection = sanitized;
+            }
+          }
+        }
+      } catch (error) {
+        console.warn('Failed to read factory column preferences', error);
+      }
+
+      setVisibleFactoryColumnIds(initialSelection);
+      setPersistedFactoryColumnIds(initialSelection);
+      return;
+    }
+
+    setVisibleFactoryColumnIds((previous) => {
+      const sanitizedPrevious = sanitizeFactorySelection(previous);
+      if (sanitizedPrevious.length) {
+        return sanitizedPrevious;
+      }
+      return selectableFactoryColumnIds;
+    });
+
+    setPersistedFactoryColumnIds((previous) => {
+      const sanitizedPrevious = sanitizeFactorySelection(previous);
+      if (sanitizedPrevious.length) {
+        return sanitizedPrevious;
+      }
+      return selectableFactoryColumnIds;
+    });
+  }, [sanitizeFactorySelection, selectableFactoryColumnIds]);
+
+  const factoryHasUnsavedChanges = useMemo(() => {
+    if (visibleFactoryColumnIds.length !== persistedFactoryColumnIds.length) {
+      return true;
+    }
+    const persistedSet = new Set(persistedFactoryColumnIds);
+    return visibleFactoryColumnIds.some((id) => !persistedSet.has(id));
+  }, [persistedFactoryColumnIds, visibleFactoryColumnIds]);
+
+  const handleSaveFactoryColumnSelection = useCallback(() => {
+    const sanitized = sanitizeFactorySelection(visibleFactoryColumnIds);
+    setVisibleFactoryColumnIds(sanitized);
+    setPersistedFactoryColumnIds(sanitized);
+    try {
+      window.localStorage.setItem(FACTORY_COLUMN_STORAGE_KEY, JSON.stringify(sanitized));
+      toast.success('Column selection saved');
+    } catch (error) {
+      console.warn('Failed to persist factory column preferences', error);
+      toast.error('Failed to save column selection');
+    }
+  }, [sanitizeFactorySelection, visibleFactoryColumnIds]);
+
+  const visibleFactoryColumns = useMemo(
+    () =>
+      factoryColumns.filter(
+        (column) => column.alwaysVisible || visibleFactoryColumnIds.includes(column.id)
+      ),
+    [factoryColumns, visibleFactoryColumnIds]
+  );
+
+  const factoryTableMinWidth = useMemo(
+    () => calculateTableMinWidth(visibleFactoryColumns.length),
+    [visibleFactoryColumns.length]
+  );
 
   // Render cards view
   const renderCardsView = () => (
@@ -328,107 +571,75 @@ export default function FactoriesPage() {
 
   // Render list view
   const renderListView = () => (
-    <TableContainer component={Paper}>
-      <Table>
+    <TableContainer component={Paper} sx={{ overflowX: 'auto' }}>
+      <Table sx={{ minWidth: factoryTableMinWidth }}>
         <TableHead>
           <TableRow>
-            <TableCell>
-              <TableSortLabel
-                active={orderBy === 'name'}
-                direction={orderBy === 'name' ? order : 'asc'}
-                onClick={() => handleSort('name')}
-                sx={{
-                  fontWeight: 'bold',
-                  '& .MuiTableSortLabel-icon': {
-                    fontSize: '1.2rem',
-                  },
-                }}
-              >
-                Factory Name
-              </TableSortLabel>
-            </TableCell>
-            <TableCell>
-              <TableSortLabel
-                active={orderBy === 'created_at'}
-                direction={orderBy === 'created_at' ? order : 'asc'}
-                onClick={() => handleSort('created_at')}
-                sx={{
-                  fontWeight: 'bold',
-                  '& .MuiTableSortLabel-icon': {
-                    fontSize: '1.2rem',
-                  },
-                }}
-              >
-                Created Date
-              </TableSortLabel>
-            </TableCell>
-            <TableCell>
-              <TableSortLabel
-                active={orderBy === 'updated_at'}
-                direction={orderBy === 'updated_at' ? order : 'asc'}
-                onClick={() => handleSort('updated_at')}
-                sx={{
-                  fontWeight: 'bold',
-                  '& .MuiTableSortLabel-icon': {
-                    fontSize: '1.2rem',
-                  },
-                }}
-              >
-                Updated Date
-              </TableSortLabel>
-            </TableCell>
-            <TableCell>
-              <TableSortLabel
-                active={orderBy === 'created_by'}
-                direction={orderBy === 'created_by' ? order : 'asc'}
-                onClick={() => handleSort('created_by')}
-                sx={{
-                  fontWeight: 'bold',
-                  '& .MuiTableSortLabel-icon': {
-                    fontSize: '1.2rem',
-                  },
-                }}
-              >
-                Created By
-              </TableSortLabel>
-            </TableCell>
-            <TableCell align="right" sx={{ fontWeight: 'bold' }}>Actions</TableCell>
+            {visibleFactoryColumns.map((column) => {
+              const isActions = column.id === 'actions';
+              const sortableKey = column.sortableKey;
+              return (
+                <TableCell
+                  key={column.id}
+                  align={column.align}
+                  sx={{
+                    fontWeight: 'bold',
+                    whiteSpace: 'nowrap',
+                    backgroundColor: 'background.paper',
+                    minWidth: column.minWidth,
+                    ...(isActions
+                      ? {
+                          position: 'sticky',
+                          right: 0,
+                          zIndex: 4,
+                          boxShadow: (theme) => `-4px 0 8px -4px ${theme.palette.grey[300]}`,
+                        }
+                      : {}),
+                  }}
+                >
+                  {sortableKey ? (
+                    <TableSortLabel
+                      active={orderBy === sortableKey}
+                      direction={orderBy === sortableKey ? order : 'asc'}
+                      onClick={() => handleSort(sortableKey)}
+                      sx={{ fontWeight: 'bold' }}
+                    >
+                      {column.label}
+                    </TableSortLabel>
+                  ) : (
+                    column.label
+                  )}
+                </TableCell>
+              );
+            })}
           </TableRow>
         </TableHead>
         <TableBody>
           {paginatedFactories.map((factory) => (
             <TableRow key={factory._id} hover>
-              <TableCell>
-                <Typography variant="body1" fontWeight="medium">
-                  {factory.name}
-                </Typography>
-              </TableCell>
-              <TableCell>{formatDate(factory.created_at)}</TableCell>
-              <TableCell>{formatDate(factory.updated_at)}</TableCell>
-              <TableCell>{factory.created_by?.username ?? '-'}</TableCell>
-              <TableCell align="right">
-                <Tooltip title="Edit Factory">
-                  <IconButton
-                    size="small"
-                    onClick={() => handleEditFactory(factory)}
-                    color="primary"
-                  >
-                    <EditIcon />
-                  </IconButton>
-                </Tooltip>
-                <Tooltip title="Delete Factory">
-                  <IconButton
-                    size="small"
-                    onClick={() => {
-                      setFactoryToDelete(factory._id);
-                      setDeleteConfirmOpen(true);
+              {visibleFactoryColumns.map((column) => {
+                const isActions = column.id === 'actions';
+                return (
+                  <TableCell
+                    key={column.id}
+                    align={column.align}
+                    sx={{
+                      backgroundColor: 'background.paper',
+                      minWidth: column.minWidth,
+                      ...(isActions
+                        ? {
+                            position: 'sticky',
+                            right: 0,
+                            zIndex: 3,
+                            boxShadow: (theme) => `-4px 0 8px -4px ${theme.palette.grey[200]}`,
+                          }
+                        : {}),
                     }}
-                    color="error"
                   >
-                    <DeleteIcon />
-                  </IconButton>
-                </Tooltip>
-              </TableCell>
+                    {column.renderCell(factory)}
+                  </TableCell>
+                );
+              })}
             </TableRow>
           ))}
         </TableBody>
@@ -445,6 +656,10 @@ export default function FactoriesPage() {
           '& .MuiTablePagination-toolbar': {
             paddingLeft: 2,
             paddingRight: 2,
+          },
+          '& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows': {
+            fontSize: '0.875rem',
+            fontWeight: 500,
           },
         }}
       />
@@ -509,6 +724,7 @@ export default function FactoriesPage() {
         }}
       >
         <TextField
+          size="small"
           placeholder="Search factories..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
@@ -522,19 +738,40 @@ export default function FactoriesPage() {
           sx={{ minWidth: 250 }}
         />
 
-        <ToggleButtonGroup
-          value={viewMode}
-          exclusive
-          onChange={(_event, newMode) => newMode && setViewMode(newMode)}
-          aria-label="view mode"
-        >
-          <ToggleButton value="cards" aria-label="card view">
-            <ViewModuleIcon />
-          </ToggleButton>
-          <ToggleButton value="list" aria-label="list view">
-            <ViewListIcon />
-          </ToggleButton>
-        </ToggleButtonGroup>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <ExportMenu
+            title="Factory Report"
+            fileBaseName="factories"
+            currentRows={paginatedFactories}
+            columns={factoryExportColumns}
+            onFetchAll={fetchAllFactories}
+            disabled={loading || (factories.length === 0 && paginatedFactories.length === 0)}
+          />
+
+          <ColumnVisibilityMenu
+            options={factoryColumnVisibilityOptions}
+            selected={visibleFactoryColumnIds}
+            onChange={handleVisibleFactoryColumnsChange}
+            onSaveSelection={handleSaveFactoryColumnSelection}
+            saveDisabled={!factoryHasUnsavedChanges}
+            minSelectable={1}
+          />
+
+          <ToggleButtonGroup
+            value={viewMode}
+            exclusive
+            onChange={(_event, newMode) => newMode && setViewMode(newMode)}
+            aria-label="view mode"
+            size="small"
+          >
+            <ToggleButton value="cards" aria-label="card view">
+              <ViewModuleIcon />
+            </ToggleButton>
+            <ToggleButton value="list" aria-label="list view">
+              <ViewListIcon />
+            </ToggleButton>
+          </ToggleButtonGroup>
+        </Box>
       </Box>
 
       {/* Results Summary */}

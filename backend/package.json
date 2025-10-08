@@ -11,7 +11,10 @@
     "seed:categories": "node src/seeds/seedCategories.js",
     "seed:menu:categories": "node src/seeds/seedMenuCategories.js",
     "seed:factories": "node seed-factories.js",
-    "seed:depots": "node seed-depots.js"
+    "seed:depots": "node seed-depots.js",
+  "seed:employees": "node seed-employees.js",
+  "seed:employees:two": "node scripts/seedTwoEmployees.js",
+  "permissions:employees": "node insert-employee-permissions.js"
   },
   "keywords": [
     "nodejs",

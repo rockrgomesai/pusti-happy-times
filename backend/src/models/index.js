@@ -20,6 +20,7 @@ const User = require("./User");
 const Brand = require("./Brand");
 const Factory = require("./Factory");
 const Depot = require("./Depot");
+const Employee = require("./Employee");
 const Designation = require("./Designation");
 const Transport = require("./Transport");
 const Category = require("./Category");
@@ -44,6 +45,7 @@ const models = {
   Brand,
   Factory,
   Depot,
+  Employee,
   Designation,
   Transport,
   Category,
@@ -70,6 +72,7 @@ const validateModels = () => {
     "Brand",
     "Factory",
     "Depot",
+  "Employee",
     "Designation",
     "SidebarMenuItem",
     "ApiPermission",
@@ -168,6 +171,7 @@ module.exports = {
   Brand,
   Factory,
   Depot,
+  Employee,
   Designation,
   Transport,
   Category,
