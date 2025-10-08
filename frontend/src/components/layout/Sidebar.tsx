@@ -15,6 +15,7 @@ import {
   Dashboard,
   People,
   Business,
+  Factory as FactoryIcon,
   Settings,
   ExpandLess,
   ExpandMore,
@@ -90,6 +91,7 @@ const iconMap: Record<string, typeof Dashboard> = {
   FaUserTag: BookmarkBorder, // User tagging/roles icon
   FaLayerGroup: Layers,
   FaTruck: LocalShipping, // Transport/shipping icon
+  FaFactory: FactoryIcon,
   FaPeople: People, // HR/People management icon
   FaUserTie: AdminPanelSettings, // Designations/Titles icon
 };

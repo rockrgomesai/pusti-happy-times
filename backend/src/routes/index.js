@@ -25,6 +25,8 @@ const authRoutes = require("./auth");
 const userRoutes = require("./users");
 const roleRoutes = require("./roles");
 const brandRoutes = require("./brands");
+const factoryRoutes = require("./factories");
+const depotRoutes = require("./depots");
 const transportRoutes = require("./transports");
 const categoryRoutes = require("./categories");
 const menuRoutes = require("./menu-items");
@@ -157,7 +159,9 @@ router.get("/info", (req, res) => {
         users: "/api/users",
         roles: "/api/roles",
         brands: "/api/brands",
-  categories: "/api/categories",
+        factories: "/api/factories",
+        depots: "/api/depots",
+        categories: "/api/categories",
         menu: "/api/menu-items",
         permissions: "/api/permissions",
       },
@@ -211,6 +215,22 @@ router.use("/roles", requireRole("SuperAdmin", "SalesAdmin"), roleRoutes);
  * @access  Private (authenticated users)
  */
 router.use("/brands", brandRoutes);
+
+/**
+ * Factory Management Routes
+ * @route   /api/factories/*
+ * @desc    Factory CRUD operations and management
+ * @access  Private (authenticated users)
+ */
+router.use("/factories", factoryRoutes);
+
+/**
+ * Depot Management Routes
+ * @route   /api/depots/*
+ * @desc    Depot CRUD operations and management
+ * @access  Private (authenticated users)
+ */
+router.use("/depots", depotRoutes);
 
 /**
  * Designation Management Routes
