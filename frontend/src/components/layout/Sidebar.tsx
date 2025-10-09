@@ -30,6 +30,7 @@ import {
   Layers,
   LocalShipping,
   Badge as BadgeIcon,
+  Warehouse as WarehouseIcon,
 } from '@mui/icons-material';
 import { useRouter, usePathname } from 'next/navigation';
 import { apiClient } from '@/lib/api';
@@ -97,6 +98,7 @@ const iconMap: Record<string, typeof Dashboard> = {
   FaUserTie: AdminPanelSettings, // Designations/Titles icon
   FaIdBadge: BadgeIcon,
   FaAddressCard: BadgeIcon,
+  FaWarehouse: WarehouseIcon,
 };
 
 // Transform database menu structure to frontend structure
@@ -183,8 +185,19 @@ export function Sidebar({ onItemClick }: SidebarProps) {
     return pathname === href || pathname.startsWith(href + '/');
   };
 
-  const renderIcon = (iconName: string, isChild = false) => {
-    const IconComponent = iconMap[iconName] || Dashboard;
+  const renderIcon = (iconName: string, isChild = false, label?: string) => {
+    const normalizedIconName = iconName?.toLowerCase?.() ?? '';
+    const normalizedLabel = label?.toLowerCase?.() ?? '';
+
+    let IconComponent = iconMap[iconName] || Dashboard;
+
+    if (
+      normalizedIconName.includes('depot') ||
+      normalizedIconName.includes('warehouse') ||
+      normalizedLabel.includes('depot')
+    ) {
+      IconComponent = WarehouseIcon;
+    }
     
     // Always render the actual icon, but make it smaller for child items
     return (
@@ -235,7 +248,7 @@ export function Sidebar({ onItemClick }: SidebarProps) {
                 justifyContent: 'center',
               }}
             >
-              {renderIcon(item.icon, isChild)}
+              {renderIcon(item.icon, isChild, item.label)}
             </ListItemIcon>
             
             <ListItemText

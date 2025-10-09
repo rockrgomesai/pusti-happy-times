@@ -409,7 +409,6 @@ db.pg_permissions.insertMany([
   { _id: ObjectId('68be5052bd65258dedfa3350'), pg_permissions: 'pg:dashboard' },
   { _id: ObjectId('68be5052bd65258dedfa3351'), pg_permissions: 'pg:user' },
   { _id: ObjectId('68be5052bd65258dedfa3352'), pg_permissions: 'pg:brand' },
-  { _id: ObjectId('68be5052bd65258dedfa3353'), pg_permissions: 'pg:category' },
   { _id: ObjectId('68be5052bd65258dedfa3354'), pg_permissions: 'pg:product' },
   { _id: ObjectId('68be5052bd65258dedfa3355'), pg_permissions: 'pg:outsourced_product' },
   { _id: ObjectId('68be5052bd65258dedfa3356'), pg_permissions: 'pg:territory' },

@@ -2,7 +2,21 @@ import axios, { AxiosResponse, AxiosError } from 'axios';
 import Cookies from 'js-cookie';
 
 // API base configuration
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+const RAW_API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+const API_VERSION_PATH = '/api/v1';
+
+const trimTrailingSlash = (url: string) => url.replace(/\/+$/, '');
+
+const sanitizedRawUrl = trimTrailingSlash(RAW_API_URL);
+const hasVersionSuffix = sanitizedRawUrl.endsWith(API_VERSION_PATH);
+
+export const API_ORIGIN_URL = hasVersionSuffix
+  ? trimTrailingSlash(sanitizedRawUrl.slice(0, -API_VERSION_PATH.length) || sanitizedRawUrl)
+  : sanitizedRawUrl;
+
+export const API_BASE_URL = hasVersionSuffix
+  ? sanitizedRawUrl
+  : `${sanitizedRawUrl}${API_VERSION_PATH}`;
 
 // Simple API online/offline status broadcaster
 type ApiStatusListener = (online: boolean) => void;
@@ -27,7 +41,7 @@ export const apiStatus = {
 
 // Create axios instance
 const api = axios.create({
-  baseURL: API_BASE_URL + '/api/v1',
+  baseURL: API_BASE_URL,
   timeout: 10000,
   withCredentials: true,
   headers: {
@@ -122,7 +136,7 @@ api.interceptors.response.use(
       const refreshToken = tokenManager.getRefreshToken();
       if (refreshToken) {
         try {
-          const response = await axios.post(`${API_BASE_URL}/api/v1/auth/refresh`, {
+          const response = await axios.post(`${API_BASE_URL}/auth/refresh`, {
             refreshToken
           });
           
@@ -153,7 +167,7 @@ api.interceptors.response.use(
 export const authAPI = {
   login: async (credentials: { username: string; password: string }) => {
     try {
-      console.log('🔐 Making login request to:', `${API_BASE_URL}/api/v1/auth/login`);
+  console.log('🔐 Making login request to:', `${API_BASE_URL}/auth/login`);
       console.log('🔐 Frontend origin:', typeof window !== 'undefined' ? window.location.origin : 'SSR');
       console.log('🔐 Credentials username:', credentials.username);
       console.log('🔐 Credentials password length:', credentials.password.length);
@@ -227,7 +241,7 @@ export const apiClient = {
 
 // Health check
 export const healthCheck = async () => {
-  const response = await axios.get(`${API_BASE_URL}/api/health`);
+  const response = await axios.get(`${API_BASE_URL}/health`);
   return response.data;
 };
 

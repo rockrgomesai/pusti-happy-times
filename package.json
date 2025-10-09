@@ -19,7 +19,6 @@
   "start:frontend-only": "cd frontend && npm start",
   "start:all": "npm run docker:up && concurrently \"npm run backend:start\" \"npm run frontend:start\"",
   "dev:all": "npm run docker:up && concurrently \"npm run backend:dev\" \"npm run frontend:dev\"",
-  "seed:categories": "cd backend && npm run seed:categories",
   "seed:menu:categories": "cd backend && npm run seed:menu:categories"
   ,
   "backup:full": "node db/backup_full.js"

@@ -131,7 +131,7 @@ export default function RolesPage() {
   const onSubmit = async (data: RoleFormData) => {
     try {
       if (editingRole) {
-        const response = await api.put(`/api/roles/${editingRole._id}`, data);
+  const response = await api.put(`/roles/${editingRole._id}`, data);
         if (response.data.success) {
           toast.success('Role updated successfully');
         } else {
@@ -161,7 +161,7 @@ export default function RolesPage() {
     if (!roleToDelete) return;
     
     try {
-      const response = await api.delete(`/api/roles/${roleToDelete}`);
+  const response = await api.delete(`/roles/${roleToDelete}`);
       if (response.data.success) {
         toast.success('Role deleted successfully');
       } else {

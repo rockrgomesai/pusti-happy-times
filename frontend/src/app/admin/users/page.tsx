@@ -272,7 +272,7 @@ export default function UsersPage() {
         if (!data.password || data.password.length === 0) {
           delete submitData.password;
         }
-        await api.put(`/api/users/${editingUser._id}`, submitData);
+  await api.put(`/users/${editingUser._id}`, submitData);
         toast.success('User updated successfully');
       } else {
         await api.post('/users', submitData);
@@ -294,7 +294,7 @@ export default function UsersPage() {
     if (!userToDelete) return;
     
     try {
-      await api.delete(`/api/users/${userToDelete}`);
+  await api.delete(`/users/${userToDelete}`);
       toast.success('User deleted successfully');
       setDeleteConfirmOpen(false);
       setUserToDelete(null);

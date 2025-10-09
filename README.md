@@ -109,7 +109,7 @@ A full-stack MERN (MongoDB, Express.js, React/Next.js, Node.js) application with
 - **Database**: `mongodb://admin:password123@mongodb:27017/pusti_db`
 - **Redis**: `redis://redis:6379`
 - **Frontend**: `http://localhost:3000`
-- **Backend API**: `http://localhost:5000/api/v1`
+- **Backend API**: `http://localhost:5000`
 - **Mongo Express**: `http://localhost:8081`
 
 ## 🔧 Development Setup
@@ -129,7 +129,7 @@ FRONTEND_URL=http://localhost:3000
 
 #### Frontend (.env.local)
 ```env
-NEXT_PUBLIC_API_URL=http://localhost:5000/api/v1
+NEXT_PUBLIC_API_URL=http://localhost:5000
 NEXT_PUBLIC_APP_NAME=Pusti Happy Times
 NODE_ENV=development
 ```
@@ -251,7 +251,7 @@ cd frontend && npm run test:e2e           # End-to-end tests
 
 4. **Database management** via Mongo Express at http://localhost:8081
 
-5. **API testing** with backend at http://localhost:5000/api/v1
+5. **API testing** with backend at http://localhost:5000
 
 6. **Frontend preview** at http://localhost:3000
 

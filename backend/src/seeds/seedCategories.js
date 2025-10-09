@@ -1,61 +1,61 @@
 /**
- * Seed Categories Collection
- * Inserts an initial leaf category: "Biscuits" into the "categories" collection.
+ * Category Seed Script
+ * Creates baseline product categories for initial environments.
  */
 
-const path = require('path');
-require('dotenv').config({ path: path.join(__dirname, '../../.env') });
+const path = require("path");
+require("dotenv").config({ path: path.join(__dirname, "../../.env") });
 
-const mongoose = require('mongoose');
-const { connectDB } = require('../config/database');
+const mongoose = require("mongoose");
+const { connectDB } = require("../config/database");
+const { Category } = require("../models");
+
+const ROOT_SEEDS = [
+  { name: "Biscuits", product_segment: "BIS" },
+  { name: "Beverages", product_segment: "BEV" },
+];
 
 async function run() {
   try {
     await connectDB();
+    await Category.init();
 
-    const db = mongoose.connection.db;
-    const coll = db.collection('categories');
+    for (const seed of ROOT_SEEDS) {
+      const existing = await Category.findOne({ name: seed.name });
+      if (existing) {
+        console.log(
+          `✅ Category "${seed.name}" already exists with _id = ${existing._id.toString()}`
+        );
+        continue;
+      }
 
-    // Ensure basic useful index exists (unique per parent + slug)
-    try {
-      await coll.createIndex({ parent: 1, slug: 1 }, { unique: true });
-    } catch (_) {
-      // ignore if cannot create (permissions or already exists)
+      const now = new Date();
+      const category = await Category.create({
+        name: seed.name,
+        parent_id: null,
+        product_segment: seed.product_segment,
+        active: true,
+        created_at: now,
+        updated_at: now,
+        created_by: "system",
+        updated_by: "system",
+      });
+
+      console.log(
+        `🌱 Inserted seed category "${category.name}" with _id = ${category._id.toString()}`
+      );
     }
-
-    const slug = 'biscuits';
-    const now = new Date();
-
-    const existing = await coll.findOne({ slug, parent: null });
-    if (existing) {
-      console.log('✅ Category "Biscuits" already exists with _id =', existing._id.toString());
-    } else {
-      const doc = {
-        category: 'Biscuits',
-        slug,
-        fullSlug: slug,
-        parent: null,
-        ancestors: [],
-        hasChildren: false,
-        depth: 0,
-        sortOrder: 0,
-        isActive: true,
-        createdBy: null,
-        updatedBy: null,
-        createdAt: now,
-        updatedAt: now,
-      };
-
-      const res = await coll.insertOne(doc);
-      console.log('🌱 Inserted seed category "Biscuits" with _id =', res.insertedId.toString());
-    }
-  } catch (err) {
-    console.error('❌ Seed failed:', err);
+  } catch (error) {
+    console.error("❌ Category seed failed:", error);
     process.exitCode = 1;
   } finally {
     try {
       await mongoose.connection.close();
-    } catch {}
+    } catch (closeError) {
+      if (process.env.NODE_ENV === "development") {
+        console.warn("⚠️  Unable to close MongoDB connection", closeError.message);
+      }
+    }
   }
 }
 

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
   Box,
   Typography,
@@ -17,6 +17,8 @@ import {
   TextField,
   Alert,
   Fab,
+  Grid,
+  Skeleton,
   Table,
   TableBody,
   TableCell,
@@ -24,522 +26,486 @@ import {
   TableHead,
   TableRow,
   Paper,
-  Skeleton,
-  TableSortLabel,
   InputAdornment,
   ToggleButton,
   ToggleButtonGroup,
+  TableSortLabel,
+  TablePagination,
+  MenuItem,
+  Chip,
   FormControlLabel,
   Switch,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  TablePagination,
 } from '@mui/material';
-// Using Box for grid layout to avoid Grid version/type conflicts
 import {
   Add as AddIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
+  Category as CategoryIcon,
   ViewList as ViewListIcon,
   ViewModule as ViewModuleIcon,
   Search as SearchIcon,
-  Layers as LayersIcon,
 } from '@mui/icons-material';
 import { useForm, Controller } from 'react-hook-form';
-import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { toast } from 'react-hot-toast';
 import api from '@/lib/api';
 import ExportMenu from '@/components/common/ExportMenu';
 import ColumnVisibilityMenu from '@/components/common/ColumnVisibilityMenu';
 import { ExportColumn, formatDateForExport } from '@/lib/exportUtils';
 import { calculateTableMinWidth } from '@/lib/tableUtils';
-import { useAuth } from '@/contexts/AuthContext';
 
-// Backend model shape (fields used by UI)
-interface UserRef { username: string }
+type ProductSegment = 'BIS' | 'BEV';
+
+type Order = 'asc' | 'desc';
+
+type OrderableKeys =
+  | 'name'
+  | 'product_segment'
+  | 'created_at'
+  | 'updated_at'
+  | 'active'
+  | 'created_by';
+
+interface ActorInfo {
+  username?: string;
+  email?: string;
+}
+
 interface Category {
   _id: string;
-  category: string;
-  slug: string;
-  parent: string | null;
-  ancestors: string[];
-  hasChildren: boolean;
-  depth: number;
-  fullSlug: string;
-  sortOrder: number;
-  isActive: boolean;
-  createdBy?: UserRef | null;
-  updatedBy?: UserRef | null;
-  createdAt?: string; created_at?: string;
-  updatedAt?: string; updated_at?: string;
+  name: string;
+  parent_id: string | null;
+  product_segment: ProductSegment | string;
+  active: boolean;
+  created_at: string;
+  created_by?: ActorInfo | string | null;
+  updated_at: string;
+  updated_by?: ActorInfo | string | null;
 }
-
-type PermissionSource =
-  | string
-  | {
-      api_permissions?: string;
-      permission?: string;
-      key?: string;
-      name?: string;
-    };
-
-const extractPermissionName = (entry: PermissionSource): string | undefined => {
-  if (typeof entry === 'string') {
-    return entry;
-  }
-  return (
-    entry.api_permissions ||
-    entry.permission ||
-    entry.key ||
-    entry.name
-  );
-};
-
-const getErrorMessage = (error: unknown, fallback: string): string => {
-  if (error && typeof error === 'object' && 'response' in error) {
-    const response = (error as { response?: { data?: { message?: string } } }).response;
-    const message = response?.data?.message;
-    if (typeof message === 'string' && message.trim()) {
-      return message;
-    }
-  }
-  if (error instanceof Error && error.message) {
-    return error.message;
-  }
-  return fallback;
-};
-
-const getComparableValue = (item: Category, key: keyof Category): string | number | boolean | null => {
-  if (key === 'createdAt') {
-    const source = item.createdAt || item.created_at;
-    const timestamp = source ? new Date(source).getTime() : Number.NaN;
-    return Number.isNaN(timestamp) ? null : timestamp;
-  }
-  if (key === 'updatedAt') {
-    const source = item.updatedAt || item.updated_at;
-    const timestamp = source ? new Date(source).getTime() : Number.NaN;
-    return Number.isNaN(timestamp) ? null : timestamp;
-  }
-  const value = item[key];
-  if (value == null) {
-    return null;
-  }
-  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
-    return value;
-  }
-  return String(value);
-};
-
-// Lightweight API permissions hook
-function useApiPermissions() {
-  const { user } = useAuth();
-  const [perms, setPerms] = useState<Set<string>>(new Set());
-  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        // Prefer AuthContext user if available
-        if (user) {
-          const roleNameCtx = user?.role?.role;
-          if (roleNameCtx && /super\s*admin/i.test(String(roleNameCtx))) {
-            if (!cancelled) setIsSuperAdmin(true);
-          }
-        }
-
-        const me = await api.get('/auth/me');
-        const apiUser = me?.data?.data?.user || me?.data?.user || me?.data?.data;
-        const role = apiUser?.role ?? apiUser?.roles ?? apiUser?.Role ?? apiUser?.Roles;
-        const roleObj = Array.isArray(role) ? role[0] : role;
-        const roleId = roleObj?.id || roleObj?._id || apiUser?.roleId || apiUser?.role_id;
-        const roleName: string | undefined =
-          roleObj?.name || roleObj?.key || roleObj?.title || roleObj?.role || apiUser?.roleName || apiUser?.role_name ||
-          (typeof roleObj === 'string' ? roleObj : undefined);
-        const superFlag = Boolean(
-          apiUser?.isSuperAdmin || apiUser?.superAdmin || apiUser?.is_super_admin ||
-          (roleName && /super\s*admin/i.test(String(roleName))) ||
-          (typeof roleObj === 'string' && /super\s*admin/i.test(roleObj))
-        );
-        if (superFlag) {
-          if (!cancelled) setIsSuperAdmin(true);
-        }
-        if (roleId) {
-          const res = await api.get(`/api/permissions/api-permissions?roleId=${roleId}`);
-          let list: string[] = [];
-          const d = res?.data;
-          const dd = d?.data ?? d;
-          if (Array.isArray(dd)) {
-            list = dd
-              .map((p) => extractPermissionName(p as PermissionSource))
-              .filter((value): value is string => Boolean(value));
-          } else if (Array.isArray(dd?.permissions)) {
-            const permissions = dd.permissions as unknown[];
-            list = permissions.filter((value): value is string => typeof value === 'string');
-          } else if (Array.isArray(d?.permissions)) {
-            const permissions = d.permissions as unknown[];
-            list = permissions.filter((value): value is string => typeof value === 'string');
-          }
-          if (!cancelled) setPerms(new Set(list));
-          return;
-        }
-      } catch {}
-      try {
-        const ls = JSON.parse(globalThis.localStorage?.getItem('api_permissions') || '[]');
-        if (!cancelled) setPerms(new Set(Array.isArray(ls) ? ls : []));
-      } catch {
-        if (!cancelled) setPerms(new Set());
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [user]);
-  const has = useMemo(() => (p: string) => isSuperAdmin || perms.has(p), [perms, isSuperAdmin]);
-  return { has, permissions: perms };
-}
-
-// Form schema
-const categorySchema = z.object({
-  category: z.string().min(2, 'Category must be at least 2 characters'),
-  parent: z.string().nullable(),
-  isActive: z.boolean(),
-  sortOrder: z.number().int().min(0),
-  slug: z.string().min(1, 'Slug is required').regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, 'Only lowercase letters, numbers, and hyphens'),
-});
-
-type CategoryFormData = z.infer<typeof categorySchema>;
-
-type CategoryPayload = Pick<CategoryFormData, 'category' | 'parent' | 'isActive' | 'slug'> & {
-  sortOrder: number;
-};
-
-type CategoryOrderKey = 'category' | 'depth' | 'isActive' | 'sortOrder';
 
 interface CategoryColumnDefinition {
   id: string;
   label: string;
-  sortableKey?: CategoryOrderKey;
+  sortableKey?: OrderableKeys;
   align?: 'inherit' | 'left' | 'center' | 'right' | 'justify';
   alwaysVisible?: boolean;
-  minWidth?: number;
   renderCell: (category: Category) => React.ReactNode;
 }
 
+const PRODUCT_SEGMENTS: ProductSegment[] = ['BIS', 'BEV'];
 const CATEGORY_COLUMN_STORAGE_KEY = 'master:categories:visibleColumns';
 
-// Simple slugify utility
-function slugify(input: string): string {
-  return input
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9\s-]/g, '')
-    .replace(/\s+/g, '-')
-    .replace(/-+/g, '-');
-}
+const segmentLabelMap: Record<ProductSegment, string> = {
+  BIS: 'Biscuit (BIS)',
+  BEV: 'Beverage (BEV)',
+};
+
+const formatActor = (actor?: ActorInfo | string | null) => {
+  if (!actor) return '-';
+  if (typeof actor === 'string') return actor;
+  return actor.username || actor.email || '-';
+};
+
+const getSegmentDisplay = (segment?: string | null) => {
+  if (!segment) return '-';
+  const upper = segment.toUpperCase() as ProductSegment;
+  return segmentLabelMap[upper] ?? upper;
+};
+
+const renderStatusChip = (active: boolean) => (
+  <Chip
+    label={active ? 'Active' : 'Inactive'}
+    color={active ? 'success' : 'default'}
+    variant={active ? 'filled' : 'outlined'}
+    size="small"
+  />
+);
+
+const categorySchema = z
+  .object({
+    name: z.string().trim().min(2, 'Category name must be at least 2 characters').max(120),
+    parent_id: z.string().optional(),
+    product_segment: z.string().optional(),
+    active: z.boolean(),
+  })
+  .superRefine((data, ctx) => {
+    const parentId = (data.parent_id ?? '').trim();
+    const segment = (data.product_segment ?? '').trim();
+    const hasParent = Boolean(parentId);
+
+    if (!hasParent) {
+      if (!segment || !PRODUCT_SEGMENTS.includes(segment.toUpperCase() as ProductSegment)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Choose a product segment for root categories',
+          path: ['product_segment'],
+        });
+      }
+    }
+  });
+
+type CategoryFormData = z.infer<typeof categorySchema> & {
+  parent_id?: string;
+};
 
 export default function CategoriesPage() {
-  const { has } = useApiPermissions();
-  const canCreate = has('categories:create');
-  const canUpdate = has('categories:update');
-  const canDelete = has('categories:delete');
-
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<'cards' | 'list'>('cards');
   const [searchTerm, setSearchTerm] = useState('');
   const [openDialog, setOpenDialog] = useState(false);
-  const [editing, setEditing] = useState<Category | null>(null);
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-  const [toDelete, setToDelete] = useState<string | null>(null);
+  const [categoryToDelete, setCategoryToDelete] = useState<string | null>(null);
 
-  // Sorting and pagination
-  const [orderBy, setOrderBy] = useState<CategoryOrderKey>('category');
-  const [order, setOrder] = useState<'asc' | 'desc'>('asc');
+  const [orderBy, setOrderBy] = useState<OrderableKeys>('name');
+  const [order, setOrder] = useState<Order>('asc');
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [visibleCategoryColumnIds, setVisibleCategoryColumnIds] = useState<string[]>([]);
   const [persistedCategoryColumnIds, setPersistedCategoryColumnIds] = useState<string[]>([]);
-  const categoryColumnStateHydratedRef = useRef(false);
+  const columnStateHydratedRef = useRef(false);
 
-  const categoryExportColumns = useMemo<ExportColumn<Category>[]>(
-    () => [
-      {
-        header: 'Category',
-        accessor: (row) => row.category,
-      },
-      {
-        header: 'Slug',
-        accessor: (row) => row.slug,
-      },
-      {
-        header: 'Parent',
-        accessor: (row) => row.parent ?? '',
-      },
-      {
-        header: 'Active',
-        accessor: (row) => (row.isActive ? 'Yes' : 'No'),
-      },
-      {
-        header: 'Sort Order',
-        accessor: (row) => String(row.sortOrder ?? ''),
-      },
-      {
-        header: 'Created Date',
-        accessor: (row) => formatDateForExport(row.createdAt ?? row.created_at ?? ''),
-      },
-      {
-        header: 'Updated Date',
-        accessor: (row) => formatDateForExport(row.updatedAt ?? row.updated_at ?? ''),
-      },
-    ],
-    []
-  );
-
-  const { control, handleSubmit, reset, formState: { errors, isSubmitting }, watch, setValue } = useForm<CategoryFormData>({
+  const {
+    control,
+    handleSubmit,
+    reset,
+    setValue,
+    watch,
+    formState: { errors, isSubmitting },
+  } = useForm<CategoryFormData>({
     resolver: zodResolver(categorySchema),
-    defaultValues: { category: '', parent: null, isActive: true, sortOrder: 0, slug: '' },
+    defaultValues: {
+      name: '',
+      parent_id: '',
+      product_segment: 'BIS',
+      active: true,
+    },
   });
 
-  const [slugTouched, setSlugTouched] = useState(false);
+  const parentIdValue = watch('parent_id');
+  const productSegmentValue = watch('product_segment');
 
-  // Auto-generate slug from category if not manually edited
-  const watchCategory = watch('category');
-  useEffect(() => {
-    if (!slugTouched) {
-      const nextSlug = slugify(watchCategory || '');
-      setValue('slug', nextSlug, { shouldValidate: true });
+  const categoriesById = useMemo(() => {
+    const map = new Map<string, Category>();
+    categories.forEach((category) => {
+      map.set(category._id, category);
+    });
+    return map;
+  }, [categories]);
+
+  const categoryNameLookup = useMemo(() => {
+    return categories.reduce<Record<string, string>>((acc, category) => {
+      acc[category._id] = category.name;
+      return acc;
+    }, {});
+  }, [categories]);
+
+  const parentOptions = useMemo(() => {
+    return [...categories].sort((a, b) => a.name.localeCompare(b.name));
+  }, [categories]);
+
+  const descendantIds = useMemo(() => {
+    if (!editingCategory) return new Set<string>();
+    const result = new Set<string>();
+    const stack = [editingCategory._id];
+    while (stack.length) {
+      const current = stack.pop();
+      if (!current) continue;
+      categories.forEach((category) => {
+        if (category.parent_id === current && !result.has(category._id)) {
+          result.add(category._id);
+          stack.push(category._id);
+        }
+      });
     }
-  }, [watchCategory, slugTouched, setValue]);
+    return result;
+  }, [categories, editingCategory]);
 
-  // Load categories
-  const loadCategories = async () => {
+  useEffect(() => {
+    if (parentIdValue) {
+      const parent = categoriesById.get(parentIdValue);
+      const inheritedSegment = parent?.product_segment ?? '';
+      if (inheritedSegment && productSegmentValue !== inheritedSegment) {
+        setValue('product_segment', inheritedSegment, { shouldValidate: true, shouldDirty: true });
+      }
+    } else if (!parentIdValue && !productSegmentValue) {
+      setValue('product_segment', 'BIS', { shouldValidate: false, shouldDirty: false });
+    }
+  }, [parentIdValue, productSegmentValue, categoriesById, setValue]);
+
+  const loadCategories = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await api.get('/categories', { params: { page: 1, limit: 1000, sort: 'category' } });
-      const arr = Array.isArray(res?.data?.data) ? res.data.data : (Array.isArray(res?.data) ? res.data : []);
-      setCategories(arr as Category[]);
-    } catch (err: unknown) {
-      console.error('Error loading categories', err);
+      const response = await api.get('/categories');
+      const categoriesData =
+        response.data?.data && Array.isArray(response.data.data) ? response.data.data : [];
+      setCategories(categoriesData);
+    } catch (error) {
+      console.error('Error loading categories:', error);
       toast.error('Failed to load categories');
       setCategories([]);
     } finally {
       setLoading(false);
     }
-  };
-  useEffect(() => { loadCategories(); }, []);
+  }, []);
 
-  const idToCategory = useMemo(() => {
-    const m = new Map<string, Category>();
-    categories.forEach(c => m.set(c._id, c));
-    return m;
-  }, [categories]);
+  useEffect(() => {
+    loadCategories();
+  }, [loadCategories]);
 
-  const parentOptions = useMemo(() => categories
-    .filter(c => !editing || c._id !== editing._id)
-    .sort((a, b) => a.fullSlug.localeCompare(b.fullSlug)), [categories, editing]);
+  const formatDate = useCallback((dateString: string) => {
+    if (!dateString) return '-';
+    return new Date(dateString).toLocaleDateString('en-BD', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
+  }, []);
 
-  const filtered = useMemo(() => {
-    const q = searchTerm.trim().toLowerCase();
-    if (!q) return categories;
-    return categories.filter(c =>
-      c.category.toLowerCase().includes(q) ||
-      c.slug.toLowerCase().includes(q) ||
-      c.fullSlug.toLowerCase().includes(q)
-    );
-  }, [categories, searchTerm]);
+  const filteredCategories = useMemo(() => {
+    const query = searchTerm.trim().toLowerCase();
+    if (!query) return categories;
+    return categories.filter((category) => {
+      const nameMatch = category.name.toLowerCase().includes(query);
+      const segmentMatch = category.product_segment?.toLowerCase().includes(query);
+      const parentName = category.parent_id ? categoryNameLookup[category.parent_id] ?? '' : '';
+      const parentMatch = parentName.toLowerCase().includes(query);
+      const statusMatch = (category.active ? 'active' : 'inactive').includes(query);
+      return nameMatch || segmentMatch || parentMatch || statusMatch;
+    });
+  }, [categories, categoryNameLookup, searchTerm]);
 
-  const handleSort = (prop: CategoryOrderKey) => {
-    const isAsc = orderBy === prop && order === 'asc';
+  const getSortableValue = useCallback(
+    (category: Category, key: OrderableKeys): string | number => {
+      switch (key) {
+        case 'name':
+        case 'product_segment':
+          return (category[key] ?? '').toString().toLowerCase();
+        case 'created_at':
+        case 'updated_at':
+          return new Date(category[key]).getTime();
+        case 'active':
+          return category.active ? 1 : 0;
+        case 'created_by':
+          return formatActor(category.created_by).toLowerCase();
+        default:
+          return '';
+      }
+    },
+    []
+  );
+
+  const handleSort = (property: OrderableKeys) => {
+    const isAsc = orderBy === property && order === 'asc';
     setOrder(isAsc ? 'desc' : 'asc');
-    setOrderBy(prop);
+    setOrderBy(property);
     setPage(0);
   };
 
-  const sorted = useMemo(() => {
-    const arr = [...filtered];
-    arr.sort((a, b) => {
-      const av = getComparableValue(a, orderBy);
-      const bv = getComparableValue(b, orderBy);
+  const sortedCategories = useMemo(() => {
+    const next = [...filteredCategories];
+    next.sort((a, b) => {
+      const aValue = getSortableValue(a, orderBy);
+      const bValue = getSortableValue(b, orderBy);
 
-      if (av == null && bv == null) return 0;
-      if (av == null) return order === 'asc' ? -1 : 1;
-      if (bv == null) return order === 'asc' ? 1 : -1;
-
-      const valueA = typeof av === 'string' ? av.toLowerCase() : av;
-      const valueB = typeof bv === 'string' ? bv.toLowerCase() : bv;
-
-      if (valueA < valueB) {
-        return order === 'asc' ? -1 : 1;
+      if (typeof aValue === 'number' && typeof bValue === 'number') {
+        return order === 'asc' ? aValue - bValue : bValue - aValue;
       }
-      if (valueA > valueB) {
-        return order === 'asc' ? 1 : -1;
+
+      const aString = aValue.toString();
+      const bString = bValue.toString();
+
+      if (order === 'asc') {
+        return aString.localeCompare(bString, undefined, { sensitivity: 'base' });
       }
-      return 0;
+      return bString.localeCompare(aString, undefined, { sensitivity: 'base' });
     });
-    return arr;
-  }, [filtered, order, orderBy]);
+    return next;
+  }, [filteredCategories, getSortableValue, order, orderBy]);
 
-  const fetchAllCategories = useCallback(async () => [...sorted], [sorted]);
+  const fetchAllCategories = useCallback(async () => [...sortedCategories], [sortedCategories]);
 
-  const paginated = sorted.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
-  const handleChangePage = (_: unknown, newPage: number) => setPage(newPage);
-  const handleChangeRowsPerPage = (e: React.ChangeEvent<HTMLInputElement>) => { setRowsPerPage(parseInt(e.target.value, 10)); setPage(0); };
+  const paginatedCategories = useMemo(
+    () =>
+      sortedCategories.slice(
+        page * rowsPerPage,
+        page * rowsPerPage + rowsPerPage,
+      ),
+    [page, rowsPerPage, sortedCategories]
+  );
 
-  // CRUD
-  const onSubmit = async (data: CategoryFormData) => {
+  const handleChangePage = (_event: unknown, newPage: number) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
+  const onSubmit = async (formData: CategoryFormData) => {
+    const parentId = (formData.parent_id ?? '').trim();
+    const productSegment = (formData.product_segment ?? '').trim().toUpperCase() as ProductSegment | '';
+
+    const payload: Record<string, unknown> = {
+      name: formData.name.trim(),
+      active: formData.active,
+    };
+
+    if (parentId) {
+      payload.parent_id = parentId;
+    } else {
+      payload.parent_id = null;
+      if (productSegment) {
+        payload.product_segment = productSegment;
+      }
+    }
+
     try {
-      const payload: CategoryPayload = {
-        category: data.category,
-        parent: data.parent,
-        isActive: data.isActive,
-        sortOrder: Number(data.sortOrder ?? 0),
-        slug: data.slug,
-      };
-      if (editing) {
-        await api.put(`/api/categories/${editing._id}`, payload);
-        toast.success('Category updated');
+      if (editingCategory) {
+        await api.put(`/categories/${editingCategory._id}`, payload);
+        toast.success('Category updated successfully');
       } else {
         await api.post('/categories', payload);
-        toast.success('Category created');
+        toast.success('Category created successfully');
       }
+
       setOpenDialog(false);
-      setEditing(null);
-      setSlugTouched(false);
-      reset({ category: '', parent: null, isActive: true, sortOrder: 0, slug: '' });
+      setEditingCategory(null);
+      reset({ name: '', parent_id: '', product_segment: 'BIS', active: true });
       loadCategories();
-    } catch (err: unknown) {
-      toast.error(getErrorMessage(err, 'Failed to save category'));
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to save category';
+      toast.error(errorMessage);
     }
   };
 
-  const handleDelete = async () => {
-    if (!toDelete) return;
+  const handleDeleteCategory = async () => {
+    if (!categoryToDelete) return;
+
     try {
-      await api.delete(`/api/categories/${toDelete}`);
-      toast.success('Category deleted');
+      await api.delete(`/categories/${categoryToDelete}`);
+      toast.success('Category deleted successfully');
       setDeleteConfirmOpen(false);
-      setToDelete(null);
+      setCategoryToDelete(null);
+      if (editingCategory && editingCategory._id === categoryToDelete) {
+        setEditingCategory(null);
+      }
       loadCategories();
-    } catch (err: unknown) {
-      toast.error(getErrorMessage(err, 'Failed to delete category'));
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to delete category';
+      toast.error(errorMessage);
     }
   };
 
-  const beginEdit = useCallback(
-    (c: Category) => {
-      setEditing(c);
-      setSlugTouched(true);
+  const handleEditCategory = useCallback(
+    (category: Category) => {
+      setEditingCategory(category);
       reset({
-        category: c.category,
-        parent: c.parent || null,
-        isActive: !!c.isActive,
-        sortOrder: c.sortOrder ?? 0,
-        slug: c.slug || '',
+        name: category.name,
+        parent_id: category.parent_id ?? '',
+        product_segment: category.parent_id
+          ? categoriesById.get(category.parent_id)?.product_segment ?? category.product_segment
+          : category.product_segment,
+        active: category.active,
       });
       setOpenDialog(true);
     },
-    [reset]
+    [categoriesById, reset]
   );
 
-  const beginAdd = useCallback(() => {
-    setEditing(null);
-    setSlugTouched(false);
-    reset({ category: '', parent: null, isActive: true, sortOrder: 0, slug: '' });
+  const handleAddCategory = useCallback(() => {
+    setEditingCategory(null);
+    reset({ name: '', parent_id: '', product_segment: 'BIS', active: true });
     setOpenDialog(true);
   }, [reset]);
-
-  const fmtDate = (v?: string) => { if (!v) return '-'; const d = new Date(v); return Number.isNaN(d.getTime()) ? '-' : d.toLocaleDateString('en-BD', { year: 'numeric', month: 'short', day: 'numeric' }); };
 
   const categoryColumns = useMemo<CategoryColumnDefinition[]>(
     () => [
       {
-        id: 'category',
-        label: 'Category',
-        sortableKey: 'category',
-        minWidth: 200,
+        id: 'name',
+        label: 'Category Name',
+        sortableKey: 'name',
         renderCell: (category) => (
           <Typography variant="body1" fontWeight="medium">
-            {category.category}
+            {category.name}
           </Typography>
         ),
       },
       {
-        id: 'slug',
-        label: 'Slug',
-        minWidth: 180,
-        renderCell: (category) => category.slug,
-      },
-      {
-        id: 'fullSlug',
-        label: 'Full Slug',
-        minWidth: 220,
-        renderCell: (category) => category.fullSlug,
-      },
-      {
-        id: 'depth',
-        label: 'Depth',
-        sortableKey: 'depth',
-        renderCell: (category) => category.depth,
-      },
-      {
-        id: 'hasChildren',
-        label: 'Has Children',
-        renderCell: (category) => (category.hasChildren ? 'Yes' : 'No'),
-      },
-      {
-        id: 'isActive',
-        label: 'Active',
-        sortableKey: 'isActive',
-        renderCell: (category) => (category.isActive ? 'Yes' : 'No'),
-      },
-      {
-        id: 'sortOrder',
-        label: 'Sort',
-        sortableKey: 'sortOrder',
-        renderCell: (category) => category.sortOrder ?? 0,
+        id: 'product_segment',
+        label: 'Product Segment',
+        sortableKey: 'product_segment',
+        renderCell: (category) => (
+          <Chip label={getSegmentDisplay(category.product_segment)} size="small" />
+        ),
       },
       {
         id: 'parent',
-        label: 'Parent',
-        minWidth: 220,
+        label: 'Parent Category',
         renderCell: (category) =>
-          category.parent ? idToCategory.get(category.parent)?.fullSlug ?? category.parent : '-',
+          category.parent_id ? categoryNameLookup[category.parent_id] ?? '-' : 'Root category',
+      },
+      {
+        id: 'active',
+        label: 'Status',
+        sortableKey: 'active',
+        renderCell: (category) => renderStatusChip(category.active),
+      },
+      {
+        id: 'created_by',
+        label: 'Created By',
+        sortableKey: 'created_by',
+        renderCell: (category) => formatActor(category.created_by),
+      },
+      {
+        id: 'updated_by',
+        label: 'Updated By',
+        renderCell: (category) => formatActor(category.updated_by),
+      },
+      {
+        id: 'created_at',
+        label: 'Created Date',
+        sortableKey: 'created_at',
+        renderCell: (category) => formatDate(category.created_at),
+      },
+      {
+        id: 'updated_at',
+        label: 'Updated Date',
+        sortableKey: 'updated_at',
+        renderCell: (category) => formatDate(category.updated_at),
       },
       {
         id: 'actions',
         label: 'Actions',
         alwaysVisible: true,
         align: 'right',
-        minWidth: 140,
         renderCell: (category) => (
           <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
-            {canUpdate && (
-              <Tooltip title="Edit Category">
-                <IconButton size="small" onClick={() => beginEdit(category)} color="primary">
-                  <EditIcon />
-                </IconButton>
-              </Tooltip>
-            )}
-            {canDelete && (
-              <Tooltip title="Delete Category">
-                <IconButton
-                  size="small"
-                  onClick={() => {
-                    setToDelete(category._id);
-                    setDeleteConfirmOpen(true);
-                  }}
-                  color="error"
-                >
-                  <DeleteIcon />
-                </IconButton>
-              </Tooltip>
-            )}
+            <Tooltip title="Edit Category">
+              <IconButton size="small" onClick={() => handleEditCategory(category)} color="primary">
+                <EditIcon />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Delete Category">
+              <IconButton
+                size="small"
+                onClick={() => {
+                  setCategoryToDelete(category._id);
+                  setDeleteConfirmOpen(true);
+                }}
+                color="error"
+              >
+                <DeleteIcon />
+              </IconButton>
+            </Tooltip>
           </Box>
         ),
       },
     ],
-    [beginEdit, canDelete, canUpdate, idToCategory]
+    [categoryNameLookup, formatDate, handleEditCategory]
   );
 
   const selectableCategoryColumnIds = useMemo(
@@ -555,14 +521,14 @@ export default function CategoriesPage() {
     [selectableCategoryColumnIds]
   );
 
-  const sanitizeCategorySelection = useCallback(
-    (ids: string[]) => selectableCategoryColumnIds.filter((id) => ids.includes(id)),
-    [selectableCategoryColumnIds]
-  );
-
   const categoryColumnVisibilityOptions = useMemo(
     () => categoryColumns.map(({ id, label, alwaysVisible }) => ({ id, label, alwaysVisible })),
     [categoryColumns]
+  );
+
+  const sanitizeCategorySelection = useCallback(
+    (ids: string[]) => selectableCategoryColumnIds.filter((id) => ids.includes(id)),
+    [selectableCategoryColumnIds]
   );
 
   useEffect(() => {
@@ -572,8 +538,8 @@ export default function CategoriesPage() {
       return;
     }
 
-    if (!categoryColumnStateHydratedRef.current) {
-      categoryColumnStateHydratedRef.current = true;
+    if (!columnStateHydratedRef.current) {
+      columnStateHydratedRef.current = true;
 
       let initialSelection = selectableCategoryColumnIds;
 
@@ -638,53 +604,127 @@ export default function CategoriesPage() {
   const visibleCategoryColumns = useMemo(
     () =>
       categoryColumns.filter(
-        (column) => column.alwaysVisible || visibleCategoryColumnIds.includes(column.id)
+        (column) => column.alwaysVisible || visibleCategoryColumnIds.includes(column.id),
       ),
     [categoryColumns, visibleCategoryColumnIds]
   );
 
   const categoryTableMinWidth = useMemo(
-    () => calculateTableMinWidth(visibleCategoryColumns.length, 180, 1160),
+    () => calculateTableMinWidth(visibleCategoryColumns.length),
     [visibleCategoryColumns.length]
   );
 
-  const renderCards = () => (
+  const categoryExportColumns = useMemo<ExportColumn<Category>[]>(
+    () => [
+      {
+        header: 'Name',
+        accessor: (row) => row.name,
+      },
+      {
+        header: 'Product Segment',
+        accessor: (row) => getSegmentDisplay(row.product_segment),
+      },
+      {
+        header: 'Parent Category',
+        accessor: (row) => (row.parent_id ? categoryNameLookup[row.parent_id] ?? '' : 'Root'),
+      },
+      {
+        header: 'Status',
+        accessor: (row) => (row.active ? 'Active' : 'Inactive'),
+      },
+      {
+        header: 'Created By',
+        accessor: (row) => formatActor(row.created_by),
+      },
+      {
+        header: 'Created Date',
+        accessor: (row) => formatDateForExport(row.created_at),
+      },
+      {
+        header: 'Updated Date',
+        accessor: (row) => formatDateForExport(row.updated_at),
+      },
+    ],
+    [categoryNameLookup]
+  );
+
+  const renderCardsView = () => (
     <>
-      <Box sx={{
-        display: 'grid',
-        gap: 2,
-        gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' },
-      }}>
-        {paginated.map((c) => (
-          <Box key={c._id}>
-            <Card>
-              <CardContent>
-                <Typography variant="h6" gutterBottom>{c.category}</Typography>
-                <Typography variant="body2" color="text.secondary">Slug: {c.slug}</Typography>
-                <Typography variant="body2" color="text.secondary">Full Slug: {c.fullSlug}</Typography>
-                <Typography variant="body2" color="text.secondary">Depth: {c.depth}</Typography>
-                <Typography variant="body2" color="text.secondary">Active: {c.isActive ? 'Yes' : 'No'}</Typography>
-                <Typography variant="body2" color="text.secondary">Sort: {c.sortOrder ?? 0}</Typography>
-                <Typography variant="body2" color="text.secondary">Created: {fmtDate(c.createdAt || c.created_at)}</Typography>
-                <Typography variant="body2" color="text.secondary">Updated: {fmtDate(c.updatedAt || c.updated_at)}</Typography>
-                {c.createdBy && (<Typography variant="body2" color="text.secondary">By: {c.createdBy.username}</Typography>)}
-              </CardContent>
-              <CardActions sx={{ justifyContent: 'flex-end', pt: 0 }}>
-                {canUpdate && (<Tooltip title="Edit Category"><IconButton size="small" onClick={() => beginEdit(c)} color="primary"><EditIcon /></IconButton></Tooltip>)}
-                {canDelete && (<Tooltip title="Delete Category"><IconButton size="small" onClick={() => { setToDelete(c._id); setDeleteConfirmOpen(true); }} color="error"><DeleteIcon /></IconButton></Tooltip>)}
-              </CardActions>
-            </Card>
-          </Box>
-        ))}
-      </Box>
+      <Grid container spacing={2}>
+        {paginatedCategories.map((category) => {
+          const parentName = category.parent_id
+            ? categoryNameLookup[category.parent_id] ?? 'Unknown'
+            : 'Root category';
+          return (
+            <Grid size={{ xs: 12, sm: 6, md: 4 }} key={category._id}>
+              <Card>
+                <CardContent>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                    <Typography variant="h6" component="h2">
+                      {category.name}
+                    </Typography>
+                    {renderStatusChip(category.active)}
+                  </Box>
+                  <Typography variant="body2" color="text.secondary">
+                    Segment: {getSegmentDisplay(category.product_segment)}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Parent: {parentName}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Updated: {formatDate(category.updated_at)}
+                  </Typography>
+                </CardContent>
+                <CardActions sx={{ justifyContent: 'flex-end', pt: 0 }}>
+                  <Tooltip title="Edit Category">
+                    <IconButton size="small" onClick={() => handleEditCategory(category)} color="primary">
+                      <EditIcon />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title="Delete Category">
+                    <IconButton
+                      size="small"
+                      onClick={() => {
+                        setCategoryToDelete(category._id);
+                        setDeleteConfirmOpen(true);
+                      }}
+                      color="error"
+                    >
+                      <DeleteIcon />
+                    </IconButton>
+                  </Tooltip>
+                </CardActions>
+              </Card>
+            </Grid>
+          );
+        })}
+      </Grid>
       <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
-        <TablePagination rowsPerPageOptions={[5, 10, 25, 50]} component="div" count={sorted.length} rowsPerPage={rowsPerPage} page={page} onPageChange={handleChangePage} onRowsPerPageChange={handleChangeRowsPerPage} />
+        <TablePagination
+          rowsPerPageOptions={[5, 10, 25, 50]}
+          component="div"
+          count={sortedCategories.length}
+          rowsPerPage={rowsPerPage}
+          page={page}
+          onPageChange={handleChangePage}
+          onRowsPerPageChange={handleChangeRowsPerPage}
+          sx={{
+            '& .MuiTablePagination-toolbar': {
+              paddingLeft: 2,
+              paddingRight: 2,
+            },
+            '& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows': {
+              fontSize: '0.875rem',
+              fontWeight: 500,
+            },
+          }}
+        />
       </Box>
     </>
   );
 
-  const renderList = () => (
-    <TableContainer component={Paper} sx={{ overflowX: 'auto', position: 'relative' }}>
+  const renderListView = () => (
+    <TableContainer component={Paper} sx={{ overflowX: 'auto' }}>
       <Table sx={{ minWidth: categoryTableMinWidth }}>
         <TableHead>
           <TableRow>
@@ -697,9 +737,8 @@ export default function CategoriesPage() {
                   align={column.align}
                   sx={{
                     fontWeight: 'bold',
-                    backgroundColor: 'background.paper',
                     whiteSpace: 'nowrap',
-                    minWidth: column.minWidth,
+                    backgroundColor: 'background.paper',
                     ...(isActions
                       ? {
                           position: 'sticky',
@@ -728,7 +767,7 @@ export default function CategoriesPage() {
           </TableRow>
         </TableHead>
         <TableBody>
-          {paginated.map((category) => (
+          {paginatedCategories.map((category) => (
             <TableRow key={category._id} hover>
               {visibleCategoryColumns.map((column) => {
                 const isActions = column.id === 'actions';
@@ -738,7 +777,6 @@ export default function CategoriesPage() {
                     align={column.align}
                     sx={{
                       backgroundColor: 'background.paper',
-                      minWidth: column.minWidth,
                       ...(isActions
                         ? {
                             position: 'sticky',
@@ -760,43 +798,79 @@ export default function CategoriesPage() {
       <TablePagination
         rowsPerPageOptions={[5, 10, 25, 50]}
         component="div"
-        count={sorted.length}
+        count={sortedCategories.length}
         rowsPerPage={rowsPerPage}
         page={page}
         onPageChange={handleChangePage}
         onRowsPerPageChange={handleChangeRowsPerPage}
+        sx={{
+          '& .MuiTablePagination-toolbar': {
+            paddingLeft: 2,
+            paddingRight: 2,
+          },
+          '& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows': {
+            fontSize: '0.875rem',
+            fontWeight: 500,
+          },
+        }}
       />
     </TableContainer>
   );
+
+  const handleCloseDialog = () => {
+    setOpenDialog(false);
+    setEditingCategory(null);
+    reset({ name: '', parent_id: '', product_segment: 'BIS', active: true });
+  };
 
   return (
     <Box sx={{ p: 3 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
-          <LayersIcon sx={{ mr: 2, color: 'primary.main' }} />
-          <Typography variant="h4" component="h1" fontWeight="bold">Category Management</Typography>
+          <CategoryIcon sx={{ mr: 2, color: 'primary.main' }} />
+          <Typography variant="h4" component="h1" gutterBottom>
+            Category Management
+          </Typography>
         </Box>
-        {canCreate && (<Button variant="contained" startIcon={<AddIcon />} onClick={beginAdd}>Add Category</Button>)}
+        <Button variant="contained" startIcon={<AddIcon />} onClick={handleAddCategory}>
+          Add Category
+        </Button>
       </Box>
 
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3, flexWrap: 'wrap', gap: 2 }}>
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          mb: 3,
+          flexWrap: 'wrap',
+          gap: 2,
+        }}
+      >
         <TextField
           size="small"
-          placeholder="Search categories (name, slug, full slug)"
+          placeholder="Search categories..."
           value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          InputProps={{ startAdornment: (<InputAdornment position="start"><SearchIcon /></InputAdornment>) }}
-          sx={{ minWidth: 280 }}
+          onChange={(event) => setSearchTerm(event.target.value)}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon />
+              </InputAdornment>
+            ),
+          }}
+          sx={{ minWidth: 250 }}
         />
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
           <ExportMenu
             title="Category Report"
             fileBaseName="categories"
-            currentRows={paginated}
+            currentRows={paginatedCategories}
             columns={categoryExportColumns}
             onFetchAll={fetchAllCategories}
-            disabled={loading || (categories.length === 0 && paginated.length === 0)}
+            disabled={loading || (categories.length === 0 && paginatedCategories.length === 0)}
           />
+
           <ColumnVisibilityMenu
             options={categoryColumnVisibilityOptions}
             selected={visibleCategoryColumnIds}
@@ -805,139 +879,197 @@ export default function CategoriesPage() {
             saveDisabled={!categoryHasUnsavedChanges}
             minSelectable={1}
           />
-          <ToggleButtonGroup value={viewMode} exclusive onChange={(_, v) => { if (v) setViewMode(v); }} aria-label="view mode" size="small">
-            <ToggleButton value="cards" aria-label="card view"><Tooltip title="Card View"><ViewModuleIcon /></Tooltip></ToggleButton>
-            <ToggleButton value="list" aria-label="list view"><Tooltip title="List View"><ViewListIcon /></Tooltip></ToggleButton>
+
+          <ToggleButtonGroup
+            value={viewMode}
+            exclusive
+            onChange={(_event, newViewMode) => {
+              if (newViewMode !== null) {
+                setViewMode(newViewMode);
+              }
+            }}
+            aria-label="view mode"
+            size="small"
+          >
+            <ToggleButton value="cards" aria-label="card view">
+              <Tooltip title="Card View">
+                <ViewModuleIcon />
+              </Tooltip>
+            </ToggleButton>
+            <ToggleButton value="list" aria-label="list view">
+              <Tooltip title="List View">
+                <ViewListIcon />
+              </Tooltip>
+            </ToggleButton>
           </ToggleButtonGroup>
         </Box>
       </Box>
 
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-        Showing {filtered.length} of {categories.length} categories
+        Showing {filteredCategories.length} of {categories.length} categories
       </Typography>
 
       {loading ? (
-        <Box sx={{
-          display: 'grid',
-          gap: 2,
-          gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' },
-        }}>
-          {Array.from({ length: 6 }).map((_, i) => (
-            <Card key={i}>
-              <CardContent>
-                <Skeleton variant="text" width="60%" height={32} />
-                <Skeleton variant="text" width="40%" height={20} sx={{ mt: 1 }} />
-                <Skeleton variant="text" width="80%" height={20} sx={{ mt: 1 }} />
-              </CardContent>
-            </Card>
+        <Grid container spacing={2}>
+          {Array.from({ length: 6 }).map((_, index) => (
+            <Grid size={{ xs: 12, sm: 6, md: 4 }} key={index}>
+              <Card>
+                <CardContent>
+                  <Skeleton variant="text" width="60%" height={32} />
+                  <Skeleton variant="text" width="40%" height={20} sx={{ mt: 1 }} />
+                  <Skeleton variant="text" width="80%" height={20} sx={{ mt: 1 }} />
+                </CardContent>
+              </Card>
+            </Grid>
           ))}
-        </Box>
-      ) : sorted.length === 0 ? (
-        <Alert severity="info">{searchTerm ? `No categories match "${searchTerm}".` : 'No categories yet. Click "Add Category" to create one.'}</Alert>
+        </Grid>
+      ) : sortedCategories.length === 0 ? (
+        <Alert severity="info">
+          {searchTerm
+            ? `No categories found matching "${searchTerm}". Try a different search term.`
+            : 'No categories found. Click "Add Category" to create your first entry.'}
+        </Alert>
       ) : viewMode === 'cards' ? (
-        renderCards()
+        renderCardsView()
       ) : (
-        renderList()
+        renderListView()
       )}
 
-      <Dialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>{editing ? 'Edit Category' : 'Add New Category'}</DialogTitle>
+      <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
+        <DialogTitle>{editingCategory ? 'Edit Category' : 'Add New Category'}</DialogTitle>
         <form onSubmit={handleSubmit(onSubmit)}>
           <DialogContent>
-            {/* Category (matches first column) */}
-            <Controller name="category" control={control} render={({ field }) => (
-              <TextField
-                {...field}
-                label="Category Name"
-                fullWidth
-                error={!!errors.category}
-                helperText={errors.category?.message}
-                margin="normal"
-                placeholder="Enter category name"
-                onChange={(e) => {
-                  field.onChange(e);
-                  if (!slugTouched) {
-                    const generated = slugify(e.target.value || '');
-                    setValue('slug', generated, { shouldValidate: true });
+            <Controller
+              name="name"
+              control={control}
+              render={({ field }) => (
+                <TextField
+                  {...field}
+                  label="Category Name"
+                  fullWidth
+                  error={!!errors.name}
+                  helperText={errors.name?.message}
+                  margin="normal"
+                  placeholder="Enter category name"
+                />
+              )}
+            />
+
+            <Controller
+              name="parent_id"
+              control={control}
+              render={({ field }) => (
+                <TextField
+                  {...field}
+                  value={field.value ?? ''}
+                  onChange={(event) => field.onChange(event.target.value)}
+                  select
+                  label="Parent Category"
+                  fullWidth
+                  margin="normal"
+                  helperText="Select a parent to nest this category"
+                >
+                  <MenuItem value="">No parent (root category)</MenuItem>
+                  {parentOptions.map((option) => (
+                    <MenuItem
+                      key={option._id}
+                      value={option._id}
+                      disabled={
+                        option._id === editingCategory?._id || descendantIds.has(option._id)
+                      }
+                    >
+                      {option.name} ({option.product_segment})
+                    </MenuItem>
+                  ))}
+                </TextField>
+              )}
+            />
+
+            <Controller
+              name="product_segment"
+              control={control}
+              render={({ field }) => (
+                <TextField
+                  {...field}
+                  value={field.value ?? ''}
+                  onChange={(event) => field.onChange(event.target.value)}
+                  select
+                  label="Product Segment"
+                  fullWidth
+                  margin="normal"
+                  disabled={!!parentIdValue}
+                  error={!!errors.product_segment}
+                  helperText={
+                    parentIdValue
+                      ? 'Inherited from parent category'
+                      : errors.product_segment?.message ?? 'Required for root categories'
                   }
-                }}
-              />
-            )} />
+                >
+                  {PRODUCT_SEGMENTS.map((segment) => (
+                    <MenuItem key={segment} value={segment}>
+                      {getSegmentDisplay(segment)}
+                    </MenuItem>
+                  ))}
+                </TextField>
+              )}
+            />
 
-            {/* Slug (matches second column) */}
-            <Controller name="slug" control={control} render={({ field }) => (
-              <TextField
-                {...field}
-                id="category-slug-input"
-                label="Slug"
-                fullWidth
-                error={!!errors.slug}
-                helperText={errors.slug?.message || 'Only lowercase letters, numbers, and hyphens. Auto-generated from name, editable.'}
-                margin="normal"
-                placeholder="auto-generated-from-name"
-                onChange={(e) => {
-                  setSlugTouched(true);
-                  field.onChange(slugify(e.target.value));
-                }}
-                onBlur={() => setSlugTouched(true)}
-              />
-            )} />
-
-            {/* Full Slug is logic-driven on the backend; no input/preview here. */}
-
-            {/* Sort (column after Active in list, but Active is always last in form) */}
-            <Controller name="sortOrder" control={control} render={({ field }) => (
-              <TextField
-                {...field}
-                type="number"
-                label="Sort Order"
-                inputProps={{ min: 0 }}
-                error={!!errors.sortOrder}
-                helperText={errors.sortOrder?.message || 'Controls display order among siblings (lower appears first).'}
-                margin="normal"
-                sx={{ width: 320, maxWidth: '100%' }}
-              />
-            )} />
-
-            {/* Parent (matches list view column position) */}
-            <FormControl fullWidth margin="normal">
-              <InputLabel id="parent-label">Parent (optional)</InputLabel>
-              <Controller name="parent" control={control} render={({ field }) => (
-                <Select {...field} labelId="parent-label" label="Parent (optional)" value={field.value ?? ''} onChange={(e) => field.onChange(e.target.value === '' ? null : String(e.target.value))}>
-                  <MenuItem value=""><em>None (root)</em></MenuItem>
-                  {parentOptions.map((opt) => (<MenuItem key={opt._id} value={opt._id}>{opt.fullSlug}</MenuItem>))}
-                </Select>
-              )} />
-            </FormControl>
-
-            {/* Active (always last in form) */}
-            <Box sx={{ mt: 1 }}>
-              <Controller name="isActive" control={control} render={({ field }) => (
-                <FormControlLabel control={<Switch checked={field.value} onChange={(_, v) => field.onChange(v)} />} label="Active" />
-              )} />
-            </Box>
+            <Controller
+              name="active"
+              control={control}
+              render={({ field }) => (
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={field.value}
+                      onChange={(event) => field.onChange(event.target.checked)}
+                    />
+                  }
+                  label="Active"
+                />
+              )}
+            />
           </DialogContent>
           <DialogActions sx={{ p: 3 }}>
-            <Button onClick={() => setOpenDialog(false)}>Cancel</Button>
-            <Button type="submit" variant="contained" disabled={isSubmitting}>{isSubmitting ? 'Saving...' : (editing ? 'Update' : 'Create')}</Button>
+            <Button onClick={handleCloseDialog} disabled={isSubmitting}>
+              Cancel
+            </Button>
+            <Button type="submit" variant="contained" disabled={isSubmitting}>
+              {isSubmitting ? 'Saving...' : editingCategory ? 'Update' : 'Create'}
+            </Button>
           </DialogActions>
         </form>
       </Dialog>
 
       <Dialog open={deleteConfirmOpen} onClose={() => setDeleteConfirmOpen(false)}>
         <DialogTitle>Confirm Delete</DialogTitle>
-        <DialogContent><Typography>Delete this category? This action cannot be undone.</Typography></DialogContent>
+        <DialogContent>
+          <Typography>
+            Are you sure you want to delete this category? Child categories, if any, will be
+            reassigned to the parent category.
+          </Typography>
+        </DialogContent>
         <DialogActions>
           <Button onClick={() => setDeleteConfirmOpen(false)}>Cancel</Button>
-          <Button onClick={handleDelete} color="error" variant="contained">Delete</Button>
+          <Button onClick={handleDeleteCategory} color="error" variant="contained">
+            Delete
+          </Button>
         </DialogActions>
       </Dialog>
 
-      {canCreate && (
-        <Fab color="primary" aria-label="add category" onClick={beginAdd} sx={{ position: 'fixed', bottom: 16, right: 16, display: { xs: 'flex', sm: 'none' } }}>
-          <AddIcon />
-        </Fab>
-      )}
+      <Fab
+        color="primary"
+        aria-label="add category"
+        onClick={handleAddCategory}
+        sx={{
+          position: 'fixed',
+          bottom: 16,
+          right: 16,
+          display: { xs: 'flex', sm: 'none' },
+        }}
+      >
+        <AddIcon />
+      </Fab>
     </Box>
   );
 }

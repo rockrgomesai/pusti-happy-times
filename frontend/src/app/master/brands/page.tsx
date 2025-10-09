@@ -241,7 +241,7 @@ export default function BrandsPage() {
   const onSubmit = async (data: BrandFormData) => {
     try {
       if (editingBrand) {
-        await api.put(`/api/brands/${editingBrand._id}`, data);
+  await api.put(`/brands/${editingBrand._id}`, data);
         toast.success('Brand updated successfully');
       } else {
         await api.post('/brands', data);
@@ -263,7 +263,7 @@ export default function BrandsPage() {
     if (!brandToDelete) return;
     
     try {
-      await api.delete(`/api/brands/${brandToDelete}`);
+  await api.delete(`/brands/${brandToDelete}`);
       toast.success('Brand deleted successfully');
       setDeleteConfirmOpen(false);
       setBrandToDelete(null);
@@ -650,7 +650,7 @@ export default function BrandsPage() {
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
           <BusinessIcon sx={{ mr: 2, color: 'primary.main' }} />
-          <Typography variant="h4" component="h1" fontWeight="bold">
+          <Typography variant="h4" component="h1" gutterBottom>
             Brand Management
           </Typography>
         </Box>

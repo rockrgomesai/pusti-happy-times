@@ -7,10 +7,8 @@
  * the backend designation management system.
  */
 
+import { API_BASE_URL } from '@/lib/api';
 import { ApiResponse } from '@/lib/types/api';
-
-// Base API configuration
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
 const ENDPOINTS = {
   DESIGNATIONS: '/designations',
   ACTIVE: '/designations/active',
@@ -106,7 +104,7 @@ const createHttpClient = () => {
     get: async <T>(url: string): Promise<ApiResponse<T>> => {
       const response = await fetch(`${API_BASE_URL}${url}`, {
         method: 'GET',
-        headers: getAuthHeaders()
+        headers: getAuthHeaders(),
       });
       return handleResponse<T>(response);
     },
@@ -115,7 +113,7 @@ const createHttpClient = () => {
       const response = await fetch(`${API_BASE_URL}${url}`, {
         method: 'POST',
         headers: getAuthHeaders(),
-        body: JSON.stringify(body)
+        body: JSON.stringify(body),
       });
       return handleResponse<T>(response);
     },
@@ -124,7 +122,7 @@ const createHttpClient = () => {
       const response = await fetch(`${API_BASE_URL}${url}`, {
         method: 'PUT',
         headers: getAuthHeaders(),
-        body: JSON.stringify(body)
+        body: JSON.stringify(body),
       });
       return handleResponse<T>(response);
     },
@@ -132,7 +130,7 @@ const createHttpClient = () => {
     delete: async <T>(url: string): Promise<ApiResponse<T>> => {
       const response = await fetch(`${API_BASE_URL}${url}`, {
         method: 'DELETE',
-        headers: getAuthHeaders()
+        headers: getAuthHeaders(),
       });
       return handleResponse<T>(response);
     },
@@ -140,16 +138,16 @@ const createHttpClient = () => {
     patch: async <T>(url: string, body?: unknown): Promise<ApiResponse<T>> => {
       const options: RequestInit = {
         method: 'PATCH',
-        headers: getAuthHeaders()
+        headers: getAuthHeaders(),
       };
-      
+
       if (body) {
         options.body = JSON.stringify(body);
       }
-      
+
       const response = await fetch(`${API_BASE_URL}${url}`, options);
       return handleResponse<T>(response);
-    }
+    },
   };
 };
 

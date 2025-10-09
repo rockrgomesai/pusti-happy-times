@@ -23,8 +23,8 @@ const Depot = require("./Depot");
 const Employee = require("./Employee");
 const Designation = require("./Designation");
 const Transport = require("./Transport");
-const Category = require("./Category");
 const SidebarMenuItem = require("./SidebarMenuItem");
+const Category = require("./Category");
 const { ApiPermission, PagePermission } = require("./Permission");
 
 // Import junction table models
@@ -72,8 +72,9 @@ const validateModels = () => {
     "Brand",
     "Factory",
     "Depot",
-  "Employee",
+    "Employee",
     "Designation",
+    "Category",
     "SidebarMenuItem",
     "ApiPermission",
     "PagePermission",

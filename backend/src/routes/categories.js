@@ -1,296 +1,550 @@
 /**
- * Category Routes
- * Pusti Happy Times - Category Management Endpoints
- *
- * Mirrors the brands.js style with CRUD, RBAC, API permissions, and audit fields.
+ * Category Routes (v2)
+ * Provides CRUD operations with hierarchy-aware validation and segment inheritance.
  */
 
-const express = require('express');
-const { body, validationResult, param } = require('express-validator');
-const { Category } = require('../models');
-const { authenticate, requireApiPermission } = require('../middleware/auth');
+const express = require("express");
+const { body, param, validationResult } = require("express-validator");
+const mongoose = require("mongoose");
+
+const { Category } = require("../models");
+const { authenticate, requireApiPermission } = require("../middleware/auth");
 
 const router = express.Router();
 
-/**
- * Validation Rules
- */
-const categoryValidation = [
-  body('category')
-    .trim()
-    .notEmpty()
-    .withMessage('Category name is required')
-    .isLength({ min: 1, max: 120 })
-    .withMessage('Category must be between 1 and 120 characters'),
-  body('slug')
-    .optional()
-    .trim()
-    .matches(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
-    .withMessage('Slug must be lowercase letters/numbers and dashes'),
-  body('parent')
-    .optional({ nullable: true })
-    .isMongoId()
-    .withMessage('Invalid parent ID format'),
-];
+const PRODUCT_SEGMENTS = Category.PRODUCT_SEGMENTS || ["BEV", "BIS"];
 
-const idValidation = [param('id').isMongoId().withMessage('Invalid category ID format')];
+const normalizeSegment = (value) => {
+  if (!value) return value;
+  const upper = String(value).trim().toUpperCase();
+  if (upper.startsWith("BIS")) return "BIS";
+  if (upper.startsWith("BEV")) return "BEV";
+  return upper;
+};
 
-/**
- * Helpers
- */
+const sanitizeBoolean = (value) => {
+  if (value === true || value === false) return value;
+  if (value === "true") return true;
+  if (value === "false") return false;
+  return value;
+};
+
+const sanitizeParentId = (value) => {
+  if (value === "" || value === null || typeof value === "undefined") {
+    return null;
+  }
+  return value;
+};
+
+const getActor = (req) => req.user?.username || req.user?.email || "system";
+
 const handleValidationErrors = (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return res.status(400).json({ success: false, message: 'Validation error', errors: errors.array() });
+    console.warn("Category validation failed", {
+      path: req.path,
+      method: req.method,
+      errors: errors.array(),
+    });
+    return res.status(400).json({
+      success: false,
+      message: "Validation error",
+      errors: errors.array(),
+    });
   }
-  next();
+  return next();
 };
 
-const getCurrentUserId = (req) => req.user?.id || req.user?._id;
+const createCategoryValidation = [
+  body("name")
+    .trim()
+    .notEmpty()
+    .withMessage("Name is required")
+    .isLength({ min: 1, max: 120 })
+    .withMessage("Name must be between 1 and 120 characters"),
+  body("parent_id")
+    .optional({ values: "falsy" })
+    .customSanitizer(sanitizeParentId)
+    .custom((value) => {
+      if (value === null) return true;
+      if (mongoose.Types.ObjectId.isValid(value)) return true;
+      throw new Error("Invalid parent category id");
+    }),
+  body("product_segment")
+    .optional({ values: "falsy" })
+    .customSanitizer((value) => normalizeSegment(value))
+    .custom((value, { req }) => {
+      if (req.body.parent_id) {
+        if (value && !PRODUCT_SEGMENTS.includes(value)) {
+          throw new Error("Product segment must be BEV or BIS");
+        }
+        return true;
+      }
+      if (!value) {
+        throw new Error("Product segment is required for root categories");
+      }
+      if (!PRODUCT_SEGMENTS.includes(value)) {
+        throw new Error("Product segment must be BEV or BIS");
+      }
+      return true;
+    }),
+  body("active")
+    .optional({ values: "falsy" })
+    .customSanitizer(sanitizeBoolean)
+    .custom((value) => {
+      if (typeof value === "undefined") return true;
+      if (typeof value === "boolean") return true;
+      throw new Error("Active must be a boolean value");
+    }),
+];
+
+const updateCategoryValidation = [
+  body("name")
+    .optional()
+    .trim()
+    .isLength({ min: 1, max: 120 })
+    .withMessage("Name must be between 1 and 120 characters"),
+  body("parent_id")
+    .optional({ values: "falsy" })
+    .customSanitizer(sanitizeParentId)
+    .custom((value) => {
+      if (value === null) return true;
+      if (mongoose.Types.ObjectId.isValid(value)) return true;
+      throw new Error("Invalid parent category id");
+    }),
+  body("product_segment")
+    .optional({ values: "falsy" })
+    .customSanitizer((value) => normalizeSegment(value))
+    .custom((value) => {
+      if (!value) return true;
+      if (!PRODUCT_SEGMENTS.includes(value)) {
+        throw new Error("Product segment must be BEV or BIS");
+      }
+      return true;
+    }),
+  body("active")
+    .optional({ values: "falsy" })
+    .customSanitizer(sanitizeBoolean)
+    .custom((value) => {
+      if (typeof value === "undefined") return true;
+      if (typeof value === "boolean") return true;
+      throw new Error("Active must be a boolean value");
+    }),
+];
+
+const idValidation = [param("id").isMongoId().withMessage("Invalid category id")];
+
+const createsCycle = async (categoryId, proposedParentId) => {
+  if (!proposedParentId) return false;
+  if (categoryId.toString() === proposedParentId.toString()) return true;
+
+  const queue = [proposedParentId.toString()];
+  const visited = new Set(queue);
+
+  while (queue.length) {
+    const current = queue.shift();
+    if (current === categoryId.toString()) {
+      return true;
+    }
+
+    const children = await Category.find({ parent_id: current }).select("_id");
+    for (const child of children) {
+      const id = child._id.toString();
+      if (!visited.has(id)) {
+        visited.add(id);
+        queue.push(id);
+      }
+    }
+  }
+
+  return false;
+};
+
+router.use(authenticate);
 
 /**
- * Routes
+ * GET /api/categories
+ * Fetch categories with optional active/segment/parent filters.
  */
-
-// GET /api/categories - list categories
 router.get(
-  '/',
-  authenticate,
-  requireApiPermission('categories:read'),
+  "/",
+  requireApiPermission("categories:read"),
   async (req, res) => {
     try {
-      const { page = 1, limit = 10, sort = 'category' } = req.query;
+      const filter = {};
 
-      const options = {
-        page: parseInt(page),
-        limit: parseInt(limit),
-        sort: { [sort]: 1 },
-      };
+      if (typeof req.query.active !== "undefined") {
+        if (req.query.active === "true" || req.query.active === true) {
+          filter.active = true;
+        } else if (req.query.active === "false" || req.query.active === false) {
+          filter.active = false;
+        }
+      }
 
-      const skip = (options.page - 1) * options.limit;
+      if (req.query.segment) {
+        const segment = normalizeSegment(req.query.segment);
+        if (!PRODUCT_SEGMENTS.includes(segment)) {
+          return res.status(400).json({
+            success: false,
+            message: "segment must be BEV or BIS",
+          });
+        }
+        filter.product_segment = segment;
+      }
 
-      const categories = await Category.find({})
-        .sort(options.sort)
-        .skip(skip)
-        .limit(options.limit)
-        .populate('createdBy', 'username')
-        .populate('updatedBy', 'username')
-        .lean();
+      if (req.query.parent_id) {
+        if (!mongoose.Types.ObjectId.isValid(req.query.parent_id)) {
+          return res.status(400).json({
+            success: false,
+            message: "Invalid parent category id",
+          });
+        }
+        filter.parent_id = req.query.parent_id;
+      }
 
-      const totalCount = await Category.countDocuments();
-      const totalPages = Math.ceil(totalCount / options.limit);
-
-      res.json({
-        success: true,
-        data: categories,
-        pagination: {
-          page: options.page,
-          limit: options.limit,
-          totalCount,
-          totalPages,
-          hasNextPage: options.page < totalPages,
-          hasPrevPage: options.page > 1,
-        },
-      });
+      const categories = await Category.find(filter).sort({ name: 1 }).lean();
+      return res.json({ success: true, data: categories });
     } catch (error) {
-      console.error('Error fetching categories:', error);
-      res.status(500).json({
+      console.error("Error fetching categories", error);
+      return res.status(500).json({
         success: false,
-        message: 'Error fetching categories',
-        error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+        message: "Error fetching categories",
       });
     }
   }
 );
 
-// GET /api/categories/:id - get one
+/**
+ * GET /api/categories/:id
+ */
 router.get(
-  '/:id',
-  authenticate,
-  requireApiPermission('categories:read'),
+  "/:id",
+  requireApiPermission("categories:read"),
   idValidation,
   handleValidationErrors,
   async (req, res) => {
     try {
-      const doc = await Category.findById(req.params.id)
-        .populate('createdBy', 'username')
-        .populate('updatedBy', 'username');
-
-      if (!doc) {
-        return res.status(404).json({ success: false, message: 'Category not found' });
+      const category = await Category.findById(req.params.id).lean();
+      if (!category) {
+        return res.status(404).json({
+          success: false,
+          message: "Category not found",
+        });
       }
 
-      res.json({ success: true, data: doc });
+      return res.json({ success: true, data: category });
     } catch (error) {
-      console.error('Error fetching category:', error);
-      res.status(500).json({
+      console.error("Error fetching category", error);
+      return res.status(500).json({
         success: false,
-        message: 'Error fetching category',
-        error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+        message: "Error fetching category",
       });
     }
   }
 );
 
-// POST /api/categories - create
+/**
+ * POST /api/categories
+ */
 router.post(
-  '/',
-  authenticate,
-  requireApiPermission('categories:create'),
-  categoryValidation,
+  "/",
+  requireApiPermission("categories:create"),
+  createCategoryValidation,
   handleValidationErrors,
   async (req, res) => {
     try {
-  const { category, parent = null, slug: incomingSlug, sortOrder = 0, isActive = true } = req.body;
-      const currentUserId = getCurrentUserId(req);
+      const actor = getActor(req);
+      const name = req.body.name.trim();
+      const active = typeof req.body.active === "boolean" ? req.body.active : true;
+      const parentId = req.body.parent_id ? req.body.parent_id : null;
 
-      // unique per parent+slug is enforced at DB/index level; check duplicate by category at same depth/parent
-      const slug = (incomingSlug && incomingSlug.length
-        ? String(incomingSlug)
-        : String(category))
-        .toLowerCase()
-        .trim()
-        .replace(/['"]/g, '')
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-+|-+$/g, '');
-
-      // If parent provided, verify it exists
-      if (parent) {
-        const parentExists = await Category.exists({ _id: parent });
-        if (!parentExists) {
-          return res.status(400).json({ success: false, message: 'Parent category not found' });
-        }
-      }
-
-      const existing = await Category.findOne({ slug, parent: parent || null });
+      const existing = await Category.findOne({ name });
       if (existing) {
-        return res.status(400).json({ success: false, message: 'Category already exists in this level' });
+        return res.status(409).json({
+          success: false,
+          message: "Category name already exists",
+        });
       }
 
-  const doc = new Category({ category, slug, parent: parent || null, sortOrder, isActive, createdBy: currentUserId, updatedBy: currentUserId });
-      await doc.save();
+      let productSegment = normalizeSegment(req.body.product_segment);
+      let parentDoc = null;
 
-      await doc.populate('createdBy', 'username');
-      await doc.populate('updatedBy', 'username');
+      if (parentId) {
+        parentDoc = await Category.findById(parentId);
+        if (!parentDoc) {
+          return res.status(400).json({
+            success: false,
+            message: "Parent category not found",
+          });
+        }
+        productSegment = parentDoc.product_segment;
+      } else if (!productSegment) {
+        return res.status(400).json({
+          success: false,
+          message: "Root categories must specify a product segment",
+        });
+      }
 
-      res.status(201).json({ success: true, message: 'Category created successfully', data: doc });
+      const now = new Date();
+      const category = await Category.create({
+        name,
+        parent_id: parentDoc ? parentDoc._id : null,
+        product_segment: productSegment,
+        active,
+        created_at: now,
+        updated_at: now,
+        created_by: actor,
+        updated_by: actor,
+      });
+
+      return res.status(201).json({
+        success: true,
+        message: "Category created successfully",
+        data: category,
+      });
     } catch (error) {
-      console.error('Error creating category:', error);
-      if (error.name === 'ValidationError') {
-        return res.status(400).json({ success: false, message: 'Validation error', errors: error.errors });
-      }
-      if (error.code === 11000) {
-        return res.status(400).json({ success: false, message: 'Category already exists' });
-      }
-      res.status(500).json({
+      console.error("Error creating category", error);
+      return res.status(500).json({
         success: false,
-        message: 'Error creating category',
-        error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+        message: "Error creating category",
       });
     }
   }
 );
 
-// PUT /api/categories/:id - update
+/**
+ * PUT /api/categories/:id
+ */
 router.put(
-  '/:id',
-  authenticate,
-  requireApiPermission('categories:update'),
+  "/:id",
+  requireApiPermission("categories:update"),
   idValidation,
-  categoryValidation,
+  updateCategoryValidation,
   handleValidationErrors,
   async (req, res) => {
     try {
-  const { category, parent = undefined, slug: incomingSlug, sortOrder, isActive } = req.body;
-      const currentUserId = getCurrentUserId(req);
-
-      const existing = await Category.findById(req.params.id);
-      if (!existing) {
-        return res.status(404).json({ success: false, message: 'Category not found' });
+      const actor = getActor(req);
+      const category = await Category.findById(req.params.id);
+      if (!category) {
+        return res.status(404).json({
+          success: false,
+          message: "Category not found",
+        });
       }
 
-      // Prevent duplicate (slug + parent) collision excluding current
-      const slug = (incomingSlug && incomingSlug.length
-        ? String(incomingSlug)
-        : String(category))
-        .toLowerCase()
-        .trim()
-        .replace(/['"]/g, '')
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-+|-+$/g, '');
+      const updates = {};
+      const now = new Date();
+      updates.updated_at = now;
+      updates.updated_by = actor;
 
-      // If parent provided, verify it exists
-      if (parent) {
-        const parentExists = await Category.exists({ _id: parent });
-        if (!parentExists) {
-          return res.status(400).json({ success: false, message: 'Parent category not found' });
+      if (typeof req.body.name !== "undefined") {
+        const trimmedName = req.body.name.trim();
+        if (trimmedName !== category.name) {
+          const duplicate = await Category.findOne({
+            _id: { $ne: category._id },
+            name: trimmedName,
+          });
+          if (duplicate) {
+            return res.status(409).json({
+              success: false,
+              message: "Category name already exists",
+            });
+          }
+        }
+        updates.name = trimmedName;
+      }
+
+      if (typeof req.body.active !== "undefined") {
+        updates.active = req.body.active;
+      }
+
+      const parentFieldProvided = Object.prototype.hasOwnProperty.call(
+        req.body,
+        "parent_id"
+      );
+      let parentChanged = false;
+      let newParentDoc = null;
+
+      if (parentFieldProvided) {
+        if (req.body.parent_id === null) {
+          parentChanged = Boolean(category.parent_id);
+          updates.parent_id = null;
+        } else if (!req.body.parent_id) {
+          parentChanged = Boolean(category.parent_id);
+          updates.parent_id = null;
+        } else {
+          if (req.body.parent_id === req.params.id) {
+            return res.status(400).json({
+              success: false,
+              message: "Category cannot be its own parent",
+            });
+          }
+
+          newParentDoc = await Category.findById(req.body.parent_id);
+          if (!newParentDoc) {
+            return res.status(400).json({
+              success: false,
+              message: "Parent category not found",
+            });
+          }
+
+          if (await createsCycle(category._id, newParentDoc._id)) {
+            return res.status(400).json({
+              success: false,
+              message: "Category cannot be assigned to its own descendant",
+            });
+          }
+
+          const existingParentId = category.parent_id
+            ? category.parent_id.toString()
+            : null;
+          parentChanged = existingParentId !== newParentDoc._id.toString();
+          updates.parent_id = newParentDoc._id;
         }
       }
-      const duplicate = await Category.findOne({ slug, parent: parent === undefined ? existing.parent : parent, _id: { $ne: existing._id } });
-      if (duplicate) {
-        return res.status(400).json({ success: false, message: 'Another category with the same name exists in this level' });
+
+      let segmentToApply = null;
+
+      if (parentChanged) {
+        if (newParentDoc) {
+          segmentToApply = newParentDoc.product_segment;
+        } else if (typeof req.body.product_segment !== "undefined") {
+          segmentToApply = normalizeSegment(req.body.product_segment);
+          if (!PRODUCT_SEGMENTS.includes(segmentToApply)) {
+            return res.status(400).json({
+              success: false,
+              message: "Product segment must be BEV or BIS",
+            });
+          }
+        } else {
+          segmentToApply = category.product_segment;
+        }
+      } else if (typeof req.body.product_segment !== "undefined") {
+        if (category.parent_id) {
+          return res.status(400).json({
+            success: false,
+            message: "Child categories inherit the product segment from their parent",
+          });
+        }
+        segmentToApply = normalizeSegment(req.body.product_segment);
+        if (!PRODUCT_SEGMENTS.includes(segmentToApply)) {
+          return res.status(400).json({
+            success: false,
+            message: "Product segment must be BEV or BIS",
+          });
+        }
+        if (segmentToApply === category.product_segment) {
+          segmentToApply = null;
+        }
       }
 
-  existing.category = category;
-  existing.slug = slug; // ensure slug updates if category or explicit slug changed
-      if (parent !== undefined) existing.parent = parent;
-  if (sortOrder !== undefined) existing.sortOrder = sortOrder;
-  if (isActive !== undefined) existing.isActive = isActive;
-      existing.updatedBy = currentUserId;
-      existing.updatedAt = new Date();
+      if (segmentToApply) {
+        updates.product_segment = segmentToApply;
+      }
 
-      await existing.save();
+      if (Object.keys(updates).length === 2 && !segmentToApply) {
+        return res.status(400).json({
+          success: false,
+          message: "No fields provided to update",
+        });
+      }
 
-      const populated = await Category.findById(existing._id)
-        .populate('createdBy', 'username')
-        .populate('updatedBy', 'username');
+      await Category.updateOne({ _id: category._id }, { $set: updates });
 
-      res.json({ success: true, message: 'Category updated successfully', data: populated });
+      if (segmentToApply) {
+        await Category.updateDescendantsSegment(
+          category._id,
+          updates.product_segment || segmentToApply,
+          actor
+        );
+      }
+
+      const updatedCategory = await Category.findById(category._id).lean();
+      return res.json({
+        success: true,
+        message: "Category updated successfully",
+        data: updatedCategory,
+      });
     } catch (error) {
-      console.error('Error updating category:', error);
-      if (error.name === 'ValidationError') {
-        return res.status(400).json({ success: false, message: 'Validation error', errors: error.errors });
-      }
-      if (error.code === 11000) {
-        return res.status(400).json({ success: false, message: 'Category already exists' });
-      }
-      res.status(500).json({
+      console.error("Error updating category", error);
+      return res.status(500).json({
         success: false,
-        message: 'Error updating category',
-        error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+        message: "Error updating category",
       });
     }
   }
 );
 
-// DELETE /api/categories/:id - delete
+/**
+ * DELETE /api/categories/:id
+ */
 router.delete(
-  '/:id',
-  authenticate,
-  requireApiPermission('categories:delete'),
+  "/:id",
+  requireApiPermission("categories:delete"),
   idValidation,
   handleValidationErrors,
   async (req, res) => {
     try {
-      const existing = await Category.findById(req.params.id);
-      if (!existing) {
-        return res.status(404).json({ success: false, message: 'Category not found' });
+      const actor = getActor(req);
+      const category = await Category.findById(req.params.id);
+      if (!category) {
+        return res.status(404).json({
+          success: false,
+          message: "Category not found",
+        });
       }
 
-      // Optional: block delete if has children
-      const hasChild = await Category.exists({ parent: existing._id });
-      if (hasChild) {
-        return res.status(400).json({ success: false, message: 'Cannot delete category that has subcategories' });
+      const children = await Category.find({ parent_id: category._id }).select("_id");
+      let reassigned = 0;
+
+      if (children.length) {
+        let newSegment = null;
+        if (category.parent_id) {
+          const parentDoc = await Category.findById(category.parent_id).select(
+            "product_segment"
+          );
+          if (parentDoc) {
+            newSegment = parentDoc.product_segment;
+          }
+        }
+
+        const now = new Date();
+        const updatePayload = {
+          parent_id: category.parent_id,
+          updated_at: now,
+          updated_by: actor,
+        };
+
+        if (newSegment) {
+          updatePayload.product_segment = newSegment;
+        }
+
+        const childIds = children.map((child) => child._id);
+        const result = await Category.updateMany(
+          { _id: { $in: childIds } },
+          { $set: updatePayload }
+        );
+        reassigned = result.modifiedCount || 0;
+
+        if (newSegment) {
+          for (const child of childIds) {
+            await Category.updateDescendantsSegment(child, newSegment, actor);
+          }
+        }
       }
 
-      await Category.findByIdAndDelete(existing._id);
-      res.json({ success: true, message: 'Category deleted successfully' });
+      await Category.deleteOne({ _id: category._id });
+
+      return res.json({
+        success: true,
+        message: "Category deleted successfully",
+        data: { reassignedChildren: reassigned },
+      });
     } catch (error) {
-      console.error('Error deleting category:', error);
-      res.status(500).json({
+      console.error("Error deleting category", error);
+      return res.status(500).json({
         success: false,
-        message: 'Error deleting category',
-        error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+        message: "Error deleting category",
       });
     }
   }

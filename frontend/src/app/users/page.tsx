@@ -231,7 +231,7 @@ export default function UsersPage() {
   const onSubmit = async (data: UserFormData) => {
     try {
       if (editingUser) {
-        await api.put(`/api/users/${editingUser._id}`, data);
+  await api.put(`/users/${editingUser._id}`, data);
         toast.success('User updated successfully');
       } else {
         await api.post('/users', data);
@@ -253,7 +253,7 @@ export default function UsersPage() {
     if (!userToDelete) return;
     
     try {
-      await api.delete(`/api/users/${userToDelete}`);
+  await api.delete(`/users/${userToDelete}`);
       toast.success('User deleted successfully');
       setDeleteConfirmOpen(false);
       setUserToDelete(null);

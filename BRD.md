@@ -498,7 +498,8 @@ The company operates through a hierarchical territorial structure:
 **FR-011: Category Management**
 - Fields:
   - _id, name (unique, indexed)
-  - parent_category_id (ref: Categories._id, nullable) - for hierarchical structure
+  - parent_id (ref: Categories._id, nullable) - for hierarchical structure
+  - product_segment (enum('BIS','BEV'))
   - active (boolean)
 - CRUD operations with parent-child relationship support
 - Endpoint permissions: categories:read, create, update, delete

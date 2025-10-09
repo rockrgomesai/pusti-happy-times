@@ -65,9 +65,7 @@ pagePermissionSchema.statics.getByName = async function (permissionName) {
   return await this.findOne({ pg_permissions: permissionName });
 };
 
-pagePermissionSchema.statics.getByCategory = async function (category) {
-  return await this.find({ category }).sort({ pg_permissions: 1 });
-};
+
 
 /**
  * Static Methods for ApiPermission
@@ -76,9 +74,7 @@ apiPermissionSchema.statics.getByName = async function (permissionName) {
   return await this.findOne({ api_permissions: permissionName });
 };
 
-apiPermissionSchema.statics.getByCategory = async function (category) {
-  return await this.find({ category }).sort({ api_permissions: 1 });
-};
+
 
 apiPermissionSchema.statics.getByEndpoint = async function (method, endpoint) {
   return await this.find({

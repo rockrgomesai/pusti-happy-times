@@ -1,94 +1,140 @@
-const mongoose = require('mongoose');
+/**
+ * Category Model
+ * Defines hierarchical product categories with segment inheritance helpers.
+ */
 
-const { Schema } = mongoose;
+const mongoose = require("mongoose");
 
-const CategorySchema = new Schema(
+const PRODUCT_SEGMENTS = ["BEV", "BIS"];
+
+const normalizeProductSegment = (value) => {
+  if (!value) return value;
+  const upper = String(value).trim().toUpperCase();
+  if (upper.startsWith("BIS")) return "BIS";
+  if (upper.startsWith("BEV")) return "BEV";
+  return upper;
+};
+
+const categorySchema = new mongoose.Schema(
   {
-    // name field as requested
-    category: { type: String, required: true, trim: true },
-
-    // slug and hierarchy
-    slug: { type: String, required: true, lowercase: true, trim: true },
-    parent: { type: Schema.Types.ObjectId, ref: 'Category', default: null },
-    ancestors: [{ type: Schema.Types.ObjectId, ref: 'Category' }],
-    hasChildren: { type: Boolean, default: false },
-    depth: { type: Number, default: 0 },
-    fullSlug: { type: String, required: true, lowercase: true, trim: true },
-
-    // misc
-    sortOrder: { type: Number, default: 0 },
-    isActive: { type: Boolean, default: true },
-
-    // audit
-    createdBy: { type: Schema.Types.ObjectId, ref: 'User', default: null },
-    updatedBy: { type: Schema.Types.ObjectId, ref: 'User', default: null },
+    name: {
+      type: String,
+      required: true,
+      unique: true,
+      trim: true,
+      minlength: 1,
+      maxlength: 120,
+    },
+    parent_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Category",
+      default: null,
+      index: true,
+    },
+    product_segment: {
+      type: String,
+      enum: PRODUCT_SEGMENTS,
+      required: true,
+      index: true,
+      set: normalizeProductSegment,
+    },
+    active: {
+      type: Boolean,
+      default: true,
+      index: true,
+    },
+    created_at: {
+      type: Date,
+      required: true,
+      default: Date.now,
+    },
+    created_by: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    updated_at: {
+      type: Date,
+      required: true,
+      default: Date.now,
+    },
+    updated_by: {
+      type: String,
+      required: true,
+      trim: true,
+    },
   },
   {
-    timestamps: true,
-    collection: 'categories', // explicit collection name
+    collection: "categories",
+    versionKey: false,
   }
 );
 
-// indexes
-CategorySchema.index({ parent: 1, slug: 1 }, { unique: true });
-CategorySchema.index({ ancestors: 1 });
-CategorySchema.index({ fullSlug: 1 });
-CategorySchema.index({ isActive: 1, hasChildren: 1 });
+categorySchema.index({ name: 1 }, { unique: true, name: "idx_category_name_unique" });
+categorySchema.index({ parent_id: 1 }, { name: "idx_category_parent_id", sparse: true });
+categorySchema.index({ product_segment: 1 }, { name: "idx_category_product_segment" });
+categorySchema.index({ active: 1 }, { name: "idx_category_active" });
+categorySchema.index(
+  { product_segment: 1, active: 1 },
+  { name: "idx_category_segment_active" }
+);
+categorySchema.index({ created_at: -1 }, { name: "idx_category_created_at_desc" });
 
-function slugify(input) {
-  return String(input || '')
-    .toLowerCase()
-    .trim()
-    .replace(/['"]/g, '')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
-}
+categorySchema.statics.PRODUCT_SEGMENTS = PRODUCT_SEGMENTS;
+categorySchema.statics.normalizeProductSegment = normalizeProductSegment;
 
-// minimal helpers to keep slug/fullSlug consistent
-// Compute slug, depth, and fullSlug before validation so required fields are satisfied
-CategorySchema.pre('validate', async function (next) {
-  try {
-    if (!this.slug && this.category) this.slug = slugify(this.category);
+categorySchema.methods.isRoot = function () {
+  return !this.parent_id;
+};
 
-    if (this.parent) {
-      const parentDoc = await this.constructor
-        .findById(this.parent)
-        .select('fullSlug depth ancestors')
-        .lean();
+categorySchema.statics.updateDescendantsSegment = async function (rootId, newSegment, actor) {
+  const queue = [rootId];
+  const updatedBy = actor || "system";
 
-      if (parentDoc) {
-        this.depth = (parentDoc.depth || 0) + 1;
-        this.fullSlug = `${parentDoc.fullSlug}/${this.slug}`;
-        // compute ancestors = parent's ancestors + parent id
-        const parentAnc = Array.isArray(parentDoc.ancestors) ? parentDoc.ancestors : [];
-        this.ancestors = [...parentAnc, this.parent];
-      } else {
-        // If parent was provided but not found, keep defaults; route-level validation should catch this
-        this.depth = 0;
-        this.fullSlug = this.slug;
-        this.ancestors = [];
+  while (queue.length) {
+    const currentId = queue.shift();
+    const children = await this.find({ parent_id: currentId }).select("_id");
+    if (!children.length) continue;
+
+    const childIds = children.map((child) => child._id);
+    const now = new Date();
+
+    await this.updateMany(
+      { _id: { $in: childIds } },
+      {
+        $set: {
+          product_segment: newSegment,
+          updated_at: now,
+          updated_by: updatedBy,
+        },
       }
-    } else {
-      this.depth = 0;
-      this.fullSlug = this.slug;
-      this.ancestors = [];
-    }
-    next();
-  } catch (err) {
-    next(err);
+    );
+
+    queue.push(...childIds);
   }
+};
+
+categorySchema.pre("save", function (next) {
+  this.product_segment = normalizeProductSegment(this.product_segment);
+  this.updated_at = new Date();
+  if (!this.created_at) {
+    this.created_at = new Date();
+  }
+  next();
 });
 
-// After save, ensure parent's hasChildren is true when applicable
-CategorySchema.post('save', async function (doc, next) {
-  try {
-    if (doc.parent) {
-      await this.constructor.updateOne({ _id: doc.parent }, { $set: { hasChildren: true } }).lean();
-    }
-    next();
-  } catch (err) {
-    next(err);
+categorySchema.pre("findOneAndUpdate", function (next) {
+  const update = this.getUpdate() || {};
+  const set = update.$set || {};
+
+  if (set.product_segment) {
+    set.product_segment = normalizeProductSegment(set.product_segment);
   }
+
+  set.updated_at = new Date();
+  update.$set = set;
+  this.setUpdate(update);
+  next();
 });
 
-module.exports = mongoose.models.Category || mongoose.model('Category', CategorySchema);
+module.exports = mongoose.model("Category", categorySchema);

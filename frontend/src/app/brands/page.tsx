@@ -178,7 +178,7 @@ export default function BrandsPage() {
   const onSubmit = async (data: BrandFormData) => {
     try {
       if (editingBrand) {
-        await api.put(`/api/brands/${editingBrand._id}`, data);
+  await api.put(`/brands/${editingBrand._id}`, data);
         toast.success('Brand updated successfully');
       } else {
         await api.post('/brands', data);
@@ -200,7 +200,7 @@ export default function BrandsPage() {
     if (!brandToDelete) return;
     
     try {
-      await api.delete(`/api/brands/${brandToDelete}`);
+  await api.delete(`/brands/${brandToDelete}`);
       toast.success('Brand deleted successfully');
       setDeleteConfirmOpen(false);
       setBrandToDelete(null);
