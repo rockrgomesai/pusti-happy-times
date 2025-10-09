@@ -14,7 +14,8 @@
     "seed:employees": "node seed-employees.js",
     "seed:employees:two": "node scripts/seedTwoEmployees.js",
     "seed:categories": "node src/seeds/seedCategories.js",
-    "permissions:employees": "node insert-employee-permissions.js"
+    "permissions:employees": "node insert-employee-permissions.js",
+    "seed:products": "node scripts/seedProducts.js"
   },
   "keywords": [
     "nodejs",

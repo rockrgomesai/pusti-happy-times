@@ -33,6 +33,7 @@ const menuRoutes = require("./menu-items");
 const permissionRoutes = require("./permissions");
 const designationRoutes = require("./designationRoutes");
 const employeeRoutes = require("./employees");
+const productRoutes = require("./product/products");
 
 const router = express.Router();
 
@@ -159,12 +160,12 @@ router.get("/info", (req, res) => {
         auth: "/api/auth",
         users: "/api/users",
         roles: "/api/roles",
-  brands: "/api/brands",
-  categories: "/api/categories",
-
+    brands: "/api/brands",
+    categories: "/api/categories",
+    products: "/api/product/products",
         factories: "/api/factories",
-  depots: "/api/depots",
-  employees: "/api/employees",
+    depots: "/api/depots",
+    employees: "/api/employees",
         menu: "/api/menu-items",
         permissions: "/api/permissions",
       },
@@ -219,6 +220,7 @@ router.use("/roles", requireRole("SuperAdmin", "SalesAdmin"), roleRoutes);
  */
 router.use("/brands", brandRoutes);
 router.use("/categories", categoryRoutes);
+router.use("/product/products", productRoutes);
 
 
 /**

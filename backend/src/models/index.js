@@ -26,6 +26,7 @@ const Transport = require("./Transport");
 const SidebarMenuItem = require("./SidebarMenuItem");
 const Category = require("./Category");
 const { ApiPermission, PagePermission } = require("./Permission");
+const Product = require("./Product");
 
 // Import junction table models
 const {
@@ -49,6 +50,7 @@ const models = {
   Designation,
   Transport,
   Category,
+  Product,
   SidebarMenuItem,
 
   // Permission models
@@ -75,6 +77,7 @@ const validateModels = () => {
     "Employee",
     "Designation",
     "Category",
+    "Product",
     "SidebarMenuItem",
     "ApiPermission",
     "PagePermission",
@@ -176,6 +179,7 @@ module.exports = {
   Designation,
   Transport,
   Category,
+  Product,
   SidebarMenuItem,
 
   // Permission models
