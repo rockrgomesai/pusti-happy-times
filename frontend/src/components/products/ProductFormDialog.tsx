@@ -829,7 +829,7 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
                     <Switch
                       {...field}
                       checked={Boolean(field.value)}
-                      color="success"
+                      color="primary"
                     />
                   )}
                 />

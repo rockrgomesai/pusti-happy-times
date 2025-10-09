@@ -254,7 +254,8 @@ export function Layout({ children }: LayoutProps) {
               top: `${drawerTopOffset}px`, // Maintain a small gap from the navbar
               height: `calc(100vh - ${drawerTopOffset}px - ${FOOTER_HEIGHT}px)`, // Adjust height accordingly
               overflowY: 'auto',
-              position: isMobile ? 'fixed' : 'relative',
+              position: isMobile ? 'fixed' : 'sticky',
+              alignSelf: 'flex-start',
               zIndex: theme.zIndex.drawer,
               border: 'none',
               borderRight: `1px solid ${theme.palette.divider}`,

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
   Box,
@@ -23,7 +23,12 @@ import {
   useMediaQuery,
   useTheme,
 } from '@mui/material';
-import { DataGrid, GridActionsCellItem, GridColDef, GridToolbarQuickFilter } from '@mui/x-data-grid';
+import {
+  DataGrid,
+  GridActionsCellItem,
+  GridColumnVisibilityModel,
+  GridColDef,
+} from '@mui/x-data-grid';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import VisibilityIcon from '@mui/icons-material/Visibility';
@@ -31,15 +36,15 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 import ToggleOnIcon from '@mui/icons-material/ToggleOn';
 import ToggleOffIcon from '@mui/icons-material/ToggleOff';
 import SearchIcon from '@mui/icons-material/Search';
-import GridViewIcon from '@mui/icons-material/GridView';
-import TableRowsIcon from '@mui/icons-material/TableRows';
 import LocalOfferIcon from '@mui/icons-material/LocalOffer';
 import StorefrontIcon from '@mui/icons-material/Storefront';
 import FactoryIcon from '@mui/icons-material/Factory';
 import CategoryIcon from '@mui/icons-material/Category';
+import ViewModuleIcon from '@mui/icons-material/ViewModule';
+import ViewListIcon from '@mui/icons-material/ViewList';
 import { toast } from 'react-hot-toast';
 
-import { productsApi } from '@/lib/api/products';
+import { productsApi, type ProductListParams } from '@/lib/api/products';
 import api from '@/lib/api';
 import type {
   Product,
@@ -53,6 +58,10 @@ import {
   ProductFormPayload,
   SelectOption,
 } from '@/components/products/ProductFormDialog';
+import ColumnVisibilityMenu from '@/components/common/ColumnVisibilityMenu';
+import ExportMenu from '@/components/common/ExportMenu';
+import type { ExportColumn } from '@/lib/exportUtils';
+import { formatDateForExport } from '@/lib/exportUtils';
 
 interface ProductTableRow extends Product {
   id: string;
@@ -61,6 +70,8 @@ interface ProductTableRow extends Product {
 type ViewMode = 'table' | 'grid';
 
 type ActiveFilter = 'ALL' | 'true' | 'false';
+
+const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect;
 
 const DEFAULT_PAGE_SIZE = 10;
 const PAGE_SIZE_OPTIONS = [10, 25, 50];
@@ -111,10 +122,15 @@ const buildTableRows = (products: Product[]): ProductTableRow[] =>
 
 const chipColor = (active: boolean) => (active ? 'success' : 'default');
 
+const PRODUCT_COLUMN_STORAGE_KEY = 'product:products:visibleColumns';
+const EXPORT_PAGE_SIZE = 200;
+const MAX_EXPORT_PAGES = 50;
+
+
 const ProductsPage: React.FC = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  const isMountedRef = useRef(true);
+  const isMountedRef = useRef(false);
 
   const [loading, setLoading] = useState(false);
   const [metadataLoading, setMetadataLoading] = useState(false);
@@ -139,17 +155,25 @@ const ProductsPage: React.FC = () => {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [detailDrawerOpen, setDetailDrawerOpen] = useState(false);
   const [submitLoading, setSubmitLoading] = useState(false);
+  const [clientReady, setClientReady] = useState(false);
+  const [visibleProductColumnIds, setVisibleProductColumnIds] = useState<string[]>([]);
+  const [persistedProductColumnIds, setPersistedProductColumnIds] = useState<string[]>([]);
+  const columnStateHydratedRef = useRef(false);
 
   const paginationModel = useMemo(
     () => ({ page, pageSize }),
     [page, pageSize],
   );
 
-  useEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     isMountedRef.current = true;
     return () => {
       isMountedRef.current = false;
     };
+  }, []);
+
+  useEffect(() => {
+    setClientReady(true);
   }, []);
 
   const loadMetadata = useCallback(async () => {
@@ -198,18 +222,17 @@ const ProductsPage: React.FC = () => {
     }
   }, []);
 
-  const loadProducts = useCallback(async () => {
-    if (!isMountedRef.current) return;
-    setLoading(true);
-    try {
-      const params: Record<string, string | number> = {
-        page: page + 1,
-        limit: pageSize,
+  const buildProductQueryParams = useCallback(
+    (pagination: { page: number; limit: number }): ProductListParams => {
+      const params: ProductListParams = {
+        page: pagination.page,
+        limit: pagination.limit,
         sort: 'updated_at:desc',
       };
 
-      if (search.trim()) {
-        params.search = search.trim();
+      const trimmedSearch = search.trim();
+      if (trimmedSearch) {
+        params.search = trimmedSearch;
       }
       if (typeFilter !== 'ALL') {
         params.product_type = typeFilter;
@@ -227,6 +250,17 @@ const ProductsPage: React.FC = () => {
         params.factory_id = factoryFilter;
       }
 
+      return params;
+    },
+    [activeFilter, brandFilter, categoryFilter, factoryFilter, search, typeFilter],
+  );
+
+  const loadProducts = useCallback(async () => {
+    if (!isMountedRef.current) return;
+    setLoading(true);
+    try {
+      const params = buildProductQueryParams({ page: page + 1, limit: pageSize });
+
       const response: ProductListResponse = await productsApi.list(params);
       if (!isMountedRef.current) {
         return;
@@ -243,7 +277,7 @@ const ProductsPage: React.FC = () => {
         setLoading(false);
       }
     }
-  }, [page, pageSize, search, typeFilter, activeFilter, brandFilter, categoryFilter, factoryFilter]);
+  }, [buildProductQueryParams, page, pageSize]);
 
   useEffect(() => {
     loadMetadata();
@@ -256,6 +290,15 @@ const ProductsPage: React.FC = () => {
   const handleRefresh = useCallback(() => {
     loadProducts();
   }, [loadProducts]);
+
+  const handleViewModeChange = useCallback((
+    _event: React.MouseEvent<HTMLElement>,
+    nextViewMode: ViewMode | null,
+  ) => {
+    if (nextViewMode) {
+      setViewMode(nextViewMode);
+    }
+  }, []);
 
   const handleOpenCreate = useCallback(() => {
     setDialogMode('create');
@@ -308,8 +351,7 @@ const ProductsPage: React.FC = () => {
       if (isMountedRef.current) {
         setDialogOpen(false);
       }
-      loadProducts();
-      loadStats();
+  loadProducts();
     } catch (error) {
       console.error('Failed to save product', error);
       const message =
@@ -398,34 +440,101 @@ const ProductsPage: React.FC = () => {
       },
       {
         field: 'actions',
+        headerName: 'Actions',
         type: 'actions',
-        width: 130,
+        width: 170,
+        minWidth: 170,
+        sortable: false,
+        filterable: false,
         getActions: (params) => {
           const product = params.row;
-          return [
+          const isActive = Boolean(product.active);
+        interface ProductActionCellProps {
+            product: ProductTableRow;
+            isActive: boolean;
+            handleViewDetails: (product: ProductTableRow) => void;
+            handleOpenEdit: (product: ProductTableRow) => void;
+            handleToggleActive: (product: ProductTableRow) => void;
+        }
+
+        const getProductActionCells = ({
+            product,
+            isActive,
+            handleViewDetails,
+            handleOpenEdit,
+            handleToggleActive,
+        }: ProductActionCellProps): React.ReactNode[] => [
             <GridActionsCellItem
-              key="view"
-              icon={<VisibilityIcon fontSize="small" />}
-              label="View"
-              onClick={() => handleViewDetails(product)}
-              showInMenu={false}
+                key="view"
+                icon={
+                    <VisibilityIcon
+                        fontSize="small"
+                        sx={{
+                            color: 'info.main',
+                            '&:hover': { color: 'info.dark' },
+                        }}
+                    />
+                }
+                label="View"
+                onClick={() => handleViewDetails(product)}
+                showInMenu={false}
             />,
             <GridActionsCellItem
-              key="edit"
-              icon={<EditIcon fontSize="small" />}
-              label="Edit"
-              onClick={() => handleOpenEdit(product)}
-              showInMenu={false}
+                key="edit"
+                icon={
+                    <EditIcon
+                        fontSize="small"
+                        sx={{
+                            color: 'primary.main',
+                            '&:hover': { color: 'primary.dark' },
+                        }}
+                    />
+                }
+                label="Edit"
+                onClick={() => handleOpenEdit(product)}
+                showInMenu={false}
             />,
             <GridActionsCellItem
-              key="toggle"
-              icon={product.active ? <ToggleOffIcon fontSize="small" color="warning" /> : <ToggleOnIcon fontSize="small" color="success" />}
-              label={product.active ? 'Deactivate' : 'Activate'}
-              onClick={() => handleToggleActive(product)}
-              showInMenu={false}
+                key="toggle"
+                icon={
+                    isActive ? (
+                        <ToggleOffIcon
+                            fontSize="small"
+                            sx={(theme) => ({
+                                color: theme.palette.warning.main,
+                                '&:hover': {
+                                    color: theme.palette.warning.dark,
+                                },
+                            })}
+                        />
+                    ) : (
+                        <ToggleOnIcon
+                            fontSize="small"
+                            sx={(theme) => ({
+                                color: theme.palette.success.main,
+                                '&:hover': {
+                                    color: theme.palette.success.dark,
+                                },
+                            })}
+                        />
+                    )
+                }
+                label={isActive ? 'Deactivate' : 'Activate'}
+                onClick={() => handleToggleActive(product)}
+                showInMenu={false}
             />,
-          ];
+        ];
+
+        return getProductActionCells({
+            product: product as ProductTableRow,
+            isActive,
+            handleViewDetails,
+            handleOpenEdit,
+            handleToggleActive,
+        });
         },
+        align: 'center',
+        headerAlign: 'center',
       },
     ],
     [handleOpenEdit, handleToggleActive, handleViewDetails],
@@ -433,12 +542,300 @@ const ProductsPage: React.FC = () => {
 
   const productRows = useMemo(() => buildTableRows(products), [products]);
 
+  const productColumnOptions = useMemo(
+    () =>
+      tableColumns.map((column) => ({
+        id: column.field,
+        label: column.headerName ?? column.field,
+        alwaysVisible: column.field === 'actions',
+      })),
+    [tableColumns],
+  );
+
+  const selectableProductColumnIds = useMemo(
+    () => productColumnOptions.filter((option) => !option.alwaysVisible).map((option) => option.id),
+    [productColumnOptions],
+  );
+
+  const sanitizeProductSelection = useCallback(
+    (ids: string[]) => {
+      if (!ids.length) {
+        return [];
+      }
+      const allowed = new Set(selectableProductColumnIds);
+      return ids.filter((id) => allowed.has(id));
+    },
+    [selectableProductColumnIds],
+  );
+
+  useEffect(() => {
+    if (!selectableProductColumnIds.length) {
+      setVisibleProductColumnIds([]);
+      setPersistedProductColumnIds([]);
+      return;
+    }
+
+    if (!columnStateHydratedRef.current) {
+      columnStateHydratedRef.current = true;
+      let initialSelection = selectableProductColumnIds;
+
+      try {
+        const stored = window.localStorage.getItem(PRODUCT_COLUMN_STORAGE_KEY);
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed)) {
+            const sanitized = sanitizeProductSelection(parsed);
+            if (sanitized.length) {
+              initialSelection = sanitized;
+            }
+          }
+        }
+      } catch (error) {
+        console.warn('Failed to read product column preferences', error);
+      }
+
+      setVisibleProductColumnIds(initialSelection);
+      setPersistedProductColumnIds(initialSelection);
+      return;
+    }
+
+    setVisibleProductColumnIds((previous) => {
+      const sanitizedPrevious = sanitizeProductSelection(previous);
+      if (sanitizedPrevious.length) {
+        return sanitizedPrevious;
+      }
+      return selectableProductColumnIds;
+    });
+
+    setPersistedProductColumnIds((previous) => {
+      const sanitizedPrevious = sanitizeProductSelection(previous);
+      if (sanitizedPrevious.length) {
+        return sanitizedPrevious;
+      }
+      return selectableProductColumnIds;
+    });
+  }, [sanitizeProductSelection, selectableProductColumnIds]);
+
+  const effectiveVisibleProductColumnIds = useMemo(
+    () => (visibleProductColumnIds.length ? visibleProductColumnIds : selectableProductColumnIds),
+    [selectableProductColumnIds, visibleProductColumnIds],
+  );
+
+  const productColumnVisibilityModel = useMemo(() => {
+    const hidden: GridColumnVisibilityModel = {};
+    selectableProductColumnIds.forEach((id) => {
+      if (!effectiveVisibleProductColumnIds.includes(id)) {
+        hidden[id] = false;
+      }
+    });
+    return hidden;
+  }, [effectiveVisibleProductColumnIds, selectableProductColumnIds]);
+
+  const handleVisibleProductColumnsChange = useCallback(
+    (nextSelected: string[]) => {
+      const sanitized = sanitizeProductSelection(nextSelected);
+      if (sanitized.length) {
+        setVisibleProductColumnIds(sanitized);
+        return;
+      }
+      setVisibleProductColumnIds(selectableProductColumnIds);
+    },
+    [sanitizeProductSelection, selectableProductColumnIds],
+  );
+
+  const productHasUnsavedChanges = useMemo(() => {
+    if (effectiveVisibleProductColumnIds.length !== persistedProductColumnIds.length) {
+      return true;
+    }
+    const persistedSet = new Set(persistedProductColumnIds);
+    return effectiveVisibleProductColumnIds.some((id) => !persistedSet.has(id));
+  }, [effectiveVisibleProductColumnIds, persistedProductColumnIds]);
+
+  const handleSaveProductColumnSelection = useCallback(() => {
+    const sanitized = sanitizeProductSelection(effectiveVisibleProductColumnIds);
+    setVisibleProductColumnIds(sanitized);
+    setPersistedProductColumnIds(sanitized);
+    try {
+      window.localStorage.setItem(PRODUCT_COLUMN_STORAGE_KEY, JSON.stringify(sanitized));
+      toast.success('Column selection saved');
+    } catch (error) {
+      console.warn('Failed to persist product column preferences', error);
+      toast.error('Failed to save column selection');
+    }
+  }, [effectiveVisibleProductColumnIds, sanitizeProductSelection]);
+
+  const productExportColumns = useMemo<ExportColumn<ProductTableRow>[]>(
+    () => [
+      {
+        header: 'Product',
+        accessor: (row) => row.name,
+      },
+      {
+        header: 'SKU',
+        accessor: (row) => row.sku,
+      },
+      {
+        header: 'Type',
+        accessor: (row) => row.product_type,
+      },
+      {
+        header: 'Brand',
+        accessor: (row) => resolveRefLabel(row.brand_id),
+      },
+      {
+        header: 'Category',
+        accessor: (row) => resolveRefLabel(row.category_id),
+      },
+      {
+        header: 'Factory',
+        accessor: (row) => resolveRefLabel(row.factory_id, 'No factory'),
+      },
+      {
+        header: 'Trade Price',
+        accessor: (row) => formatCurrency(row.trade_price),
+      },
+      {
+        header: 'Unit',
+        accessor: (row) => row.unit ?? '',
+      },
+      {
+        header: 'Status',
+        accessor: (row) => (row.active ? 'Active' : 'Inactive'),
+      },
+      {
+        header: 'Updated',
+        accessor: (row) => formatDateForExport(row.updated_at),
+      },
+      {
+        header: 'Created',
+        accessor: (row) => formatDateForExport(row.created_at),
+      },
+    ],
+    [],
+  );
+
+  const fetchAllProducts = useCallback(async (): Promise<ProductTableRow[]> => {
+    const collected: ProductTableRow[] = [];
+    let currentPage = 1;
+    let totalPages = 1;
+
+    while (currentPage <= totalPages && currentPage <= MAX_EXPORT_PAGES) {
+      const params = buildProductQueryParams({ page: currentPage, limit: EXPORT_PAGE_SIZE });
+      const response = await productsApi.list(params);
+      const rows = response.data ?? [];
+      collected.push(...buildTableRows(rows));
+
+      const pagination = response.pagination;
+      if (!pagination) {
+        break;
+      }
+
+      if (pagination.pages && pagination.pages > 0) {
+        totalPages = Math.max(pagination.pages, currentPage);
+      } else if (pagination.total && pagination.limit) {
+        const calculatedPages = Math.ceil(pagination.total / pagination.limit);
+        totalPages = Math.max(calculatedPages, currentPage);
+      }
+      if (!rows.length || currentPage >= totalPages) {
+        break;
+      }
+
+      currentPage += 1;
+    }
+
+    return collected;
+  }, [buildProductQueryParams]);
+
   const showGridView = viewMode === 'grid';
 
   const filteredGridProducts = useMemo(() => {
     if (!showGridView) return [];
     return productRows;
   }, [productRows, showGridView]);
+
+  const displayedProductCount = productRows.length;
+  const summaryText = `Showing ${displayedProductCount} of ${rowCount} products`;
+
+  const controlsBar = (
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, mb: 2 }}>
+      <Box
+        sx={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 2,
+        }}
+      >
+        <TextField
+          size="small"
+          placeholder="Search products..."
+          value={search}
+          onChange={(event) => {
+            setSearch(event.target.value);
+            setPage(0);
+          }}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon fontSize="small" />
+              </InputAdornment>
+            ),
+          }}
+          sx={{ minWidth: { xs: '100%', md: 280 }, maxWidth: { md: 340 } }}
+        />
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1.5,
+            flexWrap: 'wrap',
+            justifyContent: { xs: 'flex-start', md: 'flex-end' },
+          }}
+        >
+          <ExportMenu
+            title="Product Report"
+            fileBaseName="products"
+            currentRows={productRows}
+            columns={productExportColumns}
+            onFetchAll={fetchAllProducts}
+            disabled={loading || rowCount === 0}
+          />
+
+          <ColumnVisibilityMenu
+            options={productColumnOptions}
+            selected={effectiveVisibleProductColumnIds}
+            onChange={handleVisibleProductColumnsChange}
+            onSaveSelection={handleSaveProductColumnSelection}
+            saveDisabled={!productHasUnsavedChanges}
+            minSelectable={1}
+          />
+
+          <ToggleButtonGroup
+            value={viewMode}
+            exclusive
+            size="small"
+            onChange={handleViewModeChange}
+            aria-label="Toggle view mode"
+          >
+            <ToggleButton value="grid" aria-label="Grid view">
+              <Tooltip title="Card View">
+                <ViewModuleIcon fontSize="small" />
+              </Tooltip>
+            </ToggleButton>
+            <ToggleButton value="table" aria-label="Table view">
+              <Tooltip title="Table View">
+                <ViewListIcon fontSize="small" />
+              </Tooltip>
+            </ToggleButton>
+          </ToggleButtonGroup>
+        </Box>
+      </Box>
+      <Typography variant="body2" color="text.secondary">
+        {summaryText}
+      </Typography>
+    </Box>
+  );
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
@@ -459,21 +856,13 @@ const ProductsPage: React.FC = () => {
               </IconButton>
             </span>
           </Tooltip>
-          <Tooltip title={showGridView ? 'Show table view' : 'Show grid view'}>
-            <IconButton
-              aria-label="Toggle view mode"
-              onClick={() => setViewMode((prev) => (prev === 'table' ? 'grid' : 'table'))}
-            >
-              {showGridView ? <TableRowsIcon /> : <GridViewIcon />}
-            </IconButton>
-          </Tooltip>
           <Button
             variant="contained"
             startIcon={<AddIcon />}
             onClick={handleOpenCreate}
             disabled={metadataLoading}
           >
-            New Product
+            Add Product
           </Button>
         </Stack>
       </Stack>
@@ -493,6 +882,7 @@ const ProductsPage: React.FC = () => {
                 setBrandFilter('');
                 setCategoryFilter('');
                 setFactoryFilter('');
+                setPage(0);
               }}
               aria-label="Reset filters"
               >
@@ -503,21 +893,6 @@ const ProductsPage: React.FC = () => {
         />
         <CardContent>
           <Stack spacing={3}>
-            <TextField
-              label="Search products"
-              placeholder="Search by name, SKU, or tags"
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon fontSize="small" />
-                  </InputAdornment>
-                ),
-              }}
-              fullWidth
-            />
-
             <Tabs
               value={typeFilter}
               onChange={(_event, value) => setTypeFilter(value)}
@@ -551,6 +926,8 @@ const ProductsPage: React.FC = () => {
                 SelectProps={{ native: true }}
                 InputLabelProps={{ shrink: true }}
                 inputProps={{ 'aria-label': 'Brand filter' }}
+                aria-label="Brand filter"
+                title="Brand filter"
               >
                 <option value="">All brands</option>
                 {brands.map((option) => (
@@ -559,7 +936,6 @@ const ProductsPage: React.FC = () => {
                   </option>
                 ))}
               </TextField>
-
               <TextField
                 select
                 label="Category"
@@ -569,6 +945,8 @@ const ProductsPage: React.FC = () => {
                 SelectProps={{ native: true }}
                 InputLabelProps={{ shrink: true }}
                 inputProps={{ 'aria-label': 'Category filter' }}
+                aria-label="Category filter"
+                title="Category filter"
               >
                 <option value="">All categories</option>
                 {categories.map((option) => (
@@ -578,7 +956,6 @@ const ProductsPage: React.FC = () => {
                   </option>
                 ))}
               </TextField>
-
               <TextField
                 select
                 label="Factory"
@@ -588,6 +965,8 @@ const ProductsPage: React.FC = () => {
                 SelectProps={{ native: true }}
                 InputLabelProps={{ shrink: true }}
                 inputProps={{ 'aria-label': 'Factory filter' }}
+                aria-label="Factory filter"
+                title="Factory filter"
               >
                 <option value="">All factories</option>
                 {factories.map((option) => (
@@ -608,6 +987,7 @@ const ProductsPage: React.FC = () => {
             subheader="Grid view for quick scanning of product summaries"
           />
           <CardContent>
+            {controlsBar}
             {loading ? (
               <Stack alignItems="center" sx={{ py: 6 }}>
                 <CircularProgress />
@@ -682,24 +1062,75 @@ const ProductsPage: React.FC = () => {
         <Card>
           <CardHeader title="Product list" subheader="Table view with quick filters and actions" />
           <CardContent>
+            {controlsBar}
             <Box sx={{ height: 560, width: '100%' }}>
-              <DataGrid
-                columns={tableColumns}
-                rows={productRows}
-                disableColumnMenu
-                disableRowSelectionOnClick
-                loading={loading}
-                paginationModel={paginationModel}
-                onPaginationModelChange={(model) => {
-                  setPage(model.page);
-                  setPageSize(model.pageSize);
-                }}
-                pageSizeOptions={PAGE_SIZE_OPTIONS}
-                rowCount={rowCount}
-                paginationMode="server"
-                slots={{ toolbar: GridToolbarQuickFilter }}
-                slotProps={{ toolbar: { quickFilterProps: { debounceMs: 400 } } }}
-              />
+              {clientReady ? (
+                <DataGrid
+                  columns={tableColumns}
+                  rows={productRows}
+                  disableColumnMenu
+                  disableRowSelectionOnClick
+                  loading={loading}
+                  paginationModel={paginationModel}
+                  onPaginationModelChange={(model) => {
+                    if (!isMountedRef.current) {
+                      return;
+                    }
+                    if (model.page !== page) {
+                      setPage(model.page);
+                    }
+                    if (model.pageSize !== pageSize) {
+                      setPageSize(model.pageSize);
+                    }
+                  }}
+                  pageSizeOptions={PAGE_SIZE_OPTIONS}
+                  rowCount={rowCount}
+                  paginationMode="server"
+                  columnVisibilityModel={productColumnVisibilityModel}
+                  sx={{
+                    backgroundColor: 'common.white',
+                    '& .MuiDataGrid-columnHeaders': {
+                      backgroundColor: 'background.default',
+                    },
+                    '& .MuiDataGrid-columnHeader[data-field="actions"]': {
+                      position: 'sticky',
+                      right: 0,
+                      zIndex: 2,
+                      backgroundColor: 'background.default',
+                      /*borderLeft: 1,
+                      borderColor: 'divider',*/
+                    },
+                    '& .MuiDataGrid-cell[data-field="actions"]': {
+                      position: 'sticky',
+                      right: 0,
+                      zIndex: 1,
+                      backgroundColor: 'background.paper',
+                      /*borderLeft: 1,
+                      borderColor: 'divider',
+                      borderBottom: 'none',
+                      '&::after': {
+                        display: 'none',
+                      },*/
+                    },
+                    '& .MuiDataGrid-row:last-of-type .MuiDataGrid-cell[data-field="actions"]': {
+                      borderBottom: 'none',
+                      '&::after': {
+                        display: 'none',
+                      },
+                    },
+                    '& .MuiDataGrid-cell[data-field="actions"] .MuiButtonBase-root': {
+                      mr: 0,
+                    },
+                    '& .MuiDataGrid-virtualScroller': {
+                      backgroundColor: 'common.white',
+                    },
+                  }}
+                />
+              ) : (
+                <Stack alignItems="center" justifyContent="center" sx={{ height: '100%' }}>
+                  <CircularProgress size={28} />
+                </Stack>
+              )}
             </Box>
           </CardContent>
         </Card>
