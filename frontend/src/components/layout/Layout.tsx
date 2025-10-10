@@ -78,9 +78,12 @@ export function Layout({ children }: LayoutProps) {
     router.push('/admin/password');
   };
 
-  const drawerTopOffset = isMobile
-    ? NAVBAR_HEIGHT + DRAWER_TOP_OFFSET
-    : DRAWER_TOP_OFFSET;
+  const desktopDrawerTopOffset = NAVBAR_HEIGHT + 3;
+  const mobileDrawerTopOffset = NAVBAR_HEIGHT + DRAWER_TOP_OFFSET;
+  const drawerTopOffset = isMobile ? mobileDrawerTopOffset : desktopDrawerTopOffset;
+  const drawerHeight = isMobile
+    ? `calc(100vh - ${mobileDrawerTopOffset}px - ${FOOTER_HEIGHT}px)`
+    : `calc(100vh - ${desktopDrawerTopOffset}px - ${FOOTER_HEIGHT}px)`;
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
@@ -251,8 +254,8 @@ export function Layout({ children }: LayoutProps) {
             '& .MuiDrawer-paper': {
               width: DRAWER_WIDTH,
               boxSizing: 'border-box',
-              top: `${drawerTopOffset}px`, // Maintain a small gap from the navbar
-              height: `calc(100vh - ${drawerTopOffset}px - ${FOOTER_HEIGHT}px)`, // Adjust height accordingly
+              top: `${drawerTopOffset}px`, // Maintain spacing below the navbar
+              height: drawerHeight,
               overflowY: 'auto',
               position: isMobile ? 'fixed' : 'sticky',
               alignSelf: 'flex-start',
