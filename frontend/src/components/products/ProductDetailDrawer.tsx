@@ -49,7 +49,7 @@ const resolveRefName = (
   return ref.brand || ref.name || fallback;
 };
 
-const resolveFactoryNames = (
+const resolveDepotNames = (
   refs?: Array<string | ProductReference> | string | ProductReference | null,
   fallback = "-"
 ) => {
@@ -92,7 +92,8 @@ export const ProductDetailDrawer: React.FC<ProductDetailDrawerProps> = ({
 
   const brand = resolveRefName(product.brand_id);
   const category = resolveRefName(product.category_id, "-");
-  const factories = resolveFactoryNames(product.factory_ids, "-");
+  const depotRefs = product.depot_ids ?? [];
+  const depots = resolveDepotNames(depotRefs, "-");
 
   return (
     <Drawer anchor="right" open={open} onClose={onClose} PaperProps={{ sx: { width: { xs: "100%", sm: 420, md: 520 } } }}>
@@ -159,10 +160,10 @@ export const ProductDetailDrawer: React.FC<ProductDetailDrawerProps> = ({
             </Box>
             <Box>
               <Typography variant="body2" color="text.secondary">
-                Factories
+                Depots
               </Typography>
               <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap sx={{ mt: 0.5 }}>
-                {factories.map((name) => (
+                {depots.map((name) => (
                   <Chip key={name} label={name} size="small" variant="outlined" />
                 ))}
               </Stack>

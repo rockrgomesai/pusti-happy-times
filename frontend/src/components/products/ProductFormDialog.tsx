@@ -28,7 +28,7 @@ import { LoadingButton } from "@mui/lab";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import FactoryIcon from "@mui/icons-material/Factory";
+import WarehouseIcon from "@mui/icons-material/Warehouse";
 import Inventory2Icon from "@mui/icons-material/Inventory2";
 import type { Product, ProductReference, ProductType } from "@/types/product";
 
@@ -42,7 +42,7 @@ export interface ProductFormPayload {
   product_type: ProductType;
   brand_id: string;
   category_id: string;
-  factory_ids: string[];
+  depot_ids: string[];
   sku: string;
   bangla_name: string | null;
   unit: string;
@@ -64,7 +64,7 @@ interface ProductFormDialogProps {
   initialProduct?: Product | null;
   brands: SelectOption[];
   categories: SelectOption[];
-  factories: SelectOption[];
+  depots: SelectOption[];
   submitting?: boolean;
   onClose: () => void;
   onSubmit: (payload: ProductFormPayload) => Promise<void>;
@@ -73,12 +73,43 @@ interface ProductFormDialogProps {
 const PRODUCT_UNITS = ["BAG", "BOX", "CASE", "CTN", "JAR", "POUCH", "PCS"] as const;
 const MANUFACTURED_UNITS = new Set(["BAG", "BOX", "CASE", "CTN", "JAR", "POUCH"]);
 
+const formatDateForInput = (value?: string | Date | number | null) => {
+  if (value == null) {
+    return "";
+  }
+
+  if (value instanceof Date) {
+    return value.toISOString().slice(0, 10);
+  }
+
+  if (typeof value === "number") {
+    const fromNumber = new Date(value);
+    return Number.isNaN(fromNumber.getTime()) ? "" : fromNumber.toISOString().slice(0, 10);
+  }
+
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (!trimmed) {
+      return "";
+    }
+
+    if (trimmed.length >= 10) {
+      return trimmed.slice(0, 10);
+    }
+
+    const parsed = new Date(trimmed);
+    return Number.isNaN(parsed.getTime()) ? "" : parsed.toISOString().slice(0, 10);
+  }
+
+  return "";
+};
+
 const productFormSchema = z
   .object({
     product_type: z.union([z.literal("MANUFACTURED"), z.literal("PROCURED")]),
     brand_id: z.string().min(1, "Brand is required"),
     category_id: z.string().min(1, "Category is required"),
-  factory_ids: z.array(z.string().min(1)).optional(),
+  depot_ids: z.array(z.string().min(1)).optional(),
     sku: z.string().min(1, "SKU is required"),
     bangla_name: z.string().optional().nullable(),
     unit: z.string().min(1, "Unit is required"),
@@ -95,11 +126,11 @@ const productFormSchema = z
   })
   .superRefine((values, ctx) => {
     if (values.product_type === "MANUFACTURED") {
-      if (!values.factory_ids || values.factory_ids.length === 0) {
+      if (!values.depot_ids || values.depot_ids.length === 0) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          path: ["factory_ids"],
-          message: "Select at least one factory",
+          path: ["depot_ids"],
+          message: "Select at least one depot",
         });
       }
       if (!MANUFACTURED_UNITS.has(values.unit.toUpperCase())) {
@@ -194,7 +225,7 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
   initialProduct,
   brands,
   categories,
-  factories,
+  depots,
   submitting = false,
   onClose,
   onSubmit,
@@ -221,7 +252,7 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
       product_type: initialProduct?.product_type ?? "MANUFACTURED",
       brand_id: "",
       category_id: "",
-      factory_ids: [],
+      depot_ids: [],
       sku: "",
       bangla_name: "",
       unit: "",
@@ -249,7 +280,7 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
           product_type,
           brand_id,
           category_id,
-          factory_ids,
+          depot_ids,
           sku,
           bangla_name,
           unit,
@@ -265,14 +296,13 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
           active,
         } = initialProduct;
 
-        const legacyFactory = (initialProduct as unknown as { factory_id?: ReferenceLike }).factory_id;
-        const factoryValues = toOptionValues(factory_ids ?? legacyFactory);
+        const depotValues = toOptionValues(depot_ids);
         setSelectedType(product_type);
         reset({
           product_type,
           brand_id: toOptionValue(brand_id),
           category_id: toOptionValue(category_id),
-          factory_ids: factoryValues,
+          depot_ids: depotValues,
           sku,
           bangla_name: bangla_name ?? "",
           unit,
@@ -281,8 +311,8 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
           mrp: mrp?.toString() ?? "",
           wt_pcs: wt_pcs?.toString() ?? "",
           ctn_pcs: ctn_pcs?.toString() ?? "",
-          launch_date: launch_date?.substring(0, 10) ?? "",
-          decommission_date: decommission_date?.substring(0, 10) ?? "",
+          launch_date: formatDateForInput(launch_date),
+          decommission_date: formatDateForInput(decommission_date),
           image_url: image_url ?? "",
           erp_id: erp_id != null ? erp_id.toString() : "",
           active: active ?? true,
@@ -293,7 +323,7 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
           product_type: "MANUFACTURED",
           brand_id: "",
           category_id: "",
-          factory_ids: [],
+          depot_ids: [],
           sku: "",
           bangla_name: "",
           unit: "",
@@ -319,7 +349,7 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
 
     if (selectedType === "PROCURED") {
       setValue("unit", "PCS", { shouldValidate: true });
-      setValue("factory_ids", [], { shouldValidate: true });
+      setValue("depot_ids", [], { shouldValidate: true });
       setValue("db_price", "");
       setValue("mrp", "");
       setValue("ctn_pcs", "");
@@ -349,14 +379,14 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
   };
 
   const handleFormSubmit = async (values: ProductFormValues) => {
-    const normalizedFactories = Array.isArray(values.factory_ids)
-      ? values.factory_ids.filter(Boolean)
+    const normalizedDepots = Array.isArray(values.depot_ids)
+      ? values.depot_ids.filter(Boolean)
       : [];
     const payload: ProductFormPayload = {
       product_type: selectedType ?? values.product_type,
       brand_id: values.brand_id,
       category_id: values.category_id,
-      factory_ids: isManufactured ? normalizedFactories : [],
+      depot_ids: isManufactured ? normalizedDepots : [],
       sku: values.sku.trim().toUpperCase(),
       bangla_name: isManufactured ? sanitizeString(values.bangla_name) : null,
       unit: selectedType === "PROCURED" ? "PCS" : values.unit.trim().toUpperCase(),
@@ -405,9 +435,9 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
               >
                 <CardActionArea onClick={() => handleTypeSelection("MANUFACTURED")}> 
                   <CardHeader
-                    avatar={<FactoryIcon color="primary" />}
+                    avatar={<WarehouseIcon color="primary" />}
                     title="Manufactured"
-                    subheader="Products produced in our factories"
+                    subheader="Products supplied from our depots"
                   />
                 </CardActionArea>
               </Card>
@@ -552,7 +582,7 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
                 </Typography>
                 <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
                   <Controller
-                    name="factory_ids"
+                    name="depot_ids"
                     control={control}
                     render={({ field }) => {
                       const selectedIds = Array.isArray(field.value)
@@ -560,14 +590,14 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
                         : field.value
                         ? [field.value]
                         : [];
-                      const selectedOptions = factories.filter((option) =>
+                      const selectedOptions = depots.filter((option) =>
                         selectedIds.includes(option.value)
                       );
                       return (
                         <Autocomplete
                           multiple
                           disableCloseOnSelect
-                          options={factories}
+                          options={depots}
                           value={selectedOptions}
                           onChange={(_, nextOptions) =>
                             field.onChange(nextOptions.map((option) => option.value))
@@ -599,10 +629,10 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
                           renderInput={(params) => (
                             <TextField
                               {...params}
-                              label="Factories"
-                              placeholder="Select factories"
-                              error={Boolean(errors.factory_ids)}
-                              helperText={errors.factory_ids?.message}
+                              label="Depots"
+                              placeholder="Select depots"
+                              error={Boolean(errors.depot_ids)}
+                              helperText={errors.depot_ids?.message}
                               InputLabelProps={{ shrink: true }}
                             />
                           )}

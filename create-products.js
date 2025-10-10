@@ -32,9 +32,9 @@ db.createCollection("products", {
           bsonType: "objectId",
           description: "Reference to categories._id"
         },
-        factory_ids: {
+        depot_ids: {
           bsonType: ["array"],
-          description: "References to factories._id (required for manufactured products)",
+          description: "References to depots._id (required for manufactured products)",
           items: {
             bsonType: "objectId"
           }
@@ -128,7 +128,7 @@ db.products.createIndex({ bangla_name: 1 }, { unique: true, sparse: true, name: 
 db.products.createIndex({ product_type: 1, active: 1 }, { name: "ix_products_type_active" });
 db.products.createIndex({ brand_id: 1, category_id: 1, active: 1 }, { name: "ix_products_brand_category_active" });
 db.products.createIndex({ sku: "text", bangla_name: "text" }, { name: "ix_products_text_search" });
-db.products.createIndex({ factory_ids: 1 }, { name: "ix_products_factory_ids" });
+db.products.createIndex({ depot_ids: 1 }, { name: "ix_products_depot_ids" });
 
 db.products.createIndex({ created_at: -1 }, { name: "ix_products_created_at" });
 

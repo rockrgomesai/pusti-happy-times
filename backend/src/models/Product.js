@@ -71,11 +71,11 @@ const productSchema = new mongoose.Schema(
       type: Number,
       sparse: true,
     },
-    factory_ids: {
+    depot_ids: {
       type: [
         {
           type: mongoose.Schema.Types.ObjectId,
-          ref: "Factory",
+          ref: "Depot",
         },
       ],
       default: [],
@@ -142,12 +142,12 @@ productSchema.index({ product_type: 1, active: 1 }, { name: "idx_type_active" })
 productSchema.index({ brand_id: 1, category_id: 1, active: 1 }, { name: "idx_brand_category_active" });
 productSchema.index({ product_type: 1, brand_id: 1 }, { name: "idx_type_brand" });
 productSchema.index({ sku: "text", bangla_name: "text" }, { name: "idx_text_search" });
-productSchema.index({ factory_ids: 1 }, { name: "idx_factory_ids" });
+productSchema.index({ depot_ids: 1 }, { name: "idx_depot_ids" });
 
 const assignNullsForProcured = (doc) => {
   doc.bangla_name = null;
   doc.erp_id = null;
-  doc.factory_ids = [];
+  doc.depot_ids = [];
   doc.db_price = null;
   doc.mrp = null;
   doc.ctn_pcs = null;
@@ -160,22 +160,30 @@ productSchema.pre("validate", function (next) {
   if (!this.product_type) return next();
 
   if (this.product_type === "MANUFACTURED") {
-    const factories = Array.isArray(this.factory_ids)
-      ? this.factory_ids.filter((id) => id != null)
+    const depots = Array.isArray(this.depot_ids)
+      ? this.depot_ids.filter((id) => id != null)
       : [];
-    if (!factories.length) {
-      return next(new Error("At least one factory is required for MANUFACTURED products"));
+    if (!depots.length) {
+      const error = new Error("At least one depot is required for MANUFACTURED products");
+      error.statusCode = 400;
+      return next(error);
     }
     if (!MANUFACTURED_UNITS.includes(this.unit)) {
-      return next(new Error("MANUFACTURED products must use BAG/BOX/CASE/CTN/JAR/POUCH units"));
+      const error = new Error("MANUFACTURED products must use BAG/BOX/CASE/CTN/JAR/POUCH units");
+      error.statusCode = 400;
+      return next(error);
     }
     if (this.db_price == null || this.mrp == null || this.ctn_pcs == null) {
-      return next(new Error("db_price, mrp and ctn_pcs are required for MANUFACTURED products"));
+      const error = new Error("db_price, mrp and ctn_pcs are required for MANUFACTURED products");
+      error.statusCode = 400;
+      return next(error);
     }
-    this.factory_ids = factories;
+    this.depot_ids = depots;
   } else if (this.product_type === "PROCURED") {
     if (!PROCURED_UNITS.includes(this.unit)) {
-      return next(new Error("PROCURED products must use PCS unit"));
+      const error = new Error("PROCURED products must use PCS unit");
+      error.statusCode = 400;
+      return next(error);
     }
     assignNullsForProcured(this);
   }
@@ -201,11 +209,11 @@ productSchema.pre("findOneAndUpdate", function (next) {
   if (set.unit) {
     set.unit = set.unit.toUpperCase();
   }
-  if (set.factory_ids) {
-    const factories = Array.isArray(set.factory_ids)
-      ? set.factory_ids.filter(Boolean)
-      : [set.factory_ids].filter(Boolean);
-    set.factory_ids = factories;
+  if (set.depot_ids) {
+    const depots = Array.isArray(set.depot_ids)
+      ? set.depot_ids.filter(Boolean)
+      : [set.depot_ids].filter(Boolean);
+    set.depot_ids = depots;
   }
   set.updated_at = new Date();
   update.$set = set;

@@ -6,7 +6,7 @@ const { connectDB } = require("../src/config/database");
 const {
   Brand,
   Category,
-  Factory,
+  Depot,
   Product,
   Role,
   ApiPermission,
@@ -64,23 +64,23 @@ async function ensureCategory(name, segment) {
   return category;
 }
 
-async function ensureFactory(name) {
-  const existing = await Factory.findOne({ name });
+async function ensureDepot(name) {
+  const existing = await Depot.findOne({ name });
   if (existing) {
-    console.log(`✅ Factory '${name}' ready (id=${existing._id.toString()})`);
+    console.log(`✅ Depot '${name}' ready (id=${existing._id.toString()})`);
     return existing;
   }
 
   const now = new Date();
-  const factory = await Factory.create({
+  const depot = await Depot.create({
     name,
     created_at: now,
     updated_at: now,
     created_by: SYSTEM_OBJECT_ID,
     updated_by: SYSTEM_OBJECT_ID,
   });
-  console.log(`🌱 Created factory '${name}' (id=${factory._id.toString()})`);
-  return factory;
+  console.log(`🌱 Created depot '${name}' (id=${depot._id.toString()})`);
+  return depot;
 }
 
 async function ensureRole(name) {
@@ -159,7 +159,7 @@ async function seedProducts() {
     ensureCategory("Imported Essentials", "BEV"),
   ]);
 
-  const manufacturingPlant = await ensureFactory("Pusti Dhaka Plant");
+  const manufacturingDepot = await ensureDepot("Pusti Dhaka Depot");
 
   const now = new Date();
   const actor = "seed:products";
@@ -169,7 +169,7 @@ async function seedProducts() {
       product_type: "MANUFACTURED",
       brand_id: coreBrand._id,
       category_id: snackCategory._id,
-      factory_ids: [manufacturingPlant._id],
+  depot_ids: [manufacturingDepot._id],
       sku: "PST-MFG-001",
       unit: "BOX",
       trade_price: 120,
@@ -192,7 +192,7 @@ async function seedProducts() {
       product_type: "MANUFACTURED",
       brand_id: coreBrand._id,
       category_id: snackCategory._id,
-      factory_ids: [manufacturingPlant._id],
+  depot_ids: [manufacturingDepot._id],
       sku: "PST-MFG-002",
       unit: "CTN",
       trade_price: 220,
@@ -218,7 +218,7 @@ async function seedProducts() {
       product_type: "PROCURED",
       brand_id: importedBrand._id,
       category_id: beverageCategory._id,
-      factory_ids: [],
+  depot_ids: [],
       sku: "PST-PRC-001",
       unit: "PCS",
       trade_price: 85,
@@ -242,7 +242,7 @@ async function seedProducts() {
       product_type: "PROCURED",
       brand_id: importedBrand._id,
       category_id: beverageCategory._id,
-      factory_ids: [],
+  depot_ids: [],
       sku: "PST-PRC-002",
       unit: "PCS",
       trade_price: 95,

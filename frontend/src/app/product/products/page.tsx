@@ -40,7 +40,7 @@ import ToggleOffIcon from '@mui/icons-material/ToggleOff';
 import SearchIcon from '@mui/icons-material/Search';
 import LocalOfferIcon from '@mui/icons-material/LocalOffer';
 import StorefrontIcon from '@mui/icons-material/Storefront';
-import FactoryIcon from '@mui/icons-material/Factory';
+import WarehouseIcon from '@mui/icons-material/Warehouse';
 import CategoryIcon from '@mui/icons-material/Category';
 import ViewModuleIcon from '@mui/icons-material/ViewModule';
 import ViewListIcon from '@mui/icons-material/ViewList';
@@ -145,14 +145,14 @@ const formatNullableDate = (value?: string | null) => {
   return formatDate(value);
 };
 
-const resolveFactoryDisplay = (product: ProductTableRow) => {
-  if (Array.isArray(product.factory_ids) && product.factory_ids.length) {
-    return product.factory_ids
-      .map((factory) => resolveRefLabel(factory, ''))
+const resolveDepotDisplay = (product: ProductTableRow) => {
+  if (Array.isArray(product.depot_ids) && product.depot_ids.length) {
+    return product.depot_ids
+      .map((depot) => resolveRefLabel(depot, ''))
       .filter(Boolean)
       .join(', ');
   }
-  return resolveRefLabel((product as unknown as { factory_id?: unknown })?.factory_id, 'No factory');
+  return 'No depot';
 };
 
 const chipColor = (active: boolean) => (active ? 'success' : 'default');
@@ -179,11 +179,11 @@ const ProductsPage: React.FC = () => {
   const [activeFilter, setActiveFilter] = useState<ActiveFilter>('ALL');
   const [brandFilter, setBrandFilter] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
-  const [factoryFilter, setFactoryFilter] = useState('');
+  const [depotFilter, setDepotFilter] = useState('');
 
   const [brands, setBrands] = useState<SelectOption[]>([]);
   const [categories, setCategories] = useState<SelectOption[]>([]);
-  const [factories, setFactories] = useState<SelectOption[]>([]);
+  const [depots, setDepots] = useState<SelectOption[]>([]);
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogMode, setDialogMode] = useState<'create' | 'edit'>('create');
@@ -205,10 +205,10 @@ const ProductsPage: React.FC = () => {
     if (!isMountedRef.current) return;
     try {
       setMetadataLoading(true);
-      const [brandResponse, categoryResponse, factoryResponse] = await Promise.allSettled([
+      const [brandResponse, categoryResponse, depotResponse] = await Promise.allSettled([
         api.get('/brands', { params: { limit: 200 } }),
         api.get('/categories', { params: { limit: 200, active: true } }),
-        api.get('/factories', { params: { limit: 200 } }),
+        api.get('/depots', { params: { limit: 200 } }),
       ]);
 
       if (brandResponse.status === 'fulfilled' && isMountedRef.current) {
@@ -231,9 +231,9 @@ const ProductsPage: React.FC = () => {
         );
       }
 
-      if (factoryResponse.status === 'fulfilled' && isMountedRef.current) {
-        const records = (factoryResponse.value.data?.data || []) as Array<{ _id: string; name: string }>;
-        setFactories(mapToOptions(records));
+      if (depotResponse.status === 'fulfilled' && isMountedRef.current) {
+        const records = (depotResponse.value.data?.data || []) as Array<{ _id: string; name: string }>;
+        setDepots(mapToOptions(records));
       }
     } catch (error) {
       console.error('Failed to load metadata', error);
@@ -271,13 +271,13 @@ const ProductsPage: React.FC = () => {
       if (categoryFilter) {
         params.category_id = categoryFilter;
       }
-      if (factoryFilter) {
-        params.factory_id = factoryFilter;
+      if (depotFilter) {
+        params.depot_id = depotFilter;
       }
 
       return params;
     },
-    [activeFilter, brandFilter, categoryFilter, factoryFilter, search, typeFilter],
+    [activeFilter, brandFilter, categoryFilter, depotFilter, search, typeFilter],
   );
 
   const loadProducts = useCallback(async () => {
@@ -432,16 +432,13 @@ const ProductsPage: React.FC = () => {
         renderCell: (product) => (
           <Stack spacing={0.5}>
             <Typography variant="subtitle2" fontWeight={600} noWrap>
-              {product.name}
+              {product.sku}
             </Typography>
             {product.bangla_name && (
               <Typography variant="caption" color="text.secondary" noWrap>
                 {product.bangla_name}
               </Typography>
             )}
-            <Typography variant="caption" color="text.secondary" noWrap>
-              SKU: {product.sku}
-            </Typography>
             <Stack direction="row" spacing={0.75} alignItems="center">
               <StorefrontIcon fontSize="inherit" color="primary" />
               <Typography variant="caption" color="text.secondary" noWrap>
@@ -470,10 +467,10 @@ const ProductsPage: React.FC = () => {
         renderCell: (product) => resolveRefLabel(product.category_id),
       },
       {
-        id: 'factory',
-        label: 'Factory',
+        id: 'depot',
+        label: 'Depot',
         minWidth: 180,
-        renderCell: (product) => resolveFactoryDisplay(product),
+        renderCell: (product) => resolveDepotDisplay(product),
       },
       {
         id: 'unit',
@@ -702,16 +699,12 @@ const ProductsPage: React.FC = () => {
   const productExportColumns = useMemo<ExportColumn<ProductTableRow>[]>(
     () => [
       {
-        header: 'Product',
-        accessor: (row) => row.name,
+        header: 'SKU',
+        accessor: (row) => row.sku,
       },
       {
         header: 'Bangla Name',
         accessor: (row) => row.bangla_name ?? '',
-      },
-      {
-        header: 'SKU',
-        accessor: (row) => row.sku,
       },
       {
         header: 'Type',
@@ -726,8 +719,8 @@ const ProductsPage: React.FC = () => {
         accessor: (row) => resolveRefLabel(row.category_id),
       },
       {
-        header: 'Factory',
-        accessor: (row) => resolveFactoryDisplay(row),
+        header: 'Depot',
+        accessor: (row) => resolveDepotDisplay(row),
       },
       {
         header: 'Unit',
@@ -1047,7 +1040,7 @@ const ProductsPage: React.FC = () => {
                 setActiveFilter('ALL');
                 setBrandFilter('');
                 setCategoryFilter('');
-                setFactoryFilter('');
+                setDepotFilter('');
                 setPage(0);
               }}
               aria-label="Reset filters"
@@ -1124,18 +1117,18 @@ const ProductsPage: React.FC = () => {
               </TextField>
               <TextField
                 select
-                label="Factory"
-                value={factoryFilter}
-                onChange={(event) => setFactoryFilter(event.target.value)}
+                label="Depot"
+                value={depotFilter}
+                onChange={(event) => setDepotFilter(event.target.value)}
                 sx={{ minWidth: { xs: '100%', md: 220 } }}
                 SelectProps={{ native: true }}
                 InputLabelProps={{ shrink: true }}
-                inputProps={{ 'aria-label': 'Factory filter' }}
-                aria-label="Factory filter"
-                title="Factory filter"
+                inputProps={{ 'aria-label': 'Depot filter' }}
+                aria-label='Depot filter'
+                title='Depot filter'
               >
-                <option value="">All factories</option>
-                {factories.map((option) => (
+                <option value="">All depots</option>
+                {depots.map((option) => (
                   <option key={option.value} value={option.value}>
                     {option.label}
                   </option>
@@ -1174,13 +1167,15 @@ const ProductsPage: React.FC = () => {
                       <Stack spacing={1.5}>
                         <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between">
                           <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                            {product.name}
+                            {product.sku}
                           </Typography>
                           <ProductTypeBadge productType={product.product_type} />
                         </Stack>
-                        <Typography variant="body2" color="text.secondary">
-                          SKU: {product.sku}
-                        </Typography>
+                        {product.bangla_name && (
+                          <Typography variant="body2" color="text.secondary">
+                            {product.bangla_name}
+                          </Typography>
+                        )}
                         <Stack direction="row" spacing={1} alignItems="center">
                           <StorefrontIcon fontSize="small" color="primary" />
                           <Typography variant="body2" color="text.secondary">
@@ -1194,9 +1189,9 @@ const ProductsPage: React.FC = () => {
                           </Typography>
                         </Stack>
                         <Stack direction="row" spacing={1} alignItems="center">
-                          <FactoryIcon fontSize="small" color="action" />
+                          <WarehouseIcon fontSize="small" color="action" />
                           <Typography variant="body2" color="text.secondary">
-                            {resolveFactoryDisplay(product)}
+                            {resolveDepotDisplay(product)}
                           </Typography>
                         </Stack>
                         <Stack direction="row" spacing={1} alignItems="center">
@@ -1254,7 +1249,7 @@ const ProductsPage: React.FC = () => {
         initialProduct={dialogMode === 'edit' ? selectedProduct : null}
         brands={brands}
         categories={categories}
-        factories={factories}
+  depots={depots}
         submitting={submitLoading}
         onClose={() => setDialogOpen(false)}
         onSubmit={handleSubmitProduct}

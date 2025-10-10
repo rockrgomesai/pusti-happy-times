@@ -10,6 +10,24 @@ import type { ProductFormPayload } from "@/components/products/ProductFormDialog
 
 const BASE_ENDPOINT = "/product/products";
 
+const toBackendPayload = (payload: ProductFormPayload): ProductFormPayload => {
+  const normalizedDepots = Array.isArray(payload.depot_ids)
+    ? payload.depot_ids.filter((id): id is string => Boolean(id))
+    : [];
+
+  if (payload.product_type === "MANUFACTURED") {
+    return {
+      ...payload,
+      depot_ids: normalizedDepots,
+    };
+  }
+
+  return {
+    ...payload,
+    depot_ids: [],
+  };
+};
+
 export interface ProductListParams extends ProductFilters {
   page?: number;
   limit?: number;
@@ -76,12 +94,14 @@ export const productsApi = {
   },
 
   async create(payload: ProductFormPayload) {
-    const response = await api.post(BASE_ENDPOINT, payload);
+    const backendPayload = toBackendPayload(payload);
+    const response = await api.post(BASE_ENDPOINT, backendPayload);
     return response.data;
   },
 
   async update(id: string, payload: ProductFormPayload) {
-    const response = await api.put(`${BASE_ENDPOINT}/${id}`, payload);
+    const backendPayload = toBackendPayload(payload);
+    const response = await api.put(`${BASE_ENDPOINT}/${id}`, backendPayload);
     return response.data;
   },
 

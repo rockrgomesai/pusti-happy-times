@@ -12,7 +12,7 @@ export interface Product {
   product_type: ProductType;
   brand_id: string | ProductReference;
   category_id: string | (ProductReference & { name: string; product_segment?: string });
-  factory_ids?: Array<string | ProductReference>;
+  depot_ids?: Array<string | ProductReference>;
   sku: string;
   unit: string;
   trade_price: number;
@@ -36,7 +36,7 @@ export interface ProductFilters {
   product_type?: ProductType | "ALL";
   brand_id?: string;
   category_id?: string;
-  factory_id?: string;
+  depot_id?: string;
   unit?: string;
   active?: "ALL" | "true" | "false";
   search?: string;
