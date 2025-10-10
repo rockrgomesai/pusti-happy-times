@@ -10,11 +10,6 @@ const router = express.Router();
 const MANUFACTURED = "MANUFACTURED";
 const PROCURED = "PROCURED";
 
-const sanitizeTags = (tags = []) => {
-  if (!Array.isArray(tags)) return [];
-  return [...new Set(tags.map((tag) => String(tag).trim()).filter(Boolean))];
-};
-
 const ensureValidation = (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -59,14 +54,19 @@ const applyBusinessRules = (payload, existing) => {
     payload[field] !== undefined ? payload[field] : existing?.[field];
 
   if (effectiveType === MANUFACTURED) {
-    const factoryId = valueOrExisting("factory_id");
+    const factories = valueOrExisting("factory_ids");
+    const normalizedFactories = Array.isArray(factories)
+      ? factories.filter(Boolean)
+      : factories
+        ? [factories].filter(Boolean)
+        : [];
     const unit = (valueOrExisting("unit") || "").toUpperCase();
     const dbPrice = valueOrExisting("db_price");
     const mrp = valueOrExisting("mrp");
     const ctnPcs = valueOrExisting("ctn_pcs");
 
-    if (!factoryId) {
-      throw new Error("factory_id is required for MANUFACTURED products");
+    if (!normalizedFactories.length) {
+      throw new Error("At least one factory is required for MANUFACTURED products");
     }
     if (!Product.MANUFACTURED_UNITS.includes(unit)) {
       throw new Error("MANUFACTURED products must use BAG/BOX/CASE/CTN/JAR/POUCH units");
@@ -77,6 +77,7 @@ const applyBusinessRules = (payload, existing) => {
     if (payload.unit === undefined) {
       payload.unit = unit;
     }
+    payload.factory_ids = normalizedFactories;
   }
 
   if (effectiveType === PROCURED) {
@@ -86,7 +87,7 @@ const applyBusinessRules = (payload, existing) => {
     }
 
     payload.unit = "PCS";
-    payload.factory_id = null;
+    payload.factory_ids = [];
     payload.db_price = null;
     payload.mrp = null;
     payload.ctn_pcs = null;
@@ -121,15 +122,17 @@ const buildFilters = (req) => {
   if (req.query.search) {
     const value = req.query.search.trim();
     filters.$or = [
-      { name: { $regex: value, $options: "i" } },
       { sku: { $regex: value, $options: "i" } },
-      { description: { $regex: value, $options: "i" } },
-      { tags: { $regex: value, $options: "i" } },
+      { bangla_name: { $regex: value, $options: "i" } },
     ];
   }
 
   if (req.query.unit) {
     filters.unit = String(req.query.unit).toUpperCase();
+  }
+
+  if (req.query.factory_id && mongoose.isValidObjectId(req.query.factory_id)) {
+    filters.factory_ids = req.query.factory_id;
   }
 
   return filters;
@@ -170,20 +173,17 @@ const sanitizePayload = (body) => {
   if (body.category_id !== undefined) {
     payload.category_id = body.category_id;
   }
-  if (body.factory_id !== undefined) {
-    payload.factory_id = body.factory_id || null;
+  if (body.factory_ids !== undefined) {
+    const ids = Array.isArray(body.factory_ids) ? body.factory_ids : [body.factory_ids];
+    payload.factory_ids = ids.filter(Boolean);
+  } else if (body.factory_id !== undefined) {
+    payload.factory_ids = body.factory_id ? [body.factory_id] : [];
   }
   if (body.sku !== undefined) {
     payload.sku = String(body.sku).trim().toUpperCase();
   }
   if (body.unit !== undefined) {
     payload.unit = String(body.unit).trim().toUpperCase();
-  }
-  if (body.name !== undefined) {
-    payload.name = String(body.name).trim();
-  }
-  if (body.description !== undefined) {
-    payload.description = String(body.description).trim();
   }
   if (body.trade_price !== undefined) {
     payload.trade_price = toNumber(body.trade_price);
@@ -225,9 +225,6 @@ const sanitizePayload = (body) => {
   if (body.active !== undefined) {
     payload.active = Boolean(body.active);
   }
-  if (body.tags !== undefined) {
-    payload.tags = sanitizeTags(body.tags);
-  }
 
   return payload;
 };
@@ -251,10 +248,6 @@ router.get(
       const skip = (page - 1) * limit;
       const filters = buildFilters(req);
 
-      if (req.query.factory_id) {
-        filters.factory_id = req.query.factory_id;
-      }
-
       const sort = buildSort(req);
 
       const [data, total] = await Promise.all([
@@ -265,7 +258,7 @@ router.get(
           .limit(limit)
           .populate("brand_id", "brand")
           .populate("category_id", "name product_segment")
-          .populate("factory_id", "name"),
+          .populate("factory_ids", "name"),
         Product.countDocuments(filters),
       ]);
 
@@ -299,7 +292,7 @@ router.get(
       const product = await Product.findById(req.params.id)
         .populate("brand_id", "brand")
         .populate("category_id", "name product_segment")
-        .populate("factory_id", "name")
+        .populate("factory_ids", "name")
         .lean({ getters: true });
 
       if (!product) {
@@ -329,15 +322,17 @@ const createValidators = [
     .withMessage("category_id is required")
     .bail()
     .custom((value) => mongoose.isValidObjectId(value)),
-  body("factory_id")
+  body("factory_ids")
     .optional({ values: "falsy" })
-    .custom((value) => (value == null ? true : mongoose.isValidObjectId(value))),
+    .custom((value) => {
+      if (value == null || value === "") return true;
+      const ids = Array.isArray(value) ? value : [value];
+      return ids.every((id) => mongoose.isValidObjectId(id));
+    }),
   body("sku").exists().withMessage("sku is required").bail().isLength({ min: 1 }).trim(),
   body("trade_price").exists().withMessage("trade_price is required").bail().isFloat({ min: 0 }),
   body("wt_pcs").exists().withMessage("wt_pcs is required").bail().isFloat({ min: 0 }),
   body("unit").exists().withMessage("unit is required").bail().isIn(Product.PRODUCT_UNITS),
-  body("name").optional().isLength({ min: 1 }).trim(),
-  body("tags").optional().isArray(),
 ];
 
 const updateValidators = [
@@ -345,9 +340,13 @@ const updateValidators = [
   body("product_type").optional().isIn(Product.PRODUCT_TYPES),
   body("brand_id").optional().custom((value) => mongoose.isValidObjectId(value)),
   body("category_id").optional().custom((value) => mongoose.isValidObjectId(value)),
-  body("factory_id")
+  body("factory_ids")
     .optional({ values: "falsy" })
-    .custom((value) => (value == null ? true : mongoose.isValidObjectId(value))),
+    .custom((value) => {
+      if (value == null || value === "") return true;
+      const ids = Array.isArray(value) ? value : [value];
+      return ids.every((id) => mongoose.isValidObjectId(id));
+    }),
   body("trade_price").optional().isFloat({ min: 0 }),
   body("wt_pcs").optional().isFloat({ min: 0 }),
   body("db_price").optional({ values: "falsy" }).custom((value) => value == null || Number(value) >= 0),
@@ -355,7 +354,6 @@ const updateValidators = [
   body("ctn_pcs").optional({ values: "falsy" }).custom((value) => value == null || Number(value) >= 0),
   body("unit").optional().isIn(Product.PRODUCT_UNITS),
   body("sku").optional().isLength({ min: 1 }).trim(),
-  body("tags").optional().isArray(),
 ];
 
 router.post(
@@ -369,13 +367,13 @@ router.post(
       const payload = sanitizePayload(req.body);
       payload.created_by = actor;
       payload.updated_by = actor;
-      payload.tags = sanitizeTags(req.body.tags);
-      payload.name = payload.name || payload.sku;
 
       await Promise.all([
         checkReference(Brand, payload.brand_id, "Brand"),
         checkReference(Category, payload.category_id, "Category"),
-        payload.factory_id ? checkReference(Factory, payload.factory_id, "Factory") : Promise.resolve(),
+        ...(Array.isArray(payload.factory_ids)
+          ? payload.factory_ids.map((id) => checkReference(Factory, id, "Factory"))
+          : []),
       ]);
 
       applyBusinessRules(payload);
@@ -422,21 +420,24 @@ router.put(
       payload.updated_by = actor;
       payload.updated_at = new Date();
 
-      if (payload.tags !== undefined) {
-        payload.tags = sanitizeTags(payload.tags);
-      }
-
       if (payload.brand_id) {
         await checkReference(Brand, payload.brand_id, "Brand");
       }
       if (payload.category_id) {
         await checkReference(Category, payload.category_id, "Category");
       }
-      if (payload.factory_id !== undefined && payload.factory_id !== null) {
-        await checkReference(Factory, payload.factory_id, "Factory");
+      if (payload.factory_ids !== undefined) {
+        const factories = Array.isArray(payload.factory_ids)
+          ? payload.factory_ids
+          : [payload.factory_ids];
+        await Promise.all(
+          factories
+            .filter((id) => id != null)
+            .map((id) => checkReference(Factory, id, "Factory"))
+        );
       }
 
-      applyBusinessRules(payload, existing.product_type);
+      applyBusinessRules(payload, existing);
 
       const updated = await Product.findByIdAndUpdate(
         id,
@@ -445,7 +446,7 @@ router.put(
       )
         .populate("brand_id", "brand")
         .populate("category_id", "name product_segment")
-        .populate("factory_id", "name");
+        .populate("factory_ids", "name");
 
       res.json({
         success: true,

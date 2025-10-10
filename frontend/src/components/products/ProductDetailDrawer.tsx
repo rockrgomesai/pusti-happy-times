@@ -13,8 +13,6 @@ import {
 import CloseIcon from "@mui/icons-material/Close";
 import EventAvailableIcon from "@mui/icons-material/EventAvailable";
 import EventBusyIcon from "@mui/icons-material/EventBusy";
-import LocalOfferIcon from "@mui/icons-material/LocalOffer";
-import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import type { Product, ProductReference } from "@/types/product";
 import { ProductTypeBadge } from "./ProductTypeBadge";
 
@@ -51,6 +49,21 @@ const resolveRefName = (
   return ref.brand || ref.name || fallback;
 };
 
+const resolveFactoryNames = (
+  refs?: Array<string | ProductReference> | string | ProductReference | null,
+  fallback = "-"
+) => {
+  if (!refs) return fallback ? [fallback] : [];
+  const collection = Array.isArray(refs) ? refs : [refs];
+  const names = collection
+    .map((ref) => resolveRefName(ref, ""))
+    .filter((name): name is string => Boolean(name));
+  if (!names.length) {
+    return fallback ? [fallback] : [];
+  }
+  return names;
+};
+
 export const ProductDetailDrawer: React.FC<ProductDetailDrawerProps> = ({
   product,
   open,
@@ -59,9 +72,7 @@ export const ProductDetailDrawer: React.FC<ProductDetailDrawerProps> = ({
   if (!product) return null;
 
   const {
-    name,
     bangla_name,
-    description,
     sku,
     product_type,
     unit,
@@ -70,7 +81,6 @@ export const ProductDetailDrawer: React.FC<ProductDetailDrawerProps> = ({
     trade_price,
     db_price,
     mrp,
-    tags,
     active,
     launch_date,
     decommission_date,
@@ -82,7 +92,7 @@ export const ProductDetailDrawer: React.FC<ProductDetailDrawerProps> = ({
 
   const brand = resolveRefName(product.brand_id);
   const category = resolveRefName(product.category_id, "-");
-  const factory = resolveRefName(product.factory_id, "-");
+  const factories = resolveFactoryNames(product.factory_ids, "-");
 
   return (
     <Drawer anchor="right" open={open} onClose={onClose} PaperProps={{ sx: { width: { xs: "100%", sm: 420, md: 520 } } }}>
@@ -90,7 +100,7 @@ export const ProductDetailDrawer: React.FC<ProductDetailDrawerProps> = ({
         <Stack direction="row" alignItems="start" justifyContent="space-between" spacing={2}>
           <Box>
             <Typography variant="h5" sx={{ fontWeight: 700 }}>
-              {name}
+              {sku}
             </Typography>
             {bangla_name && (
               <Typography variant="subtitle1" color="text.secondary">
@@ -149,11 +159,13 @@ export const ProductDetailDrawer: React.FC<ProductDetailDrawerProps> = ({
             </Box>
             <Box>
               <Typography variant="body2" color="text.secondary">
-                Factory
+                Factories
               </Typography>
-              <Typography variant="body1" sx={{ fontWeight: 600 }}>
-                {factory}
-              </Typography>
+              <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap sx={{ mt: 0.5 }}>
+                {factories.map((name) => (
+                  <Chip key={name} label={name} size="small" variant="outlined" />
+                ))}
+              </Stack>
             </Box>
           </Box>
         </Box>
@@ -253,34 +265,6 @@ export const ProductDetailDrawer: React.FC<ProductDetailDrawerProps> = ({
         </Box>
 
         <Divider sx={{ my: 3 }} />
-
-        <Box>
-          <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1.5 }}>
-            <InfoOutlinedIcon fontSize="small" color="info" />
-            <Typography variant="subtitle2" color="text.secondary">
-              Description
-            </Typography>
-          </Stack>
-          <Typography variant="body1" color="text.primary">
-            {description || "No description provided."}
-          </Typography>
-        </Box>
-
-        {tags && tags.length > 0 && (
-          <Box sx={{ mt: 3 }}>
-            <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
-              <LocalOfferIcon fontSize="small" color="secondary" />
-              <Typography variant="subtitle2" color="text.secondary">
-                Tags
-              </Typography>
-            </Stack>
-            <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-              {tags.map((tag) => (
-                <Chip key={tag} label={tag} size="small" variant="outlined" />
-              ))}
-            </Stack>
-          </Box>
-        )}
 
         <Divider sx={{ my: 3 }} />
 

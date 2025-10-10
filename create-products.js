@@ -12,7 +12,6 @@ db.createCollection("products", {
         "trade_price",
         "unit",
         "wt_pcs",
-        "name",
         "active",
         "created_at",
         "created_by",
@@ -33,9 +32,12 @@ db.createCollection("products", {
           bsonType: "objectId",
           description: "Reference to categories._id"
         },
-        factory_id: {
-          bsonType: ["objectId", "null"],
-          description: "Reference to factories._id (required for manufactured products)"
+        factory_ids: {
+          bsonType: ["array"],
+          description: "References to factories._id (required for manufactured products)",
+          items: {
+            bsonType: "objectId"
+          }
         },
         sku: {
           bsonType: "string",
@@ -92,26 +94,9 @@ db.createCollection("products", {
           bsonType: ["string", "null"],
           description: "Optional hero image"
         },
-        description: {
-          bsonType: "string",
-          description: "Product description"
-        },
-        tags: {
-          bsonType: "array",
-          items: {
-            bsonType: "string"
-          },
-          uniqueItems: true,
-          description: "Distinct product tags"
-        },
         active: {
           bsonType: "bool",
           description: "Soft delete flag"
-        },
-        name: {
-          bsonType: "string",
-          minLength: 1,
-          description: "Human readable product name"
         },
         created_at: {
           bsonType: "date",
@@ -142,7 +127,8 @@ db.products.createIndex({ sku: 1 }, { unique: true, name: "ux_products_sku" });
 db.products.createIndex({ bangla_name: 1 }, { unique: true, sparse: true, name: "ux_products_bn_name" });
 db.products.createIndex({ product_type: 1, active: 1 }, { name: "ix_products_type_active" });
 db.products.createIndex({ brand_id: 1, category_id: 1, active: 1 }, { name: "ix_products_brand_category_active" });
-db.products.createIndex({ name: "text", description: "text", tags: "text", bangla_name: "text" }, { name: "ix_products_text_search" });
+db.products.createIndex({ sku: "text", bangla_name: "text" }, { name: "ix_products_text_search" });
+db.products.createIndex({ factory_ids: 1 }, { name: "ix_products_factory_ids" });
 
 db.products.createIndex({ created_at: -1 }, { name: "ix_products_created_at" });
 

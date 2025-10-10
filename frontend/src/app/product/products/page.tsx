@@ -12,9 +12,17 @@ import {
   CircularProgress,
   IconButton,
   InputAdornment,
+  Paper,
   Stack,
   Tab,
   Tabs,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TablePagination,
+  TableRow,
   TextField,
   ToggleButton,
   ToggleButtonGroup,
@@ -23,12 +31,6 @@ import {
   useMediaQuery,
   useTheme,
 } from '@mui/material';
-import {
-  DataGrid,
-  GridActionsCellItem,
-  GridColumnVisibilityModel,
-  GridColDef,
-} from '@mui/x-data-grid';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import VisibilityIcon from '@mui/icons-material/Visibility';
@@ -62,9 +64,19 @@ import ColumnVisibilityMenu from '@/components/common/ColumnVisibilityMenu';
 import ExportMenu from '@/components/common/ExportMenu';
 import type { ExportColumn } from '@/lib/exportUtils';
 import { formatDateForExport } from '@/lib/exportUtils';
+import { calculateTableMinWidth } from '@/lib/tableUtils';
 
 interface ProductTableRow extends Product {
   id: string;
+}
+
+interface ProductColumnDefinition {
+  id: string;
+  label: string;
+  align?: 'inherit' | 'left' | 'center' | 'right' | 'justify';
+  minWidth?: number;
+  alwaysVisible?: boolean;
+  renderCell: (product: ProductTableRow) => React.ReactNode;
 }
 
 type ViewMode = 'table' | 'grid';
@@ -120,6 +132,29 @@ const buildTableRows = (products: Product[]): ProductTableRow[] =>
     id: product._id,
   }));
 
+const formatNumber = (value: number | null | undefined) => {
+  if (value === null || value === undefined) return '-';
+  const formatter = new Intl.NumberFormat('en-IN', {
+    maximumFractionDigits: Number.isInteger(value) ? 0 : 2,
+  });
+  return formatter.format(value);
+};
+
+const formatNullableDate = (value?: string | null) => {
+  if (!value) return '-';
+  return formatDate(value);
+};
+
+const resolveFactoryDisplay = (product: ProductTableRow) => {
+  if (Array.isArray(product.factory_ids) && product.factory_ids.length) {
+    return product.factory_ids
+      .map((factory) => resolveRefLabel(factory, ''))
+      .filter(Boolean)
+      .join(', ');
+  }
+  return resolveRefLabel((product as unknown as { factory_id?: unknown })?.factory_id, 'No factory');
+};
+
 const chipColor = (active: boolean) => (active ? 'success' : 'default');
 
 const PRODUCT_COLUMN_STORAGE_KEY = 'product:products:visibleColumns';
@@ -155,25 +190,15 @@ const ProductsPage: React.FC = () => {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [detailDrawerOpen, setDetailDrawerOpen] = useState(false);
   const [submitLoading, setSubmitLoading] = useState(false);
-  const [clientReady, setClientReady] = useState(false);
   const [visibleProductColumnIds, setVisibleProductColumnIds] = useState<string[]>([]);
   const [persistedProductColumnIds, setPersistedProductColumnIds] = useState<string[]>([]);
   const columnStateHydratedRef = useRef(false);
-
-  const paginationModel = useMemo(
-    () => ({ page, pageSize }),
-    [page, pageSize],
-  );
 
   useIsomorphicLayoutEffect(() => {
     isMountedRef.current = true;
     return () => {
       isMountedRef.current = false;
     };
-  }, []);
-
-  useEffect(() => {
-    setClientReady(true);
   }, []);
 
   const loadMetadata = useCallback(async () => {
@@ -367,189 +392,194 @@ const ProductsPage: React.FC = () => {
       }
     }
   };
+  const renderProductActions = useCallback(
+    (product: ProductTableRow) => {
+      const isActive = Boolean(product.active);
+      return (
+        <Stack direction="row" spacing={1} justifyContent="flex-end">
+          <Tooltip title="View details">
+            <IconButton size="small" color="info" onClick={() => handleViewDetails(product)}>
+              <VisibilityIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="Edit product">
+            <IconButton size="small" color="primary" onClick={() => handleOpenEdit(product)}>
+              <EditIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title={isActive ? 'Deactivate product' : 'Activate product'}>
+            <IconButton
+              size="small"
+              color={isActive ? 'warning' : 'success'}
+              onClick={() => handleToggleActive(product)}
+            >
+              {isActive ? <ToggleOffIcon fontSize="small" /> : <ToggleOnIcon fontSize="small" />}
+            </IconButton>
+          </Tooltip>
+        </Stack>
+      );
+    },
+    [handleOpenEdit, handleToggleActive, handleViewDetails],
+  );
 
-  const tableColumns: GridColDef<ProductTableRow>[] = useMemo(
+  const productColumns = useMemo<ProductColumnDefinition[]>(
     () => [
       {
-        field: 'name',
-        headerName: 'Product',
-        flex: 1.5,
-        minWidth: 240,
-        renderCell: (params) => {
-          const product = params.row;
-          return (
-            <Stack spacing={0.5}>
-              <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                {product.name}
+        id: 'overview',
+        label: 'Product',
+        minWidth: 260,
+        alwaysVisible: true,
+        renderCell: (product) => (
+          <Stack spacing={0.5}>
+            <Typography variant="subtitle2" fontWeight={600} noWrap>
+              {product.name}
+            </Typography>
+            {product.bangla_name && (
+              <Typography variant="caption" color="text.secondary" noWrap>
+                {product.bangla_name}
               </Typography>
-              <Typography variant="caption" color="text.secondary">
-                SKU: {product.sku}
+            )}
+            <Typography variant="caption" color="text.secondary" noWrap>
+              SKU: {product.sku}
+            </Typography>
+            <Stack direction="row" spacing={0.75} alignItems="center">
+              <StorefrontIcon fontSize="inherit" color="primary" />
+              <Typography variant="caption" color="text.secondary" noWrap>
+                {resolveRefLabel(product.brand_id)}
               </Typography>
-              <Stack direction="row" spacing={0.75} alignItems="center">
-                <StorefrontIcon fontSize="inherit" color="primary" />
-                <Typography variant="caption" color="text.secondary">
-                  {resolveRefLabel(product.brand_id)}
-                </Typography>
-              </Stack>
             </Stack>
-          );
-        },
+          </Stack>
+        ),
       },
       {
-        field: 'product_type',
-        headerName: 'Type',
-        width: 150,
-        renderCell: (params) => <ProductTypeBadge productType={params.row.product_type as ProductType} />,
-        sortable: false,
+        id: 'product_type',
+        label: 'Type',
+        minWidth: 130,
+        renderCell: (product) => <ProductTypeBadge productType={product.product_type as ProductType} />,
       },
       {
-        field: 'trade_price',
-        headerName: 'Trade Price',
-        width: 150,
-        valueFormatter: (value) => formatCurrency(Number(value)),
+        id: 'brand',
+        label: 'Brand',
+        minWidth: 160,
+        renderCell: (product) => resolveRefLabel(product.brand_id),
       },
       {
-        field: 'unit',
-        headerName: 'Unit',
-        width: 100,
-      },
-      {
-        field: 'category',
-        headerName: 'Category',
-        flex: 1,
+        id: 'category',
+        label: 'Category',
         minWidth: 180,
-        valueGetter: (value, row) => resolveRefLabel(row.category_id),
+        renderCell: (product) => resolveRefLabel(product.category_id),
       },
       {
-        field: 'active',
-        headerName: 'Status',
-        width: 120,
-        renderCell: (params) => (
+        id: 'factory',
+        label: 'Factory',
+        minWidth: 180,
+        renderCell: (product) => resolveFactoryDisplay(product),
+      },
+      {
+        id: 'unit',
+        label: 'Unit',
+        minWidth: 100,
+        renderCell: (product) => product.unit ?? '-',
+      },
+      {
+        id: 'trade_price',
+        label: 'Trade Price',
+        minWidth: 140,
+        align: 'right',
+        renderCell: (product) => formatCurrency(product.trade_price),
+      },
+      {
+        id: 'db_price',
+        label: 'DB Price',
+        minWidth: 140,
+        align: 'right',
+        renderCell: (product) => formatCurrency(product.db_price ?? null),
+      },
+      {
+        id: 'mrp',
+        label: 'MRP',
+        minWidth: 140,
+        align: 'right',
+        renderCell: (product) => formatCurrency(product.mrp ?? null),
+      },
+      {
+        id: 'wt_pcs',
+        label: 'Weight / Pcs',
+        minWidth: 140,
+        align: 'right',
+        renderCell: (product) => formatNumber(product.wt_pcs),
+      },
+      {
+        id: 'ctn_pcs',
+        label: 'Carton Qty',
+        minWidth: 140,
+        align: 'right',
+        renderCell: (product) => formatNumber(product.ctn_pcs ?? null),
+      },
+      {
+        id: 'launch_date',
+        label: 'Launch Date',
+        minWidth: 150,
+        renderCell: (product) => formatNullableDate(product.launch_date),
+      },
+      {
+        id: 'decommission_date',
+        label: 'Decommission Date',
+        minWidth: 180,
+        renderCell: (product) => formatNullableDate(product.decommission_date),
+      },
+      {
+        id: 'erp_id',
+        label: 'ERP ID',
+        minWidth: 120,
+        renderCell: (product) => (product.erp_id != null ? String(product.erp_id) : '-'),
+      },
+      {
+        id: 'active',
+        label: 'Status',
+        minWidth: 130,
+        renderCell: (product) => (
           <Chip
-            label={params.row.active ? 'Active' : 'Inactive'}
-            color={chipColor(params.row.active)}
+            label={product.active ? 'Active' : 'Inactive'}
+            color={chipColor(Boolean(product.active))}
             size="small"
           />
         ),
       },
       {
-        field: 'updated_at',
-        headerName: 'Updated',
-        width: 170,
-        valueFormatter: (value) => formatDate(String(value)),
+        id: 'updated_at',
+        label: 'Updated',
+        minWidth: 170,
+        renderCell: (product) => formatNullableDate(product.updated_at),
       },
       {
-        field: 'actions',
-        headerName: 'Actions',
-        type: 'actions',
-        width: 170,
+        id: 'created_at',
+        label: 'Created',
         minWidth: 170,
-        sortable: false,
-        filterable: false,
-        getActions: (params) => {
-          const product = params.row;
-          const isActive = Boolean(product.active);
-        interface ProductActionCellProps {
-            product: ProductTableRow;
-            isActive: boolean;
-            handleViewDetails: (product: ProductTableRow) => void;
-            handleOpenEdit: (product: ProductTableRow) => void;
-            handleToggleActive: (product: ProductTableRow) => void;
-        }
-
-        const getProductActionCells = ({
-            product,
-            isActive,
-            handleViewDetails,
-            handleOpenEdit,
-            handleToggleActive,
-        }: ProductActionCellProps): React.ReactNode[] => [
-            <GridActionsCellItem
-                key="view"
-                icon={
-                    <VisibilityIcon
-                        fontSize="small"
-                        sx={{
-                            color: 'info.main',
-                            '&:hover': { color: 'info.dark' },
-                        }}
-                    />
-                }
-                label="View"
-                onClick={() => handleViewDetails(product)}
-                showInMenu={false}
-            />,
-            <GridActionsCellItem
-                key="edit"
-                icon={
-                    <EditIcon
-                        fontSize="small"
-                        sx={{
-                            color: 'primary.main',
-                            '&:hover': { color: 'primary.dark' },
-                        }}
-                    />
-                }
-                label="Edit"
-                onClick={() => handleOpenEdit(product)}
-                showInMenu={false}
-            />,
-            <GridActionsCellItem
-                key="toggle"
-                icon={
-                    isActive ? (
-                        <ToggleOffIcon
-                            fontSize="small"
-                            sx={(theme) => ({
-                                color: theme.palette.warning.main,
-                                '&:hover': {
-                                    color: theme.palette.warning.dark,
-                                },
-                            })}
-                        />
-                    ) : (
-                        <ToggleOnIcon
-                            fontSize="small"
-                            sx={(theme) => ({
-                                color: theme.palette.success.main,
-                                '&:hover': {
-                                    color: theme.palette.success.dark,
-                                },
-                            })}
-                        />
-                    )
-                }
-                label={isActive ? 'Deactivate' : 'Activate'}
-                onClick={() => handleToggleActive(product)}
-                showInMenu={false}
-            />,
-        ];
-
-        return getProductActionCells({
-            product: product as ProductTableRow,
-            isActive,
-            handleViewDetails,
-            handleOpenEdit,
-            handleToggleActive,
-        });
-        },
-        align: 'center',
-        headerAlign: 'center',
+        renderCell: (product) => formatNullableDate(product.created_at),
+      },
+      {
+        id: 'actions',
+        label: 'Actions',
+        align: 'right',
+        alwaysVisible: true,
+        minWidth: 160,
+        renderCell: renderProductActions,
       },
     ],
-    [handleOpenEdit, handleToggleActive, handleViewDetails],
+    [renderProductActions],
   );
 
   const productRows = useMemo(() => buildTableRows(products), [products]);
 
   const productColumnOptions = useMemo(
     () =>
-      tableColumns.map((column) => ({
-        id: column.field,
-        label: column.headerName ?? column.field,
-        alwaysVisible: column.field === 'actions',
+      productColumns.map((column) => ({
+        id: column.id,
+        label: column.label,
+        alwaysVisible: column.alwaysVisible,
       })),
-    [tableColumns],
+    [productColumns],
   );
 
   const selectableProductColumnIds = useMemo(
@@ -616,20 +646,21 @@ const ProductsPage: React.FC = () => {
     });
   }, [sanitizeProductSelection, selectableProductColumnIds]);
 
-  const effectiveVisibleProductColumnIds = useMemo(
+  const visibleColumnIds = useMemo(
     () => (visibleProductColumnIds.length ? visibleProductColumnIds : selectableProductColumnIds),
     [selectableProductColumnIds, visibleProductColumnIds],
   );
 
-  const productColumnVisibilityModel = useMemo(() => {
-    const hidden: GridColumnVisibilityModel = {};
-    selectableProductColumnIds.forEach((id) => {
-      if (!effectiveVisibleProductColumnIds.includes(id)) {
-        hidden[id] = false;
-      }
-    });
-    return hidden;
-  }, [effectiveVisibleProductColumnIds, selectableProductColumnIds]);
+  const visibleProductColumns = useMemo(
+    () =>
+      productColumns.filter((column) => column.alwaysVisible || visibleColumnIds.includes(column.id)),
+    [productColumns, visibleColumnIds],
+  );
+
+  const tableMinWidth = useMemo(
+    () => calculateTableMinWidth(visibleProductColumns.length, 160, 1200),
+    [visibleProductColumns.length],
+  );
 
   const handleVisibleProductColumnsChange = useCallback(
     (nextSelected: string[]) => {
@@ -644,15 +675,19 @@ const ProductsPage: React.FC = () => {
   );
 
   const productHasUnsavedChanges = useMemo(() => {
-    if (effectiveVisibleProductColumnIds.length !== persistedProductColumnIds.length) {
+    const normalizedPersisted =
+      persistedProductColumnIds.length || !selectableProductColumnIds.length
+        ? persistedProductColumnIds
+        : selectableProductColumnIds;
+    if (visibleColumnIds.length !== normalizedPersisted.length) {
       return true;
     }
-    const persistedSet = new Set(persistedProductColumnIds);
-    return effectiveVisibleProductColumnIds.some((id) => !persistedSet.has(id));
-  }, [effectiveVisibleProductColumnIds, persistedProductColumnIds]);
+    const persistedSet = new Set(normalizedPersisted);
+    return visibleColumnIds.some((id) => !persistedSet.has(id));
+  }, [persistedProductColumnIds, selectableProductColumnIds, visibleColumnIds]);
 
   const handleSaveProductColumnSelection = useCallback(() => {
-    const sanitized = sanitizeProductSelection(effectiveVisibleProductColumnIds);
+    const sanitized = sanitizeProductSelection(visibleColumnIds);
     setVisibleProductColumnIds(sanitized);
     setPersistedProductColumnIds(sanitized);
     try {
@@ -662,13 +697,17 @@ const ProductsPage: React.FC = () => {
       console.warn('Failed to persist product column preferences', error);
       toast.error('Failed to save column selection');
     }
-  }, [effectiveVisibleProductColumnIds, sanitizeProductSelection]);
+  }, [sanitizeProductSelection, visibleColumnIds]);
 
   const productExportColumns = useMemo<ExportColumn<ProductTableRow>[]>(
     () => [
       {
         header: 'Product',
         accessor: (row) => row.name,
+      },
+      {
+        header: 'Bangla Name',
+        accessor: (row) => row.bangla_name ?? '',
       },
       {
         header: 'SKU',
@@ -688,15 +727,43 @@ const ProductsPage: React.FC = () => {
       },
       {
         header: 'Factory',
-        accessor: (row) => resolveRefLabel(row.factory_id, 'No factory'),
+        accessor: (row) => resolveFactoryDisplay(row),
+      },
+      {
+        header: 'Unit',
+        accessor: (row) => row.unit ?? '',
       },
       {
         header: 'Trade Price',
         accessor: (row) => formatCurrency(row.trade_price),
       },
       {
-        header: 'Unit',
-        accessor: (row) => row.unit ?? '',
+        header: 'DB Price',
+        accessor: (row) => formatCurrency(row.db_price ?? null),
+      },
+      {
+        header: 'MRP',
+        accessor: (row) => formatCurrency(row.mrp ?? null),
+      },
+      {
+        header: 'Weight / Pcs',
+        accessor: (row) => formatNumber(row.wt_pcs),
+      },
+      {
+        header: 'Carton Qty',
+        accessor: (row) => formatNumber(row.ctn_pcs ?? null),
+      },
+      {
+        header: 'Launch Date',
+        accessor: (row) => formatDateForExport(row.launch_date),
+      },
+      {
+        header: 'Decommission Date',
+        accessor: (row) => formatDateForExport(row.decommission_date),
+      },
+      {
+        header: 'ERP ID',
+        accessor: (row) => (row.erp_id != null ? String(row.erp_id) : ''),
       },
       {
         header: 'Status',
@@ -753,8 +820,107 @@ const ProductsPage: React.FC = () => {
     return productRows;
   }, [productRows, showGridView]);
 
-  const displayedProductCount = productRows.length;
-  const summaryText = `Showing ${displayedProductCount} of ${rowCount} products`;
+  const summaryText = useMemo(() => {
+    if (rowCount > 0) {
+      if (productRows.length === 0) {
+        return `Showing 0 of ${rowCount} products`;
+      }
+      const start = page * pageSize + 1;
+      const end = page * pageSize + productRows.length;
+      return `Showing ${start}-${end} of ${rowCount} products`;
+    }
+    return `Showing ${productRows.length} products`;
+  }, [page, pageSize, productRows.length, rowCount]);
+
+  const handleChangePage = useCallback((_: unknown, newPage: number) => {
+    setPage(newPage);
+  }, []);
+
+  const handleChangeRowsPerPage = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    const newSize = parseInt(event.target.value, 10);
+    if (Number.isNaN(newSize)) {
+      return;
+    }
+    setPageSize(newSize);
+    setPage(0);
+  }, []);
+
+  const renderTableView = useCallback(
+    () => (
+      <TableContainer component={Paper} sx={{ overflowX: 'auto' }}>
+        <Table sx={{ minWidth: tableMinWidth }}>
+          <TableHead>
+            <TableRow>
+              {visibleProductColumns.map((column) => {
+                const isActions = column.id === 'actions';
+                return (
+                  <TableCell
+                    key={column.id}
+                    align={column.align}
+                    sx={{
+                      fontWeight: 600,
+                      whiteSpace: 'nowrap',
+                      backgroundColor: 'background.paper',
+                      minWidth: column.minWidth,
+                      ...(isActions
+                        ? {
+                            position: 'sticky',
+                            right: 0,
+                            zIndex: 3,
+                            boxShadow: (theme) => `-4px 0 8px -4px ${theme.palette.grey[300]}`,
+                          }
+                        : {}),
+                    }}
+                  >
+                    {column.label}
+                  </TableCell>
+                );
+              })}
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {productRows.map((product) => (
+              <TableRow key={product.id} hover>
+                {visibleProductColumns.map((column) => {
+                  const isActions = column.id === 'actions';
+                  return (
+                    <TableCell
+                      key={column.id}
+                      align={column.align}
+                      sx={{
+                        backgroundColor: 'background.paper',
+                        minWidth: column.minWidth,
+                        ...(isActions
+                          ? {
+                              position: 'sticky',
+                              right: 0,
+                              zIndex: 2,
+                              boxShadow: (theme) => `-4px 0 8px -4px ${theme.palette.grey[200]}`,
+                            }
+                          : {}),
+                      }}
+                    >
+                      {column.renderCell(product)}
+                    </TableCell>
+                  );
+                })}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+        <TablePagination
+          rowsPerPageOptions={PAGE_SIZE_OPTIONS}
+          component="div"
+          count={rowCount}
+          rowsPerPage={pageSize}
+          page={page}
+          onPageChange={handleChangePage}
+          onRowsPerPageChange={handleChangeRowsPerPage}
+        />
+      </TableContainer>
+    ),
+    [handleChangePage, handleChangeRowsPerPage, page, pageSize, productRows, rowCount, tableMinWidth, visibleProductColumns],
+  );
 
   const controlsBar = (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, mb: 2 }}>
@@ -804,7 +970,7 @@ const ProductsPage: React.FC = () => {
 
           <ColumnVisibilityMenu
             options={productColumnOptions}
-            selected={effectiveVisibleProductColumnIds}
+            selected={visibleProductColumnIds}
             onChange={handleVisibleProductColumnsChange}
             onSaveSelection={handleSaveProductColumnSelection}
             saveDisabled={!productHasUnsavedChanges}
@@ -1030,7 +1196,7 @@ const ProductsPage: React.FC = () => {
                         <Stack direction="row" spacing={1} alignItems="center">
                           <FactoryIcon fontSize="small" color="action" />
                           <Typography variant="body2" color="text.secondary">
-                            {resolveRefLabel(product.factory_id, 'No factory')}
+                            {resolveFactoryDisplay(product)}
                           </Typography>
                         </Stack>
                         <Stack direction="row" spacing={1} alignItems="center">
@@ -1063,75 +1229,15 @@ const ProductsPage: React.FC = () => {
           <CardHeader title="Product list" subheader="Table view with quick filters and actions" />
           <CardContent>
             {controlsBar}
-            <Box sx={{ height: 560, width: '100%' }}>
-              {clientReady ? (
-                <DataGrid
-                  columns={tableColumns}
-                  rows={productRows}
-                  disableColumnMenu
-                  disableRowSelectionOnClick
-                  loading={loading}
-                  paginationModel={paginationModel}
-                  onPaginationModelChange={(model) => {
-                    if (!isMountedRef.current) {
-                      return;
-                    }
-                    if (model.page !== page) {
-                      setPage(model.page);
-                    }
-                    if (model.pageSize !== pageSize) {
-                      setPageSize(model.pageSize);
-                    }
-                  }}
-                  pageSizeOptions={PAGE_SIZE_OPTIONS}
-                  rowCount={rowCount}
-                  paginationMode="server"
-                  columnVisibilityModel={productColumnVisibilityModel}
-                  sx={{
-                    backgroundColor: 'common.white',
-                    '& .MuiDataGrid-columnHeaders': {
-                      backgroundColor: 'background.default',
-                    },
-                    '& .MuiDataGrid-columnHeader[data-field="actions"]': {
-                      position: 'sticky',
-                      right: 0,
-                      zIndex: 2,
-                      backgroundColor: 'background.default',
-                      /*borderLeft: 1,
-                      borderColor: 'divider',*/
-                    },
-                    '& .MuiDataGrid-cell[data-field="actions"]': {
-                      position: 'sticky',
-                      right: 0,
-                      zIndex: 1,
-                      backgroundColor: 'background.paper',
-                      /*borderLeft: 1,
-                      borderColor: 'divider',
-                      borderBottom: 'none',
-                      '&::after': {
-                        display: 'none',
-                      },*/
-                    },
-                    '& .MuiDataGrid-row:last-of-type .MuiDataGrid-cell[data-field="actions"]': {
-                      borderBottom: 'none',
-                      '&::after': {
-                        display: 'none',
-                      },
-                    },
-                    '& .MuiDataGrid-cell[data-field="actions"] .MuiButtonBase-root': {
-                      mr: 0,
-                    },
-                    '& .MuiDataGrid-virtualScroller': {
-                      backgroundColor: 'common.white',
-                    },
-                  }}
-                />
-              ) : (
-                <Stack alignItems="center" justifyContent="center" sx={{ height: '100%' }}>
-                  <CircularProgress size={28} />
-                </Stack>
-              )}
-            </Box>
+            {loading ? (
+              <Stack alignItems="center" sx={{ py: 6 }}>
+                <CircularProgress />
+              </Stack>
+            ) : productRows.length === 0 ? (
+              <Alert severity="info">No products match the current filters.</Alert>
+            ) : (
+              renderTableView()
+            )}
           </CardContent>
         </Card>
       )}

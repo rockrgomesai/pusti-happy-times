@@ -3,16 +3,20 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
   Alert,
+  Autocomplete,
   Box,
   Button,
   Card,
   CardActionArea,
   CardHeader,
+  Checkbox,
+  Chip,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
   FormControlLabel,
+  ListItemText,
   Stack,
   Switch,
   TextField,
@@ -23,7 +27,6 @@ import {
 import { LoadingButton } from "@mui/lab";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Autocomplete } from "@mui/material";
 import { z } from "zod";
 import FactoryIcon from "@mui/icons-material/Factory";
 import Inventory2Icon from "@mui/icons-material/Inventory2";
@@ -39,12 +42,9 @@ export interface ProductFormPayload {
   product_type: ProductType;
   brand_id: string;
   category_id: string;
-  factory_id: string | null;
+  factory_ids: string[];
   sku: string;
-  name: string;
   bangla_name: string | null;
-  description: string;
-  tags: string[];
   unit: string;
   trade_price: number;
   db_price: number | null;
@@ -78,12 +78,9 @@ const productFormSchema = z
     product_type: z.union([z.literal("MANUFACTURED"), z.literal("PROCURED")]),
     brand_id: z.string().min(1, "Brand is required"),
     category_id: z.string().min(1, "Category is required"),
-    factory_id: z.string().optional().nullable(),
+  factory_ids: z.array(z.string().min(1)).optional(),
     sku: z.string().min(1, "SKU is required"),
-    name: z.string().min(1, "Product name is required"),
     bangla_name: z.string().optional().nullable(),
-    description: z.string().optional().nullable(),
-    tags: z.array(z.string()).optional(),
     unit: z.string().min(1, "Unit is required"),
     trade_price: z.string().min(1, "Trade price is required"),
     db_price: z.string().optional().nullable(),
@@ -98,11 +95,11 @@ const productFormSchema = z
   })
   .superRefine((values, ctx) => {
     if (values.product_type === "MANUFACTURED") {
-      if (!values.factory_id) {
+      if (!values.factory_ids || values.factory_ids.length === 0) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          path: ["factory_id"],
-          message: "Factory is required for manufactured products",
+          path: ["factory_ids"],
+          message: "Select at least one factory",
         });
       }
       if (!MANUFACTURED_UNITS.has(values.unit.toUpperCase())) {
@@ -160,6 +157,23 @@ const toOptionValue = (value: ReferenceLike): string => {
   return value._id;
 };
 
+const toOptionValues = (
+  value: ReferenceLike | ReferenceLike[] | undefined
+): string[] => {
+  if (!value) return [];
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => {
+        if (!item) return "";
+        if (typeof item === "string") return item;
+        return item._id;
+      })
+      .filter((id): id is string => Boolean(id));
+  }
+  const single = toOptionValue(value);
+  return single ? [single] : [];
+};
+
 const sanitizeNumber = (value: string | null | undefined): number | null => {
   if (value === undefined || value === null) return null;
   const trimmed = value.toString().trim();
@@ -207,12 +221,9 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
       product_type: initialProduct?.product_type ?? "MANUFACTURED",
       brand_id: "",
       category_id: "",
-      factory_id: null,
+      factory_ids: [],
       sku: "",
-      name: "",
       bangla_name: "",
-      description: "",
-      tags: [],
       unit: "",
       trade_price: "",
       db_price: "",
@@ -238,12 +249,9 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
           product_type,
           brand_id,
           category_id,
-          factory_id,
+          factory_ids,
           sku,
-          name,
           bangla_name,
-          description,
-          tags,
           unit,
           trade_price,
           db_price,
@@ -257,18 +265,16 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
           active,
         } = initialProduct;
 
-        const factoryValue = toOptionValue(factory_id);
+        const legacyFactory = (initialProduct as unknown as { factory_id?: ReferenceLike }).factory_id;
+        const factoryValues = toOptionValues(factory_ids ?? legacyFactory);
         setSelectedType(product_type);
         reset({
           product_type,
           brand_id: toOptionValue(brand_id),
           category_id: toOptionValue(category_id),
-          factory_id: factoryValue || null,
+          factory_ids: factoryValues,
           sku,
-          name,
           bangla_name: bangla_name ?? "",
-          description: description ?? "",
-          tags: tags ?? [],
           unit,
           trade_price: trade_price?.toString() ?? "",
           db_price: db_price?.toString() ?? "",
@@ -287,12 +293,9 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
           product_type: "MANUFACTURED",
           brand_id: "",
           category_id: "",
-          factory_id: null,
+          factory_ids: [],
           sku: "",
-          name: "",
           bangla_name: "",
-          description: "",
-          tags: [],
           unit: "",
           trade_price: "",
           db_price: "",
@@ -316,7 +319,7 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
 
     if (selectedType === "PROCURED") {
       setValue("unit", "PCS", { shouldValidate: true });
-      setValue("factory_id", null);
+      setValue("factory_ids", [], { shouldValidate: true });
       setValue("db_price", "");
       setValue("mrp", "");
       setValue("ctn_pcs", "");
@@ -346,16 +349,16 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
   };
 
   const handleFormSubmit = async (values: ProductFormValues) => {
+    const normalizedFactories = Array.isArray(values.factory_ids)
+      ? values.factory_ids.filter(Boolean)
+      : [];
     const payload: ProductFormPayload = {
       product_type: selectedType ?? values.product_type,
       brand_id: values.brand_id,
       category_id: values.category_id,
-      factory_id: isManufactured ? values.factory_id || null : null,
+      factory_ids: isManufactured ? normalizedFactories : [],
       sku: values.sku.trim().toUpperCase(),
-      name: values.name.trim(),
       bangla_name: isManufactured ? sanitizeString(values.bangla_name) : null,
-      description: sanitizeString(values.description) ?? "",
-      tags: Array.from(new Set(values.tags ?? [])).map((tag) => tag.trim()).filter(Boolean),
       unit: selectedType === "PROCURED" ? "PCS" : values.unit.trim().toUpperCase(),
       trade_price: sanitizeNumber(values.trade_price) ?? 0,
       db_price: isManufactured ? sanitizeNumber(values.db_price) : null,
@@ -525,73 +528,21 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
                     />
                   )}
                 />
-                <Controller
-                  name="name"
-                  control={control}
-                  render={({ field }) => (
-                    <TextField
-                      {...field}
-                      label="Product Name"
-                      fullWidth
-                      disabled={disableForm}
-                      error={Boolean(errors.name)}
-                      helperText={errors.name?.message}
-                    />
-                  )}
-                />
-              </Stack>
-              {isManufactured && (
-                <Controller
-                  name="bangla_name"
-                  control={control}
-                  render={({ field }) => (
-                    <TextField
-                      {...field}
-                      label="Bangla Name"
-                      fullWidth
-                      sx={{ mt: 2 }}
-                      disabled={disableForm}
-                    />
-                  )}
-                />
-              )}
-              <Controller
-                name="description"
-                control={control}
-                render={({ field }) => (
-                  <TextField
-                    {...field}
-                    label="Description"
-                    multiline
-                    rows={3}
-                    fullWidth
-                    sx={{ mt: 2 }}
-                    disabled={disableForm}
-                  />
-                )}
-              />
-              <Controller
-                name="tags"
-                control={control}
-                render={({ field }) => (
-                  <Autocomplete
-                    multiple
-                    freeSolo
-                    options={[]}
-                    value={field.value ?? []}
-                    onChange={(_, value) => field.onChange(value)}
-                    renderInput={(params) => (
+                {isManufactured && (
+                  <Controller
+                    name="bangla_name"
+                    control={control}
+                    render={({ field }) => (
                       <TextField
-                        {...params}
-                        label="Tags"
-                        placeholder="Press enter to add tag"
-                        sx={{ mt: 2 }}
+                        {...field}
+                        label="Bangla Name"
+                        fullWidth
+                        disabled={disableForm}
                       />
                     )}
-                    disabled={disableForm}
                   />
                 )}
-              />
+              </Stack>
             </Box>
 
             {isManufactured && (
@@ -601,36 +552,61 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
                 </Typography>
                 <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
                   <Controller
-                    name="factory_id"
+                    name="factory_ids"
                     control={control}
                     render={({ field }) => {
-                      const { value, onChange, ref, ...rest } = field;
+                      const selectedIds = Array.isArray(field.value)
+                        ? field.value
+                        : field.value
+                        ? [field.value]
+                        : [];
+                      const selectedOptions = factories.filter((option) =>
+                        selectedIds.includes(option.value)
+                      );
                       return (
-                        <TextField
-                          {...rest}
-                          inputRef={ref}
-                          value={value ?? ""}
-                          onChange={(event) => onChange(event.target.value)}
-                          select
-                          fullWidth
-                          label="Factory"
-                          error={Boolean(errors.factory_id)}
-                          helperText={errors.factory_id?.message}
-                          SelectProps={{
-                            native: true,
-                            inputProps: { "aria-label": "Factory" },
+                        <Autocomplete
+                          multiple
+                          disableCloseOnSelect
+                          options={factories}
+                          value={selectedOptions}
+                          onChange={(_, nextOptions) =>
+                            field.onChange(nextOptions.map((option) => option.value))
+                          }
+                          getOptionLabel={(option) => option.label}
+                          isOptionEqualToValue={(option, value) => option.value === value.value}
+                          renderOption={(props, option, { selected }) => {
+                            const { key, ...optionProps } = props;
+                            return (
+                              <li key={key} {...optionProps}>
+                                <Checkbox checked={selected} sx={{ mr: 1 }} />
+                                <ListItemText primary={option.label} secondary={option.helper} />
+                              </li>
+                            );
                           }}
-                          InputLabelProps={{ shrink: true }}
-                        >
-                          <option value="" disabled>
-                            Select factory
-                          </option>
-                          {factories.map((option) => (
-                            <option key={option.value} value={option.value}>
-                              {option.label}
-                            </option>
-                          ))}
-                        </TextField>
+                          renderTags={(value, getTagProps) =>
+                            value.map((option, index) => (
+                              <Chip
+                                {...getTagProps({ index })}
+                                key={option.value}
+                                label={option.label}
+                                size="small"
+                              />
+                            ))
+                          }
+                          disabled={disableForm}
+                          sx={{ flex: 1, minWidth: { xs: "100%", sm: 320 } }}
+                          ListboxProps={{ style: { maxHeight: 320 } }}
+                          renderInput={(params) => (
+                            <TextField
+                              {...params}
+                              label="Factories"
+                              placeholder="Select factories"
+                              error={Boolean(errors.factory_ids)}
+                              helperText={errors.factory_ids?.message}
+                              InputLabelProps={{ shrink: true }}
+                            />
+                          )}
+                        />
                       );
                     }}
                   />
@@ -641,8 +617,9 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
                       <TextField
                         {...field}
                         label="ERP ID"
-                        fullWidth
                         type="number"
+                        sx={{ width: { xs: "100%", sm: 160 }, flexShrink: 0 }}
+                        InputProps={{ inputProps: { min: 0 } }}
                       />
                     )}
                   />

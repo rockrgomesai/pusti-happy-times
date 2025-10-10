@@ -71,11 +71,14 @@ const productSchema = new mongoose.Schema(
       type: Number,
       sparse: true,
     },
-    factory_id: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Factory",
-      sparse: true,
-      index: true,
+    factory_ids: {
+      type: [
+        {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Factory",
+        },
+      ],
+      default: [],
     },
     db_price: {
       type: Number,
@@ -108,21 +111,6 @@ const productSchema = new mongoose.Schema(
       trim: true,
       default: null,
     },
-    name: {
-      type: String,
-      required: true,
-      trim: true,
-      index: true,
-    },
-    description: {
-      type: String,
-      default: "",
-      trim: true,
-    },
-    tags: {
-      type: [String],
-      default: [],
-    },
     created_at: {
       type: Date,
       required: true,
@@ -153,12 +141,13 @@ const productSchema = new mongoose.Schema(
 productSchema.index({ product_type: 1, active: 1 }, { name: "idx_type_active" });
 productSchema.index({ brand_id: 1, category_id: 1, active: 1 }, { name: "idx_brand_category_active" });
 productSchema.index({ product_type: 1, brand_id: 1 }, { name: "idx_type_brand" });
-productSchema.index({ name: "text", description: "text", tags: "text", bangla_name: "text" }, { name: "idx_text_search" });
+productSchema.index({ sku: "text", bangla_name: "text" }, { name: "idx_text_search" });
+productSchema.index({ factory_ids: 1 }, { name: "idx_factory_ids" });
 
 const assignNullsForProcured = (doc) => {
   doc.bangla_name = null;
   doc.erp_id = null;
-  doc.factory_id = null;
+  doc.factory_ids = [];
   doc.db_price = null;
   doc.mrp = null;
   doc.ctn_pcs = null;
@@ -171,8 +160,11 @@ productSchema.pre("validate", function (next) {
   if (!this.product_type) return next();
 
   if (this.product_type === "MANUFACTURED") {
-    if (!this.factory_id) {
-      return next(new Error("factory_id is required for MANUFACTURED products"));
+    const factories = Array.isArray(this.factory_ids)
+      ? this.factory_ids.filter((id) => id != null)
+      : [];
+    if (!factories.length) {
+      return next(new Error("At least one factory is required for MANUFACTURED products"));
     }
     if (!MANUFACTURED_UNITS.includes(this.unit)) {
       return next(new Error("MANUFACTURED products must use BAG/BOX/CASE/CTN/JAR/POUCH units"));
@@ -180,15 +172,12 @@ productSchema.pre("validate", function (next) {
     if (this.db_price == null || this.mrp == null || this.ctn_pcs == null) {
       return next(new Error("db_price, mrp and ctn_pcs are required for MANUFACTURED products"));
     }
+    this.factory_ids = factories;
   } else if (this.product_type === "PROCURED") {
     if (!PROCURED_UNITS.includes(this.unit)) {
       return next(new Error("PROCURED products must use PCS unit"));
     }
     assignNullsForProcured(this);
-  }
-
-  if (!this.name) {
-    this.name = this.sku;
   }
 
   next();
@@ -211,6 +200,12 @@ productSchema.pre("findOneAndUpdate", function (next) {
   }
   if (set.unit) {
     set.unit = set.unit.toUpperCase();
+  }
+  if (set.factory_ids) {
+    const factories = Array.isArray(set.factory_ids)
+      ? set.factory_ids.filter(Boolean)
+      : [set.factory_ids].filter(Boolean);
+    set.factory_ids = factories;
   }
   set.updated_at = new Date();
   update.$set = set;

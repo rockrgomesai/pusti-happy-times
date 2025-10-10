@@ -12,7 +12,7 @@ export interface Product {
   product_type: ProductType;
   brand_id: string | ProductReference;
   category_id: string | (ProductReference & { name: string; product_segment?: string });
-  factory_id?: string | ProductReference | null;
+  factory_ids?: Array<string | ProductReference>;
   sku: string;
   unit: string;
   trade_price: number;
@@ -20,10 +20,7 @@ export interface Product {
   mrp?: number | null;
   wt_pcs: number;
   ctn_pcs?: number | null;
-  name: string;
   bangla_name?: string | null;
-  description?: string;
-  tags?: string[];
   active: boolean;
   launch_date?: string | null;
   decommission_date?: string | null;
