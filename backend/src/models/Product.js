@@ -153,7 +153,6 @@ const assignNullsForProcured = (doc) => {
   doc.ctn_pcs = null;
   doc.launch_date = null;
   doc.decommission_date = null;
-  doc.image_url = null;
 };
 
 productSchema.pre("validate", function (next) {

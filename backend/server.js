@@ -30,6 +30,8 @@ const mongoose = require("mongoose");
 const cors = require("cors");
 const helmet = require("helmet");
 const compression = require("compression");
+const fs = require("fs");
+const path = require("path");
 // const rateLimit = require('express-rate-limit');
 const mongoSanitize = require("express-mongo-sanitize");
 const hpp = require("hpp");
@@ -67,6 +69,9 @@ app.use(
       },
     },
     crossOriginEmbedderPolicy: false,
+    crossOriginResourcePolicy: {
+      policy: "cross-origin",
+    },
   })
 );
 
@@ -116,6 +121,15 @@ app.use(cors(corsOptions));
 // Body parsing middleware
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+
+const publicDir = path.join(__dirname, "public");
+const imagesDir = path.join(publicDir, "images");
+
+if (!fs.existsSync(imagesDir)) {
+  fs.mkdirSync(imagesDir, { recursive: true });
+}
+
+app.use("/images", express.static(imagesDir));
 
 // Data sanitization against NoSQL query injection
 app.use(mongoSanitize());

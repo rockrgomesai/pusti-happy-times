@@ -105,6 +105,27 @@ export const productsApi = {
     return response.data;
   },
 
+  async uploadImage(file: File) {
+    const formData = new FormData();
+    formData.append("image", file);
+
+    const response = await api.post(`${BASE_ENDPOINT}/upload-image`, formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+
+    return response.data as {
+      success: boolean;
+      message: string;
+      data: {
+        path: string;
+        filename: string;
+        size: number;
+      };
+    };
+  },
+
   async deactivate(id: string) {
     const response = await api.delete(`${BASE_ENDPOINT}/${id}`);
     return response.data;

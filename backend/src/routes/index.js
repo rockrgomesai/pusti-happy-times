@@ -34,6 +34,7 @@ const permissionRoutes = require("./permissions");
 const designationRoutes = require("./designationRoutes");
 const employeeRoutes = require("./employees");
 const productRoutes = require("./product/products");
+const territoryRoutes = require("./territories");
 
 const router = express.Router();
 
@@ -63,8 +64,8 @@ let __lastStatsCache = null;
 let __lastStatsAt = 0;
 
 async function buildStatsPayload() {
-  const { User, Brand, Role } = require("../models");
-  const [userCount, brandCount, roleCount] = await Promise.all([
+  const { User, Brand, Role, Territory } = require("../models");
+  const [userCount, brandCount, roleCount, territoryCount] = await Promise.all([
     User.countDocuments().catch((e) => {
       console.error("[STATS] user count error", e);
       return 0;
@@ -77,6 +78,10 @@ async function buildStatsPayload() {
       console.error("[STATS] role count error", e);
       return 0;
     }),
+    Territory.countDocuments().catch((e) => {
+      console.error("[STATS] territory count error", e);
+      return 0;
+    }),
   ]);
 
   const uptimeSeconds = Math.floor(process.uptime());
@@ -85,7 +90,8 @@ async function buildStatsPayload() {
   return {
     users: userCount,
     brands: brandCount,
-    roles: roleCount,
+  roles: roleCount,
+  territories: territoryCount,
     systemHealth: health,
     uptimeSeconds,
     generatedAt: new Date().toISOString(),
@@ -160,14 +166,15 @@ router.get("/info", (req, res) => {
         auth: "/api/auth",
         users: "/api/users",
         roles: "/api/roles",
-    brands: "/api/brands",
-    categories: "/api/categories",
+        brands: "/api/brands",
+        categories: "/api/categories",
     products: "/api/product/products",
-        factories: "/api/factories",
-    depots: "/api/depots",
+    factories: "/api/factories",
+  depots: "/api/depots",
     employees: "/api/employees",
         menu: "/api/menu-items",
         permissions: "/api/permissions",
+        territories: "/api/territories",
       },
       features: [
         "JWT Authentication",
@@ -254,6 +261,14 @@ router.use("/designations", designationRoutes);
  * @access  Private (authenticated users)
  */
 router.use("/employees", employeeRoutes);
+
+/**
+ * Territory Management Routes
+ * @route   /api/territories/*
+ * @desc    Hierarchical territory CRUD operations and management
+ * @access  Private (authenticated users)
+ */
+router.use("/territories", territoryRoutes);
 
 /**
  * Transport Management Routes

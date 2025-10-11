@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { isAxiosError } from "axios";
 import {
   Alert,
   Autocomplete,
@@ -23,6 +24,7 @@ import {
   Typography,
   useMediaQuery,
   useTheme,
+  CircularProgress,
 } from "@mui/material";
 import { LoadingButton } from "@mui/lab";
 import { useForm, Controller } from "react-hook-form";
@@ -30,7 +32,12 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import WarehouseIcon from "@mui/icons-material/Warehouse";
 import Inventory2Icon from "@mui/icons-material/Inventory2";
+import CloudUploadIcon from "@mui/icons-material/CloudUpload";
+import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import { toast } from "react-hot-toast";
 import type { Product, ProductReference, ProductType } from "@/types/product";
+import { productsApi } from "@/lib/api/products";
+import { DEFAULT_PRODUCT_IMAGE, resolveProductImageSrc } from "@/lib/productImage";
 
 export interface SelectOption {
   value: string;
@@ -272,6 +279,117 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
   const watchProductType = watch("product_type");
   const effectiveType: ProductType | null = selectedType ?? watchProductType ?? null;
   const isManufactured = effectiveType === "MANUFACTURED";
+  const watchImageUrl = watch("image_url");
+
+  const [imagePreview, setImagePreview] = useState<string>(DEFAULT_PRODUCT_IMAGE);
+  const [imageUploading, setImageUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const objectUrlRef = useRef<string | null>(null);
+
+  const resetObjectUrl = useCallback(() => {
+    if (objectUrlRef.current) {
+      URL.revokeObjectURL(objectUrlRef.current);
+      objectUrlRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => {
+    if (objectUrlRef.current) {
+      return;
+    }
+
+    if (watchImageUrl) {
+      setImagePreview(resolveProductImageSrc(watchImageUrl));
+    } else {
+      setImagePreview(DEFAULT_PRODUCT_IMAGE);
+    }
+  }, [watchImageUrl, objectUrlRef]);
+
+  useEffect(() => () => resetObjectUrl(), [resetObjectUrl]);
+
+  useEffect(() => {
+    if (!open) {
+      resetObjectUrl();
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+      setImagePreview(DEFAULT_PRODUCT_IMAGE);
+    }
+  }, [open, resetObjectUrl]);
+
+  const handleImageUpload = useCallback(
+    async (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      if (!file) return;
+
+      if (!file.type.startsWith("image/")) {
+        toast.error("Please select a valid image file");
+        event.target.value = "";
+        return;
+      }
+
+      const maxSizeBytes = 5 * 1024 * 1024;
+      if (file.size > maxSizeBytes) {
+        toast.error("Image must be smaller than 5 MB");
+        event.target.value = "";
+        return;
+      }
+
+      if (objectUrlRef.current) {
+        URL.revokeObjectURL(objectUrlRef.current);
+      }
+
+      const objectUrl = URL.createObjectURL(file);
+      objectUrlRef.current = objectUrl;
+      setImagePreview(objectUrl);
+      setImageUploading(true);
+
+      try {
+        const response = await productsApi.uploadImage(file);
+        const uploadedPath = response?.data?.path;
+
+        if (!uploadedPath) {
+          throw new Error("Upload did not return an image path");
+        }
+
+        setValue("image_url", uploadedPath, { shouldValidate: true });
+        resetObjectUrl();
+        setImagePreview(resolveProductImageSrc(uploadedPath));
+        toast.success("Image uploaded");
+      } catch (error) {
+        resetObjectUrl();
+        const existingPath = getValues("image_url");
+        setImagePreview(existingPath ? resolveProductImageSrc(existingPath) : DEFAULT_PRODUCT_IMAGE);
+        const message = isAxiosError(error)
+          ? error.response?.data?.message ?? "Failed to upload image"
+          : error instanceof Error
+            ? error.message
+            : "Failed to upload image";
+        toast.error(message);
+      } finally {
+        setImageUploading(false);
+        if (event.target) {
+          event.target.value = "";
+        }
+      }
+    },
+    [getValues, resetObjectUrl, setValue]
+  );
+
+  const handleRemoveImage = useCallback(() => {
+    const current = getValues("image_url");
+    if (!current) {
+      return;
+    }
+
+    resetObjectUrl();
+    setValue("image_url", "", { shouldValidate: true });
+    setImagePreview(DEFAULT_PRODUCT_IMAGE);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+    toast.success("Image removed");
+  }, [getValues, resetObjectUrl, setValue]);
 
   useEffect(() => {
     if (open) {
@@ -813,18 +931,101 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
               <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
                 Media
               </Typography>
-              <Controller
-                name="image_url"
-                control={control}
-                render={({ field }) => (
-                  <TextField
-                    {...field}
-                    label="Image URL"
-                    fullWidth
-                    placeholder="https://example.com/product.jpg"
+              <Stack
+                direction={{ xs: "column", sm: "row" }}
+                spacing={2}
+                alignItems={{ xs: "stretch", sm: "center" }}
+              >
+                <Box
+                  sx={{
+                    position: "relative",
+                    width: 128,
+                    height: 128,
+                    borderRadius: 2,
+                    border: "1px solid",
+                    borderColor: "divider",
+                    overflow: "hidden",
+                    flexShrink: 0,
+                  }}
+                >
+                  <Box
+                    component="img"
+                    src={imagePreview}
+                    alt="Product preview"
+                    sx={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "cover",
+                      display: "block",
+                    }}
+                    onError={(event: React.SyntheticEvent<HTMLImageElement>) => {
+                      event.currentTarget.onerror = null;
+                      event.currentTarget.src = DEFAULT_PRODUCT_IMAGE;
+                    }}
                   />
-                )}
-              />
+                  {imageUploading && (
+                    <Box
+                      sx={{
+                        position: "absolute",
+                        inset: 0,
+                        bgcolor: "rgba(255,255,255,0.65)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <CircularProgress size={28} />
+                    </Box>
+                  )}
+                </Box>
+
+                <Stack spacing={1.5} sx={{ flex: 1 }}>
+                  <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5}>
+                    <LoadingButton
+                      component="label"
+                      variant="outlined"
+                      startIcon={<CloudUploadIcon />}
+                      loading={imageUploading}
+                      loadingPosition="start"
+                      disabled={imageUploading}
+                    >
+                      Upload image
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        hidden
+                        accept="image/*"
+                        onChange={handleImageUpload}
+                      />
+                    </LoadingButton>
+                    <Button
+                      variant="text"
+                      color="error"
+                      startIcon={<DeleteOutlineIcon />}
+                      disabled={!watchImageUrl || imageUploading}
+                      onClick={handleRemoveImage}
+                    >
+                      Remove image
+                    </Button>
+                  </Stack>
+                  <Controller
+                    name="image_url"
+                    control={control}
+                    render={({ field }) => (
+                      <TextField
+                        {...field}
+                        label="Image URL"
+                        fullWidth
+                        placeholder="/images/product-image.svg"
+                        InputProps={{ readOnly: true }}
+                      />
+                    )}
+                  />
+                  <Typography variant="caption" color="text.secondary">
+                    Accepted formats: PNG, JPG. Maximum size 5&nbsp;MB.
+                  </Typography>
+                </Stack>
+              </Stack>
             </Box>
 
             <FormControlLabel

@@ -2,13 +2,86 @@ const express = require("express");
 const { body, param, query, validationResult } = require("express-validator");
 const mongoose = require("mongoose");
 
+const path = require("path");
+const fs = require("fs");
+const crypto = require("crypto");
+const multer = require("multer");
+
 const { Product, Brand, Category, Depot } = require("../../models");
-const { requireApiPermission } = require("../../middleware/auth");
+const { requireApiPermission, checkApiPermission } = require("../../middleware/auth");
 
 const router = express.Router();
 
 const MANUFACTURED = "MANUFACTURED";
 const PROCURED = "PROCURED";
+
+const IMAGE_UPLOAD_DIR = path.join(__dirname, "../../../public/images");
+
+const ensureImageDirectory = () => {
+  if (!fs.existsSync(IMAGE_UPLOAD_DIR)) {
+    fs.mkdirSync(IMAGE_UPLOAD_DIR, { recursive: true });
+  }
+};
+
+ensureImageDirectory();
+
+const imageStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => {
+    ensureImageDirectory();
+    cb(null, IMAGE_UPLOAD_DIR);
+  },
+  filename: (_req, file, cb) => {
+    const extension = path.extname(file.originalname) || "";
+    const randomToken = crypto.randomBytes(8).toString("hex");
+    const filename = `${Date.now()}-${randomToken}${extension}`;
+    cb(null, filename);
+  },
+});
+
+const imageUpload = multer({
+  storage: imageStorage,
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    if (!file.mimetype.startsWith("image/")) {
+      const error = new Error("Only image files are allowed");
+      error.statusCode = 400;
+      return cb(error);
+    }
+    cb(null, true);
+  },
+});
+
+const ensureProductImagePermission = async (req, res, next) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        message: "Authentication required",
+      });
+    }
+
+    const [canCreate, canUpdate] = await Promise.all([
+      checkApiPermission(req.user, "products:create"),
+      checkApiPermission(req.user, "products:update"),
+    ]);
+
+    if (!canCreate && !canUpdate) {
+      return res.status(403).json({
+        success: false,
+        message: "API access denied",
+        permission: "products:create|products:update",
+      });
+    }
+
+    next();
+  } catch (error) {
+    console.error("Product image permission error", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to validate image upload permissions",
+    });
+  }
+};
 
 const ensureValidation = (req, res, next) => {
   const errors = validationResult(req);
@@ -99,7 +172,6 @@ const applyBusinessRules = (payload, existing) => {
     payload.ctn_pcs = null;
     payload.launch_date = null;
     payload.decommission_date = null;
-    payload.image_url = null;
     payload.bangla_name = null;
     payload.erp_id = null;
   }
@@ -235,6 +307,43 @@ const sanitizePayload = (body) => {
 
   return payload;
 };
+
+router.post(
+  "/upload-image",
+  ensureProductImagePermission,
+  (req, res) => {
+    const singleUpload = imageUpload.single("image");
+
+    singleUpload(req, res, (err) => {
+      if (err) {
+        const status = err.statusCode || (err instanceof multer.MulterError ? 400 : 500);
+        return res.status(status).json({
+          success: false,
+          message: err.message || "Failed to upload image",
+        });
+      }
+
+      if (!req.file) {
+        return res.status(400).json({
+          success: false,
+          message: "No image provided for upload",
+        });
+      }
+
+      const relativePath = `/images/${req.file.filename}`;
+
+      res.status(201).json({
+        success: true,
+        message: "Image uploaded successfully",
+        data: {
+          path: relativePath,
+          filename: req.file.filename,
+          size: req.file.size,
+        },
+      });
+    });
+  }
+);
 
 router.get(
   "/",

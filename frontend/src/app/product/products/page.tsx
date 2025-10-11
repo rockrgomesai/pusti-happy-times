@@ -48,23 +48,21 @@ import { toast } from 'react-hot-toast';
 
 import { productsApi, type ProductListParams } from '@/lib/api/products';
 import api from '@/lib/api';
-import type {
-  Product,
-  ProductListResponse,
-  ProductType,
-} from '@/types/product';
+import type { Product, ProductListResponse, ProductType } from '@/types/product';
 import { ProductTypeBadge } from '@/components/products/ProductTypeBadge';
 import { ProductDetailDrawer } from '@/components/products/ProductDetailDrawer';
 import {
   ProductFormDialog,
-  ProductFormPayload,
-  SelectOption,
+  type ProductFormPayload,
+  type SelectOption,
 } from '@/components/products/ProductFormDialog';
 import ColumnVisibilityMenu from '@/components/common/ColumnVisibilityMenu';
 import ExportMenu from '@/components/common/ExportMenu';
 import type { ExportColumn } from '@/lib/exportUtils';
 import { formatDateForExport } from '@/lib/exportUtils';
 import { calculateTableMinWidth } from '@/lib/tableUtils';
+import { DEFAULT_PRODUCT_IMAGE, resolveProductImageSrc } from '@/lib/productImage';
+
 
 interface ProductTableRow extends Product {
   id: string;
@@ -123,7 +121,10 @@ const mapToOptions = (
   records.map((item) => ({
     value: item._id,
     label: item.name || item.brand || item.label || 'Unknown',
-    helper: helperKey && (item as Record<string, string>)[helperKey] ? (item as Record<string, string>)[helperKey] : undefined,
+    helper:
+      helperKey && (item as Record<string, string>)[helperKey]
+        ? (item as Record<string, string>)[helperKey]
+        : undefined,
   }));
 
 const buildTableRows = (products: Product[]): ProductTableRow[] =>
@@ -427,50 +428,60 @@ const ProductsPage: React.FC = () => {
       {
         id: 'overview',
         label: 'Product',
-        minWidth: 260,
+        minWidth: 320,
         alwaysVisible: true,
-        renderCell: (product) => (
-          <Stack spacing={0.5}>
-            <Typography variant="subtitle2" fontWeight={600} noWrap>
-              {product.sku}
-            </Typography>
-            {product.bangla_name && (
-              <Typography variant="caption" color="text.secondary" noWrap>
-                {product.bangla_name}
-              </Typography>
-            )}
-            <Stack direction="row" spacing={0.75} alignItems="center">
-              <StorefrontIcon fontSize="inherit" color="primary" />
-              <Typography variant="caption" color="text.secondary" noWrap>
-                {resolveRefLabel(product.brand_id)}
-              </Typography>
+        renderCell: (product) => {
+          const imageSrc = resolveProductImageSrc(product.image_url);
+          return (
+            <Stack direction="row" spacing={2} alignItems="flex-start">
+              <Box
+                sx={{
+                  width: 72,
+                  height: 72,
+                  borderRadius: 1.5,
+                  overflow: 'hidden',
+                  border: '1px solid',
+                  borderColor: 'divider',
+                  flexShrink: 0,
+                  bgcolor: 'background.paper',
+                }}
+              >
+                <Box
+                  component="img"
+                  src={imageSrc}
+                  alt={`${product.sku} thumbnail`}
+                  sx={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                  onError={(event: React.SyntheticEvent<HTMLImageElement>) => {
+                    event.currentTarget.onerror = null;
+                    event.currentTarget.src = DEFAULT_PRODUCT_IMAGE;
+                  }}
+                />
+              </Box>
+              <Stack spacing={0.5} flex={1} minWidth={0}>
+                <Stack direction="row" alignItems="center" spacing={1} justifyContent="space-between">
+                  <Typography variant="subtitle1" sx={{ fontWeight: 600 }} noWrap>
+                    {product.sku}
+                  </Typography>
+                  <ProductTypeBadge productType={product.product_type} />
+                </Stack>
+                {product.bangla_name && (
+                  <Typography variant="body2" color="text.secondary" noWrap>
+                    {product.bangla_name}
+                  </Typography>
+                )}
+                <Typography variant="body2" color="text.secondary" noWrap>
+                  Brand: {resolveRefLabel(product.brand_id)}
+                </Typography>
+                <Typography variant="body2" color="text.secondary" noWrap>
+                  Category: {resolveRefLabel(product.category_id)}
+                </Typography>
+                <Typography variant="body2" color="text.secondary" noWrap>
+                  Depot: {resolveDepotDisplay(product)}
+                </Typography>
+              </Stack>
             </Stack>
-          </Stack>
-        ),
-      },
-      {
-        id: 'product_type',
-        label: 'Type',
-        minWidth: 130,
-        renderCell: (product) => <ProductTypeBadge productType={product.product_type as ProductType} />,
-      },
-      {
-        id: 'brand',
-        label: 'Brand',
-        minWidth: 160,
-        renderCell: (product) => resolveRefLabel(product.brand_id),
-      },
-      {
-        id: 'category',
-        label: 'Category',
-        minWidth: 180,
-        renderCell: (product) => resolveRefLabel(product.category_id),
-      },
-      {
-        id: 'depot',
-        label: 'Depot',
-        minWidth: 180,
-        renderCell: (product) => resolveDepotDisplay(product),
+          );
+        },
       },
       {
         id: 'unit',
@@ -1084,9 +1095,12 @@ const ProductsPage: React.FC = () => {
                 sx={{ minWidth: { xs: '100%', md: 220 } }}
                 SelectProps={{ native: true }}
                 InputLabelProps={{ shrink: true }}
-                inputProps={{ 'aria-label': 'Brand filter' }}
-                aria-label="Brand filter"
-                title="Brand filter"
+                inputProps={{
+                  name: 'brand-filter',
+                  id: 'brand-filter',
+                  'aria-label': 'Brand filter',
+                  title: 'Brand filter',
+                }}
               >
                 <option value="">All brands</option>
                 {brands.map((option) => (
@@ -1103,9 +1117,12 @@ const ProductsPage: React.FC = () => {
                 sx={{ minWidth: { xs: '100%', md: 220 } }}
                 SelectProps={{ native: true }}
                 InputLabelProps={{ shrink: true }}
-                inputProps={{ 'aria-label': 'Category filter' }}
-                aria-label="Category filter"
-                title="Category filter"
+                inputProps={{
+                  name: 'category-filter',
+                  id: 'category-filter',
+                  'aria-label': 'Category filter',
+                  title: 'Category filter',
+                }}
               >
                 <option value="">All categories</option>
                 {categories.map((option) => (
@@ -1123,9 +1140,12 @@ const ProductsPage: React.FC = () => {
                 sx={{ minWidth: { xs: '100%', md: 220 } }}
                 SelectProps={{ native: true }}
                 InputLabelProps={{ shrink: true }}
-                inputProps={{ 'aria-label': 'Depot filter' }}
-                aria-label='Depot filter'
-                title='Depot filter'
+                inputProps={{
+                  name: 'depot-filter',
+                  id: 'depot-filter',
+                  'aria-label': 'Depot filter',
+                  title: 'Depot filter',
+                }}
               >
                 <option value="">All depots</option>
                 {depots.map((option) => (
@@ -1161,60 +1181,97 @@ const ProductsPage: React.FC = () => {
                 flexWrap="wrap"
                 sx={{ '& > *': { flexBasis: { xs: '100%', sm: 'calc(50% - 16px)', lg: 'calc(33.33% - 16px)' } } }}
               >
-                {filteredGridProducts.map((product) => (
-                  <Card key={product._id} variant="outlined">
-                    <CardContent>
-                      <Stack spacing={1.5}>
-                        <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between">
-                          <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                            {product.sku}
-                          </Typography>
-                          <ProductTypeBadge productType={product.product_type} />
+                {filteredGridProducts.map((product) => {
+                  const imageSrc = resolveProductImageSrc(product.image_url);
+                  return (
+                    <Card key={product._id} variant="outlined">
+                      <CardContent>
+                        <Stack spacing={1.5}>
+                          <Box
+                            sx={{
+                              width: '100%',
+                              height: 160,
+                              borderRadius: 2,
+                              overflow: 'hidden',
+                              border: '1px solid',
+                              borderColor: 'divider',
+                              bgcolor: 'background.paper',
+                            }}
+                          >
+                            <Box
+                              component="img"
+                              src={imageSrc}
+                              alt={`${product.sku} preview`}
+                              sx={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                              onError={(event: React.SyntheticEvent<HTMLImageElement>) => {
+                                event.currentTarget.onerror = null;
+                                event.currentTarget.src = DEFAULT_PRODUCT_IMAGE;
+                              }}
+                            />
+                          </Box>
+                          <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between">
+                            <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                              {product.sku}
+                            </Typography>
+                            <ProductTypeBadge productType={product.product_type} />
+                          </Stack>
+                          {product.bangla_name && (
+                            <Typography variant="body2" color="text.secondary">
+                              {product.bangla_name}
+                            </Typography>
+                          )}
+                          <Stack direction="row" spacing={1} alignItems="center">
+                            <StorefrontIcon fontSize="small" color="primary" />
+                            <Typography variant="body2" color="text.secondary">
+                              {resolveRefLabel(product.brand_id)}
+                            </Typography>
+                          </Stack>
+                          <Stack direction="row" spacing={1} alignItems="center">
+                            <CategoryIcon fontSize="small" color="action" />
+                            <Typography variant="body2" color="text.secondary">
+                              {resolveRefLabel(product.category_id)}
+                            </Typography>
+                          </Stack>
+                          <Stack direction="row" spacing={1} alignItems="center">
+                            <WarehouseIcon fontSize="small" color="action" />
+                            <Typography variant="body2" color="text.secondary">
+                              {resolveDepotDisplay(product)}
+                            </Typography>
+                          </Stack>
+                          <Stack direction="row" spacing={1} alignItems="center">
+                            <LocalOfferIcon fontSize="small" color="success" />
+                            <Typography variant="body2" color="text.secondary">
+                              {formatCurrency(product.trade_price)}
+                            </Typography>
+                          </Stack>
+                          <Stack direction="row" spacing={1}>
+                            <Chip
+                              label={product.active ? 'Active' : 'Inactive'}
+                              size="small"
+                              color={chipColor(product.active)}
+                            />
+                          </Stack>
+                          <Stack direction="row" spacing={1}>
+                            <Button
+                              size="small"
+                              startIcon={<VisibilityIcon fontSize="small" />}
+                              onClick={() => handleViewDetails(product)}
+                            >
+                              View details
+                            </Button>
+                            <Button
+                              size="small"
+                              startIcon={<EditIcon fontSize="small" />}
+                              onClick={() => handleOpenEdit(product)}
+                            >
+                              Edit
+                            </Button>
+                          </Stack>
                         </Stack>
-                        {product.bangla_name && (
-                          <Typography variant="body2" color="text.secondary">
-                            {product.bangla_name}
-                          </Typography>
-                        )}
-                        <Stack direction="row" spacing={1} alignItems="center">
-                          <StorefrontIcon fontSize="small" color="primary" />
-                          <Typography variant="body2" color="text.secondary">
-                            {resolveRefLabel(product.brand_id)}
-                          </Typography>
-                        </Stack>
-                        <Stack direction="row" spacing={1} alignItems="center">
-                          <CategoryIcon fontSize="small" color="action" />
-                          <Typography variant="body2" color="text.secondary">
-                            {resolveRefLabel(product.category_id)}
-                          </Typography>
-                        </Stack>
-                        <Stack direction="row" spacing={1} alignItems="center">
-                          <WarehouseIcon fontSize="small" color="action" />
-                          <Typography variant="body2" color="text.secondary">
-                            {resolveDepotDisplay(product)}
-                          </Typography>
-                        </Stack>
-                        <Stack direction="row" spacing={1} alignItems="center">
-                          <LocalOfferIcon fontSize="small" color="success" />
-                          <Typography variant="body2" color="text.secondary">
-                            {formatCurrency(product.trade_price)}
-                          </Typography>
-                        </Stack>
-                        <Stack direction="row" spacing={1}>
-                          <Chip label={product.active ? 'Active' : 'Inactive'} size="small" color={chipColor(product.active)} />
-                        </Stack>
-                        <Stack direction="row" spacing={1}>
-                          <Button size="small" startIcon={<VisibilityIcon fontSize="small" />} onClick={() => handleViewDetails(product)}>
-                            View details
-                          </Button>
-                          <Button size="small" startIcon={<EditIcon fontSize="small" />} onClick={() => handleOpenEdit(product)}>
-                            Edit
-                          </Button>
-                        </Stack>
-                      </Stack>
-                    </CardContent>
-                  </Card>
-                ))}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
               </Stack>
             )}
           </CardContent>

@@ -15,6 +15,7 @@ import EventAvailableIcon from "@mui/icons-material/EventAvailable";
 import EventBusyIcon from "@mui/icons-material/EventBusy";
 import type { Product, ProductReference } from "@/types/product";
 import { ProductTypeBadge } from "./ProductTypeBadge";
+import { DEFAULT_PRODUCT_IMAGE, resolveProductImageSrc } from "@/lib/productImage";
 
 interface ProductDetailDrawerProps {
   product: Product | null;
@@ -94,30 +95,57 @@ export const ProductDetailDrawer: React.FC<ProductDetailDrawerProps> = ({
   const category = resolveRefName(product.category_id, "-");
   const depotRefs = product.depot_ids ?? [];
   const depots = resolveDepotNames(depotRefs, "-");
+  const imageSrc = resolveProductImageSrc(product.image_url);
+
+  const handleImageError = (event: React.SyntheticEvent<HTMLImageElement>) => {
+    event.currentTarget.onerror = null;
+    event.currentTarget.src = DEFAULT_PRODUCT_IMAGE;
+  };
 
   return (
     <Drawer anchor="right" open={open} onClose={onClose} PaperProps={{ sx: { width: { xs: "100%", sm: 420, md: 520 } } }}>
       <Box sx={{ p: 3, pb: 6 }}>
-        <Stack direction="row" alignItems="start" justifyContent="space-between" spacing={2}>
-          <Box>
-            <Typography variant="h5" sx={{ fontWeight: 700 }}>
-              {sku}
-            </Typography>
-            {bangla_name && (
-              <Typography variant="subtitle1" color="text.secondary">
-                {bangla_name}
-              </Typography>
-            )}
-            <Stack direction="row" spacing={1.5} sx={{ mt: 1.5 }}>
-              <ProductTypeBadge productType={product_type} />
-              <Chip
-                label={active ? "Active" : "Inactive"}
-                color={active ? "success" : "default"}
-                size="small"
+        <Stack direction="row" alignItems="flex-start" justifyContent="space-between" spacing={2}>
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={2} flex={1}>
+            <Box
+              sx={{
+                width: 128,
+                height: 128,
+                borderRadius: 2,
+                border: "1px solid",
+                borderColor: "divider",
+                overflow: "hidden",
+                flexShrink: 0,
+              }}
+            >
+              <Box
+                component="img"
+                src={imageSrc}
+                alt={`${sku} preview`}
+                onError={handleImageError}
+                sx={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
               />
-              <Chip label={`Unit: ${unit}`} size="small" variant="outlined" />
-            </Stack>
-          </Box>
+            </Box>
+            <Box>
+              <Typography variant="h5" sx={{ fontWeight: 700 }}>
+                {sku}
+              </Typography>
+              {bangla_name && (
+                <Typography variant="subtitle1" color="text.secondary">
+                  {bangla_name}
+                </Typography>
+              )}
+              <Stack direction="row" spacing={1.5} sx={{ mt: 1.5 }}>
+                <ProductTypeBadge productType={product_type} />
+                <Chip
+                  label={active ? "Active" : "Inactive"}
+                  color={active ? "success" : "default"}
+                  size="small"
+                />
+                <Chip label={`Unit: ${unit}`} size="small" variant="outlined" />
+              </Stack>
+            </Box>
+          </Stack>
           <IconButton onClick={onClose} aria-label="Close product details">
             <CloseIcon />
           </IconButton>

@@ -42,6 +42,14 @@ const insertMenuItems = async () => {
         icon: "FaWarehouse",
         parent_id: new mongoose.Types.ObjectId('68be2a2337d76ea524fa3350'),
         is_submenu: true
+      },
+      {
+        label: "Territories",
+        href: "/master/territories",
+        m_order: 12.3,
+        icon: "FaMapMarkedAlt",
+        parent_id: new mongoose.Types.ObjectId('68be2a2337d76ea524fa3350'),
+        is_submenu: true
       }
     ];
     
@@ -49,7 +57,8 @@ const insertMenuItems = async () => {
     const existingItems = await collection.find({
       $or: [
         { href: "/master/factories" },
-        { href: "/master/depots" }
+        { href: "/master/depots" },
+        { href: "/master/territories" }
       ]
     }).toArray();
     
