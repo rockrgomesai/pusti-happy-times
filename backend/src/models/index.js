@@ -28,6 +28,7 @@ const Category = require("./Category");
 const { ApiPermission, PagePermission } = require("./Permission");
 const Product = require("./Product");
 const Territory = require("./Territory");
+const Distributor = require("./Distributor");
 
 // Import junction table models
 const {
@@ -53,6 +54,7 @@ const models = {
   Category,
   Product,
   Territory,
+  Distributor,
   SidebarMenuItem,
 
   // Permission models
@@ -79,8 +81,9 @@ const validateModels = () => {
     "Employee",
     "Designation",
     "Category",
-    "Product",
-    "Territory",
+  "Product",
+  "Territory",
+  "Distributor",
     "SidebarMenuItem",
     "ApiPermission",
     "PagePermission",
@@ -184,6 +187,7 @@ module.exports = {
   Category,
   Product,
   Territory,
+  Distributor,
   SidebarMenuItem,
 
   // Permission models

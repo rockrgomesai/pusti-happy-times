@@ -42,6 +42,9 @@ const { connectDB } = require("./src/config/database");
 const { connectRedis } = require("./src/config/redis");
 const { errorHandler } = require("./src/middleware/errorHandler");
 const notFound = require("./src/middleware/notFound");
+const {
+  scheduleDistributorPermissionBootstrap,
+} = require("./src/setup/bootstrapDistributorPermissions");
 
 // Import routes
 const apiRoutes = require("./src/routes");
@@ -153,7 +156,9 @@ if (process.env.NODE_ENV === "development") {
  */
 
 // Connect to MongoDB
+
 connectDB();
+scheduleDistributorPermissionBootstrap();
 
 // Connect to Redis
 connectRedis();

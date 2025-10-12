@@ -3,7 +3,7 @@
 // Run this script with: mongosh --host localhost --port 27017 -u admin -p password123 --authenticationDatabase admin
 
 // Switch to pusti_happy_times database
-use pusti_happy_times;
+db = db.getSiblingDB('pusti_happy_times');
 
 // Drop existing collections if they exist
 db.getCollectionNames().forEach(function(collection) {
@@ -366,7 +366,11 @@ db.api_permissions.insertMany([
   { _id: ObjectId('68be4d6e95fe0273f8fa3358'), api_permissions: 'brands:create' },
   { _id: ObjectId('68be4d6e95fe0273f8fa3359'), api_permissions: 'brands:read' },
   { _id: ObjectId('68be4d6e95fe0273f8fa335a'), api_permissions: 'brands:update' },
-  { _id: ObjectId('68be4d6e95fe0273f8fa335b'), api_permissions: 'brands:delete' }
+  { _id: ObjectId('68be4d6e95fe0273f8fa335b'), api_permissions: 'brands:delete' },
+  { _id: ObjectId('68be4d6e95fe0273f8fa335c'), api_permissions: 'distributors:read' },
+  { _id: ObjectId('68be4d6e95fe0273f8fa335d'), api_permissions: 'distributors:create' },
+  { _id: ObjectId('68be4d6e95fe0273f8fa335e'), api_permissions: 'distributors:update' },
+  { _id: ObjectId('68be4d6e95fe0273f8fa335f'), api_permissions: 'distributors:delete' }
 ]);
 
 // Insert roles_api_permissions data (SuperAdmin - all permissions)
@@ -382,7 +386,11 @@ db.roles_api_permissions.insertMany([
   { _id: ObjectId('68be4e18fb0aa983c5fa3358'), role_id: ObjectId('68be2193ea73210503fa3352'), api_permission_id: ObjectId('68be4d6e95fe0273f8fa3358') },
   { _id: ObjectId('68be4e18fb0aa983c5fa3359'), role_id: ObjectId('68be2193ea73210503fa3352'), api_permission_id: ObjectId('68be4d6e95fe0273f8fa3359') },
   { _id: ObjectId('68be4e18fb0aa983c5fa335a'), role_id: ObjectId('68be2193ea73210503fa3352'), api_permission_id: ObjectId('68be4d6e95fe0273f8fa335a') },
-  { _id: ObjectId('68be4e18fb0aa983c5fa335b'), role_id: ObjectId('68be2193ea73210503fa3352'), api_permission_id: ObjectId('68be4d6e95fe0273f8fa335b') }
+  { _id: ObjectId('68be4e18fb0aa983c5fa335b'), role_id: ObjectId('68be2193ea73210503fa3352'), api_permission_id: ObjectId('68be4d6e95fe0273f8fa335b') },
+  { _id: ObjectId('68be4e18fb0aa983c5fa335c'), role_id: ObjectId('68be2193ea73210503fa3352'), api_permission_id: ObjectId('68be4d6e95fe0273f8fa335c') },
+  { _id: ObjectId('68be4e18fb0aa983c5fa335d'), role_id: ObjectId('68be2193ea73210503fa3352'), api_permission_id: ObjectId('68be4d6e95fe0273f8fa335d') },
+  { _id: ObjectId('68be4e18fb0aa983c5fa335e'), role_id: ObjectId('68be2193ea73210503fa3352'), api_permission_id: ObjectId('68be4d6e95fe0273f8fa335e') },
+  { _id: ObjectId('68be4e18fb0aa983c5fa335f'), role_id: ObjectId('68be2193ea73210503fa3352'), api_permission_id: ObjectId('68be4d6e95fe0273f8fa335f') }
 ]);
 
 // Insert roles_api_permissions data (SalesAdmin - limited permissions)
@@ -393,7 +401,10 @@ db.roles_api_permissions.insertMany([
   { _id: ObjectId('68be4e507d26134afcfa3353'), role_id: ObjectId('68be21a51e962b2b59fa3352'), api_permission_id: ObjectId('68be4d6e95fe0273f8fa3357') },
   { _id: ObjectId('68be4e507d26134afcfa3354'), role_id: ObjectId('68be21a51e962b2b59fa3352'), api_permission_id: ObjectId('68be4d6e95fe0273f8fa3358') },
   { _id: ObjectId('68be4e507d26134afcfa3355'), role_id: ObjectId('68be21a51e962b2b59fa3352'), api_permission_id: ObjectId('68be4d6e95fe0273f8fa3359') },
-  { _id: ObjectId('68be4e507d26134afcfa3356'), role_id: ObjectId('68be21a51e962b2b59fa3352'), api_permission_id: ObjectId('68be4d6e95fe0273f8fa335a') }
+  { _id: ObjectId('68be4e507d26134afcfa3356'), role_id: ObjectId('68be21a51e962b2b59fa3352'), api_permission_id: ObjectId('68be4d6e95fe0273f8fa335a') },
+  { _id: ObjectId('68be4e507d26134afcfa3357'), role_id: ObjectId('68be21a51e962b2b59fa3352'), api_permission_id: ObjectId('68be4d6e95fe0273f8fa335c') },
+  { _id: ObjectId('68be4e507d26134afcfa3358'), role_id: ObjectId('68be21a51e962b2b59fa3352'), api_permission_id: ObjectId('68be4d6e95fe0273f8fa335d') },
+  { _id: ObjectId('68be4e507d26134afcfa3359'), role_id: ObjectId('68be21a51e962b2b59fa3352'), api_permission_id: ObjectId('68be4d6e95fe0273f8fa335e') }
 ]);
 
 // Insert roles_api_permissions data (Distributor - minimal permissions)
@@ -401,7 +412,8 @@ db.roles_api_permissions.insertMany([
   { _id: ObjectId('68be4e5b18d13add60fa3350'), role_id: ObjectId('68be21b0a9b5a7c8c0fa3352'), api_permission_id: ObjectId('68be4d6e95fe0273f8fa3350') },
   { _id: ObjectId('68be4e5b18d13add60fa3351'), role_id: ObjectId('68be21b0a9b5a7c8c0fa3352'), api_permission_id: ObjectId('68be4d6e95fe0273f8fa3351') },
   { _id: ObjectId('68be4e5b18d13add60fa3352'), role_id: ObjectId('68be21b0a9b5a7c8c0fa3352'), api_permission_id: ObjectId('68be4d6e95fe0273f8fa3352') },
-  { _id: ObjectId('68be4e5b18d13add60fa3353'), role_id: ObjectId('68be21b0a9b5a7c8c0fa3352'), api_permission_id: ObjectId('68be4d6e95fe0273f8fa3357') }
+  { _id: ObjectId('68be4e5b18d13add60fa3353'), role_id: ObjectId('68be21b0a9b5a7c8c0fa3352'), api_permission_id: ObjectId('68be4d6e95fe0273f8fa3357') },
+  { _id: ObjectId('68be4e5b18d13add60fa3354'), role_id: ObjectId('68be21b0a9b5a7c8c0fa3352'), api_permission_id: ObjectId('68be4d6e95fe0273f8fa335c') }
 ]);
 
 // Insert pg_permissions data

@@ -909,7 +909,17 @@ export default function TerritoriesPage() {
                         key={column.id}
                         sortDirection={orderBy === column.sortableKey ? order : false}
                         align={column.align}
-                        sx={{ minWidth: column.minWidth }}
+                        sx={{
+                          minWidth: column.minWidth,
+                          ...(column.id === 'actions'
+                            ? {
+                                position: 'sticky',
+                                right: 0,
+                                zIndex: 3,
+                                backgroundColor: (theme) => theme.palette.background.paper,
+                              }
+                            : {}),
+                        }}
                       >
                         {column.sortableKey ? (
                           <TableSortLabel
@@ -932,7 +942,20 @@ export default function TerritoriesPage() {
                     {territoryColumns
                       .filter((column) => column.alwaysVisible || (visibleColumnIds.length ? visibleColumnIds.includes(column.id) : true))
                       .map((column) => (
-                        <TableCell key={`${territory._id}-${column.id}`} align={column.align}>
+                        <TableCell
+                          key={`${territory._id}-${column.id}`}
+                          align={column.align}
+                          sx={{
+                            ...(column.id === 'actions'
+                              ? {
+                                  position: 'sticky',
+                                  right: 0,
+                                  backgroundColor: (theme) => theme.palette.background.paper,
+                                  zIndex: 2,
+                                }
+                              : {}),
+                          }}
+                        >
                           {column.renderCell(territory)}
                         </TableCell>
                       ))}

@@ -35,6 +35,7 @@ const designationRoutes = require("./designationRoutes");
 const employeeRoutes = require("./employees");
 const productRoutes = require("./product/products");
 const territoryRoutes = require("./territories");
+const distributorRoutes = require("./distributors");
 
 const router = express.Router();
 
@@ -163,18 +164,19 @@ router.get("/info", (req, res) => {
       description: "Backend API for Pusti Happy Times MERN application",
       environment: process.env.NODE_ENV || "development",
       endpoints: {
-        auth: "/api/auth",
-        users: "/api/users",
-        roles: "/api/roles",
-        brands: "/api/brands",
-        categories: "/api/categories",
-    products: "/api/product/products",
-    factories: "/api/factories",
-  depots: "/api/depots",
-    employees: "/api/employees",
-        menu: "/api/menu-items",
-        permissions: "/api/permissions",
-        territories: "/api/territories",
+  auth: "/api/v1/auth",
+  users: "/api/v1/users",
+  roles: "/api/v1/roles",
+  brands: "/api/v1/brands",
+  categories: "/api/v1/categories",
+  products: "/api/v1/products",
+  factories: "/api/v1/factories",
+  depots: "/api/v1/depots",
+  employees: "/api/v1/employees",
+  menu: "/api/v1/menu-items",
+  permissions: "/api/v1/permissions",
+  territories: "/api/v1/territories",
+  distributors: "/api/v1/distributors",
       },
       features: [
         "JWT Authentication",
@@ -228,6 +230,7 @@ router.use("/roles", requireRole("SuperAdmin", "SalesAdmin"), roleRoutes);
 router.use("/brands", brandRoutes);
 router.use("/categories", categoryRoutes);
 router.use("/product/products", productRoutes);
+router.use("/products", productRoutes);
 
 
 /**
@@ -269,6 +272,14 @@ router.use("/employees", employeeRoutes);
  * @access  Private (authenticated users)
  */
 router.use("/territories", territoryRoutes);
+
+/**
+ * Distributor Management Routes
+ * @route   /api/distributors/*
+ * @desc    Distributor CRUD operations and management
+ * @access  Private (authenticated users)
+ */
+router.use("/distributors", distributorRoutes);
 
 /**
  * Transport Management Routes
