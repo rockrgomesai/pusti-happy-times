@@ -29,6 +29,7 @@ const { ApiPermission, PagePermission } = require("./Permission");
 const Product = require("./Product");
 const Territory = require("./Territory");
 const Distributor = require("./Distributor");
+const Offer = require("./Offer");
 
 // Import junction table models
 const {
@@ -55,6 +56,7 @@ const models = {
   Product,
   Territory,
   Distributor,
+  Offer,
   SidebarMenuItem,
 
   // Permission models

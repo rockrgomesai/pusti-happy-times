@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { authAPI, tokenManager } from '@/lib/api';
+import { normalizePermissions } from '@/lib/permissions';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 
@@ -14,6 +15,7 @@ interface User {
     id: string;
     role: string;
   };
+  permissions?: string[];
 }
 
 interface AuthContextType {
@@ -72,7 +74,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
           role: {
             id: 'temp-role',
             role: 'SuperAdmin'
-          }
+          },
+          permissions: ['offers:create', 'offers:read', 'offers:update', 'offers:delete']
         });
       }
     } catch (error) {
@@ -96,7 +99,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
         tokenManager.setTokens(accessToken, refreshToken);
         
         // Set user data
-        setUser(userData);
+        setUser({
+          ...userData,
+          permissions: normalizePermissions((userData as { permissions?: unknown })?.permissions),
+        } as User);
         
         toast.success('Login successful!');
         

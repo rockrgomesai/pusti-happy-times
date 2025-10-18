@@ -31,6 +31,7 @@ import {
   LocalShipping,
   Badge as BadgeIcon,
   Warehouse as WarehouseIcon,
+  ReceiptLong,
 } from '@mui/icons-material';
 import { useRouter, usePathname } from 'next/navigation';
 import { apiClient } from '@/lib/api';
@@ -89,6 +90,9 @@ const iconMap: Record<string, typeof Dashboard> = {
   FaDatabase: Storage,
   FaTag: LocalOffer,
   FaTags: LocalOffer,
+  FaOffers: LocalOffer,
+  FaDemandOrders: Inventory,
+  FaDO: ReceiptLong,
   FaBox: Inventory,
   FaUserTag: BookmarkBorder, // User tagging/roles icon
   FaLayerGroup: Layers,

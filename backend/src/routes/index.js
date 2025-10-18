@@ -34,6 +34,7 @@ const permissionRoutes = require("./permissions");
 const designationRoutes = require("./designationRoutes");
 const employeeRoutes = require("./employees");
 const productRoutes = require("./product/products");
+const offersRoutes = require("./product/offers");
 const territoryRoutes = require("./territories");
 const distributorRoutes = require("./distributors");
 
@@ -231,6 +232,7 @@ router.use("/brands", brandRoutes);
 router.use("/categories", categoryRoutes);
 router.use("/product/products", productRoutes);
 router.use("/products", productRoutes);
+router.use("/product/offers", offersRoutes);
 
 
 /**

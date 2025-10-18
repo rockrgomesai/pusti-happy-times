@@ -1,0 +1,2010 @@
+┌─────────────────────────────────────────────────────────────────┐
+│  CREATE NEW OFFER - Step 1 of 4                                 │
+│  ●━━━━━━━○━━━━━━━○━━━━━━━○                                      │
+│  Basic    Scope   Type    Rules                                 │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  BASIC OFFER INFORMATION                                        │
+│                                                                  │
+│  Offer Name *                                                   │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │ Summer BOGO Cola Promotion                                │  │
+│  └──────────────────────────────────────────────────────────┘  │
+│  Must be unique across all offers                               │
+│                                                                  │
+│  Offer Description (Optional)                                   │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │ Buy 6 get 1 free on all cola products during summer      │  │
+│  │ season to boost sales and clear inventory                │  │
+│  │                                                            │  │
+│  └──────────────────────────────────────────────────────────┘  │
+│  0/500 characters                                               │
+│                                                                  │
+│  ┌─────────────────────────┐  ┌─────────────────────────────┐ │
+│  │ Start Date *            │  │ End Date *                  │ │
+│  │ ┌────────────────────┐  │  │ ┌────────────────────────┐ │ │
+│  │ │ 📅 15 Jun 2025     │  │  │ │ 📅 30 Sep 2025        │ │ │
+│  │ └────────────────────┘  │  │ └────────────────────────┘ │ │
+│  │ Time: 00:00 AM          │  │ Time: 11:59 PM             │ │
+│  └─────────────────────────┘  └─────────────────────────────┘ │
+│                                                                  │
+│  Duration: 107 days                                             │
+│                                                                  │
+│  Status                                                          │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │ ● Active (offer will be live immediately)                │  │
+│  │ ○ Inactive (save as draft, not visible to distributors)  │  │
+│  └──────────────────────────────────────────────────────────┘  │
+│                                                                  │
+│  ⚠️ Active offers will be available to distributors            │
+│     immediately upon creation                                   │
+│                                                                  │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  [Cancel]                              [Next: Scope Distributors →] │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Field Specifications:**
+
+| Field | Type | Validation | Database |
+|-------|------|------------|----------|
+| Offer Name | String | Required, 3-100 chars, unique | `offer_name` (String, unique, indexed) |
+| Offer Description | Text | Optional, max 500 chars | `offer_description` (String, nullable) |
+| Start Date | DateTime | Required, ISO format BD timezone | `start_date` (ISODate) |
+| End Date | DateTime | Required, must be after start | `end_date` (ISODate) |
+| Active | Boolean | Required | `active` (Boolean, default: true) |
+
+---
+
+# SCREEN 2: SCOPE DISTRIBUTORS
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  CREATE NEW OFFER - Step 2 of 4                                 │
+│  ●━━━━━━━●━━━━━━━○━━━━━━━○                                      │
+│  Basic    Scope   Type    Rules                                 │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  DEFINE DISTRIBUTOR SCOPE                                       │
+│                                                                  │
+│  Select which distributors can access this offer                │
+│                                                                  │
+│  ┌────────────────────────────────────────────────────────────┐│
+│  │ 🌍 SELECT ZONES * (Required)                               ││
+│  │                                                             ││
+│  │ [✓ Select All]  [Clear All]         [🔍 Search zones]     ││
+│  │                                                             ││
+│  │ ┌───────────┐ ┌───────────┐ ┌───────────┐ ┌───────────┐  ││
+│  │ │     ☑     │ │     ☑     │ │     ☐     │ │     ☐     │  ││
+│  │ │   DHAKA   │ │CHITTAGONG │ │  KHULNA   │ │ RAJSHAHI  │  ││
+│  │ │  ZONE     │ │   ZONE    │ │   ZONE    │ │   ZONE    │  ││
+│  │ │  487 DBs  │ │  356 DBs  │ │  234 DBs  │ │  198 DBs  │  ││
+│  │ └───────────┘ └───────────┘ └───────────┘ └───────────┘  ││
+│  │                                                             ││
+│  │ ┌───────────┐                                              ││
+│  │ │     ☐     │                                              ││
+│  │ │  SYLHET   │                                              ││
+│  │ │   ZONE    │                                              ││
+│  │ │  156 DBs  │                                              ││
+│  │ └───────────┘                                              ││
+│  │                                                             ││
+│  │ ✓ 2 zones selected | ~843 distributors                    ││
+│  └────────────────────────────────────────────────────────────┘│
+│                                                                  │
+│  ┌────────────────────────────────────────────────────────────┐│
+│  │ ⤷ REGIONS (Optional - Refine Selection)             [▼]   ││
+│  └────────────────────────────────────────────────────────────┘│
+│                                                                  │
+│  [Collapsed by default - Click to expand]                      │
+│                                                                  │
+│  ┌────────────────────────────────────────────────────────────┐│
+│  │ ⤷ AREAS (Optional - Refine Selection)               [▼]   ││
+│  └────────────────────────────────────────────────────────────┘│
+│                                                                  │
+│  ┌────────────────────────────────────────────────────────────┐│
+│  │ ⤷ DB POINTS (Optional - Refine Selection)           [▼]   ││
+│  └────────────────────────────────────────────────────────────┘│
+│                                                                  │
+│  ┌────────────────────────────────────────────────────────────┐│
+│  │ ⤷ DISTRIBUTORS (Optional - Refine Selection)        [▼]   ││
+│  └────────────────────────────────────────────────────────────┘│
+│                                                                  │
+│  ┌────────────────────────────────────────────────────────────┐│
+│  │ 📊 ELIGIBILITY SUMMARY                                     ││
+│  │                                                             ││
+│  │ Based on your selections:                                  ││
+│  │ • 2 Zones (Dhaka, Chittagong)                             ││
+│  │ • All Regions in selected zones                           ││
+│  │ • All Areas                                                ││
+│  │ • All DB Points                                            ││
+│  │ • All Distributors                                         ││
+│  │                                                             ││
+│  │ ✓ Approximately 843 distributors are eligible             ││
+│  │                                                             ││
+│  │ [📄 Export List]  [🔄 Recalculate]                        ││
+│  └────────────────────────────────────────────────────────────┘│
+│                                                                  │
+├─────────────────────────────────────────────────────────────────┤
+│  [← Back]                           [Next: Select Offer Type →] │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+## **EXPANDED: REGIONS Section**
+```
+┌────────────────────────────────────────────────────────────────┐
+│ ⤷ REGIONS (Optional - Refine Selection)                  [▲]  │
+├────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│ Selection Mode:                                                │
+│ ● Include all regions in selected zones (Default)              │
+│ ○ Include specific regions                                     │
+│ ○ Exclude specific regions                                     │
+│                                                                 │
+│ [When "Include specific" or "Exclude specific" selected:]     │
+│                                                                 │
+│ ┌─ DHAKA ZONE REGIONS ─────────────────────────────────────┐  │
+│ │ [✓ Select All]  [Clear All]         [🔍 Search regions]  │  │
+│ │                                                           │  │
+│ │ ☑ Dhaka Metro (243 DBs)      ☑ Gazipur (89 DBs)         │  │
+│ │ ☑ Narayanganj (76 DBs)       ☐ Tangail (79 DBs)         │  │
+│ │                                                           │  │
+│ │ ✓ 3 of 4 regions selected                                │  │
+│ └───────────────────────────────────────────────────────────┘  │
+│                                                                 │
+│ ┌─ CHITTAGONG ZONE REGIONS ────────────────────────────────┐  │
+│ │ [✓ Select All]  [Clear All]         [🔍 Search regions]  │  │
+│ │                                                           │  │
+│ │ ☑ Chittagong Metro (198 DBs) ☑ Cox's Bazar (67 DBs)     │  │
+│ │ ☑ Comilla (91 DBs)           ☐ Noakhali (45 DBs)        │  │
+│ │                                                           │  │
+│ │ ✓ 3 of 4 regions selected                                │  │
+│ └───────────────────────────────────────────────────────────┘  │
+│                                                                 │
+│ Updated Eligibility: ~725 distributors                         │
+│                                                                 │
+└────────────────────────────────────────────────────────────────┘
+```
+
+## **EXPANDED: AREAS Section**
+```
+┌────────────────────────────────────────────────────────────────┐
+│ ⤷ AREAS (Optional - Refine Selection)                    [▲]  │
+├────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│ Selection Mode:                                                │
+│ ● Include all areas in selected regions (Default)              │
+│ ○ Include specific areas                                       │
+│ ○ Exclude specific areas                                       │
+│                                                                 │
+│ [When "Include specific" or "Exclude specific" selected:]     │
+│                                                                 │
+│ ┌─ DHAKA METRO REGION AREAS ────────────────────────────────┐ │
+│ │ [Search areas...]                   Showing: 1-10 of 23   │ │
+│ │                                                            │ │
+│ │ ☑ Mirpur (34 DBs)        ☑ Gulshan (28 DBs)              │ │
+│ │ ☑ Dhanmondi (31 DBs)     ☐ Mohammadpur (22 DBs)          │ │
+│ │ ☑ Uttara (29 DBs)        ☑ Banani (18 DBs)               │ │
+│ │                                                            │ │
+│ │ [Load More Areas...]                                       │ │
+│ └────────────────────────────────────────────────────────────┘ │
+│                                                                 │
+│ ┌─ GAZIPUR REGION AREAS ─────────────────────────────────────┐│
+│ │ ☑ Gazipur Sadar (45 DBs)   ☑ Tongi (44 DBs)              ││
+│ └────────────────────────────────────────────────────────────┘│
+│                                                                 │
+│ ... [Other regions' areas shown similarly]                     │
+│                                                                 │
+│ Updated Eligibility: ~583 distributors                         │
+│                                                                 │
+└────────────────────────────────────────────────────────────────┘
+```
+
+## **EXPANDED: DB POINTS Section**
+```
+┌────────────────────────────────────────────────────────────────┐
+│ ⤷ DB POINTS (Optional - Refine Selection)                [▲]  │
+├────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│ Selection Mode:                                                │
+│ ● Include all DB Points in selected areas (Default)            │
+│ ○ Include specific DB Points                                   │
+│ ○ Exclude specific DB Points                                   │
+│                                                                 │
+│ [When "Include specific" or "Exclude specific" selected:]     │
+│                                                                 │
+│ ┌─ MIRPUR AREA DB POINTS ───────────────────────────────────┐ │
+│ │ [Search DB points...]               Showing: 1-10 of 34   │ │
+│ │                                                            │ │
+│ │ ☑ DB-MIR-001 Mirpur-1 (8 DBs)                             │ │
+│ │ ☑ DB-MIR-002 Mirpur-2 (6 DBs)                             │ │
+│ │ ☑ DB-MIR-003 Mirpur-6 (7 DBs)                             │ │
+│ │ ☐ DB-MIR-004 Mirpur-10 (5 DBs)                            │ │
+│ │ ☑ DB-MIR-005 Mirpur-11 (8 DBs)                            │ │
+│ │                                                            │ │
+│ │ [Load More...]                                             │ │
+│ └────────────────────────────────────────────────────────────┘ │
+│                                                                 │
+│ ... [Other areas' DB points shown similarly]                   │
+│                                                                 │
+│ Updated Eligibility: ~521 distributors                         │
+│                                                                 │
+└────────────────────────────────────────────────────────────────┘
+```
+
+## **EXPANDED: DISTRIBUTORS Section**
+```
+┌────────────────────────────────────────────────────────────────┐
+│ ⤷ DISTRIBUTORS (Optional - Final Selection)              [▲]  │
+├────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│ ● All distributors in selected scope (Default - 521 DBs)       │
+│ ○ Select specific distributors                                 │
+│ ○ Exclude specific distributors                                │
+│                                                                 │
+│ [When "Select specific" or "Exclude specific" selected:]      │
+│                                                                 │
+│ ┌──────────────────────────────────────────────────────────┐  │
+│ │ [🔍 Search by name, code, phone...]  [Filter ▼]         │  │
+│ │                                                           │  │
+│ │ [✓ Select All (521)]  [Clear All]  [Select Filtered]    │  │
+│ │                                                           │  │
+│ │ ┌─────────────────────────────────────────────────────┐  │  │
+│ │ │ ☑ DB-001 | Rahman Traders | +880171234567          │  │  │
+│ │ │   Zone: Dhaka | Region: Dhaka Metro | Area: Mirpur │  │  │
+│ │ └─────────────────────────────────────────────────────┘  │  │
+│ │                                                           │  │
+│ │ ┌─────────────────────────────────────────────────────┐  │  │
+│ │ │ ☑ DB-002 | Karim Enterprise | +880181234567        │  │  │
+│ │ │   Zone: Dhaka | Region: Gazipur | Area: Tongi      │  │  │
+│ │ └─────────────────────────────────────────────────────┘  │  │
+│ │                                                           │  │
+│ │ ┌─────────────────────────────────────────────────────┐  │  │
+│ │ │ ☐ DB-003 | Alam & Sons | +880191234567             │  │  │
+│ │ │   Zone: Dhaka | Region: Narayanganj | Area: Center │  │  │
+│ │ └─────────────────────────────────────────────────────┘  │  │
+│ │                                                           │  │
+│ │ ... [Showing 1-20 of 521]                                │  │
+│ │                                                           │  │
+│ │ [← Previous]  Page 1 of 27  [Next →]                    │  │
+│ └───────────────────────────────────────────────────────────┘  │
+│                                                                 │
+│ ✓ 520 distributors selected                                    │
+│                                                                 │
+└────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+# SCREEN 3: OFFER TYPES
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  CREATE NEW OFFER - Step 3 of 4                                 │
+│  ●━━━━━━━●━━━━━━━●━━━━━━━○                                      │
+│  Basic    Scope   Type    Rules                                 │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  SELECT OFFER TYPE                                              │
+│                                                                  │
+│  Choose the type of promotional offer you want to create        │
+│                                                                  │
+│  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐           │
+│  │      📊      │ │      🎁      │ │      🎁      │           │
+│  │              │ │              │ │              │           │
+│  │   TIERED     │ │     BOGO     │ │     BOGO     │           │
+│  │   PRICING    │ │   SAME SKU   │ │  DIFFERENT   │           │
+│  │              │ │              │ │     SKU      │           │
+│  │ Volume-based │ │ Buy X Get Y  │ │ Buy X Get Y  │           │
+│  │ price breaks │ │ same product │ │ free (diff)  │           │
+│  │              │ │              │ │              │           │
+│  │   [Select]   │ │   [Select]   │ │   [Select]   │           │
+│  └──────────────┘ └──────────────┘ └──────────────┘           │
+│                                                                  │
+│  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐           │
+│  │      🎁      │ │      🎯      │ │      📦      │           │
+│  │              │ │              │ │              │           │
+│  │     BOGO     │ │   MIX &      │ │  N-FOR-৳X    │           │
+│  │   CATEGORY   │ │    MATCH     │ │     PACK     │           │
+│  │              │ │              │ │              │           │
+│  │ Buy category │ │ Choose any N │ │  Any N items │           │
+│  │ get category │ │ for special  │ │  for fixed   │           │
+│  │              │ │    price     │ │    price     │           │
+│  │   [Select]   │ │   [Select]   │ │   [Select]   │           │
+│  └──────────────┘ └──────────────┘ └──────────────┘           │
+│                                                                  │
+│  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐           │
+│  │      💰      │ │      🔗      │ │      📦      │           │
+│  │              │ │              │ │              │           │
+│  │    SPEND     │ │  CROSS-SKU   │ │    FIXED     │           │
+│  │  THRESHOLD   │ │    UPLIFT    │ │    BUNDLE    │           │
+│  │              │ │              │ │              │           │
+│  │ Minimum buy  │ │ Buy X unlock │ │ Pre-defined  │           │
+│  │ amount for   │ │ discount on  │ │   product    │           │
+│  │   discount   │ │      Y       │ │   package    │           │
+│  │   [Select]   │ │   [Select]   │ │   [Select]   │           │
+│  └──────────────┘ └──────────────┘ └──────────────┘           │
+│                                                                  │
+│  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐           │
+│  │      💹      │ │      📏      │ │      🚀      │           │
+│  │              │ │              │ │              │           │
+│  │     SLAB     │ │  FREE GOODS  │ │    LAUNCH    │           │
+│  │   DISCOUNT   │ │   BY UOM     │ │   DISCOUNT   │           │
+│  │              │ │              │ │              │           │
+│  │ Order value  │ │ Bulk UOM buy │ │ New product  │           │
+│  │   stepped    │ │ gets free in │ │  temporary   │           │
+│  │   discount   │ │  small UOM   │ │   discount   │           │
+│  │   [Select]   │ │   [Select]   │ │   [Select]   │           │
+│  └──────────────┘ └──────────────┘ └──────────────┘           │
+│                                                                  │
+│  ┌──────────────┐ ┌──────────────┐                             │
+│  │      🔴      │ │      📈      │                             │
+│  │              │ │              │                             │
+│  │  CLEARANCE   │ │    GROWTH    │                             │
+│  │   DISCOUNT   │ │    REBATE    │                             │
+│  │              │ │              │                             │
+│  │ End-of-life  │ │ Hit targets, │                             │
+│  │   product    │ │  earn back   │                             │
+│  │  liquidation │ │   rewards    │                             │
+│  │   [Select]   │ │   [Select]   │                             │
+│  └──────────────┘ └──────────────┘                             │
+│                                                                  │
+├─────────────────────────────────────────────────────────────────┤
+│  [← Back]                           [Next: Configure Rules →]   │
+│     (Disabled until a type is selected)                         │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+# SCREEN 4: OFFER DETAILS & RULES
+
+## **Common Header (All Types)**
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  CREATE NEW OFFER - Step 4 of 4                                 │
+│  ●━━━━━━━●━━━━━━━●━━━━━━━●                                      │
+│  Basic    Scope   Type    Rules                                 │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  CONFIGURE OFFER RULES                                          │
+│  Selected Type: [OFFER TYPE NAME]                               │
+│                                                                  │
+│  PRODUCT SEGMENTS *                                             │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │ ☑ BIS (Biscuits)        ☑ BEV (Beverages)               │  │
+│  └──────────────────────────────────────────────────────────┘  │
+│  At least one segment must be selected                          │
+│                                                                  │
+│  [Type-specific rules form appears below]                       │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## **TYPE 1: TIERED PRICING**
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  TIERED PRICING CONFIGURATION                                   │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  PRODUCT SELECTION *                                            │
+│  ○ Apply to all products in selected segments                   │
+│  ● Apply to specific products                                   │
+│                                                                  │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │ [🔍 Search products...]                    [Add Product] │  │
+│  │                                                           │  │
+│  │ Selected Products (3):                                   │  │
+│  │                                                           │  │
+│  │ ┌─────────────────────────────────────────────────────┐  │  │
+│  │ │ Cola Drink 500ml | SKU: COL-500 | ৳50          [×] │  │  │
+│  │ └─────────────────────────────────────────────────────┘  │  │
+│  │ ┌─────────────────────────────────────────────────────┐  │  │
+│  │ │ Orange Juice 1L | SKU: OJ-1000 | ৳120          [×] │  │  │
+│  │ └─────────────────────────────────────────────────────┘  │  │
+│  │ ┌─────────────────────────────────────────────────────┐  │  │
+│  │ │ Mango Juice 1L | SKU: MJ-1000 | ৳130           [×] │  │  │
+│  │ └─────────────────────────────────────────────────────┘  │  │
+│  └───────────────────────────────────────────────────────────┘  │
+│                                                                  │
+│  PRICE TIERS *                                                  │
+│                                                                  │
+│  Tier 1:                                                        │
+│  ┌──────────┐    ┌──────────┐    ┌──────────────────────────┐ │
+│  │ From: 1  │ to │ To: 99   │    │ Price per unit: ৳50     │ │
+│  └──────────┘    └──────────┘    └──────────────────────────┘ │
+│                                                                  │
+│  Tier 2:                                                        │
+│  ┌──────────┐    ┌──────────┐    ┌──────────────────────────┐ │
+│  │ From: 100│ to │ To: 499  │    │ Price per unit: ৳48     │ │
+│  └──────────┘    └──────────┘    └──────────────────────────┘ │
+│  4% discount from base price                                    │
+│                                                                  │
+│  Tier 3:                                                        │
+│  ┌──────────┐    ┌──────────┐    ┌──────────────────────────┐ │
+│  │ From: 500│ to │ To: 999  │    │ Price per unit: ৳46     │ │
+│  └──────────┘    └──────────┘    └──────────────────────────┘ │
+│  8% discount from base price                                    │
+│                                                                  │
+│  Tier 4:                                                        │
+│  ┌──────────┐    ┌──────────┐    ┌──────────────────────────┐ │
+│  │ From:1000│ to │ To: ∞    │    │ Price per unit: ৳44     │ │
+│  └──────────┘    └──────────┘    └──────────────────────────┘ │
+│  12% discount from base price                                   │
+│                                                                  │
+│  [+ Add Another Tier]  [Remove Last Tier]                      │
+│                                                                  │
+│  PREVIEW CHART                                                  │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │ Price (৳)                                                │  │
+│  │ 50 ┤─────┐                                                │  │
+│  │ 48 ┤     └──────┐                                         │  │
+│  │ 46 ┤            └──────┐                                  │  │
+│  │ 44 ┤                   └─────────────                     │  │
+│  │    └─────┬──────┬──────┬──────────────→ Quantity         │  │
+│  │          100    500    1000                               │  │
+│  └──────────────────────────────────────────────────────────┘  │
+│                                                                  │
+│  CALCULATION EXAMPLE                                            │
+│  If distributor orders 250 units:                              │
+│  • Qualifies for Tier 2                                        │
+│  • Price: ৳48 per unit                                         │
+│  • Total: 250 × ৳48 = ৳12,000                                  │
+│  • Savings: ৳500 vs regular price                              │
+│                                                                  │
+├─────────────────────────────────────────────────────────────────┤
+│  [← Back]   [Save as Draft]   [Preview]   [Create Offer]      │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## **TYPE 2: BOGO SAME SKU**
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  BOGO (SAME SKU) CONFIGURATION                                  │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  PRODUCT SELECTION *                                            │
+│  ○ Apply to all products in selected segments                   │
+│  ● Apply to specific products                                   │
+│                                                                  │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │ [🔍 Search products...]                    [Add Product] │  │
+│  │                                                           │  │
+│  │ Selected Products (2):                                   │  │
+│  │                                                           │  │
+│  │ ┌─────────────────────────────────────────────────────┐  │  │
+│  │ │ Cola Drink 500ml | SKU: COL-500 | ৳50          [×] │  │  │
+│  │ └─────────────────────────────────────────────────────┘  │  │
+│  │ ┌─────────────────────────────────────────────────────┐  │  │
+│  │ │ Lemon Soda 500ml | SKU: LEM-500 | ৳45          [×] │  │  │
+│  │ └─────────────────────────────────────────────────────┘  │  │
+│  └───────────────────────────────────────────────────────────┘  │
+│                                                                  │
+│  BOGO RULES *                                                   │
+│                                                                  │
+│  Buy Quantity:                                                  │
+│  ┌──────────┐ units                                            │
+│  │    6     │                                                   │
+│  └──────────┘                                                   │
+│                                                                  │
+│  Get Free:                                                      │
+│  ┌──────────┐ unit(s) of the same product                      │
+│  │    1     │                                                   │
+│  └──────────┘                                                   │
+│                                                                  │
+│  APPLICATION RULES                                              │
+│  ○ Apply once per order (one free item maximum)                │
+│  ● Apply multiple times (every qualifying quantity)             │
+│                                                                  │
+│  Maximum Free Units (per order):                                │
+│  ○ No limit                                                     │
+│  ● Set limit: ┌──────────┐ units                               │
+│                │   10     │                                     │
+│                └──────────┘                                     │
+│                                                                  │
+│  CALCULATION EXAMPLE                                            │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │ Example: Distributor orders 20 Cola Drinks               │  │
+│  │                                                           │  │
+│  │ Calculation:                                              │  │
+│  │ • 20 ÷ 6 = 3 complete sets (2 units remaining)           │  │
+│  │ • Gets 3 free units                                       │  │
+│  │ • Pays for: 20 units (৳1,000)                            │  │
+│  │ • Receives: 23 units total                                │  │
+│  │ • Effective price: ৳43.48 per unit                        │  │
+│  │ • Savings: ৳150 (3 free units)                            │  │
+│  └──────────────────────────────────────────────────────────┘  │
+│                                                                  │
+│  AUTOMATIC FREE ITEMS                                           │
+│  ☑ Automatically add free items to order                        │
+│  ☐ Require distributor confirmation before adding free items    │
+│                                                                  │
+├─────────────────────────────────────────────────────────────────┤
+│  [← Back]   [Save as Draft]   [Preview]   [Create Offer]      │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## **TYPE 3: BOGO DIFFERENT SKU**
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  BOGO (DIFFERENT SKU) CONFIGURATION                             │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  QUALIFIER PRODUCTS (What distributor must buy) *               │
+│                                                                  │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │ [🔍 Search qualifier products...]          [Add Product] │  │
+│  │                                                           │  │
+│  │ Selected Qualifier Products (2):                         │  │
+│  │                                                           │  │
+│  │ ┌─────────────────────────────────────────────────────┐  │  │
+│  │ │ Biskut Premium 500g | SKU: BIS-500 | ৳200      [×] │  │  │
+│  │ │ Required Quantity: [5] packs                        │  │  │
+│  │ └─────────────────────────────────────────────────────┘  │  │
+│  │                                                           │  │
+│  │ ┌─────────────────────────────────────────────────────┐  │  │
+│  │ │ Chocolate Cookies 150g | SKU: CHC-150 | ৳150   [×] │  │  │
+│  │ │ Required Quantity: [10] packs                       │  │  │
+│  │ └─────────────────────────────────────────────────────┘  │  │
+│  └───────────────────────────────────────────────────────────┘  │
+│                                                                  │
+│  Qualifier Logic:                                               │
+│  ● Distributor must buy ALL qualifier products (AND logic)      │
+│  ○ Distributor can buy ANY qualifier product (OR logic)         │
+│                                                                  │
+│  REWARD PRODUCTS (What distributor gets free) *                 │
+│                                                                  │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │ [🔍 Search reward products...]              [Add Product]│  │
+│  │                                                           │  │
+│  │ Selected Reward Products (3):                            │  │
+│  │                                                           │  │
+│  │ ┌─────────────────────────────────────────────────────┐  │  │
+│  │ │ Cola Drink 250ml | SKU: COL-250 | ৳25          [×] │  │  │
+│  │ │ Free Quantity: [2] bottles per qualifier set        │  │  │
+│  │ └─────────────────────────────────────────────────────┘  │  │
+│  │                                                           │  │
+│  │ ┌─────────────────────────────────────────────────────┐  │  │
+│  │ │ Orange Juice 200ml | SKU: OJ-200 | ৳30         [×] │  │  │
+│  │ │ Free Quantity: [1] bottle per qualifier set         │  │  │
+│  │ └─────────────────────────────────────────────────────┘  │  │
+│  │                                                           │  │
+│  │ ┌─────────────────────────────────────────────────────┐  │  │
+│  │ │ Mango Juice 200ml | SKU: MJ-200 | ৳35          [×] │  │  │
+│  │ │ Free Quantity: [1] bottle per qualifier set         │  │  │
+│  │ └─────────────────────────────────────────────────────┘  │  │
+│  └───────────────────────────────────────────────────────────┘  │
+│                                                                  │
+│  Reward Distribution:                                           │
+│  ● Distributor gets ALL reward products                         │
+│  ○ Distributor can choose [___] reward product(s)               │
+│                                                                  │
+│  Maximum Value Cap (optional):                                  │
+│  ☑ Set maximum value per reward                                 │
+│  ┌──────────┐ ৳ per reward item                                 │
+│  │    60    │                                                    │
+│  └──────────┘                                                    │
+│                                                                  │
+│  APPLICATION RULES                                              │
+│  ○ Apply once per order                                         │
+│  ● Apply multiple times (per qualifier set)                     │
+│                                                                  │
+│  CALCULATION EXAMPLE                                            │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │ If distributor buys:                                      │  │
+│  │ • 10 Biskut Premium 500g (2 qualifier sets)              │  │
+│  │ • 20 Chocolate Cookies 150g (2 qualifier sets)           │  │
+│  │                                                           │  │
+│  │ Qualifies: 2 complete sets (both qualifiers met)         │  │
+│  │                                                           │  │
+│  │ Gets FREE:                                                │  │
+│  │ • 4 Cola Drink 250ml (2 sets × 2)                        │  │
+│  │ • 2 Orange Juice 200ml (2 sets × 1)                      │  │
+│  │ • 2 Mango Juice 200ml (2 sets × 1)                       │  │
+│  │                                                           │  │
+│  │ Total Free Value: ৳180                                    │  │
+│  └──────────────────────────────────────────────────────────┘  │
+│                                                                  │
+├─────────────────────────────────────────────────────────────────┤
+│  [← Back]   [Save as Draft]   [Preview]   [Create Offer]      │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## **TYPE 4: BOGO CATEGORY**
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  BOGO (CATEGORY) CONFIGURATION                                  │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  QUALIFIER CATEGORY (What distributor must buy from) *          │
+│                                                                  │
+│  Select Category:                                               │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │ ● Premium Biscuits                                        │  │
+│  │                                                           │  │
+│  │ Products in this category (8):                           │  │
+│  │ • Biskut Premium 200g (৳200)                             │  │
+│  │ • Chocolate Cookies 150g (৳150)                          │  │
+│  │ • Butter Biscuits 250g (৳180)                            │  │
+│  │ • Coconut Biscuits 200g (৳170)                           │  │
+│  │ • Cream Wafers 100g (৳90)                                │  │
+│  │ • ... [View all 8 products]                              │  │
+│  │                                                           │  │
+│  │ [Change Category]                                         │  │
+│  └───────────────────────────────────────────────────────────┘  │
+│                                                                  │
+│  OR                                                             │
+│                                                                  │
+│  ○ Select Multiple Categories                                   │
+│    ┌─────────────────────────────────────────────────────┐     │
+│    │ [Select Categories...]                              │     │
+│    └─────────────────────────────────────────────────────┘     │
+│                                                                  │
+│  Required Purchase Quantity: *                                  │
+│  ┌──────────┐ units from qualifier category                     │
+│  │    10    │                                                    │
+│  └──────────┘                                                    │
+│                                                                  │
+│  REWARD CATEGORY (What distributor gets free from) *            │
+│                                                                  │
+│  Select Category:                                               │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │ ● Carbonated Drinks                                      │  │
+│  │                                                           │  │
+│  │ Products in this category (6):                           │  │
+│  │ • Cola Drink 500ml (৳50)                                 │  │
+│  │ • Lemon Soda 500ml (৳45)                                 │  │
+│  │ • Orange Fizz 500ml (৳48)                                │  │
+│  │ • Premium Cola 750ml (৳85)                               │  │
+│  │ • Diet Cola 500ml (৳55)                                  │  │
+│  │ • ... [View all 6 products]                              │  │
+│  │                                                           │  │
+│  │ [Change Category]                                         │  │
+│  └───────────────────────────────────────────────────────────┘  │
+│                                                                  │
+│  Free Quantity: *                                               │
+│  ┌──────────┐ items (distributor chooses from reward category) │
+│  │    2     │                                                    │
+│  └──────────┘                                                    │
+│                                                                  │
+│  Maximum Value Per Item (optional):                             │
+│  ☑ Set maximum value cap                                        │
+│  ┌──────────┐ ৳ per item                                        │
+│  │    60    │                                                    │
+│  └──────────┘                                                    │
+│  (Prevents selection of Premium Cola ৳85)                       │
+│                                                                  │
+│  DISTRIBUTOR SELECTION MODE                                     │
+│  ● Distributor chooses which reward products                    │
+│  ○ System auto-assigns reward products                          │
+│                                                                  │
+│  If "Distributor chooses":                                      │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │ Selection Interface:                                      │  │
+│  │ ○ Show selection modal at checkout                        │  │
+│  │ ● Add to cart with selection dropdown                     │  │
+│  └──────────────────────────────────────────────────────────┘  │
+│                                                                  │
+│  APPLICATION RULES                                              │
+│  ○ Apply once per order                                         │
+│  ● Apply multiple times (every 10 qualifier units)              │
+│                                                                  │
+│  Maximum Free Items Per Order:                                  │
+│  ○ No limit                                                     │
+│  ● Set limit: ┌──────────┐ items                               │
+│                │    20    │                                     │
+│                └──────────┘                                     │
+│                                                                  │
+│  CALCULATION EXAMPLE                                            │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │ If distributor buys:                                      │  │
+│  │ • 6 Biskut Premium (৳1,200)                              │  │
+│  │ • 3 Chocolate Cookies (৳450)                             │  │
+│  │ • 1 Butter Biscuits (৳180)                               │  │
+│  │ Total: 10 units from qualifier category                  │  │
+│  │                                                           │  │
+│  │ Qualifies for: 1 set                                      │  │
+│  │                                                           │  │
+│  │ Gets to CHOOSE 2 free items from:                        │  │
+│  │ • Cola Drink 500ml (৳50) ✓ Available                     │  │
+│  │ • Lemon Soda 500ml (৳45) ✓ Available                     │  │
+│  │ • Orange Fizz 500ml (৳48) ✓ Available                    │  │
+│  │ • Premium Cola 750ml (৳85) ✗ Exceeds cap                 │  │
+│  │ • Diet Cola 500ml (৳55) ✓ Available                      │  │
+│  │                                                           │  │
+│  │ Maximum free value: ৳120 (if choosing 2 highest)         │  │
+│  └──────────────────────────────────────────────────────────┘  │
+│                                                                  │
+├─────────────────────────────────────────────────────────────────┤
+│  [← Back]   [Save as Draft]   [Preview]   [Create Offer]      │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## **TYPE 5: MIX & MATCH**
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  MIX & MATCH CONFIGURATION                                      │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  ELIGIBLE PRODUCTS (Products distributor can mix) *             │
+│                                                                  │
+│  Selection Mode:                                                │
+│  ○ All products in selected segments                            │
+│  ○ Products from specific categories                            │
+│  ● Select specific products                                     │
+│                                                                  │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │ [🔍 Search products...]                    [Add Product] │  │
+│  │                                                           │  │
+│  │ Selected Products (8):                                   │  │
+│  │                                                           │  │
+│  │ ┌─────────────────────────────────────────────────────┐  │  │
+│  │ │ ☑ Biskut Premium 200g | ৳200                   [×] │  │  │
+│  │ └─────────────────────────────────────────────────────┘  │  │
+│  │ ┌─────────────────────────────────────────────────────┐  │  │
+│  │ │ ☑ Chocolate Cookies 150g | ৳150                [×] │  │  │
+│  │ └─────────────────────────────────────────────────────┘  │  │
+│  │ ┌─────────────────────────────────────────────────────┐  │  │
+│  │ │ ☑ Cola Drink 500ml | ৳50                       [×] │  │  │
+│  │ └─────────────────────────────────────────────────────┘  │  │
+│  │ ┌─────────────────────────────────────────────────────┐  │  │
+│  │ │ ☑ Orange Juice 1L | ৳120                       [×] │  │  │
+│  │ └─────────────────────────────────────────────────────┘  │  │
+│  │ ┌─────────────────────────────────────────────────────┐  │  │
+│  │ │ ☑ Lemon Soda 500ml | ৳45                       [×] │  │  │
+│  │ └─────────────────────────────────────────────────────┘  │  │
+│  │ ┌─────────────────────────────────────────────────────┐  │  │
+│  │ │ ☑ Mango Juice 1L | ৳130                        [×] │  │  │
+│  │ └─────────────────────────────────────────────────────┘  │  │
+│  │ ┌─────────────────────────────────────────────────────┐  │  │
+│  │ │ ☑ Butter Biscuits 250g | ৳180                  [×] │  │  │
+│  │ └─────────────────────────────────────────────────────┘  │  │
+│  │ ┌─────────────────────────────────────────────────────┐  │  │
+│  │ │ ☑ Coconut Biscuits 200g | ৳170                 [×] │  │  │
+│  │ └─────────────────────────────────────────────────────┘  │  │
+│  │                                                           │  │
+│  │ Total eligible products: 8                               │  │
+│  │ Price range: ৳45 - ৳200                                  │  │
+│  └───────────────────────────────────────────────────────────┘  │
+│                                                                  │
+│  MIX & MATCH RULES *                                            │
+│                                                                  │
+│  Number of Items: *                                             │
+│  Choose any ┌──────────┐ items from eligible products           │
+│             │     5    │                                         │
+│             └──────────┘                                         │
+│                                                                  │
+│  Bundle Price: *                                                │
+│  ┌──────────┐ ৳ for the complete bundle                         │
+│  │   500    │                                                    │
+│  └──────────┘                                                    │
+│                                                                  │
+│  PRODUCT QUANTITY LIMITS (optional)                             │
+│  ☐ No limits (distributor can choose same product multiple times)│
+│  ☑ Set per-product limits                                       │
+│                                                                  │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │ Maximum Units Per Product:                                │  │
+│  │ ┌──────────┐ units of any single product in bundle       │  │
+│  │ │    3     │                                               │  │
+│  │ └──────────┘                                               │  │
+│  └───────────────────────────────────────────────────────────┘  │
+│                                                                  │
+│  APPLICATION RULES                                              │
+│  ○ Apply once per order                                         │
+│  ● Apply multiple times (distributor can buy multiple bundles)  │
+│                                                                  │
+│  Maximum Bundles Per Order:                                     │
+│  ○ No limit                                                     │
+│  ● Set limit: ┌──────────┐ bundles                             │
+│                │    10    │                                     │
+│                └──────────┘                                     │
+│                                                                  │
+│  VALUE WARNING SYSTEM                                           │
+│  ☑ Warn distributor if bundle costs more than buying separately │
+│  ☑ Show savings/loss calculator in distributor interface        │
+│                                                                  │
+│  CALCULATION EXAMPLES                                           │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │ Example 1: Smart Selection                                │  │
+│  │ Distributor chooses:                                      │  │
+│  │ • 3 × Biskut Premium (৳600)                               │  │
+│  │ • 1 × Orange Juice (৳120)                                 │  │
+│  │ • 1 × Mango Juice (৳130)                                  │  │
+│  │ Regular Total: ৳850                                       │  │
+│  │ Bundle Price: ৳500                                        │  │
+│  │ ✓ SAVINGS: ৳350 (41%)                                     │  │
+│  │                                                           │  │
+│  │ Example 2: Poor Selection                                 │  │
+│  │ Distributor chooses:                                      │  │
+│  │ • 5 × Lemon Soda (৳225)                                   │  │
+│  │ Regular Total: ৳225                                       │  │
+│  │ Bundle Price: ৳500                                        │  │
+│  │ ⚠️ LOSS: ৳275 (paying more!)                              │  │
+│  │                                                           │  │
+│  │ System Warning: "Bundle costs more than buying items     │  │
+│  │ separately. Consider adding higher-value products."      │  │
+│  └──────────────────────────────────────────────────────────┘  │
+│                                                                  │
+├─────────────────────────────────────────────────────────────────┤
+│  [← Back]   [Save as Draft]   [Preview]   [Create Offer]      │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## **TYPE 6: N-FOR-৳X PACK**
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  N-FOR-৳X PACK CONFIGURATION                                    │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  ELIGIBLE PRODUCTS (Products for the pack) *                    │
+│                                                                  │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │ [🔍 Search products...]                    [Add Product] │  │
+│  │                                                           │  │
+│  │ Selected Products (3):                                   │  │
+│  │                                                           │  │
+│  │ ┌─────────────────────────────────────────────────────┐  │  │
+│  │ │ ☑ Biskut Premium 200g | ৳200                   [×] │  │  │
+│  │ └─────────────────────────────────────────────────────┘  │  │
+│  │ ┌─────────────────────────────────────────────────────┐  │  │
+│  │ │ ☑ Chocolate Cookies 150g | ৳150                [×] │  │  │
+│  │ └─────────────────────────────────────────────────────┘  │  │
+│  │ ┌─────────────────────────────────────────────────────┐  │  │
+│  │ │ ☑ Butter Biscuits 250g | ৳180                  [×] │  │  │
+│  │ └─────────────────────────────────────────────────────┘  │  │
+│  │                                                           │  │
+│  │ Total: 3 products | Price range: ৳150 - ৳200            │  │
+│  └───────────────────────────────────────────────────────────┘  │
+│                                                                  │
+│  PACK RULES *                                                   │
+│                                                                  │
+│  Number of Items in Pack: *                                     │
+│  ┌──────────┐ items                                             │
+│  │     3    │                                                    │
+│  └──────────┘                                                    │
+│                                                                  │
+│  Pack Price: *                                                  │
+│  ┌──────────┐ ৳                                                 │
+│  │   500    │                                                    │
+│  └──────────┘                                                    │
+│                                                                  │
+│  SELECTION RULES                                                │
+│  ● Distributor can choose any combination                       │
+│  ○ Distributor must choose at least one of each                 │
+│  ○ Distributor must choose all products                         │
+│                                                                  │
+│  PRODUCT QUANTITY LIMITS                                        │
+│  ○ No limits (can choose same product 3 times)                  │
+│  ● Limit maximum of same product                                │
+│    ┌──────────┐ units max per product                           │
+│    │     2    │                                                  │
+│    └──────────┘                                                  │
+│                                                                  │
+│  APPLICATION RULES                                              │
+│  ○ Apply once per order                                         │
+│  ● Apply multiple times (can buy multiple packs)                │
+│                                                                  │
+│  Maximum Packs Per Order:                                       │
+│  ○ No limit                                                     │
+│  ● Set limit: ┌──────────┐ packs                               │
+│                │    20    │                                     │
+│                └──────────┘                                     │
+│                                                                  │
+│  CALCULATION EXAMPLES                                           │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │ Best Case Scenario:                                       │  │
+│  │ Distributor selects:                                      │  │
+│  │ • 2 × Biskut Premium (৳400)                               │  │
+│  │ • 1 × Butter Biscuits (৳180)                              │  │
+│  │ Regular Total: ৳580                                       │  │
+│  │ Pack Price: ৳500                                          │  │
+│  │ ✓ Savings: ৳80 (14%)                                      │  │
+│  │                                                           │  │
+│  │ Average Case:                                             │  │
+│  │ Distributor selects:                                      │  │
+│  │ • 1 × Biskut Premium (৳200)                               │  │
+│  │ • 1 × Chocolate Cookies (৳150)                            │  │
+│  │ • 1 × Butter Biscuits (৳180)                              │  │
+│  │ Regular Total: ৳530                                       │  │
+│  │ Pack Price: ৳500                                          │  │
+│  │ ✓ Savings: ৳30 (6%)                                       │  │
+│  │                                                           │  │
+│  │ Worst Case:                                               │  │
+│  │ Distributor selects:                                      │  │
+│  │ • 3 × Chocolate Cookies (৳450)                            │  │
+│  │ Regular Total: ৳450                                       │  │
+│  │ Pack Price: ৳500                                          │  │
+│  │ ⚠️ Loss: ৳50 (overpaying!)                                │  │
+│  └──────────────────────────────────────────────────────────┘  │
+│                                                                  │
+│  VALUE WARNING                                                  │
+│  ☑ Alert distributor if pack costs more than buying separately  │
+│                                                                  │
+├─────────────────────────────────────────────────────────────────┤
+│  [← Back]   [Save as Draft]   [Preview]   [Create Offer]      │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## **TYPE 7: SPEND THRESHOLD**
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  SPEND THRESHOLD CONFIGURATION                                  │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  THRESHOLD TYPE *                                               │
+│  ● Single threshold                                             │
+│  ○ Multiple tiered thresholds                                   │
+│                                                                  │
+│  ┌────────────────────────────────────────────────────────────┐│
+│  │ SINGLE THRESHOLD CONFIGURATION                             ││
+│  │                                                             ││
+│  │ Minimum Order Value: *                                     ││
+│  │ ┌──────────┐ ৳                                             ││
+│  │ │  50,000  │                                                ││
+│  │ └──────────┘                                                ││
+│  │                                                             ││
+│  │ REWARD TYPE *                                              ││
+│  │ ● Percentage discount                                      ││
+│  │ ○ Fixed amount discount                                    ││
+│  │ ○ Free gift                                                ││
+│  │                                                             ││
+│  │ Discount Value: *                                          ││
+│  │ ┌──────────┐ %                                             ││
+│  │ │    5     │                                                ││
+│  │ └──────────┘                                                ││
+│  │                                                             ││
+│  │ Maximum Discount Cap (optional):                           ││
+│  │ ☑ Set maximum discount amount                              ││
+│  │ ┌──────────┐ ৳                                             ││
+│  │ │  5,000   │                                                ││
+│  │ └──────────┘                                                ││
+│  │                                                             ││
+│  │ APPLY DISCOUNT TO:                                         ││
+│  │ ● Entire order (all products)                              ││
+│  │ ○ Only products in selected segments                       ││
+│  │ ○ Only specific products                                   ││
+│  │                                                             ││
+│  └────────────────────────────────────────────────────────────┘│
+│                                                                  │
+│  [Switch to Tiered Thresholds]                                 │
+│                                                                  │
+│  CALCULATION EXAMPLES                                           │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │ Example 1: Below Threshold                                │  │
+│  │ Order Value: ৳45,000                                      │  │
+│  │ Status: ✗ Does not qualify                                │  │
+│  │ Discount: ৳0                                              │  │
+│  │ Final Total: ৳45,000                                      │  │
+│  │ Message: "Add ৳5,000 more to save ৳2,500!"               │  │
+│  │                                                           │  │
+│  │ Example 2: Above Threshold (Under Cap)                    │  │
+│  │ Order Value: ৳60,000                                      │  │
+│  │ Status: ✓ Qualifies                                       │  │
+│  │ Calculated: 5% = ৳3,000                                   │  │
+│  │ Under Cap: ৳3,000 < ৳5,000 ✓                              │  │
+│  │ Final Total: ৳57,000                                      │  │
+│  │                                                           │  │
+│  │ Example 3: Above Threshold (Exceeds Cap)                  │  │
+│  │ Order Value: ৳150,000                                     │  │
+│  │ Status: ✓ Qualifies                                       │  │
+│  │ Calculated: 5% = ৳7,500                                   │  │
+│  │ Exceeds Cap: ৳7,500 > ৳5,000 ✗                            │  │
+│  │ Applied: ৳5,000 (capped)                                  │  │
+│  │ Final Total: ৳145,000                                     │  │
+│  └──────────────────────────────────────────────────────────┘  │
+│                                                                  │
+├─────────────────────────────────────────────────────────────────┤
+│  [← Back]   [Save as Draft]   [Preview]   [Create Offer]      │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### **SUB-SCREEN: TIERED THRESHOLDS**
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  TIERED THRESHOLD CONFIGURATION                                 │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  Define multiple spending tiers with increasing rewards         │
+│                                                                  │
+│  TIER 1:                                                        │
+│  ┌─────────────┐    ┌──────────────────────────────────────┐   │
+│  │ From: ৳0    │ to │ ৳49,999                            │   │
+│  └─────────────┘    └──────────────────────────────────────┘   │
+│  No discount (below minimum)                                    │
+│                                                                  │
+│  TIER 2:                                                        │
+│  ┌─────────────┐    ┌──────────────────────────────────────┐   │
+│  │ From: ৳50K  │ to │ ৳99,999                            │   │
+│  └─────────────┘    └──────────────────────────────────────┘   │
+│  ● Percentage: ┌────┐ %    ○ Fixed: ┌────────┐ ৳              │
+│                │ 3  │               │        │                 │
+│                └────┘               └────────┘                 │
+│                                                                  │
+│  TIER 3:                                                        │
+│  ┌─────────────┐    ┌──────────────────────────────────────┐   │
+│  │ From: ৳100K │ to │ ৳199,999                           │   │
+│  └─────────────┘    └──────────────────────────────────────┘   │
+│  ● Percentage: ┌────┐ %    ○ Fixed: ┌────────┐ ৳              │
+│                │ 5  │               │        │                 │
+│                └────┘               └────────┘                 │
+│                                                                  │
+│  TIER 4:                                                        │
+│  ┌─────────────┐    ┌──────────────────────────────────────┐   │
+│  │ From: ৳200K │ to │ ∞ (no limit)                       │   │
+│  └─────────────┘    └──────────────────────────────────────┘   │
+│  ● Percentage: ┌────┐ %    ○ Fixed: ┌────────┐ ৳              │
+│                │ 7  │               │        │                 │
+│                └────┘               └────────┘                 │
+│                                                                  │
+│  [+ Add Another Tier]  [Remove Last Tier]                      │
+│                                                                  │
+│  PREVIEW CHART                                                  │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │ Discount %                                                │  │
+│  │ 7% ┤                              ┌────────────           │  │
+│  │ 5% ┤                  ┌───────────┘                       │  │
+│  │ 3% ┤      ┌───────────┘                                   │  │
+│  │ 0% ┼──────┘                                                │  │
+│  │    └──────┬───────┬───────┬───────────→ Order Value       │  │
+│  │          50K    100K    200K                               │  │
+│  └──────────────────────────────────────────────────────────┘  │
+│                                                                  │
+│  CALCULATION EXAMPLES                                           │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │ Order ৳75,000 → Tier 2 (3%) → Discount ৳2,250           │  │
+│  │ Final: ৳72,750                                           │  │
+│  │                                                           │  │
+│  │ Order ৳150,000 → Tier 3 (5%) → Discount ৳7,500          │  │
+│  │ Final: ৳142,500                                          │  │
+│  │                                                           │  │
+│  │ Order ৳250,000 → Tier 4 (7%) → Discount ৳17,500         │  │
+│  │ Final: ৳232,500                                          │  │
+│  └──────────────────────────────────────────────────────────┘  │
+│                                                                  │
+├─────────────────────────────────────────────────────────────────┤
+│  [← Back to Single]   [Save as Draft]   [Create Offer]        │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## **TYPE 8: CROSS-SKU UPLIFT**
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  CROSS-SKU UPLIFT CONFIGURATION                                 │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  QUALIFIER PRODUCTS (Unlock discount by buying these) *         │
+│                                                                  │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │ [🔍 Search qualifier products...]          [Add Product] │  │
+│  │                                                           │  │
+│  │ Selected Qualifier Products (2):                         │  │
+│  │                                                           │  │
+│  │ ┌─────────────────────────────────────────────────────┐  │  │
+│  │ │ Biskut Premium Pack 500g | SKU: BIS-500 | ৳200 [×] │  │  │
+│  │ │ Minimum Quantity: Any (at least 1 unit)             │  │  │
+│  │ └─────────────────────────────────────────────────────┘  │  │
+│  │                                                           │  │
+│  │ ┌─────────────────────────────────────────────────────┐  │  │
+│  │ │ Chocolate Deluxe Box | SKU: CHD-BOX | ৳450      [×] │  │  │
+│  │ │ Minimum Quantity: Any (at least 1 unit)             │  │  │
+│  │ └─────────────────────────────────────────────────────┘  │  │
+│  └───────────────────────────────────────────────────────────┘  │
+│                                                                  │
+│  Qualifier Logic:                                               │
+│  ○ Distributor must buy ALL qualifier products (AND)            │
+│  ● Distributor can buy ANY qualifier product (OR)               │
+│                                                                  │
+│  REWARD PRODUCTS (Get discount on these) *                      │
+│                                                                  │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │ [🔍 Search reward products...]              [Add Product]│  │
+│  │                                                           │  │
+│  │ Selected Reward Products (4):                            │  │
+│  │                                                           │  │
+│  │ ┌─────────────────────────────────────────────────────┐  │  │
+│  │ │ Cola Drink 500ml | SKU: COL-500 | ৳50          [×] │  │  │
+│  │ └─────────────────────────────────────────────────────┘  │  │
+│  │ ┌─────────────────────────────────────────────────────┐  │  │
+│  │ │ Orange Juice 1L | SKU: OJ-1000 | ৳120          [×] │  │  │
+│  │ └─────────────────────────────────────────────────────┘  │  │
+│  │ ┌─────────────────────────────────────────────────────┐  │  │
+│  │ │ Lemon Soda 500ml | SKU: LEM-500 | ৳45          [×] │  │  │
+│  │ └─────────────────────────────────────────────────────┘  │  │
+│  │ ┌─────────────────────────────────────────────────────┐  │  │
+│  │ │ Mango Juice 1L | SKU: MJ-1000 | ৳130           [×] │  │  │
+│  │ └─────────────────────────────────────────────────────┘  │  │
+│  └───────────────────────────────────────────────────────────┘  │
+│                                                                  │
+│  DISCOUNT CONFIGURATION *                                       │
+│                                                                  │
+│  Discount Type:                                                 │
+│  ● Percentage discount                                          │
+│  ○ Fixed amount per unit                                        │
+│                                                                  │
+│  Discount Value: *                                              │
+│  ┌──────────┐ %  off reward products                            │
+│  │    10    │                                                    │
+│  └──────────┘                                                    │
+│                                                                  │
+│  QUANTITY LIMITS                                                │
+│                                                                  │
+│  Discounted Units Per Qualifier:                                │
+│  ● Each qualifier unlocks discount on: ┌────┐ reward units     │
+│                                         │ 5  │                  │
+│                                         └────┘                  │
+│  ○ No limit (discount applies to all reward products)           │
+│                                                                  │
+│  Maximum Discounted Units Per Order:                            │
+│  ○ No limit                                                     │
+│  ● Set maximum: ┌──────────┐ reward units                       │
+│                  │    20    │                                    │
+│                  └──────────┘                                    │
+│                                                                  │
+│  CALCULATION EXAMPLES                                           │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │ Example 1: Single Qualifier                               │  │
+│  │ Distributor buys:                                         │  │
+│  │ • 1 Biskut Premium Pack (qualifier) ✓                    │  │
+│  │ • 8 Cola Drink 500ml (reward products)                   │  │
+│  │                                                           │  │
+│  │ Calculation:                                              │  │
+│  │ • 1 qualifier × 5 units = 5 units get discount           │  │
+│  │ • First 5 colas: 5 × ৳50 × 10% = ৳25 discount           │  │
+│  │ • Remaining 3 colas: Regular price (no discount)         │  │
+│  │                                                           │  │
+│  │ Total:                                                    │  │
+│  │ • Biskut: ৳200                                           │  │
+│  │ • 5 discounted colas: 5 × ৳45 = ৳225                     │  │
+│  │ • 3 regular colas: 3 × ৳50 = ৳150                        │  │
+│  │ • Final: ৳575 (saved ৳25)                                │  │
+│  │                                                           │  │
+│  │ Example 2: Multiple Qualifiers                            │  │
+│  │ Distributor buys:                                         │  │
+│  │ • 3 Biskut Premium Pack (qualifiers) ✓                   │  │
+│  │ • 12 Cola Drink 500ml                                    │  │
+│  │ • 5 Orange Juice 1L                                      │  │
+│  │                                                           │  │
+│  │ Calculation:                                              │  │
+│  │ • 3 qualifiers × 5 units = 15 units get discount         │  │
+│  │ • All 12 colas get discount: 12 × ৳5 = ৳60 off          │  │
+│  │ • 3 of 5 juices get discount: 3 × ৳12 = ৳36 off         │  │
+│  │ • 2 juices at regular price                              │  │
+│  │                                                           │  │
+│  │ Total Savings: ৳96                                        │  │
+│  └──────────────────────────────────────────────────────────┘  │
+│                                                                  │
+├─────────────────────────────────────────────────────────────────┤
+│  [← Back]   [Save as Draft]   [Preview]   [Create Offer]      │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## **TYPE 9: FIXED BUNDLE**
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  FIXED BUNDLE CONFIGURATION                                     │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  BUNDLE DETAILS *                                               │
+│                                                                  │
+│  Bundle Name: *                                                 │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │ Family Value Pack                                         │  │
+│  └──────────────────────────────────────────────────────────┘  │
+│                                                                  │
+│  Bundle Description:                                            │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │ Perfect family assortment with biscuits and beverages     │  │
+│  └──────────────────────────────────────────────────────────┘  │
+│                                                                  │
+│  BUNDLE CONTENTS *                                              │
+│                                                                  │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │ [🔍 Search products to add...]            [Add to Bundle]│  │
+│  │                                                           │  │
+│  │ Bundle Items (3 products, 10 total units):               │  │
+│  │                                                           │  │
+│  │ ┌─────────────────────────────────────────────────────┐  │  │
+│  │ │ Biskut Premium 200g | SKU: BIS-200                 │  │  │
+│  │ │ Quantity: [5] units | Unit Price: ৳50 each         │  │  │
+│  │ │ Item Total: ৳250                               [×] │  │  │
+│  │ └─────────────────────────────────────────────────────┘  │  │
+│  │                                                           │  │
+│  │ ┌─────────────────────────────────────────────────────┐  │  │
+│  │ │ Cola Drink 500ml | SKU: COL-500                    │  │  │
+│  │ │ Quantity: [3] units | Unit Price: ৳50 each         │  │  │
+│  │ │ Item Total: ৳150                               [×] │  │  │
+│  │ └─────────────────────────────────────────────────────┘  │  │
+│  │                                                           │  │
+│  │ ┌─────────────────────────────────────────────────────┐  │  │
+│  │ │ Chips Packet 100g | SKU: CHP-100                   │  │  │
+│  │ │ Quantity: [2] units | Unit Price: ৳60 each         │  │  │
+│  │ │ Item Total: ৳120                               [×] │  │  │
+│  │ └─────────────────────────────────────────────────────┘  │  │
+│  │                                                           │  │
+│  │ [+ Add Another Product to Bundle]                        │  │
+│  │                                                           │  │
+│  │ ┌─────────────────────────────────────────────────────┐  │  │
+│  │ │ BUNDLE PRICING                                      │  │  │
+│  │ │                                                      │  │  │
+│  │ │ Regular Total (if bought separately): ৳520          │  │  │
+│  │ │                                                      │  │  │
+│  │ │ Bundle Price: * ┌──────────┐ ৳                      │  │  │
+│  │ │                 │   350    │                        │  │  │
+│  │ │                 └──────────┘                        │  │  │
+│  │ │                                                      │  │  │
+│  │ │ Savings: ৳170 (32.7% discount)                      │  │  │
+│  │ │ Effective Per-Unit Cost: ৳35                        │  │  │
+│  │ └─────────────────────────────────────────────────────┘  │  │
+│  └───────────────────────────────────────────────────────────┘  │
+│                                                                  │
+│  BUNDLE RULES                                                   │
+│                                                                  │
+│  ☑ Products and quantities are fixed (no substitutions)         │
+│  ☐ Allow distributors to choose alternative products            │
+│                                                                  │
+│  APPLICATION RULES                                              │
+│  ○ Limit to one bundle per order                                │
+│  ● Allow multiple bundles per order                             │
+│                                                                  │
+│  Maximum Bundles Per Order:                                     │
+│  ○ No limit                                                     │
+│  ● Set limit: ┌──────────┐ bundles                             │
+│                │    10    │                                     │
+│                └──────────┘                                     │
+│                                                                  │
+│  INVENTORY TRACKING                                             │
+│  ☑ Track bundle as separate SKU                                 │
+│  ☐ Track individual products only                               │
+│                                                                  │
+│  If "Track as separate SKU":                                    │
+│  Auto-generate Bundle SKU: [BUNDLE-FAM-001] or [Custom SKU]    │
+│                                                                  │
+│  VISUAL PREVIEW                                                 │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │ [Preview how bundle appears to distributors]             │  │
+│  │                                                           │  │
+│  │ 📦 FAMILY VALUE PACK                                     │  │
+│  │                                                           │  │
+│  │ Contains:                                                 │  │
+│  │ • 5 × Biskut Premium 200g                                │  │
+│  │ • 3 × Cola Drink 500ml                                   │  │
+│  │ • 2 × Chips Packet 100g                                  │  │
+│  │                                                           │  │
+│  │ ~~৳520~~ → ৳350                                          │  │
+│  │ SAVE ৳170 (33% OFF)                                      │  │
+│  │                                                           │  │
+│  │ [Add to Cart]                                            │  │
+│  └──────────────────────────────────────────────────────────┘  │
+│                                                                  │
+├─────────────────────────────────────────────────────────────────┤
+│  [← Back]   [Save as Draft]   [Preview]   [Create Offer]      │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## **TYPE 10: SLAB DISCOUNT**
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  SLAB DISCOUNT CONFIGURATION                                    │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  DISCOUNT APPLICATION *                                         │
+│  ● Apply to entire order (all products)                         │
+│  ○ Apply to products in selected segments only                  │
+│  ○ Apply to specific products                                   │
+│                                                                  │
+│  ORDER VALUE SLABS *                                            │
+│                                                                  │
+│  Slab 1:                                                        │
+│  ┌─────────────┐    ┌────────────┐    ┌──────────────────┐    │
+│  │ From: ৳0    │ to │ ৳99,999    │    │ Discount: 0%    │    │
+│  └─────────────┘    └────────────┘    └──────────────────┘    │
+│  (Below minimum - no discount)                                  │
+│                                                                  │
+│  Slab 2:                                                        │
+│  ┌─────────────┐    ┌────────────┐    ┌──────────────────┐    │
+│  │ From: ৳100K │ to │ ৳199,999   │    │ Discount: 1%    │    │
+│  └─────────────┘    └────────────┘    └──────────────────┘    │
+│                                                                  │
+│  Slab 3:                                                        │
+│  ┌─────────────┐    ┌────────────┐    ┌──────────────────┐    │
+│  │ From: ৳200K │ to │ ৳299,999   │    │ Discount: 1.5%  │    │
+│  └─────────────┘    └────────────┘    └──────────────────┘    │
+│                                                                  │
+│  Slab 4:                                                        │
+│  ┌─────────────┐    ┌────────────┐    ┌──────────────────┐    │
+│  │ From: ৳300K │ to │ ৳499,999   │    │ Discount: 2%    │    │
+│  └─────────────┘    └────────────┘    └──────────────────┘    │
+│                                                                  │
+│  Slab 5:                                                        │
+│  ┌─────────────┐    ┌────────────┐    ┌──────────────────┐    │
+│  │ From: ৳500K │ to │ ∞          │    │ Discount: 2.5%  │    │
+│  └─────────────┘    └────────────┘    └──────────────────┘    │
+│                                                                  │
+│  [+ Add Another Slab]  [Remove Last Slab]                      │
+│                                                                  │
+│  MAXIMUM DISCOUNT CAP (optional)                                │
+│  ☐ No maximum                                                   │
+│  ☑ Set maximum discount: ┌──────────┐ ৳                        │
+│                           │  15,000  │                          │
+│                           └──────────┘                          │
+│                                                                  │
+│  VISUAL CHART                                                   │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │ Discount %                                                │  │
+│  │ 3.0% ┤                              ┌─────────────       │  │
+│  │ 2.5% ┤                  ┌───────────┘                    │  │
+│  │ 2.0% ┤      ┌───────────┘                                │  │
+│  │ 1.5% ┤  ┌───┘                                             │  │
+│  │ 1.0% ┤──┘                                                  │  │
+│  │ 0.0% ┼─┘                                                   │  │
+│  │      └───┬────┬────┬────┬────┬────→ Order Value (৳)      │  │
+│  │         100K 200K 300K 500K                                │  │
+│  └──────────────────────────────────────────────────────────┘  │
+│                                                                  │
+│  CALCULATION EXAMPLES                                           │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │ Order ৳150,000:                                           │  │
+│  │ • Falls in Slab 2 (৳100K - ৳199,999)                     │  │
+│  │ • Discount: 1%                                            │  │
+│  │ • Amount: ৳1,500                                          │  │
+│  │ • Final: ৳148,500                                         │  │
+│  │                                                           │  │
+│  │ Order ৳350,000:                                           │  │
+│  │ • Falls in Slab 4 (৳300K - ৳499,999)                     │  │
+│  │ • Discount: 2%                                            │  │
+│  │ • Amount: ৳7,000                                          │  │
+│  │ • Final: ৳343,000                                         │  │
+│  │                                                           │  │
+│  │ Order ৳800,000:                                           │  │
+│  │ • Falls in Slab 5 (৳500K+)                                │  │
+│  │ • Discount: 2.5% = ৳20,000                                │  │
+│  │ • Cap applied: ৳15,000 (max cap)                          │  │
+│  │ • Final: ৳785,000                                         │  │
+│  └──────────────────────────────────────────────────────────┘  │
+│                                                                  │
+├─────────────────────────────────────────────────────────────────┤
+│  [← Back]   [Save as Draft]   [Preview]   [Create Offer]      │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## **TYPE 11: FREE GOODS BY UOM**
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  FREE GOODS BY UOM CONFIGURATION                                │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  PRODUCT SELECTION *                                            │
+│                                                                  │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │ [🔍 Search products...]                    [Add Product] │  │
+│  │                                                           │  │
+│  │ Selected Products (2):                                   │  │
+│  │                                                           │  │
+│  │ ┌─────────────────────────────────────────────────────┐  │  │
+│  │ │ Biskut Premium | SKU: BIS-PREM                  [×] │  │  │
+│  │ │                                                      │  │  │
+│  │ │ UOM Structure:                                       │  │  │
+│  │ │ • 1 Carton = 24 Jars                                │  │  │
+│  │ │ • Carton Price: ৳1,200 (৳50/jar)                   │  │  │
+│  │ │ • Individual Jar: ৳52                               │  │  │
+│  │ └─────────────────────────────────────────────────────┘  │  │
+│  │                                                           │  │
+│  │ ┌─────────────────────────────────────────────────────┐  │  │
+│  │ │ Cola Drink 500ml | SKU: COL-500                 [×] │  │  │
+│  │ │                                                      │  │  │
+│  │ │ UOM Structure:                                       │  │  │
+│  │ │ • 1 Case = 12 Bottles                               │  │  │
+│  │ │ • Case Price: ৳540 (৳45/bottle)                     │  │  │
+│  │ │ • Individual Bottle: ৳50                            │  │  │
+│  │ └─────────────────────────────────────────────────────┘  │  │
+│  └───────────────────────────────────────────────────────────┘  │
+│                                                                  │
+│  OFFER RULES *                                                  │
+│                                                                  │
+│  For Product: Biskut Premium                                    │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │                                                           │  │
+│  │ Buy: [1] Carton(s) (bulk UOM)                            │  │
+│  │                                                           │  │
+│  │ Get Free: [1] Jar(s) (small UOM)                         │  │
+│  │                                                           │  │
+│  │ Application:                                              │  │
+│  │ ○ Once per order                                          │  │
+│  │ ● Multiple times (per carton purchased)                  │  │
+│  │                                                           │  │
+│  │ Maximum Free Units: ┌────┐ jars per order                │  │
+│  │                     │ 10 │                                │  │
+│  │                     └────┘                                │  │
+│  └───────────────────────────────────────────────────────────┘  │
+│                                                                  │
+│  For Product: Cola Drink 500ml                                  │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │                                                           │  │
+│  │ Buy: [2] Case(s) (bulk UOM)                              │  │
+│  │                                                           │  │
+│  │ Get Free: [3] Bottle(s) (small UOM)                      │  │
+│  │                                                           │  │
+│  │ Application:                                              │  │
+│  │ ○ Once per order                                          │  │
+│  │ ● Multiple times (per 2 cases)                           │  │
+│  │                                                           │  │
+│  │ Maximum Free Units: ┌────┐ bottles per order             │  │
+│  │                     │ 15 │                                │  │
+│  │                     └────┘                                │  │
+│  └───────────────────────────────────────────────────────────┘  │
+│                                                                  │
+│  UOM LOCKING RULES                                              │
+│  ☑ Only bulk UOM purchases qualify (cannot buy individual units)│
+│  ☐ Allow mixed UOM purchases to qualify                         │
+│                                                                  │
+│  CALCULATION EXAMPLES                                           │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │ Example 1: Biskut Premium                                 │  │
+│  │ Distributor orders: 3 Cartons                            │  │
+│  │                                                           │  │
+│  │ What they buy:                                            │  │
+│  │ • 3 Cartons @ ৳1,200 = ৳3,600                            │  │
+│  │ • = 72 Jars                                               │  │
+│  │                                                           │  │
+│  │ What they receive FREE:                                   │  │
+│  │ • 3 Cartons = 3 free jars                                │  │
+│  │ • Free value: 3 × ৳52 = ৳156                             │  │
+│  │                                                           │  │
+│  │ Total Received: 75 Jars                                   │  │
+│  │ Paid: ৳3,600                                              │  │
+│  │ Effective: ৳48/jar                                        │  │
+│  │ Savings: ৳156                                             │  │
+│  │                                                           │  │
+│  │ Example 2: Cola Drink                                     │  │
+│  │ Distributor orders: 6 Cases                              │  │
+│  │                                                           │  │
+│  │ What they buy:                                            │  │
+│  │ • 6 Cases @ ৳540 = ৳3,240                                │  │
+│  │ • = 72 Bottles                                            │  │
+│  │                                                           │  │
+│  │ Calculation:                                              │  │
+│  │ • 6 cases ÷ 2 = 3 complete sets                          │  │
+│  │ • 3 sets × 3 bottles = 9 free bottles                    │  │
+│  │ • Under limit (9 < 15) ✓                                 │  │
+│  │                                                           │  │
+│  │ Total Received: 81 Bottles                                │  │
+│  │ Paid: ৳3,240                                              │  │
+│  │ Effective: ৳40/bottle                                     │  │
+│  │ Savings: ৳450 (9 × ৳50)                                   │  │
+│  └──────────────────────────────────────────────────────────┘  │
+│                                                                  │
+├─────────────────────────────────────────────────────────────────┤
+│  [← Back]   [Save as Draft]   [Preview]   [Create Offer]      │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## **TYPE 12: LAUNCH DISCOUNT**
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  LAUNCH DISCOUNT CONFIGURATION                                  │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  PRODUCT SELECTION *                                            │
+│                                                                  │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │ [🔍 Search new products...]                [Add Product] │  │
+│  │                                                           │  │
+│  │ Selected New Products (2):                               │  │
+│  │                                                           │  │
+│  │ ┌─────────────────────────────────────────────────────┐  │  │
+│  │ │ 🚀 Mango Fusion Drink 1L | SKU: MFD-1000       [×] │  │  │
+│  │ │    Regular Price: ৳120                              │  │  │
+│  │ │    Launch Date: 15 May 2025                         │  │  │
+│  │ └─────────────────────────────────────────────────────┘  │  │
+│  │                                                           │  │
+│  │ ┌─────────────────────────────────────────────────────┐  │  │
+│  │ │ 🚀 Berry Blast Juice 500ml | SKU: BBJ-500      [×] │  │  │
+│  │ │    Regular Price: ৳85                               │  │  │
+│  │ │    Launch Date: 20 May 2025                         │  │  │
+│  │ └─────────────────────────────────────────────────────┘  │  │
+│  └───────────────────────────────────────────────────────────┘  │
+│                                                                  │
+│  LAUNCH DISCOUNT RULES *                                        │
+│                                                                  │
+│  Discount Type:                                                 │
+│  ● Percentage discount                                          │
+│  ○ Fixed amount off                                             │
+│  ○ Launch price (set new price)                                 │
+│                                                                  │
+│  Discount Value: *                                              │
+│  ┌──────────┐ %  off regular price                              │
+│  │    15    │                                                    │
+│  └──────────┘                                                    │
+│                                                                  │
+│  Resulting Launch Prices:                                       │
+│  • Mango Fusion: ৳120 → ৳102 (15% off)                         │
+│  • Berry Blast: ৳85 → ৳72.25 (15% off)                         │
+│                                                                  │
+│  LAUNCH PERIOD *                                                │
+│                                                                  │
+│  Duration Type:                                                 │
+│  ● Fixed number of days from product launch                     │
+│  ○ Specific date range                                          │
+│                                                                  │
+│  Launch Discount Duration:                                      │
+│  ┌──────────┐ days from each product's launch date              │
+│  │    30    │                                                    │
+│  └──────────┘                                                    │
+│                                                                  │
+│  Auto-Expiry:                                                   │
+│  • Mango Fusion: Discount ends 14 Jun 2025 (30 days after launch)│
+│  • Berry Blast: Discount ends 19 Jun 2025 (30 days after launch)│
+│                                                                  │
+│  QUANTITY LIMITS (optional)                                     │
+│  ☐ No limits                                                    │
+│  ☑ Set per-distributor limits                                   │
+│                                                                  │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │ Maximum Units Per Distributor (during launch period):    │  │
+│  │ ┌──────────┐ units per product                            │  │
+│  │ │   100    │                                               │  │
+│  │ └──────────┘                                               │  │
+│  │                                                            │  │
+│  │ Reason: Encourage trial across many distributors,         │  │
+│  │         not stockpiling by few                            │  │
+│  └───────────────────────────────────────────────────────────┘  │
+│                                                                  │
+│  SPECIAL BADGES & LABELS                                        │
+│  ☑ Show "NEW PRODUCT" badge in catalog                          │
+│  ☑ Show countdown timer ("X days left at launch price")        │
+│  ☑ Send notification to distributors when product launches      │
+│                                                                  │
+│  POST-LAUNCH BEHAVIOR                                           │
+│  After discount period ends:                                    │
+│  ● Revert to regular price automatically                        │
+│  ○ Keep "NEW" badge for [____] additional days                  │
+│  ☑ Remove launch discount offer from system                     │
+│  ☑ Notify distributors 3 days before discount ends              │
+│                                                                  │
+│  CALCULATION EXAMPLE                                            │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │ Distributor orders on 25 May 2025:                        │  │
+│  │                                                           │  │
+│  │ • 50 Mango Fusion (within 30-day launch window)          │  │
+│  │   Regular: 50 × ৳120 = ৳6,000                            │  │
+│  │   Launch: 50 × ৳102 = ৳5,100                             │  │
+│  │   Savings: ৳900                                           │  │
+│  │   Days remaining: 20 days at launch price                │  │
+│  │                                                           │  │
+│  │ • 30 Berry Blast (within 30-day launch window)           │  │
+│  │   Regular: 30 × ৳85 = ৳2,550                             │  │
+│  │   Launch: 30 × ৳72.25 = ৳2,167.50                        │  │
+│  │   Savings: ৳382.50                                        │  │
+│  │   Days remaining: 25 days at launch price                │  │
+│  │                                                           │  │
+│  │ Total Savings: ৳1,282.50                                  │  │
+│  └──────────────────────────────────────────────────────────┘  │
+│                                                                  │
+├─────────────────────────────────────────────────────────────────┤
+│  [← Back]   [Save as Draft]   [Preview]   [Create Offer]      │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## **TYPE 13: CLEARANCE DISCOUNT**
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  CLEARANCE DISCOUNT CONFIGURATION                               │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  PRODUCT SELECTION *                                            │
+│                                                                  │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │ [🔍 Search products to clear...]          [Add Product]  │  │
+│  │                                                           │  │
+│  │ Selected Clearance Products (3):                         │  │
+│  │                                                           │  │
+│  │ ┌─────────────────────────────────────────────────────┐  │  │
+│  │ │ 🔴 Old Formula Cola 250ml | SKU: OFC-250       [×] │  │  │
+│  │ │    Status: Being discontinued                       │  │  │
+│  │ │    Regular Price: ৳35                               │  │  │
+│  │ │    Current Stock: 450 units                         │  │  │
+│  │ │    Expiry: 30 Jun 2025                              │  │  │
+│  │ └─────────────────────────────────────────────────────┘  │  │
+│  │                                                           │  │
+│  │ ┌─────────────────────────────────────────────────────┐  │  │
+│  │ │ 🔴 Legacy Chips 50g | SKU: LCH-050             [×] │  │  │
+│  │ │    Status: Slow-moving                              │  │  │
+│  │ │    Regular Price: ৳45                               │  │  │
+│  │ │    Current Stock: 280 units                         │  │  │
+│  │ │    Expiry: 15 Aug 2025                              │  │  │
+│  │ └─────────────────────────────────────────────────────┘  │  │
+│  │                                                           │  │
+│  │ ┌─────────────────────────────────────────────────────┐  │  │
+│  │ │ 🔴 Biscuit Classic Pack | SKU: BCP-200         [×] │  │  │
+│  │ │    Status: End of season                            │  │  │
+│  │ │    Regular Price: ৳80                               │  │  │
+│  │ │    Current Stock: 120 units                         │  │  │
+│  │ │    Decommission: 31 Jul 2025                        │  │  │
+│  │ └─────────────────────────────────────────────────────┘  │  │
+│  └───────────────────────────────────────────────────────────┘  │
+│                                                                  │
+│  CLEARANCE DISCOUNT RULES *                                     │
+│                                                                  │
+│  Discount Type:                                                 │
+│  ● Percentage discount (recommended for clearance)              │
+│  ○ Fixed amount off                                             │
+│  ○ Set clearance price                                          │
+│                                                                  │
+│  Discount Value: *                                              │
+│  ┌──────────┐ %  off regular price                              │
+│  │    30    │                                                    │
+│  └──────────┘                                                    │
+│                                                                  │
+│  Resulting Clearance Prices:                                    │
+│  • Old Formula Cola: ৳35 → ৳24.50 (30% off)                    │
+│  • Legacy Chips: ৳45 → ৳31.50 (30% off)                        │
+│  • Biscuit Classic: ৳80 → ৳56 (30% off)                        │
+│                                                                  │
+│  CLEARANCE PERIOD *                                             │
+│                                                                  │
+│  Offer Ends When:                                               │
+│  ● Specific end date                                            │
+│  ○ Stock depletes (first)                                       │
+│  ○ Whichever comes first (date OR stock depletion)              │
+│                                                                  │
+│  If "Specific end date" selected:                               │
+│  End Date: *                                                    │
+│  ┌────────────────┐                                             │
+│  │ 📅 30 Jun 2025│                                             │
+│  └────────────────┘                                             │
+│                                                                  │
+│  STOCK TRACKING                                                 │
+│  ☑ Show remaining stock count to distributors                   │
+│  ☑ Update stock in real-time                                    │
+│  ☑ Auto-disable offer when stock reaches zero                   │
+│                                                                  │
+│  Display to distributors:                                       │
+│  "Only 450 units left! Limited stock at clearance price"        │
+│                                                                  │
+│  QUANTITY LIMITS                                                │
+│  ○ No limits (clear inventory quickly)                          │
+│  ● Set per-distributor limits (spread inventory fairly)         │
+│                                                                  │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │ Maximum Units Per Distributor:                            │  │
+│  │ ┌──────────┐ units per product                            │  │
+│  │ │   100    │                                               │  │
+│  │ └──────────┘                                               │  │
+│  │                                                            │  │
+│  │ Allows ~4-5 distributors to participate per product       │  │
+│  └───────────────────────────────────────────────────────────┘  │
+│                                                                  │
+│  URGENCY MESSAGING                                              │
+│  ☑ Show "CLEARANCE SALE" badge                                  │
+│  ☑ Show countdown timer if date-based                           │
+│  ☑ Send push notification to distributors when offer starts     │
+│  ☑ Send reminder 7 days before offer ends                       │
+│                                                                  │
+│  POST-CLEARANCE BEHAVIOR                                        │
+│  After clearance ends or stock depletes:                        │
+│  ☑ Remove products from catalog                                 │
+│  ☑ Archive offer for reporting                                  │
+│  ☐ Convert to regular products (if restocking)                  │
+│                                                                  │
+│  CALCULATION EXAMPLE                                            │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │ Distributor orders:                                        │  │
+│  │                                                           │  │
+│  │ • 100 Old Formula Cola (max allowed)                     │  │
+│  │   Regular: 100 × ৳35 = ৳3,500                            │  │
+│  │   Clearance: 100 × ৳24.50 = ৳2,450                       │  │
+│  │   Savings: ৳1,050                                         │  │
+│  │   Remaining stock: 350 units                             │  │
+│  │                                                           │  │
+│  │ • 50 Legacy Chips                                         │  │
+│  │   Regular: 50 × ৳45 = ৳2,250                             │  │
+│  │   Clearance: 50 × ৳31.50 = ৳1,575                        │  │
+│  │   Savings: ৳675                                           │  │
+│  │   Remaining stock: 230 units                             │  │
+│  │                                                           │  │
+│  │ Total Savings: ৳1,725 (30% off regular prices)           │  │
+│  │                                                           │  │
+│  │ Distributor Strategy: "Stock up at clearance price,      │  │
+│  │ sell at slight discount, still make good profit"         │  │
+│  └──────────────────────────────────────────────────────────┘  │
+│                                                                  │
+├─────────────────────────────────────────────────────────────────┤
+│  [← Back]   [Save as Draft]   [Preview]   [Create Offer]      │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## **TYPE 14: GROWTH/TARGET REBATE**
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  GROWTH/TARGET REBATE CONFIGURATION                             │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  REBATE PERIOD *                                                │
+│                                                                  │
+│  Period Type:                                                   │
+│  ● Fixed date range                                             │
+│  ○ Rolling period (e.g., "any 30 days")                         │
+│                                                                  │
+│  ┌─────────────────────────┐  ┌─────────────────────────────┐  │
+│  │ Start Date *            │  │ End Date *                  │  │
+│  │ ┌────────────────────┐  │  │ ┌────────────────────────┐ │  │
+│  │ │ 📅 01 Jun 2025     │  │  │ │ 📅 30 Jun 2025        │ │  │
+│  │ └────────────────────┘  │  │ └────────────────────────┘ │  │
+│  └─────────────────────────┘  └─────────────────────────────┘  │
+│                                                                  │
+│  Measurement Period: 30 days (June 2025)                        │
+│                                                                  │
+│  APPLICABLE PRODUCTS/SCOPE                                      │
+│  ● All products in selected segments                            │
+│  ○ Specific products only                                       │
+│  ○ Specific categories                                          │
+│                                                                  │
+│  REBATE STRUCTURE *                                             │
+│                                                                  │
+│  ● Single target                                                │
+│  ○ Tiered targets (multiple thresholds)                         │
+│                                                                  │
+│  ┌────────────────────────────────────────────────────────────┐│
+│  │ SINGLE TARGET CONFIGURATION                                ││
+│  │                                                             ││
+│  │ Sales Target: *                                            ││
+│  │ ┌──────────┐ ৳ in total sales during period                ││
+│  │ │ 500,000  │                                                ││
+│  │ └──────────┘                                                ││
+│  │                                                             ││
+│  │ Rebate Calculation:                                        ││
+│  │ ● Percentage of total sales                                ││
+│  │ ○ Fixed amount                                             ││
+│  │                                                             ││
+│  │ Rebate Value: *                                            ││
+│  │ ┌──────────┐ % of total sales if target met                ││
+│  │ │    2     │                                                ││
+│  │ └──────────┘                                                ││
+│  │                                                             ││
+│  │ Maximum Rebate Cap (optional):                             ││
+│  │ ☑ Set maximum rebate amount                                ││
+│  │ ┌──────────┐ ৳                                             ││
+│  │ │  15,000  │                                                ││
+│  │ └──────────┘                                                ││
+│  └────────────────────────────────────────────────────────────┘│
+│                                                                  │
+│  [Switch to Tiered Targets]                                     │
+│                                                                  │
+│  PAYOUT SETTINGS *                                              │
+│                                                                  │
+│  Payout Method:                                                 │
+│  ● Credit note (for future purchases)                           │
+│  ○ Direct payment/bank transfer                                 │
+│  ○ Additional free goods                                        │
+│                                                                  │
+│  Settlement Timeline:                                           │
+│  Within ┌────┐ days after period ends                           │
+│         │ 15 │                                                  │
+│         └────┘                                                  │
+│                                                                  │
+│  (Rebate will be calculated on 1 Jul 2025, settled by 15 Jul)  │
+│                                                                  │
+│  DISTRIBUTOR VISIBILITY                                         │
+│  ☑ Show target progress in distributor dashboard                │
+│  ☑ Show "Days remaining" countdown                              │
+│  ☑ Show potential rebate amount (if target met today)           │
+│  ☑ Send weekly progress emails                                  │
+│  ☑ Send alert when 80% of target reached                        │
+│                                                                  │
+│  ELIGIBILITY CRITERIA (optional)                                │
+│  ☐ All distributors eligible                                    │
+│  ☑ Set additional criteria                                      │
+│                                                                  │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │ Additional Requirements:                                  │  │
+│  │ ☑ No overdue payments                                     │  │
+│  │ ☑ Minimum order frequency: [2] orders during period      │  │
+│  │ ☐ Specific distributor tiers only                         │  │
+│  └───────────────────────────────────────────────────────────┘  │
+│                                                                  │
+│  CALCULATION EXAMPLES                                           │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │ Example 1: Target Met                                     │  │
+│  │                                                           │  │
+│  │ Distributor's June Sales:                                 │  │
+│  │ Week 1: ৳120,000                                          │  │
+│  │ Week 2: ৳150,000                                          │  │
+│  │ Week 3: ৳130,000                                          │  │
+│  │ Week 4: ৳110,000                                          │  │
+│  │ ─────────────────                                         │  │
+│  │ TOTAL:  ৳510,000 ✓ (exceeds ৳500K target)                │  │
+│  │                                                           │  │
+│  │ Rebate Calculation:                                       │  │
+│  │ • 2% of ৳510,000 = ৳10,200                                │  │
+│  │ • Under cap (৳10,200 < ৳15,000) ✓                         │  │
+│  │ • Applied: ৳10,200                                        │  │
+│  │                                                           │  │
+│  │ Settlement (by 15 Jul):                                   │  │
+│  │ • Credit note issued: ৳10,200                             │  │
+│  │ • Can be used for future orders                          │  │
+│  │                                                           │  │
+│  │ Example 2: Target Not Met                                 │  │
+│  │                                                           │  │
+│  │ Distributor's June Sales:                                 │  │
+│  │ Week 1: ৳100,000                                          │  │
+│  │ Week 2: ৳120,000                                          │  │
+│  │ Week 3: ৳110,000                                          │  │
+│  │ Week 4: ৳90,000                                           │  │
+│  │ ─────────────────                                         │  │
+│  │ TOTAL:  ৳420,000 ✗ (below ৳500K target)                  │  │
+│  │                                                           │  │
+│  │ Result:                                                   │  │
+│  │ • No rebate earned                                        │  │
+│  │ • Missed by: ৳80,000                                      │  │
+│  │ • Message: "You were close! Try again next month"        │  │
+│  └──────────────────────────────────────────────────────────┘  │
+│                                                                  │
+├─────────────────────────────────────────────────────────────────┤
+│  [← Back]   [Save as Draft]   [Preview]   [Create Offer]      │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### **SUB-SCREEN: TIERED REBATE TARGETS**
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  TIERED REBATE CONFIGURATION                                    │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  Define multiple sales targets with increasing rebates          │
+│                                                                  │
+│  TIER 1:                                                        │
+│  ┌─────────────┐    ┌────────────┐    ┌──────────────────┐    │
+│  │ Target:     │    │ Rebate:    │    │ Max:             │    │
+│  │ ৳1,000,000  │    │ 1.0%       │    │ ৳10,000          │    │
+│  └─────────────┘    └────────────┘    └──────────────────┘    │
+│                                                                  │
+│  TIER 2:                                                        │
+│  ┌─────────────┐    ┌────────────┐    ┌──────────────────┐    │
+│  │ Target:     │    │ Rebate:    │    │ Max:             │    │
+│  │ ৳1,500,000  │    │ 2.0%       │    │ ৳30,000          │    │
+│  └─────────────┘    └────────────┘    └──────────────────┘    │
+│                                                                  │
+│  TIER 3:                                                        │
+│  ┌─────────────┐    ┌────────────┐    ┌──────────────────┐    │
+│  │ Target:     │    │ Rebate:    │    │ Max:             │    │
+│  │ ৳2,000,000  │    │ 3.0%       │    │ ৳60,000          │    │
+│  └─────────────┘    └────────────┘    └──────────────────┘    │
+│                                                                  │
+│  TIER 4: (Elite Tier)                                          │
+│  ┌─────────────┐    ┌────────────┐    ┌──────────────────┐    │
+│  │ Target:     │    │ Rebate:    │    │ Max + Bonus:     │    │
+│  │ ৳3,000,000  │    │ 4.0%       │    │ ৳120,000 + Gift  │    │
+│  └─────────────┘    └────────────┘    └──────────────────┘    │
+│                                                                  │
+│  Bonus Gift for Tier 4:                                        │
+│  [Select gift product...] Quantity: [____]                      │
+│                                                                  │
+│  [+ Add Another Tier]  [Remove Last Tier]                      │
+│                                                                  │
+│  CALCULATION EXAMPLES                                           │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │ Sales ৳1,800,000 → Tier 2                                 │  │
+│  │ • Rebate: 2% = ৳36,000                                    │  │
+│  │ • Exceeds cap: ৳36,000 > ৳30,000                          │  │
+│  │ • Applied: ৳30,000 (capped)                               │  │
+│  │                                                           │  │
+│  │ Sales ৳3,200,000 → Tier 4                                 │  │
+│  │ • Rebate: 4% = ৳128,000                                   │  │
+│  │ • Exceeds cap: ৳128,000 > ৳120,000                        │  │
+│  │ • Applied: ৳120,000 + Bonus Gift                          │  │
+│  └──────────────────────────────────────────────────────────┘  │
+│                                                                  │
+├─────────────────────────────────────────────────────────────────┤
+│  [← Back to Single]   [Save as Draft]   [Create Offer]        │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+# FINAL SCREEN: REVIEW & CREATE
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  CREATE NEW OFFER - Review & Create                             │
+│  ●━━━━━━━●━━━━━━━●━━━━━━━●                                      │
+│  Basic    Scope   Type    Review                                │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  REVIEW YOUR OFFER                                              │
+│                                                                  │
+│  ┌────────────────────────────────────────────────────────────┐│
+│  │ 📋 BASIC INFORMATION                           [Edit]      ││
+│  │                                                             ││
+│  │ Offer Name: Summer BOGO Cola Promotion                     ││
+│  │ Description: Buy 6 get 1 free on all cola...               ││
+│  │ Period: 15 Jun 2025 - 30 Sep 2025 (107 days)              ││
+│  │ Status: Active                                              ││
+│  └────────────────────────────────────────────────────────────┘│
+│                                                                  │
+│  ┌────────────────────────────────────────────────────────────┐│
+│  │ 📍 DISTRIBUTOR SCOPE                           [Edit]      ││
+│  │                                                             ││
+│  │ Zones: 2 (Dhaka, Chittagong)                               ││
+│  │ Regions: All in selected zones                             ││
+│  │ Areas: All                                                  ││
+│  │ DB Points: All                                              ││
+│  │ Eligible Distributors: ~843                                 ││
+│  └────────────────────────────────────────────────────────────┘│
+│                                                                  │
+│  ┌────────────────────────────────────────────────────────────┐│
+│  │ 🎁 OFFER TYPE & RULES                          [Edit]      ││
+│  │                                                             ││
+│  │ Type: BOGO - Same SKU                                       ││
+│  │ Segments: BIS, BEV                                          ││
+│  │                                                             ││
+│  │ Selected Products (2):                                     ││
+│  │ • Cola Drink 500ml                                          ││
+│  │ • Lemon Soda 500ml                                          ││
+│  │                                                             ││
+│  │ Rules:                                                      ││
+│  │ • Buy 6 units → Get 1 free                                  ││
+│  │ • Applies multiple times per order                         ││
+│  │ • Maximum 10 free units per order                          ││
+│  │ • Free items automatically added                           ││
+│  └────────────────────────────────────────────────────────────┘│
+│                                                                  │
+│  ┌────────────────────────────────────────────────────────────┐│
+│  │ 💰 ESTIMATED IMPACT                                        ││
+│  │                                                             ││
+│  │ If all 843 distributors order average 20 units:            ││
+│  │ • Total units sold: 16,860                                  ││
+│  │ • Free units given: ~2,810                                  ││
+│  │ • Estimated cost: ৳140,500                                  ││
+│  │ • Average discount per order: ~14.3%                        ││
+│  └────────────────────────────────────────────────────────────┘│
+│                                                                  │
+│  ⚠️  WARNINGS & VALIDATIONS                                     │
+│  ┌────────────────────────────────────────────────────────────┐│
+│  │ ✓ All required fields completed                            ││
+│  │ ✓ No conflicting offers found                              ││
+│  │ ⚠️ This offer overlaps with "Summer Discount 2025"        ││
+│  │   Priority rules will apply                                 ││
+│  └────────────────────────────────────────────────────────────┘│
+│                                                                  │
+│  FINAL ACTIONS                                                  │
+│  ┌────────────────────────────────────────────────────────────┐│
+│  │                                                             ││
+│  │ ☑ I have reviewed all details                               ││
+│  │ ☑ I understand the estimated cost impact                    ││
+│  │                                                             ││
+│  │ What happens next?                                         ││
+│  │ • Offer will be created and activated immediately          ││
+│  │ • 843 distributors will see this in their catalog          ││
+│  │ • Offer starts: 15 Jun 2025 at 00:00                      ││
+│  │                                                             ││
+│  └────────────────────────────────────────────────────────────┘│
+│                                                                  │
+├─────────────────────────────────────────────────────────────────┤
+│  [← Back]   [Save as Draft]   [Create Offer & Activate]        │
+└─────────────────────────────────────────────────────────────────┘

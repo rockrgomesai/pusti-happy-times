@@ -1,0 +1,482 @@
+'use client';
+
+import React, { useState } from 'react';
+import {
+  Box,
+  Stepper,
+  Step,
+  StepLabel,
+  Button,
+  Paper,
+  Stack,
+  useTheme,
+  useMediaQuery
+} from '@mui/material';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+import SaveIcon from '@mui/icons-material/Save';
+import { toast } from 'react-hot-toast';
+import type { ProductSegment, OfferTypeCode } from '@/types/offer';
+
+// Import screen components
+import Screen1OfferScope from './Screen1OfferScope';
+import Screen2TerritoryDistributor from './Screen2TerritoryDistributor';
+import Screen3OfferTypeSelection from './Screen3OfferTypeSelection';
+import Screen4OfferConfiguration from './Screen4OfferConfiguration';
+import Screen5ReviewSubmit from './Screen5ReviewSubmit';
+
+interface WizardState {
+  // Screen 1
+  offerName: string;
+  productSegments: ProductSegment[];
+  validFrom: string;
+  validTo: string;
+  
+  // Screen 2
+  selectedZones: string[];
+  selectedRegions: string[];
+  selectedAreas: string[];
+  selectedDbPoints: string[];
+  selectedDistributors: string[];
+  zonesIncludeMode: 'include' | 'exclude';
+  regionsIncludeMode: 'include' | 'exclude';
+  areasIncludeMode: 'include' | 'exclude';
+  dbPointsIncludeMode: 'include' | 'exclude';
+  distributorsIncludeMode: 'include' | 'exclude';
+  
+  // Screen 3
+  selectedOfferType: OfferTypeCode | '';
+  
+  // Screen 4 - Offer Configuration
+  offerConfig: {
+    // Applicable products (for all offer types that need product selection)
+    selectedProducts?: string[]; // Product IDs
+    applyToAllProducts?: boolean; // Apply to all products in selected segments
+    
+    // Discount offers
+    discountPercentage?: number;
+    discountAmount?: number;
+    minOrderValue?: number;
+    maxDiscountAmount?: number;
+    
+    // Slab-based offers
+    slabs?: Array<{
+      minValue: number;
+      maxValue: number;
+      discountPercentage?: number;
+      discountAmount?: number;
+    }>;
+    
+    // Product-based offers (Buy X Get Y, BOGO, Bundle)
+    buyProducts?: Array<{
+      productId: string;
+      quantity: number;
+    }>;
+    getProducts?: Array<{
+      productId: string;
+      quantity: number;
+      discountPercentage?: number;
+    }>;
+    
+    // Cashback
+    cashbackPercentage?: number;
+    cashbackAmount?: number;
+    maxCashback?: number;
+    
+    // Volume discount
+    volumeSlabs?: Array<{
+      minQuantity: number;
+      maxQuantity: number;
+      discountPercentage: number;
+    }>;
+    
+    // Loyalty points
+    pointsPerUnit?: number;
+    pointsValue?: number; // How much 1 point is worth in currency
+    
+    // Flash sale
+    stockLimit?: number;
+    orderLimit?: number; // Max orders per distributor
+  };
+}
+
+const steps = [
+  'Offer Scope',
+  'Territory & Distributors',
+  'Choose Offer Type',
+  'Configure Offer',
+  'Review & Submit'
+];
+
+export default function OfferWizard() {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  
+  const [activeStep, setActiveStep] = useState(0);
+  const [wizardData, setWizardData] = useState<WizardState>({
+    offerName: '',
+    productSegments: [],
+    validFrom: '',
+    validTo: '',
+    selectedZones: [],
+    selectedRegions: [],
+    selectedAreas: [],
+    selectedDbPoints: [],
+    selectedDistributors: [],
+    zonesIncludeMode: 'include',
+    regionsIncludeMode: 'include',
+    areasIncludeMode: 'include',
+    dbPointsIncludeMode: 'include',
+    distributorsIncludeMode: 'include',
+    selectedOfferType: '',
+    offerConfig: {}
+  });
+  
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const updateWizardData = (data: Partial<WizardState>) => {
+    setWizardData(prev => ({ ...prev, ...data }));
+    // Clear errors for updated fields
+    const updatedFields = Object.keys(data);
+    setErrors(prev => {
+      const newErrors = { ...prev };
+      updatedFields.forEach(field => delete newErrors[field]);
+      return newErrors;
+    });
+  };
+
+  const validateScreen1 = (): boolean => {
+    const newErrors: Record<string, string> = {};
+    
+    if (!wizardData.offerName.trim()) {
+      newErrors.offerName = 'Offer name is required';
+    }
+    
+    if (wizardData.productSegments.length === 0) {
+      newErrors.productSegments = 'Select at least one product segment';
+    }
+    
+    if (!wizardData.validFrom) {
+      newErrors.validFrom = 'Start date is required';
+    }
+    
+    if (!wizardData.validTo) {
+      newErrors.validTo = 'End date is required';
+    } else if (wizardData.validFrom && wizardData.validTo < wizardData.validFrom) {
+      newErrors.validTo = 'End date must be after start date';
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const validateScreen2 = (): boolean => {
+    const newErrors: Record<string, string> = {};
+    
+    if (wizardData.selectedDbPoints.length === 0) {
+      newErrors.selectedDbPoints = 'Select at least one distribution point';
+    }
+    
+    if (wizardData.selectedDistributors.length === 0) {
+      newErrors.selectedDistributors = 'Select at least one distributor';
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const validateScreen3 = (): boolean => {
+    if (!wizardData.selectedOfferType) {
+      toast.error('Please select an offer type template');
+      return false;
+    }
+    return true;
+  };
+
+  const validateScreen4 = (): boolean => {
+    const newErrors: Record<string, string> = {};
+    const config = wizardData.offerConfig;
+    
+    // Validate product selection (required for most offer types except FIRST_ORDER)
+    if (wizardData.selectedOfferType !== 'FIRST_ORDER') {
+      if (!config.selectedProducts || config.selectedProducts.length === 0) {
+        newErrors.selectedProducts = 'Select at least one product';
+        toast.error('Please select at least one product');
+        setErrors(newErrors);
+        return false;
+      }
+    }
+    
+    // Validate type-specific configuration
+    switch (wizardData.selectedOfferType) {
+      case 'FLAT_DISCOUNT_PCT':
+        if (!config.discountPercentage || config.discountPercentage <= 0) {
+          newErrors.discountPercentage = 'Discount percentage is required';
+        }
+        break;
+      case 'FLAT_DISCOUNT_AMT':
+        if (!config.discountAmount || config.discountAmount <= 0) {
+          newErrors.discountAmount = 'Discount amount is required';
+        }
+        break;
+      case 'DISCOUNT_SLAB_PCT':
+      case 'DISCOUNT_SLAB_AMT':
+        if (!config.slabs || config.slabs.length === 0) {
+          toast.error('Please add at least one discount slab');
+          return false;
+        }
+        break;
+      case 'LOYALTY_POINTS':
+        if (!config.pointsPerUnit || config.pointsPerUnit <= 0) {
+          newErrors.pointsPerUnit = 'Points per unit is required';
+        }
+        if (!config.pointsValue || config.pointsValue <= 0) {
+          newErrors.pointsValue = 'Point value is required';
+        }
+        break;
+      case 'FLASH_SALE':
+        if (!config.discountPercentage || config.discountPercentage <= 0) {
+          newErrors.discountPercentage = 'Discount percentage is required';
+        }
+        break;
+    }
+    
+    setErrors(newErrors);
+    if (Object.keys(newErrors).length > 0) {
+      toast.error('Please fill all required configuration fields');
+      return false;
+    }
+    return true;
+  };
+
+  const handleNext = () => {
+    let isValid = true;
+    
+    switch (activeStep) {
+      case 0:
+        isValid = validateScreen1();
+        break;
+      case 1:
+        isValid = validateScreen2();
+        break;
+      case 2:
+        isValid = validateScreen3();
+        break;
+      case 3:
+        isValid = validateScreen4();
+        break;
+      default:
+        break;
+    }
+    
+    if (isValid) {
+      setActiveStep((prevActiveStep) => prevActiveStep + 1);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      toast.error('Please fill all required fields correctly');
+    }
+  };
+
+  const handleBack = () => {
+    setActiveStep((prevActiveStep) => prevActiveStep - 1);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleSave = () => {
+    console.log('Saving offer:', wizardData);
+    toast.success('Offer saved successfully!');
+    // TODO: Implement actual save logic
+  };
+
+  const renderStepContent = (step: number) => {
+    switch (step) {
+      case 0:
+        return (
+          <Screen1OfferScope
+            data={{
+              offerName: wizardData.offerName,
+              productSegments: wizardData.productSegments,
+              validFrom: wizardData.validFrom,
+              validTo: wizardData.validTo
+            }}
+            onChange={updateWizardData}
+            errors={errors}
+          />
+        );
+      case 1:
+        return (
+          <Screen2TerritoryDistributor
+            data={{
+              selectedZones: wizardData.selectedZones,
+              selectedRegions: wizardData.selectedRegions,
+              selectedAreas: wizardData.selectedAreas,
+              selectedDbPoints: wizardData.selectedDbPoints,
+              selectedDistributors: wizardData.selectedDistributors,
+              zonesIncludeMode: wizardData.zonesIncludeMode,
+              regionsIncludeMode: wizardData.regionsIncludeMode,
+              areasIncludeMode: wizardData.areasIncludeMode,
+              dbPointsIncludeMode: wizardData.dbPointsIncludeMode,
+              distributorsIncludeMode: wizardData.distributorsIncludeMode
+            }}
+            productSegments={wizardData.productSegments}
+            onChange={updateWizardData}
+            errors={errors}
+          />
+        );
+      case 2:
+        return (
+          <Screen3OfferTypeSelection
+            selectedOfferType={wizardData.selectedOfferType}
+            onSelectOfferType={(code) => updateWizardData({ selectedOfferType: code })}
+          />
+        );
+      case 3:
+        return (
+          <Screen4OfferConfiguration
+            data={{
+              selectedOfferType: wizardData.selectedOfferType,
+              productSegments: wizardData.productSegments,
+              offerConfig: wizardData.offerConfig
+            }}
+            onChange={updateWizardData}
+            errors={errors}
+          />
+        );
+      case 4:
+        return (
+          <Screen5ReviewSubmit
+            data={{
+              offerName: wizardData.offerName,
+              productSegments: wizardData.productSegments,
+              startDate: wizardData.validFrom,
+              endDate: wizardData.validTo,
+              selectedOfferType: wizardData.selectedOfferType,
+              territories: {
+                zones: {
+                  items: wizardData.selectedZones.map(id => ({ _id: id })),
+                  mode: wizardData.zonesIncludeMode
+                },
+                regions: {
+                  items: wizardData.selectedRegions.map(id => ({ _id: id })),
+                  mode: wizardData.regionsIncludeMode
+                },
+                areas: {
+                  items: wizardData.selectedAreas.map(id => ({ _id: id })),
+                  mode: wizardData.areasIncludeMode
+                },
+                dbPoints: {
+                  items: wizardData.selectedDbPoints.map(id => ({ _id: id })),
+                  mode: wizardData.dbPointsIncludeMode
+                }
+              },
+              distributors: {
+                items: wizardData.selectedDistributors.map(id => ({ _id: id })),
+                mode: wizardData.distributorsIncludeMode
+              },
+              offerConfig: wizardData.offerConfig
+            }}
+            onStepChange={setActiveStep}
+            onSubmit={() => {
+              toast.success('Offer created successfully!');
+              // TODO: Navigate to offers list or reset wizard
+            }}
+          />
+        );
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <Box sx={{ width: '100%' }}>
+      {/* Stepper */}
+      <Paper 
+        elevation={1} 
+        sx={{ 
+          p: { xs: 2, sm: 3 }, 
+          mb: 3,
+          position: 'sticky',
+          top: 0,
+          zIndex: 10,
+          bgcolor: 'background.paper'
+        }}
+      >
+        <Stepper 
+          activeStep={activeStep} 
+          alternativeLabel={isMobile}
+          orientation={isMobile ? 'horizontal' : 'horizontal'}
+        >
+          {steps.map((label, index) => (
+            <Step key={label}>
+              <StepLabel
+                sx={{
+                  '& .MuiStepLabel-label': {
+                    fontSize: { xs: '0.75rem', sm: '0.875rem' }
+                  }
+                }}
+              >
+                {isMobile && index > activeStep ? '' : label}
+              </StepLabel>
+            </Step>
+          ))}
+        </Stepper>
+      </Paper>
+
+      {/* Step Content */}
+      <Box sx={{ mb: 3 }}>
+        {renderStepContent(activeStep)}
+      </Box>
+
+      {/* Navigation Buttons */}
+      <Paper 
+        elevation={2} 
+        sx={{ 
+          p: { xs: 2, sm: 3 },
+          position: 'sticky',
+          bottom: 0,
+          zIndex: 10,
+          bgcolor: 'background.paper'
+        }}
+      >
+        <Stack 
+          direction="row" 
+          spacing={2} 
+          justifyContent="space-between"
+          sx={{ maxWidth: 1200, mx: 'auto' }}
+        >
+          <Button
+            disabled={activeStep === 0}
+            onClick={handleBack}
+            startIcon={<ArrowBackIcon />}
+            variant="outlined"
+            size={isMobile ? 'medium' : 'large'}
+          >
+            Back
+          </Button>
+          
+          <Box sx={{ flex: 1 }} />
+          
+          {activeStep === steps.length - 1 ? (
+            <Button
+              variant="contained"
+              onClick={handleSave}
+              startIcon={<SaveIcon />}
+              size={isMobile ? 'medium' : 'large'}
+            >
+              Save Offer
+            </Button>
+          ) : (
+            <Button
+              variant="contained"
+              onClick={handleNext}
+              endIcon={<ArrowForwardIcon />}
+              size={isMobile ? 'medium' : 'large'}
+            >
+              Next
+            </Button>
+          )}
+        </Stack>
+      </Paper>
+    </Box>
+  );
+}
