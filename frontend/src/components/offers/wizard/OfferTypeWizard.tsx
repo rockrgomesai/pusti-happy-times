@@ -108,29 +108,85 @@ const steps = [
   'Review & Submit'
 ];
 
-export default function OfferWizard() {
+interface OfferWizardProps {
+  mode?: 'create' | 'edit';
+  initialData?: any; // The existing offer data when editing
+  offerId?: string; // The offer ID when editing
+  onSuccess?: () => void; // Callback after successful save
+}
+
+export default function OfferWizard({ 
+  mode = 'create', 
+  initialData = null,
+  offerId = '',
+  onSuccess
+}: OfferWizardProps) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   
   const [activeStep, setActiveStep] = useState(0);
-  const [wizardData, setWizardData] = useState<WizardState>({
-    offerName: '',
-    productSegments: [],
-    validFrom: '',
-    validTo: '',
-    selectedZones: [],
-    selectedRegions: [],
-    selectedAreas: [],
-    selectedDbPoints: [],
-    selectedDistributors: [],
-    zonesIncludeMode: 'include',
-    regionsIncludeMode: 'include',
-    areasIncludeMode: 'include',
-    dbPointsIncludeMode: 'include',
-    distributorsIncludeMode: 'include',
-    selectedOfferType: '',
-    offerConfig: {}
-  });
+  
+  // Initialize wizard data from initialData or empty state
+  const getInitialWizardData = (): WizardState => {
+    if (mode === 'edit' && initialData) {
+      return {
+        offerName: initialData.name || '',
+        productSegments: initialData.product_segments || [],
+        validFrom: initialData.start_date ? initialData.start_date.split('T')[0] : '',
+        validTo: initialData.end_date ? initialData.end_date.split('T')[0] : '',
+        
+        // Backend returns 'ids' not 'items' in the API response
+        selectedZones: initialData.territories?.zones?.ids?.map((z: any) => z._id || z) || [],
+        selectedRegions: initialData.territories?.regions?.ids?.map((r: any) => r._id || r) || [],
+        selectedAreas: initialData.territories?.areas?.ids?.map((a: any) => a._id || a) || [],
+        selectedDbPoints: initialData.territories?.db_points?.ids?.map((d: any) => d._id || d) || [],
+        selectedDistributors: initialData.distributors?.ids?.map((d: any) => d._id || d) || [],
+        
+        zonesIncludeMode: initialData.territories?.zones?.mode || 'include',
+        regionsIncludeMode: initialData.territories?.regions?.mode || 'include',
+        areasIncludeMode: initialData.territories?.areas?.mode || 'include',
+        dbPointsIncludeMode: initialData.territories?.db_points?.mode || 'include',
+        distributorsIncludeMode: initialData.distributors?.mode || 'include',
+        
+        selectedOfferType: initialData.offer_type || '',
+        offerConfig: {
+          ...initialData.config,
+          // Convert populated product objects to IDs if they exist
+          selectedProducts: initialData.config?.selectedProducts?.map((p: any) => p._id || p) || [],
+          // Convert buy/get products if they exist
+          buyProducts: initialData.config?.buyProducts?.map((bp: any) => ({
+            ...bp,
+            productId: bp.productId?._id || bp.productId
+          })) || [],
+          getProducts: initialData.config?.getProducts?.map((gp: any) => ({
+            ...gp,
+            productId: gp.productId?._id || gp.productId
+          })) || []
+        }
+      };
+    }
+    
+    return {
+      offerName: '',
+      productSegments: [],
+      validFrom: '',
+      validTo: '',
+      selectedZones: [],
+      selectedRegions: [],
+      selectedAreas: [],
+      selectedDbPoints: [],
+      selectedDistributors: [],
+      zonesIncludeMode: 'include',
+      regionsIncludeMode: 'include',
+      areasIncludeMode: 'include',
+      dbPointsIncludeMode: 'include',
+      distributorsIncludeMode: 'include',
+      selectedOfferType: '',
+      offerConfig: {}
+    };
+  };
+  
+  const [wizardData, setWizardData] = useState<WizardState>(getInitialWizardData());
   
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -376,9 +432,14 @@ export default function OfferWizard() {
               offerConfig: wizardData.offerConfig
             }}
             onStepChange={setActiveStep}
+            mode={mode}
+            offerId={offerId}
             onSubmit={() => {
-              toast.success('Offer created successfully!');
-              // TODO: Navigate to offers list or reset wizard
+              if (onSuccess) {
+                onSuccess();
+              } else {
+                toast.success(`Offer ${mode === 'edit' ? 'updated' : 'created'} successfully!`);
+              }
             }}
           />
         );

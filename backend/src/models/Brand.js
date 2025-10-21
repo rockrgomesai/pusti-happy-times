@@ -23,6 +23,12 @@ const brandSchema = new mongoose.Schema(
       trim: true,
     },
 
+    // Active status - default true
+    active: {
+      type: Boolean,
+      default: true,
+    },
+
     // Audit fields (matches database schema)
     created_at: {
       type: Date,

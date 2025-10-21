@@ -61,6 +61,36 @@ const userSchema = new mongoose.Schema({
     default: true
   },
 
+  // User type classification (employee or distributor)
+  user_type: {
+    type: String,
+    enum: ['employee', 'distributor'],
+    required: [true, 'User type is required'],
+    index: true
+  },
+
+  // Employee reference (required if user_type === 'employee')
+  employee_id: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Employee',
+    default: null,
+    index: true
+  },
+
+  // Distributor reference (required if user_type === 'distributor')
+  distributor_id: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Distributor',
+    default: null,
+    index: true
+  },
+
+  // Token version for logout all devices feature
+  tokenVersion: {
+    type: Number,
+    default: 0
+  },
+
   // Audit fields (matches database schema)
   created_at: {
     type: Date,
@@ -97,6 +127,38 @@ const userSchema = new mongoose.Schema({
  */
 // Unique indexes (automatically created due to unique: true)
 // username, email
+
+/**
+ * Validation middleware - ensure user_type matches employee_id/distributor_id
+ */
+userSchema.pre('validate', function(next) {
+  // Validate employee users
+  if (this.user_type === 'employee') {
+    if (!this.employee_id) {
+      return next(new Error('employee_id is required for employee users'));
+    }
+    if (this.distributor_id) {
+      return next(new Error('Employee users cannot have distributor_id'));
+    }
+  }
+
+  // Validate distributor users
+  if (this.user_type === 'distributor') {
+    if (!this.distributor_id) {
+      return next(new Error('distributor_id is required for distributor users'));
+    }
+    if (this.employee_id) {
+      return next(new Error('Distributor users cannot have employee_id'));
+    }
+  }
+
+  // Ensure user cannot be both employee and distributor
+  if (this.employee_id && this.distributor_id) {
+    return next(new Error('User cannot be both employee and distributor'));
+  }
+
+  next();
+});
 
 /**
  * Password hashing middleware

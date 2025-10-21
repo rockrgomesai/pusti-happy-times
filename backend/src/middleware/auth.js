@@ -83,20 +83,54 @@ class TokenManager {
   /**
    * Generate token pair (access + refresh)
    * @param {Object} user - User document
+   * @param {Object} contextData - Additional context data (employee/distributor info)
    * @returns {Object} Object containing access and refresh tokens
    */
-  static generateTokenPair(user) {
+  static generateTokenPair(user, contextData = {}) {
     const payload = {
       userId: user._id,
       username: user.username,
       roleId: user.role_id,
-      tokenType: 'access'
+      tokenType: 'access',
+      
+      // User type and token version
+      user_type: user.user_type,
+      tokenVersion: user.tokenVersion || 0
     };
+
+    // Add employee context
+    if (user.user_type === 'employee') {
+      payload.employee_id = user.employee_id?._id || user.employee_id;
+      payload.employee_type = contextData.employee_type;
+      payload.employee_code = contextData.employee_code;
+      
+      // Add context based on employee_type
+      if (contextData.employee_type === 'field' && contextData.territory_assignments) {
+        payload.territory_assignments = contextData.territory_assignments;
+      }
+      
+      if (contextData.employee_type === 'facility' && contextData.facility_assignments) {
+        payload.facility_assignments = contextData.facility_assignments;
+      }
+      
+      if (contextData.employee_type === 'hq' && contextData.department) {
+        payload.department = contextData.department;
+      }
+    }
+
+    // Add distributor context
+    if (user.user_type === 'distributor') {
+      payload.distributor_id = user.distributor_id?._id || user.distributor_id;
+      payload.distributor_name = contextData.distributor_name;
+      payload.db_point_id = contextData.db_point_id;
+      payload.product_segment = contextData.product_segment;
+    }
 
     const refreshPayload = {
       userId: user._id,
       username: user.username,
-      tokenType: 'refresh'
+      tokenType: 'refresh',
+      tokenVersion: user.tokenVersion || 0
     };
 
     return {
@@ -160,6 +194,8 @@ const authenticate = async (req, res, next) => {
     // Load user with role information
     const user = await User.findById(decoded.userId)
       .populate('role_id')
+      .populate('employee_id')
+      .populate('distributor_id')
       .select('+lastLogin +lastLoginIP');
 
     if (!user) {
@@ -167,6 +203,15 @@ const authenticate = async (req, res, next) => {
         success: false,
         message: 'User not found',
         code: 'USER_NOT_FOUND'
+      });
+    }
+
+    // Check token version
+    if (decoded.tokenVersion !== undefined && user.tokenVersion !== decoded.tokenVersion) {
+      return res.status(401).json({
+        success: false,
+        message: 'Token has been invalidated',
+        code: 'TOKEN_VERSION_MISMATCH'
       });
     }
 
@@ -202,6 +247,19 @@ const authenticate = async (req, res, next) => {
     req.user = user;
     req.token = token;
     req.tokenPayload = decoded;
+
+    // Attach user context for authorization checks
+    req.userContext = {
+      user_type: decoded.user_type,
+      employee_type: decoded.employee_type,
+      employee_id: decoded.employee_id,
+      distributor_id: decoded.distributor_id,
+      territory_assignments: decoded.territory_assignments,
+      facility_assignments: decoded.facility_assignments,
+      department: decoded.department,
+      db_point_id: decoded.db_point_id,
+      product_segment: decoded.product_segment
+    };
 
     // Update last activity timestamp in Redis
     await redis.updateUserActivity(user._id.toString());
@@ -397,6 +455,202 @@ const requireSelfOnly = (userIdParam = 'userId') => {
  */
 
 /**
+ * Require specific user type
+ * @param {...string} allowedTypes - Allowed user types ('employee', 'distributor')
+ */
+const requireUserType = (...allowedTypes) => {
+  return (req, res, next) => {
+    if (!req.userContext) {
+      return res.status(401).json({
+        success: false,
+        message: 'Authentication required',
+        code: 'AUTH_REQUIRED'
+      });
+    }
+
+    if (!allowedTypes.includes(req.userContext.user_type)) {
+      return res.status(403).json({
+        success: false,
+        message: 'User type not authorized',
+        code: 'USER_TYPE_FORBIDDEN',
+        required: allowedTypes,
+        current: req.userContext.user_type
+      });
+    }
+
+    next();
+  };
+};
+
+/**
+ * Require specific employee type (only for employee users)
+ * @param {...string} allowedTypes - Allowed employee types ('system_admin', 'field', 'facility', 'hq')
+ */
+const requireEmployeeType = (...allowedTypes) => {
+  return (req, res, next) => {
+    if (!req.userContext || req.userContext.user_type !== 'employee') {
+      return res.status(403).json({
+        success: false,
+        message: 'Employee account required',
+        code: 'EMPLOYEE_REQUIRED'
+      });
+    }
+
+    if (!allowedTypes.includes(req.userContext.employee_type)) {
+      return res.status(403).json({
+        success: false,
+        message: 'Employee type not authorized',
+        code: 'EMPLOYEE_TYPE_FORBIDDEN',
+        required: allowedTypes,
+        current: req.userContext.employee_type
+      });
+    }
+
+    next();
+  };
+};
+
+/**
+ * Require territory access (for field employees)
+ * @param {string} territoryIdParam - Name of parameter or body field containing territory ID
+ */
+const requireTerritoryAccess = (territoryIdParam = 'territoryId') => {
+  return (req, res, next) => {
+    // System admins bypass territory restrictions
+    if (req.userContext?.employee_type === 'system_admin') {
+      return next();
+    }
+
+    if (!req.userContext || req.userContext.employee_type !== 'field') {
+      return res.status(403).json({
+        success: false,
+        message: 'Field employee account required',
+        code: 'FIELD_EMPLOYEE_REQUIRED'
+      });
+    }
+
+    const requestedTerritoryId = req.params[territoryIdParam] || req.body[territoryIdParam];
+    const assignments = req.userContext.territory_assignments;
+    
+    if (!assignments || !assignments.all_territory_ids) {
+      return res.status(403).json({
+        success: false,
+        message: 'No territory assignments found',
+        code: 'NO_TERRITORY_ASSIGNMENTS'
+      });
+    }
+
+    const hasAccess = assignments.all_territory_ids.some(
+      id => id.toString() === requestedTerritoryId
+    );
+
+    if (!hasAccess) {
+      return res.status(403).json({
+        success: false,
+        message: 'Territory access denied',
+        code: 'TERRITORY_ACCESS_DENIED'
+      });
+    }
+
+    next();
+  };
+};
+
+/**
+ * Require facility access (for facility employees)
+ * @param {string} facilityIdParam - Name of parameter or body field containing facility ID
+ * @param {string} facilityType - Optional: 'factory' or 'depot' to restrict type
+ */
+const requireFacilityAccess = (facilityIdParam = 'facilityId', facilityType = null) => {
+  return (req, res, next) => {
+    // System admins bypass facility restrictions
+    if (req.userContext?.employee_type === 'system_admin') {
+      return next();
+    }
+
+    if (!req.userContext || req.userContext.employee_type !== 'facility') {
+      return res.status(403).json({
+        success: false,
+        message: 'Facility employee account required',
+        code: 'FACILITY_EMPLOYEE_REQUIRED'
+      });
+    }
+
+    const requestedFacilityId = req.params[facilityIdParam] || req.body[facilityIdParam];
+    const assignments = req.userContext.facility_assignments;
+    
+    if (!assignments) {
+      return res.status(403).json({
+        success: false,
+        message: 'No facility assignments found',
+        code: 'NO_FACILITY_ASSIGNMENTS'
+      });
+    }
+
+    let hasAccess = false;
+    
+    if (!facilityType || facilityType === 'factory') {
+      hasAccess = hasAccess || (assignments.factory_ids || []).some(
+        id => id.toString() === requestedFacilityId
+      );
+    }
+    
+    if (!facilityType || facilityType === 'depot') {
+      hasAccess = hasAccess || (assignments.depot_ids || []).some(
+        id => id.toString() === requestedFacilityId
+      );
+    }
+
+    if (!hasAccess) {
+      return res.status(403).json({
+        success: false,
+        message: 'Facility access denied',
+        code: 'FACILITY_ACCESS_DENIED'
+      });
+    }
+
+    next();
+  };
+};
+
+/**
+ * Require department access (for hq employees)
+ * @param {...string} allowedDepartments - Allowed departments
+ */
+const requireDepartment = (...allowedDepartments) => {
+  return (req, res, next) => {
+    // System admins bypass department restrictions
+    if (req.userContext?.employee_type === 'system_admin') {
+      return next();
+    }
+
+    if (!req.userContext || req.userContext.employee_type !== 'hq') {
+      return res.status(403).json({
+        success: false,
+        message: 'HQ employee account required',
+        code: 'HQ_EMPLOYEE_REQUIRED'
+      });
+    }
+
+    if (!allowedDepartments.includes(req.userContext.department)) {
+      return res.status(403).json({
+        success: false,
+        message: 'Department access denied',
+        code: 'DEPARTMENT_ACCESS_DENIED',
+        required: allowedDepartments,
+        current: req.userContext.department
+      });
+    }
+
+    next();
+  };
+};
+
+/**
+ * Permission Checking Utilities
+ */
+
+/**
  * Check if user has specific permission
  * @param {Object} user - User document with role populated
  * @param {string} permissionType - Type of permission (menu, page, api)
@@ -527,6 +781,13 @@ module.exports = {
   requirePermission,
   requireApiPermission,
   requireSelfOnly,
+
+  // New context-aware authorization middleware
+  requireUserType,
+  requireEmployeeType,
+  requireTerritoryAccess,
+  requireFacilityAccess,
+  requireDepartment,
 
   // Utility functions
   checkUserPermission,

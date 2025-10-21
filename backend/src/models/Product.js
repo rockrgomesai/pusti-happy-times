@@ -71,11 +71,22 @@ const productSchema = new mongoose.Schema(
       type: Number,
       sparse: true,
     },
+    // Legacy field - kept for backward compatibility
     depot_ids: {
       type: [
         {
           type: mongoose.Schema.Types.ObjectId,
-          ref: "Depot",
+          ref: "Facility",
+        },
+      ],
+      default: [],
+    },
+    // New field - references facilities with type='Depot'
+    facility_ids: {
+      type: [
+        {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Facility",
         },
       ],
       default: [],
@@ -143,11 +154,13 @@ productSchema.index({ brand_id: 1, category_id: 1, active: 1 }, { name: "idx_bra
 productSchema.index({ product_type: 1, brand_id: 1 }, { name: "idx_type_brand" });
 productSchema.index({ sku: "text", bangla_name: "text" }, { name: "idx_text_search" });
 productSchema.index({ depot_ids: 1 }, { name: "idx_depot_ids" });
+productSchema.index({ facility_ids: 1 }, { name: "idx_facility_ids" });
 
 const assignNullsForProcured = (doc) => {
   doc.bangla_name = null;
   doc.erp_id = null;
   doc.depot_ids = [];
+  doc.facility_ids = [];
   doc.db_price = null;
   doc.mrp = null;
   doc.ctn_pcs = null;
@@ -159,11 +172,15 @@ productSchema.pre("validate", function (next) {
   if (!this.product_type) return next();
 
   if (this.product_type === "MANUFACTURED") {
-    const depots = Array.isArray(this.depot_ids)
+    // Use facility_ids if available, otherwise fall back to depot_ids
+    const facilities = Array.isArray(this.facility_ids) && this.facility_ids.length > 0
+      ? this.facility_ids.filter((id) => id != null)
+      : Array.isArray(this.depot_ids)
       ? this.depot_ids.filter((id) => id != null)
       : [];
-    if (!depots.length) {
-      const error = new Error("At least one depot is required for MANUFACTURED products");
+    
+    if (!facilities.length) {
+      const error = new Error("At least one facility (depot) is required for MANUFACTURED products");
       error.statusCode = 400;
       return next(error);
     }
@@ -177,7 +194,10 @@ productSchema.pre("validate", function (next) {
       error.statusCode = 400;
       return next(error);
     }
-    this.depot_ids = depots;
+    
+    // Sync both fields for backward compatibility
+    this.facility_ids = facilities;
+    this.depot_ids = facilities;
   } else if (this.product_type === "PROCURED") {
     if (!PROCURED_UNITS.includes(this.unit)) {
       const error = new Error("PROCURED products must use PCS unit");
@@ -208,12 +228,18 @@ productSchema.pre("findOneAndUpdate", function (next) {
   if (set.unit) {
     set.unit = set.unit.toUpperCase();
   }
-  if (set.depot_ids) {
-    const depots = Array.isArray(set.depot_ids)
-      ? set.depot_ids.filter(Boolean)
-      : [set.depot_ids].filter(Boolean);
-    set.depot_ids = depots;
+  
+  // Handle both depot_ids and facility_ids
+  if (set.depot_ids || set.facility_ids) {
+    const facilities = Array.isArray(set.facility_ids || set.depot_ids)
+      ? (set.facility_ids || set.depot_ids).filter(Boolean)
+      : [set.facility_ids || set.depot_ids].filter(Boolean);
+    
+    // Sync both fields for backward compatibility
+    set.facility_ids = facilities;
+    set.depot_ids = facilities;
   }
+  
   set.updated_at = new Date();
   update.$set = set;
   this.setUpdate(update);

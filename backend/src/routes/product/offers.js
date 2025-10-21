@@ -1,6 +1,7 @@
 const express = require("express");
 const { query, body, param, validationResult } = require("express-validator");
-const { Territory, Distributor, Product, Category, Brand, Offer } = require("../../models");
+const { Territory, Distributor, Product, Category, Brand } = require("../../models");
+const Offer = require("../../models/Offer"); // Import directly
 const { requireApiPermission } = require("../../middleware/auth");
 
 const router = express.Router();
@@ -477,8 +478,12 @@ router.post(
   ],
   async (req, res) => {
     try {
+      console.log("=== CREATE OFFER REQUEST ===");
+      console.log("Request body:", JSON.stringify(req.body, null, 2));
+      
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
+        console.log("Validation errors:", errors.array());
         return res.status(400).json({
           success: false,
           errors: errors.array(),
@@ -499,6 +504,13 @@ router.post(
         description,
         internal_notes
       } = req.body;
+
+      console.log("Creating offer with data:");
+      console.log("- name:", name);
+      console.log("- offer_type:", offer_type);
+      console.log("- territories:", JSON.stringify(territories, null, 2));
+      console.log("- distributors:", JSON.stringify(distributors, null, 2));
+      console.log("- config:", JSON.stringify(config, null, 2));
 
       // Create the offer
       const offer = new Offer({
@@ -525,15 +537,17 @@ router.post(
 
       await offer.save();
 
+      console.log("Offer saved successfully with ID:", offer._id);
+
       // Populate references for response
       await offer.populate([
-        { path: "config.selectedProducts", select: "sku bangla_name unit db_price" },
-        { path: "territories.zones.ids", select: "name type level" },
-        { path: "territories.regions.ids", select: "name type level" },
-        { path: "territories.areas.ids", select: "name type level" },
-        { path: "territories.db_points.ids", select: "name type level" },
-        { path: "distributors.ids", select: "name mobile db_point_id" },
-        { path: "created_by", select: "name email" }
+        { path: "config.selectedProducts", select: "sku bangla_name unit db_price", strictPopulate: false },
+        { path: "territories.zones.ids", select: "name type level", strictPopulate: false },
+        { path: "territories.regions.ids", select: "name type level", strictPopulate: false },
+        { path: "territories.areas.ids", select: "name type level", strictPopulate: false },
+        { path: "territories.db_points.ids", select: "name type level", strictPopulate: false },
+        { path: "distributors.ids", select: "name mobile db_point_id", strictPopulate: false },
+        { path: "created_by", select: "name email", strictPopulate: false }
       ]);
 
       res.status(201).json({
@@ -542,7 +556,13 @@ router.post(
         data: offer,
       });
     } catch (error) {
-      console.error("Error creating offer:", error);
+      console.error("=== ERROR CREATING OFFER ===");
+      console.error("Error name:", error.name);
+      console.error("Error message:", error.message);
+      console.error("Error stack:", error.stack);
+      if (error.errors) {
+        console.error("Validation errors:", JSON.stringify(error.errors, null, 2));
+      }
       res.status(500).json({
         success: false,
         message: "Failed to create offer",
@@ -634,8 +654,16 @@ router.get(
       const [offers, total] = await Promise.all([
         Offer.find(filter)
           .select("-internal_notes") // Hide internal notes from list
-          .populate("config.selectedProducts", "sku bangla_name unit")
-          .populate("created_by", "name email")
+          .populate({
+            path: "config.selectedProducts",
+            select: "sku bangla_name unit",
+            strictPopulate: false
+          })
+          .populate({
+            path: "created_by",
+            select: "name email",
+            strictPopulate: false
+          })
           .sort({ createdAt: -1 })
           .skip(skip)
           .limit(parseInt(limit))
@@ -687,15 +715,51 @@ router.get(
       }
 
       const offer = await Offer.findById(req.params.id)
-        .populate("config.selectedProducts", "sku bangla_name unit db_price mrp")
-        .populate("territories.zones.ids", "name type level")
-        .populate("territories.regions.ids", "name type level")
-        .populate("territories.areas.ids", "name type level")
-        .populate("territories.db_points.ids", "name type level")
-        .populate("distributors.ids", "name mobile db_point_id")
-        .populate("created_by", "name email")
-        .populate("updated_by", "name email")
-        .populate("approved_by", "name email")
+        .populate({
+          path: "config.selectedProducts",
+          select: "sku bangla_name unit db_price mrp",
+          strictPopulate: false
+        })
+        .populate({
+          path: "territories.zones.ids",
+          select: "name type level",
+          strictPopulate: false
+        })
+        .populate({
+          path: "territories.regions.ids",
+          select: "name type level",
+          strictPopulate: false
+        })
+        .populate({
+          path: "territories.areas.ids",
+          select: "name type level",
+          strictPopulate: false
+        })
+        .populate({
+          path: "territories.db_points.ids",
+          select: "name type level",
+          strictPopulate: false
+        })
+        .populate({
+          path: "distributors.ids",
+          select: "name mobile db_point_id",
+          strictPopulate: false
+        })
+        .populate({
+          path: "created_by",
+          select: "name email",
+          strictPopulate: false
+        })
+        .populate({
+          path: "updated_by",
+          select: "name email",
+          strictPopulate: false
+        })
+        .populate({
+          path: "approved_by",
+          select: "name email",
+          strictPopulate: false
+        })
         .lean();
 
       if (!offer) {
@@ -764,15 +828,51 @@ router.put(
       }
 
       const offer = await Offer.findByIdAndUpdate(id, updateData, { new: true, runValidators: true })
-        .populate("config.selectedProducts", "sku bangla_name unit db_price mrp")
-        .populate("territories.zones.ids", "name type level")
-        .populate("territories.regions.ids", "name type level")
-        .populate("territories.areas.ids", "name type level")
-        .populate("territories.db_points.ids", "name type level")
-        .populate("distributors.ids", "name mobile db_point_id")
-        .populate("created_by", "name email")
-        .populate("updated_by", "name email")
-        .populate("approved_by", "name email")
+        .populate({
+          path: "config.selectedProducts",
+          select: "sku bangla_name unit db_price mrp",
+          strictPopulate: false
+        })
+        .populate({
+          path: "territories.zones.ids",
+          select: "name type level",
+          strictPopulate: false
+        })
+        .populate({
+          path: "territories.regions.ids",
+          select: "name type level",
+          strictPopulate: false
+        })
+        .populate({
+          path: "territories.areas.ids",
+          select: "name type level",
+          strictPopulate: false
+        })
+        .populate({
+          path: "territories.db_points.ids",
+          select: "name type level",
+          strictPopulate: false
+        })
+        .populate({
+          path: "distributors.ids",
+          select: "name mobile db_point_id",
+          strictPopulate: false
+        })
+        .populate({
+          path: "created_by",
+          select: "name email",
+          strictPopulate: false
+        })
+        .populate({
+          path: "updated_by",
+          select: "name email",
+          strictPopulate: false
+        })
+        .populate({
+          path: "approved_by",
+          select: "name email",
+          strictPopulate: false
+        })
         .lean();
 
       if (!offer) {
@@ -888,7 +988,11 @@ router.patch(
         },
         { new: true }
       )
-        .populate("config.selectedProducts", "sku bangla_name unit")
+        .populate({
+          path: "config.selectedProducts",
+          select: "sku bangla_name unit",
+          strictPopulate: false
+        })
         .lean();
 
       if (!offer) {
@@ -971,13 +1075,41 @@ router.post(
 
       // Populate the response
       const populatedOffer = await Offer.findById(duplicatedOffer._id)
-        .populate("config.selectedProducts", "sku bangla_name unit db_price mrp")
-        .populate("territories.zones.ids", "name type level")
-        .populate("territories.regions.ids", "name type level")
-        .populate("territories.areas.ids", "name type level")
-        .populate("territories.db_points.ids", "name type level")
-        .populate("distributors.ids", "name mobile db_point_id")
-        .populate("created_by", "name email")
+        .populate({
+          path: "config.selectedProducts",
+          select: "sku bangla_name unit db_price mrp",
+          strictPopulate: false
+        })
+        .populate({
+          path: "territories.zones.ids",
+          select: "name type level",
+          strictPopulate: false
+        })
+        .populate({
+          path: "territories.regions.ids",
+          select: "name type level",
+          strictPopulate: false
+        })
+        .populate({
+          path: "territories.areas.ids",
+          select: "name type level",
+          strictPopulate: false
+        })
+        .populate({
+          path: "territories.db_points.ids",
+          select: "name type level",
+          strictPopulate: false
+        })
+        .populate({
+          path: "distributors.ids",
+          select: "name mobile db_point_id",
+          strictPopulate: false
+        })
+        .populate({
+          path: "created_by",
+          select: "name email",
+          strictPopulate: false
+        })
         .lean();
 
       res.status(201).json({

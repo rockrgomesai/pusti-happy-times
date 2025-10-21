@@ -31,6 +31,9 @@ import {
   ToggleButtonGroup,
   TableSortLabel,
   TablePagination,
+  FormControlLabel,
+  Switch,
+  Chip,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -55,6 +58,7 @@ import { calculateTableMinWidth } from '@/lib/tableUtils';
 interface Brand {
   _id: string;
   brand: string;
+  active: boolean;
   created_at: string;
   created_by?: { username: string } | null;
   updated_at: string;
@@ -64,13 +68,14 @@ interface Brand {
 // Brand form schema (simplified to match actual database fields)
 const brandSchema = z.object({
   brand: z.string().min(2, 'Brand name must be at least 2 characters'),
+  active: z.boolean(),
 });
 
 type BrandFormData = z.infer<typeof brandSchema>;
 
 type Order = 'asc' | 'desc';
 
-type OrderableKeys = keyof Pick<Brand, 'brand' | 'created_at' | 'updated_at' | 'created_by'>;
+type OrderableKeys = keyof Pick<Brand, 'brand' | 'active' | 'created_at' | 'updated_at' | 'created_by'>;
 
 interface BrandColumnDefinition {
   id: string;
@@ -110,6 +115,10 @@ export default function BrandsPage() {
         accessor: (row) => row.brand,
       },
       {
+        header: 'Status',
+        accessor: (row) => row.active ? 'Active' : 'Inactive',
+      },
+      {
         header: 'Created By',
         accessor: (row) => row.created_by?.username ?? '',
       },
@@ -135,6 +144,7 @@ export default function BrandsPage() {
     resolver: zodResolver(brandSchema),
     defaultValues: {
       brand: '',
+      active: true,
     },
   });
 
@@ -191,6 +201,9 @@ export default function BrandsPage() {
       } else if (orderBy === 'created_by') {
         aValue = a.created_by?.username ?? '';
         bValue = b.created_by?.username ?? '';
+      } else if (orderBy === 'active') {
+        aValue = a.active ? 1 : 0;
+        bValue = b.active ? 1 : 0;
       } else {
         aValue = a[orderBy];
         bValue = b[orderBy];
@@ -280,6 +293,7 @@ export default function BrandsPage() {
       setEditingBrand(brand);
       reset({
         brand: brand.brand,
+        active: brand.active,
       });
       setOpenDialog(true);
     },
@@ -289,7 +303,10 @@ export default function BrandsPage() {
   // Handle add new brand
   const handleAddBrand = useCallback(() => {
     setEditingBrand(null);
-    reset();
+    reset({
+      brand: '',
+      active: true,
+    });
     setOpenDialog(true);
   }, [reset]);
 
@@ -311,6 +328,19 @@ export default function BrandsPage() {
           <Typography variant="body1" fontWeight="medium">
             {brand.brand}
           </Typography>
+        ),
+      },
+      {
+        id: 'active',
+        label: 'Status',
+        sortableKey: 'active',
+        renderCell: (brand) => (
+          <Chip
+            label={brand.active ? 'Active' : 'Inactive'}
+            color={brand.active ? 'success' : 'default'}
+            variant={brand.active ? 'filled' : 'outlined'}
+            size="small"
+          />
         ),
       },
       {
@@ -481,9 +511,17 @@ export default function BrandsPage() {
         <Grid size={{ xs: 12, sm: 6, md: 4 }} key={brand._id}>
           <Card>
             <CardContent>
-              <Typography variant="h6" component="h2" gutterBottom>
-                {brand.brand}
-              </Typography>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', mb: 1 }}>
+                <Typography variant="h6" component="h2">
+                  {brand.brand}
+                </Typography>
+                <Chip
+                  label={brand.active ? 'Active' : 'Inactive'}
+                  color={brand.active ? 'success' : 'default'}
+                  variant={brand.active ? 'filled' : 'outlined'}
+                  size="small"
+                />
+              </Box>
               <Typography variant="body2" color="text.secondary">
                 Created: {formatDate(brand.created_at)}
               </Typography>
@@ -788,6 +826,23 @@ export default function BrandsPage() {
                   helperText={errors.brand?.message}
                   margin="normal"
                   placeholder="Enter brand name"
+                />
+              )}
+            />
+            
+            <Controller
+              name="active"
+              control={control}
+              render={({ field }) => (
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={field.value ?? true}
+                      onChange={(event) => field.onChange(event.target.checked)}
+                    />
+                  }
+                  label="Active"
+                  sx={{ mt: 2 }}
                 />
               )}
             />

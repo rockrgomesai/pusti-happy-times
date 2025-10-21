@@ -19,7 +19,8 @@ const Role = require("./Role");
 const User = require("./User");
 const Brand = require("./Brand");
 const Factory = require("./Factory");
-const Depot = require("./Depot");
+const Depot = require("./Depot"); // Legacy - kept for backward compatibility
+const Facility = require("./Facility"); // New unified model
 const Employee = require("./Employee");
 const Designation = require("./Designation");
 const Transport = require("./Transport");
@@ -48,7 +49,8 @@ const models = {
   User,
   Brand,
   Factory,
-  Depot,
+  Depot, // Legacy
+  Facility, // New
   Employee,
   Designation,
   Transport,
@@ -80,6 +82,7 @@ const validateModels = () => {
     "Brand",
     "Factory",
     "Depot",
+    "Facility",
     "Employee",
     "Designation",
     "Category",
@@ -182,7 +185,8 @@ module.exports = {
   User,
   Brand,
   Factory,
-  Depot,
+  Depot, // Legacy
+  Facility, // New
   Employee,
   Designation,
   Transport,

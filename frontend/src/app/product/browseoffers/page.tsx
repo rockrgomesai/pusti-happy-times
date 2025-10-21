@@ -29,9 +29,7 @@ import {
   FormControl,
   InputLabel,
   CircularProgress,
-  Alert,
-  Switch,
-  FormControlLabel
+  Alert
 } from '@mui/material';
 import {
   Edit as EditIcon,
@@ -120,7 +118,6 @@ export default function BrowseOffersPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [offerTypeFilter, setOfferTypeFilter] = useState<string>('');
-  const [activeOnlyFilter, setActiveOnlyFilter] = useState(false);
   
   // Dialogs
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -141,7 +138,6 @@ export default function BrowseOffersPage() {
       if (searchTerm) params.search = searchTerm;
       if (statusFilter) params.status = statusFilter;
       if (offerTypeFilter) params.offer_type = offerTypeFilter;
-      if (activeOnlyFilter) params.active = true;
       
       const response = await offersApi.getAll(params);
       
@@ -158,7 +154,7 @@ export default function BrowseOffersPage() {
 
   useEffect(() => {
     loadOffers();
-  }, [page, rowsPerPage, statusFilter, offerTypeFilter, activeOnlyFilter]);
+  }, [page, rowsPerPage, statusFilter, offerTypeFilter]);
 
   // Search with debounce
   useEffect(() => {
@@ -226,14 +222,14 @@ export default function BrowseOffersPage() {
     }
   };
 
-  const handleToggleStatus = async (offer: Offer) => {
+  const handleStatusChange = async (offerId: string, newStatus: string) => {
     try {
       setActionLoading(true);
-      await offersApi.toggleStatus(offer._id, !offer.active);
+      await offersApi.update(offerId, { status: newStatus });
       loadOffers(); // Reload to show updated status
     } catch (err: any) {
-      console.error('Error toggling offer status:', err);
-      alert(err.response?.data?.message || 'Failed to toggle offer status');
+      console.error('Error changing offer status:', err);
+      alert(err.response?.data?.message || 'Failed to change offer status');
     } finally {
       setActionLoading(false);
     }
@@ -307,16 +303,6 @@ export default function BrowseOffersPage() {
               ))}
             </Select>
           </FormControl>
-
-          <FormControlLabel
-            control={
-              <Switch
-                checked={activeOnlyFilter}
-                onChange={(e) => setActiveOnlyFilter(e.target.checked)}
-              />
-            }
-            label="Active Only"
-          />
         </Stack>
       </Paper>
 
@@ -338,20 +324,19 @@ export default function BrowseOffersPage() {
               <TableCell>Start Date</TableCell>
               <TableCell>End Date</TableCell>
               <TableCell>Status</TableCell>
-              <TableCell align="center">Active</TableCell>
               <TableCell align="center">Actions</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={8} align="center" sx={{ py: 8 }}>
+                <TableCell colSpan={7} align="center" sx={{ py: 8 }}>
                   <CircularProgress />
                 </TableCell>
               </TableRow>
             ) : offers.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} align="center" sx={{ py: 8 }}>
+                <TableCell colSpan={7} align="center" sx={{ py: 8 }}>
                   <Typography color="text.secondary">
                     No offers found
                   </Typography>
@@ -388,19 +373,29 @@ export default function BrowseOffersPage() {
                     </Typography>
                   </TableCell>
                   <TableCell>
-                    <Chip
-                      label={offer.status.toUpperCase()}
-                      color={getStatusColor(offer.status)}
-                      size="small"
-                    />
-                  </TableCell>
-                  <TableCell align="center">
-                    <Switch
-                      checked={offer.active}
-                      onChange={() => handleToggleStatus(offer)}
-                      disabled={actionLoading}
-                      color="success"
-                    />
+                    <FormControl size="small" fullWidth sx={{ minWidth: 120 }}>
+                      <Select
+                        value={offer.status}
+                        onChange={(e) => handleStatusChange(offer._id, e.target.value)}
+                        disabled={actionLoading}
+                        sx={{
+                          '& .MuiSelect-select': {
+                            py: 0.5,
+                          }
+                        }}
+                      >
+                        {OFFER_STATUS.map(status => (
+                          <MenuItem key={status} value={status}>
+                            <Chip
+                              label={status.toUpperCase()}
+                              color={getStatusColor(status)}
+                              size="small"
+                              sx={{ width: '100%' }}
+                            />
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
                   </TableCell>
                   <TableCell align="center">
                     <Stack direction="row" spacing={0.5} justifyContent="center">

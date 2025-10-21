@@ -62,9 +62,11 @@ interface Screen5Props {
   };
   onStepChange: (step: number) => void;
   onSubmit: () => void;
+  mode?: 'create' | 'edit';
+  offerId?: string;
 }
 
-export default function Screen5ReviewSubmit({ data, onStepChange, onSubmit }: Screen5Props) {
+export default function Screen5ReviewSubmit({ data, onStepChange, onSubmit, mode = 'create', offerId }: Screen5Props) {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string>('');
   const [submitSuccess, setSubmitSuccess] = useState(false);
@@ -134,14 +136,25 @@ export default function Screen5ReviewSubmit({ data, onStepChange, onSubmit }: Sc
         config: data.offerConfig,
         
         // Status
-        status: 'draft',
-        active: true
+        status: 'draft'
       };
 
-      // Call API to create offer
-      const response = await offersApi.createOffer(payload);
+      console.log('=== SUBMITTING OFFER ===');
+      console.log('Payload:', JSON.stringify(payload, null, 2));
+
+      let response;
+      if (mode === 'edit' && offerId) {
+        // Call API to update offer
+        console.log('Updating offer:', offerId);
+        response = await offersApi.update(offerId, payload);
+      } else {
+        // Call API to create offer
+        console.log('Creating new offer');
+        response = await offersApi.createOffer(payload);
+      }
       
       setSubmitSuccess(true);
+      console.log('Offer submitted successfully:', response);
       
       // Call parent callback
       setTimeout(() => {
@@ -149,8 +162,11 @@ export default function Screen5ReviewSubmit({ data, onStepChange, onSubmit }: Sc
       }, 1500);
       
     } catch (error: any) {
-      console.error('Failed to create offer:', error);
-      setSubmitError(error.response?.data?.message || 'Failed to create offer. Please try again.');
+      console.error(`=== ERROR ${mode.toUpperCase()}ING OFFER ===`);
+      console.error('Error:', error);
+      console.error('Error response:', error.response);
+      console.error('Error data:', error.response?.data);
+      setSubmitError(error.response?.data?.message || `Failed to ${mode} offer. Please try again.`);
     } finally {
       setSubmitting(false);
     }

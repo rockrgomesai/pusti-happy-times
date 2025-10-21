@@ -146,7 +146,7 @@ export default function Screen1OfferScope({ data, onChange, errors }: Screen1Pro
                 >
                   Validity Period *
                 </Typography>
-                <Stack spacing={2}>
+                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
                   <TextField
                     fullWidth
                     label="Valid From"

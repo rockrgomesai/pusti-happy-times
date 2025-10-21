@@ -126,4 +126,8 @@ offerSchema.virtual("hasExpired").get(function() {
   return this.end_date < new Date();
 });
 
-module.exports = mongoose.model("Offer", offerSchema);
+// Delete existing model if it exists and create fresh one
+delete mongoose.connection.models['Offer'];
+const Offer = mongoose.model("Offer", offerSchema);
+
+module.exports = Offer;

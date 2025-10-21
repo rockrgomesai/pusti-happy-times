@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Edit Offer - Territory Data Pre-fill Fix</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #1976d2;
+            border-bottom: 3px solid #1976d2;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #424242;
+            margin-top: 30px;
+        }
+        .status-box {
+            padding: 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+        }
+        .success {
+            background: #e8f5e9;
+            border-left: 4px solid #4caf50;
+        }
+        .error {
+            background: #ffebee;
+            border-left: 4px solid #f44336;
+        }
+        .warning {
+            background: #fff3e0;
+            border-left: 4px solid #ff9800;
+        }
+        .info {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+        }
+        .checklist {
+            list-style: none;
+            padding: 0;
+        }
+        .checklist li {
+            padding: 10px;
+            margin: 5px 0;
+            background: #f5f5f5;
+            border-radius: 4px;
+        }
+        .checklist li:before {
+            content: "☐ ";
+            font-size: 20px;
+            margin-right: 10px;
+        }
+        .code {
+            background: #263238;
+            color: #aed581;
+            padding: 15px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            overflow-x: auto;
+            margin: 10px 0;
+        }
+        .btn {
+            display: inline-block;
+            padding: 12px 24px;
+            background: #1976d2;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            margin: 10px 5px;
+            font-weight: bold;
+        }
+        .btn:hover {
+            background: #1565c0;
+        }
+        .btn-success {
+            background: #4caf50;
+        }
+        .btn-success:hover {
+            background: #45a049;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background: #1976d2;
+            color: white;
+        }
+        tr:hover {
+            background: #f5f5f5;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Test: Edit Offer - Territory Data Pre-fill Fix</h1>
+        
+        <div class="status-box info">
+            <strong>Fix Applied:</strong> Screen 2 in Edit Offer now correctly loads pre-filled territorial data
+            <br><strong>Date:</strong> October 19, 2025
+            <br><strong>Files Modified:</strong>
+            <ul>
+                <li>frontend/src/components/offers/wizard/OfferTypeWizard.tsx</li>
+                <li>frontend/src/components/offers/wizard/Screen2TerritoryDistributor.tsx</li>
+            </ul>
+        </div>
+
+        <h2>🚀 Quick Start</h2>
+        <div>
+            <a href="http://localhost:3000/product/browseoffers" class="btn" target="_blank">
+                Open Browse Offers
+            </a>
+            <a href="http://localhost:3000/product/offers/create" class="btn btn-success" target="_blank">
+                Create New Offer
+            </a>
+        </div>
+
+        <h2>📋 Test Procedure</h2>
+
+        <h3>Step 1: Create a Test Offer</h3>
+        <ol>
+            <li>Navigate to <a href="http://localhost:3000/product/offers/create" target="_blank">Create Offer</a></li>
+            <li>Fill out all screens with territorial data</li>
+            <li><strong>Important:</strong> In Screen 2, select multiple items:
+                <ul class="checklist">
+                    <li>Select 2-3 Zones</li>
+                    <li>Select 2-3 Regions</li>
+                    <li>Select 2-3 Areas</li>
+                    <li>Select 2-3 DB Points</li>
+                    <li>Select 2-3 Distributors</li>
+                </ul>
+            </li>
+            <li>Complete and submit the offer</li>
+        </ol>
+
+        <h3>Step 2: Edit the Offer</h3>
+        <ol>
+            <li>From Browse Offers page, click Edit on your test offer</li>
+            <li>Navigate to Screen 2 (click Next from Screen 1)</li>
+        </ol>
+
+        <h3>Step 3: Verify the Fix</h3>
+        <div class="status-box success">
+            <strong>✅ Expected Results (After Fix):</strong>
+            <ul class="checklist">
+                <li>All previously selected Zones are checked</li>
+                <li>Zones list is populated with all zones</li>
+                <li>All previously selected Regions are checked</li>
+                <li>Regions list shows regions for selected zones</li>
+                <li>All previously selected Areas are checked</li>
+                <li>Areas list shows areas for selected regions</li>
+                <li>All previously selected DB Points are checked</li>
+                <li>DB Points list shows points for selected areas</li>
+                <li>All previously selected Distributors are checked</li>
+                <li>Distributors list shows distributors for selected DB points</li>
+                <li>Include/Exclude mode is correctly set for each level</li>
+            </ul>
+        </div>
+
+        <div class="status-box error">
+            <strong>❌ Before Fix (What was broken):</strong>
+            <ul>
+                <li>Screen 2 showed empty lists or no selections</li>
+                <li>Console errors about undefined 'items' property</li>
+                <li>Cascading selections were cleared on load</li>
+            </ul>
+        </div>
+
+        <h2>🔍 Browser Console Checks</h2>
+        <p>Open Developer Tools (F12) and check:</p>
+        
+        <h3>Console Tab:</h3>
+        <ul>
+            <li>✅ No errors about "Cannot read property 'items' of undefined"</li>
+            <li>✅ API calls succeed for loading territories</li>
+            <li>✅ Data is properly mapped from backend response</li>
+        </ul>
+
+        <h3>Network Tab:</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>API Call</th>
+                    <th>Purpose</th>
+                    <th>Expected Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>GET /product/offers/[ID]</td>
+                    <td>Load offer details</td>
+                    <td>200 OK</td>
+                </tr>
+                <tr>
+                    <td>GET /product/offers/territories/zone</td>
+                    <td>Load all zones</td>
+                    <td>200 OK</td>
+                </tr>
+                <tr>
+                    <td>GET /product/offers/territories/region?parent_id=...</td>
+                    <td>Load regions for zones</td>
+                    <td>200 OK</td>
+                </tr>
+                <tr>
+                    <td>GET /product/offers/territories/area?parent_id=...</td>
+                    <td>Load areas for regions</td>
+                    <td>200 OK</td>
+                </tr>
+                <tr>
+                    <td>GET /product/offers/territories/db_point?parent_id=...</td>
+                    <td>Load DB points for areas</td>
+                    <td>200 OK</td>
+                </tr>
+                <tr>
+                    <td>POST /product/offers/distributors/eligible</td>
+                    <td>Load eligible distributors</td>
+                    <td>200 OK</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h2>🐛 Debug Script</h2>
+        <p>If you see issues, run this in the browser console on the edit page:</p>
+        <div class="code">
+// Check what data was loaded from backend
+console.log('=== OFFER DATA DEBUG ===');
+const offerData = window.__NEXT_DATA__?.props?.pageProps?.offer;
+if (offerData) {
+    console.log('Offer Name:', offerData.name);
+    console.log('Territories Structure:', {
+        zones: {
+            hasIds: !!offerData.territories?.zones?.ids,
+            hasItems: !!offerData.territories?.zones?.items,
+            count: offerData.territories?.zones?.ids?.length || 0,
+            mode: offerData.territories?.zones?.mode
+        },
+        regions: {
+            hasIds: !!offerData.territories?.regions?.ids,
+            hasItems: !!offerData.territories?.regions?.items,
+            count: offerData.territories?.regions?.ids?.length || 0
+        },
+        areas: {
+            hasIds: !!offerData.territories?.areas?.ids,
+            hasItems: !!offerData.territories?.areas?.items,
+            count: offerData.territories?.areas?.ids?.length || 0
+        },
+        dbPoints: {
+            hasIds: !!offerData.territories?.db_points?.ids,
+            hasItems: !!offerData.territories?.db_points?.items,
+            count: offerData.territories?.db_points?.ids?.length || 0
+        }
+    });
+    console.log('Distributors:', {
+        hasIds: !!offerData.distributors?.ids,
+        hasItems: !!offerData.distributors?.items,
+        count: offerData.distributors?.ids?.length || 0,
+        mode: offerData.distributors?.mode
+    });
+} else {
+    console.log('No offer data found in page props');
+}
+        </div>
+
+        <h2>✅ Success Criteria</h2>
+        <div class="status-box success">
+            <p><strong>The fix is successful if:</strong></p>
+            <ol>
+                <li>All territorial selections from creation are visible in edit mode</li>
+                <li>Cascading territory lists load properly (zones → regions → areas → DB points)</li>
+                <li>Distributors list populates based on selected DB points</li>
+                <li>Include/Exclude modes are preserved</li>
+                <li>No console errors related to undefined properties</li>
+                <li>You can modify selections and proceed through the wizard</li>
+            </ol>
+        </div>
+
+        <h2>📝 Report Results</h2>
+        <div class="status-box info">
+            <p>After testing, document:</p>
+            <ul>
+                <li>✅ or ❌ for each verification point above</li>
+                <li>Any console errors or warnings</li>
+                <li>Screenshots of Screen 2 in edit mode showing selections</li>
+                <li>Any unexpected behavior</li>
+            </ul>
+        </div>
+
+        <h2>🔄 Rollback (if needed)</h2>
+        <div class="status-box warning">
+            <p>If issues occur, revert the changes in these files:</p>
+            <div class="code">
+git checkout main frontend/src/components/offers/wizard/OfferTypeWizard.tsx
+git checkout main frontend/src/components/offers/wizard/Screen2TerritoryDistributor.tsx
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Auto-check server status
+        window.addEventListener('load', function() {
+            fetch('http://localhost:5000/health')
+                .then(r => r.json())
+                .then(() => {
+                    console.log('✅ Backend server is running on port 5000');
+                })
+                .catch(() => {
+                    console.warn('⚠️  Backend server may not be running on port 5000');
+                });
+            
+            fetch('http://localhost:3000')
+                .then(() => {
+                    console.log('✅ Frontend server is running on port 3000');
+                })
+                .catch(() => {
+                    console.warn('⚠️  Frontend server may not be running on port 3000');
+                });
+        });
+    </script>
+</body>
+</html>

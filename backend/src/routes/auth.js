@@ -25,6 +25,7 @@ const {
   TokenManager,
   authenticate,
   optionalAuthenticate,
+  requireRole,
 } = require("../middleware/auth");
 const redis = require("../config/redis");
 
@@ -122,10 +123,12 @@ router.post("/login", loginValidation, async (req, res) => {
 
     const { username, password } = req.body;
 
-    // Find user by username and include password
+    // Find user by username and include password, populate employee/distributor
     const user = await User.findOne({ username })
       .select("+password")
-      .populate("role_id");
+      .populate("role_id")
+      .populate("employee_id")
+      .populate("distributor_id");
 
     if (!user) {
       return res.status(401).json({
@@ -173,8 +176,42 @@ router.post("/login", loginValidation, async (req, res) => {
       });
     }
 
-    // Generate JWT tokens
-    const tokens = TokenManager.generateTokenPair(user);
+    // Build context data based on user_type
+    let contextData = {};
+    
+    if (user.user_type === 'employee' && user.employee_id) {
+      const employee = user.employee_id; // Already populated
+      
+      contextData = {
+        employee_type: employee.employee_type,
+        employee_code: employee.employee_id,
+        employee_name: employee.name,
+        designation_id: employee.designation_id
+      };
+      
+      // Add context based on employee_type
+      if (employee.employee_type === 'field') {
+        contextData.territory_assignments = employee.territory_assignments;
+      } else if (employee.employee_type === 'facility') {
+        contextData.facility_assignments = employee.facility_assignments;
+      } else if (employee.employee_type === 'hq') {
+        contextData.department = employee.department;
+      }
+      
+    } else if (user.user_type === 'distributor' && user.distributor_id) {
+      const distributor = user.distributor_id; // Already populated
+      
+      contextData = {
+        distributor_name: distributor.name,
+        db_point_id: distributor.db_point_id,
+        territorries: distributor.territorries,
+        product_segment: distributor.product_segment,
+        skus_exclude: distributor.skus_exclude
+      };
+    }
+
+    // Generate JWT tokens with context
+    const tokens = TokenManager.generateTokenPair(user, contextData);
 
     // Prepare user data for response (exclude password)
     const userData = {
@@ -182,10 +219,12 @@ router.post("/login", loginValidation, async (req, res) => {
       username: user.username,
       email: user.email,
       active: user.active,
+      user_type: user.user_type,
       role: {
         id: user.role_id._id,
         role: user.role_id.role,
       },
+      context: contextData
     };
 
     res.json({
@@ -725,6 +764,140 @@ router.put(
         success: false,
         message: "Failed to change password",
         code: "SERVER_ERROR",
+      });
+    }
+  }
+);
+
+/**
+ * @route   POST /api/auth/logout-all-devices
+ * @desc    Logout current user from all devices
+ * @access  Private
+ */
+router.post("/logout-all-devices", authenticate, async (req, res) => {
+  try {
+    const user = req.user;
+    
+    // Increment token version to invalidate all existing tokens
+    user.tokenVersion = (user.tokenVersion || 0) + 1;
+    await user.save();
+    
+    // Clear refresh tokens from Redis
+    try {
+      await redis.deleteRefreshToken(user._id.toString());
+    } catch (redisError) {
+      console.error("Error clearing refresh tokens:", redisError);
+    }
+    
+    console.log(`User ${user.username} logged out from all devices`);
+    
+    res.json({
+      success: true,
+      message: "Logged out from all devices successfully"
+    });
+  } catch (error) {
+    console.error("Logout all devices error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to logout from all devices",
+      code: "SERVER_ERROR"
+    });
+  }
+});
+
+/**
+ * @route   POST /api/auth/admin/logout-user-all-devices
+ * @desc    Force logout a specific user from all devices (SuperAdmin only)
+ * @access  Private (SuperAdmin)
+ */
+router.post(
+  "/admin/logout-user-all-devices",
+  authenticate,
+  requireRole("SuperAdmin"),
+  [body("userId").isMongoId().withMessage("Valid user ID required")],
+  async (req, res) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({
+          success: false,
+          message: "Validation failed",
+          errors: errors.array()
+        });
+      }
+
+      const { userId } = req.body;
+      
+      const targetUser = await User.findById(userId);
+      if (!targetUser) {
+        return res.status(404).json({
+          success: false,
+          message: "User not found"
+        });
+      }
+      
+      // Increment token version
+      targetUser.tokenVersion = (targetUser.tokenVersion || 0) + 1;
+      await targetUser.save();
+      
+      // Clear refresh tokens
+      try {
+        await redis.deleteRefreshToken(userId);
+      } catch (redisError) {
+        console.error("Error clearing refresh tokens:", redisError);
+      }
+      
+      // Log the action
+      console.log(`SuperAdmin ${req.user.username} forced logout for user ${targetUser.username}`);
+      
+      res.json({
+        success: true,
+        message: `All devices logged out for user: ${targetUser.username}`
+      });
+    } catch (error) {
+      console.error("Admin logout user error:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to logout user",
+        code: "SERVER_ERROR"
+      });
+    }
+  }
+);
+
+/**
+ * @route   POST /api/auth/admin/logout-all-users
+ * @desc    Force logout all users from all devices (SuperAdmin only)
+ * @access  Private (SuperAdmin)
+ */
+router.post(
+  "/admin/logout-all-users",
+  authenticate,
+  requireRole("SuperAdmin"),
+  async (req, res) => {
+    try {
+      // Increment tokenVersion for ALL users
+      const result = await User.updateMany(
+        {},
+        { $inc: { tokenVersion: 1 } }
+      );
+      
+      // Note: Redis refresh tokens will expire naturally or can be cleared manually
+      // Clearing all Redis keys could be risky in production
+      
+      // Log the action
+      console.log(`SuperAdmin ${req.user.username} forced logout for ALL users (${result.modifiedCount} users)`);
+      
+      res.json({
+        success: true,
+        message: `All users logged out from all devices (${result.modifiedCount} users affected)`
+      });
+    } catch (error) {
+      console.error("Admin logout all users error:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to logout all users",
+        code: "SERVER_ERROR"
       });
     }
   }

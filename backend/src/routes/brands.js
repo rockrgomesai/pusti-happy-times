@@ -31,6 +31,10 @@ const brandValidation = [
     .withMessage("Brand name is required")
     .isLength({ min: 1, max: 100 })
     .withMessage("Brand name must be between 1 and 100 characters"),
+  body("active")
+    .optional()
+    .isBoolean()
+    .withMessage("Active must be a boolean value"),
 ];
 
 // ID parameter validation
@@ -179,7 +183,7 @@ router.post(
   handleValidationErrors,
   async (req, res) => {
     try {
-      const { brand } = req.body;
+      const { brand, active } = req.body;
       const currentUserId = getCurrentUserId(req);
 
       // Check if brand already exists
@@ -194,6 +198,7 @@ router.post(
       // Create new brand
       const newBrand = new Brand({
         brand,
+        active: active !== undefined ? active : true,
         created_by: currentUserId,
         updated_by: currentUserId,
       });
@@ -244,8 +249,14 @@ router.put(
   handleValidationErrors,
   async (req, res) => {
     try {
-      const { brand } = req.body;
+      const { brand, active } = req.body;
       const currentUserId = getCurrentUserId(req);
+
+      // Debug logging
+      console.log('🔍 UPDATE BRAND - Request body:', req.body);
+      console.log('🔍 UPDATE BRAND - Extracted brand:', brand);
+      console.log('🔍 UPDATE BRAND - Extracted active:', active);
+      console.log('🔍 UPDATE BRAND - Active type:', typeof active);
 
       // Check if brand exists
       const existingBrand = await Brand.findById(req.params.id);
@@ -255,6 +266,8 @@ router.put(
           message: "Brand not found",
         });
       }
+
+      console.log('🔍 UPDATE BRAND - Existing brand:', existingBrand);
 
       // Check if new brand name already exists (excluding current brand)
       const duplicateBrand = await Brand.findOne({
@@ -268,14 +281,24 @@ router.put(
         });
       }
 
+      // Prepare update data
+      const updateData = {
+        brand,
+        updated_by: currentUserId,
+        updated_at: new Date(),
+      };
+
+      // Add active field if provided
+      if (active !== undefined) {
+        updateData.active = active;
+      }
+
+      console.log('🔍 UPDATE BRAND - Update data:', updateData);
+
       // Update brand
       const updatedBrand = await Brand.findByIdAndUpdate(
         req.params.id,
-        {
-          brand,
-          updated_by: currentUserId,
-          updated_at: new Date(),
-        },
+        updateData,
         {
           new: true,
           runValidators: true,
@@ -283,6 +306,8 @@ router.put(
       )
         .populate("created_by", "username")
         .populate("updated_by", "username");
+
+      console.log('🔍 UPDATE BRAND - Updated brand:', updatedBrand);
 
       res.json({
         success: true,

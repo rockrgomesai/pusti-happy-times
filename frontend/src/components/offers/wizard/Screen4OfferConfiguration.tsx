@@ -28,7 +28,10 @@ import {
   CircularProgress,
   Alert,
   Divider,
-  InputAdornment
+  InputAdornment,
+  Pagination,
+  Select,
+  MenuItem
 } from '@mui/material';
 import { offersApi } from '@/lib/api/offers';
 import type { OfferTypeCode, ProductSegment } from '@/types/offer';
@@ -50,6 +53,7 @@ interface ProductGroup {
     sku: string;
     product_type: string;
     unit: string;
+    bangla_name?: string;
     trade_price?: number;
     db_price?: number;
     mrp?: number;
@@ -102,8 +106,13 @@ interface Screen4Props {
 
 export default function Screen4OfferConfiguration({ data, onChange, errors }: Screen4Props) {
   const [productGroups, setProductGroups] = useState<ProductGroup[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [expandedCategory, setExpandedCategory] = useState<string | false>(false);
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [showAllProducts, setShowAllProducts] = useState(false);
 
   // Load products grouped by category
   useEffect(() => {
@@ -194,6 +203,34 @@ export default function Screen4OfferConfiguration({ data, onChange, errors }: Sc
     updateConfig({ slabs: updatedSlabs });
   };
 
+  // Pagination logic
+  const totalCategories = productGroups.length;
+  const totalPages = Math.ceil(totalCategories / itemsPerPage);
+  
+  const paginatedProductGroups = showAllProducts 
+    ? productGroups 
+    : productGroups.slice(
+        (currentPage - 1) * itemsPerPage,
+        currentPage * itemsPerPage
+      );
+
+  const handlePageChange = (_event: React.ChangeEvent<unknown>, page: number) => {
+    setCurrentPage(page);
+    setExpandedCategory(false); // Close any open accordion when changing pages
+  };
+
+  const handleItemsPerPageChange = (event: any) => {
+    setItemsPerPage(Number(event.target.value));
+    setCurrentPage(1); // Reset to first page
+    setExpandedCategory(false);
+  };
+
+  const toggleShowAll = () => {
+    setShowAllProducts(!showAllProducts);
+    setCurrentPage(1);
+    setExpandedCategory(false);
+  };
+
   // Render product selection section (common for most offer types)
   const renderProductSelection = () => (
     <Paper sx={{ p: 2, bgcolor: 'grey.50' }}>
@@ -218,7 +255,7 @@ export default function Screen4OfferConfiguration({ data, onChange, errors }: Sc
       </Box>
 
       <Typography variant="caption" color="text.secondary" display="block" mb={2}>
-        {data.offerConfig.selectedProducts?.length || 0} products selected
+        {data.offerConfig.selectedProducts?.length || 0} products selected out of {productGroups.flatMap(g => g.products).length} total
       </Typography>
 
       {loading ? (
@@ -230,8 +267,66 @@ export default function Screen4OfferConfiguration({ data, onChange, errors }: Sc
           No products found for the selected segments. Please check Screen 1.
         </Alert>
       ) : (
-        <Stack spacing={1}>
-          {productGroups.map((group) => {
+        <Stack spacing={2}>
+          {/* Pagination Controls */}
+          {totalCategories > 10 && (
+            <Paper sx={{ p: 2, bgcolor: 'background.default' }}>
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="center" justifyContent="space-between">
+                <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={showAllProducts}
+                        onChange={toggleShowAll}
+                        size="small"
+                      />
+                    }
+                    label={
+                      <Typography variant="body2">
+                        Show all categories
+                      </Typography>
+                    }
+                  />
+                  {!showAllProducts && (
+                    <>
+                      <Divider orientation="vertical" flexItem />
+                      <Stack direction="row" spacing={1} alignItems="center">
+                        <Typography variant="body2" color="text.secondary">
+                          Per page:
+                        </Typography>
+                        <Select
+                          value={itemsPerPage}
+                          onChange={handleItemsPerPageChange}
+                          size="small"
+                          sx={{ minWidth: 70 }}
+                        >
+                          <MenuItem value={10}>10</MenuItem>
+                          <MenuItem value={15}>15</MenuItem>
+                          <MenuItem value={20}>20</MenuItem>
+                        </Select>
+                      </Stack>
+                    </>
+                  )}
+                </Stack>
+                
+                {!showAllProducts && (
+                  <Pagination
+                    count={totalPages}
+                    page={currentPage}
+                    onChange={handlePageChange}
+                    color="primary"
+                    size="small"
+                    showFirstButton
+                    showLastButton
+                  />
+                )}
+              </Stack>
+            </Paper>
+          )}
+
+          {/* Product Categories */}
+          <Stack spacing={1}>
+          {paginatedProductGroups.map((group) => {
             const categoryProductIds = group.products.map(p => p._id);
             const selectedInCategory = categoryProductIds.filter(id => 
               data.offerConfig.selectedProducts?.includes(id)
@@ -302,13 +397,29 @@ export default function Screen4OfferConfiguration({ data, onChange, errors }: Sc
               </Accordion>
             );
           })}
-        </Stack>
-      )}
+          </Stack>
 
-      {errors?.selectedProducts && (
-        <Alert severity="error" sx={{ mt: 2 }}>
-          {errors.selectedProducts}
-        </Alert>
+          {/* Bottom Pagination Controls (only if paginated) */}
+          {!showAllProducts && totalCategories > 10 && (
+            <Box sx={{ display: 'flex', justifyContent: 'center', pt: 2 }}>
+              <Pagination
+                count={totalPages}
+                page={currentPage}
+                onChange={handlePageChange}
+                color="primary"
+                size="medium"
+                showFirstButton
+                showLastButton
+              />
+            </Box>
+          )}
+
+          {errors?.selectedProducts && (
+            <Alert severity="error">
+              {errors.selectedProducts}
+            </Alert>
+          )}
+        </Stack>
       )}
     </Paper>
   );
@@ -329,7 +440,7 @@ export default function Screen4OfferConfiguration({ data, onChange, errors }: Sc
                   fullWidth
                   type="number"
                   label="Discount Percentage *"
-                  value={data.offerConfig.discountPercentage || ''}
+                  value={data.offerConfig.discountPercentage ?? ''}
                   onChange={(e) => updateConfig({ discountPercentage: parseFloat(e.target.value) })}
                   InputProps={{
                     endAdornment: <InputAdornment position="end">%</InputAdornment>,
@@ -342,7 +453,7 @@ export default function Screen4OfferConfiguration({ data, onChange, errors }: Sc
                   fullWidth
                   type="number"
                   label="Minimum Order Value"
-                  value={data.offerConfig.minOrderValue || ''}
+                  value={data.offerConfig.minOrderValue ?? ''}
                   onChange={(e) => updateConfig({ minOrderValue: parseFloat(e.target.value) })}
                   InputProps={{
                     startAdornment: <InputAdornment position="start">৳</InputAdornment>,
@@ -354,7 +465,7 @@ export default function Screen4OfferConfiguration({ data, onChange, errors }: Sc
                   fullWidth
                   type="number"
                   label="Maximum Discount Amount"
-                  value={data.offerConfig.maxDiscountAmount || ''}
+                  value={data.offerConfig.maxDiscountAmount ?? ''}
                   onChange={(e) => updateConfig({ maxDiscountAmount: parseFloat(e.target.value) })}
                   InputProps={{
                     startAdornment: <InputAdornment position="start">৳</InputAdornment>,
@@ -380,7 +491,7 @@ export default function Screen4OfferConfiguration({ data, onChange, errors }: Sc
                   fullWidth
                   type="number"
                   label="Discount Amount *"
-                  value={data.offerConfig.discountAmount || ''}
+                  value={data.offerConfig.discountAmount ?? ''}
                   onChange={(e) => updateConfig({ discountAmount: parseFloat(e.target.value) })}
                   InputProps={{
                     startAdornment: <InputAdornment position="start">৳</InputAdornment>,
@@ -393,7 +504,7 @@ export default function Screen4OfferConfiguration({ data, onChange, errors }: Sc
                   fullWidth
                   type="number"
                   label="Minimum Order Value"
-                  value={data.offerConfig.minOrderValue || ''}
+                  value={data.offerConfig.minOrderValue ?? ''}
                   onChange={(e) => updateConfig({ minOrderValue: parseFloat(e.target.value) })}
                   InputProps={{
                     startAdornment: <InputAdornment position="start">৳</InputAdornment>,
@@ -540,7 +651,7 @@ export default function Screen4OfferConfiguration({ data, onChange, errors }: Sc
                     fullWidth
                     type="number"
                     label="Cashback Amount *"
-                    value={data.offerConfig.cashbackAmount || ''}
+                    value={data.offerConfig.cashbackAmount ?? ''}
                     onChange={(e) => updateConfig({ cashbackAmount: parseFloat(e.target.value) })}
                     InputProps={{
                       startAdornment: <InputAdornment position="start">৳</InputAdornment>,
@@ -553,7 +664,7 @@ export default function Screen4OfferConfiguration({ data, onChange, errors }: Sc
                   fullWidth
                   type="number"
                   label="Maximum Cashback"
-                  value={data.offerConfig.maxCashback || ''}
+                  value={data.offerConfig.maxCashback ?? ''}
                   onChange={(e) => updateConfig({ maxCashback: parseFloat(e.target.value) })}
                   InputProps={{
                     startAdornment: <InputAdornment position="start">৳</InputAdornment>,
@@ -579,7 +690,7 @@ export default function Screen4OfferConfiguration({ data, onChange, errors }: Sc
                   fullWidth
                   type="number"
                   label="Discount Percentage *"
-                  value={data.offerConfig.discountPercentage || ''}
+                  value={data.offerConfig.discountPercentage ?? ''}
                   onChange={(e) => updateConfig({ discountPercentage: parseFloat(e.target.value) })}
                   InputProps={{
                     endAdornment: <InputAdornment position="end">%</InputAdornment>,
@@ -592,7 +703,7 @@ export default function Screen4OfferConfiguration({ data, onChange, errors }: Sc
                   fullWidth
                   type="number"
                   label="Stock Limit"
-                  value={data.offerConfig.stockLimit || ''}
+                  value={data.offerConfig.stockLimit ?? ''}
                   onChange={(e) => updateConfig({ stockLimit: parseInt(e.target.value) })}
                   inputProps={{ min: 0, step: 1 }}
                   helperText="Optional: Total stock available for this flash sale"
@@ -601,7 +712,7 @@ export default function Screen4OfferConfiguration({ data, onChange, errors }: Sc
                   fullWidth
                   type="number"
                   label="Order Limit Per Distributor"
-                  value={data.offerConfig.orderLimit || ''}
+                  value={data.offerConfig.orderLimit ?? ''}
                   onChange={(e) => updateConfig({ orderLimit: parseInt(e.target.value) })}
                   inputProps={{ min: 0, step: 1 }}
                   helperText="Optional: Maximum orders per distributor"
@@ -624,7 +735,7 @@ export default function Screen4OfferConfiguration({ data, onChange, errors }: Sc
                   fullWidth
                   type="number"
                   label="Points Per Unit *"
-                  value={data.offerConfig.pointsPerUnit || ''}
+                  value={data.offerConfig.pointsPerUnit ?? ''}
                   onChange={(e) => updateConfig({ pointsPerUnit: parseFloat(e.target.value) })}
                   inputProps={{ min: 0, step: 0.01 }}
                   helperText="Points earned per unit purchased"
@@ -634,7 +745,7 @@ export default function Screen4OfferConfiguration({ data, onChange, errors }: Sc
                   fullWidth
                   type="number"
                   label="Point Value *"
-                  value={data.offerConfig.pointsValue || ''}
+                  value={data.offerConfig.pointsValue ?? ''}
                   onChange={(e) => updateConfig({ pointsValue: parseFloat(e.target.value) })}
                   InputProps={{
                     startAdornment: <InputAdornment position="start">৳</InputAdornment>,

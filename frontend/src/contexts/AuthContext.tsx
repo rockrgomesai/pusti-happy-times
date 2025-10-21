@@ -11,9 +11,36 @@ interface User {
   username: string;
   email: string;
   active: boolean;
+  user_type: 'employee' | 'distributor';
   role: {
     id: string;
     role: string;
+  };
+  context: {
+    // Employee context
+    employee_type?: 'system_admin' | 'field' | 'facility' | 'hq';
+    employee_code?: string;
+    employee_name?: string;
+    designation_id?: string;
+    territory_assignments?: {
+      zone_ids?: string[];
+      region_ids?: string[];
+      area_ids?: string[];
+      db_point_ids?: string[];
+      all_territory_ids?: string[];
+    };
+    facility_assignments?: {
+      factory_ids?: string[];
+      depot_ids?: string[];
+    };
+    department?: string;
+    
+    // Distributor context
+    distributor_name?: string;
+    db_point_id?: string;
+    territorries?: any[];
+    product_segment?: string[];
+    skus_exclude?: string[];
   };
   permissions?: string[];
 }
@@ -71,9 +98,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
           username: 'user',
           email: 'user@example.com',
           active: true,
+          user_type: 'employee',
           role: {
             id: 'temp-role',
             role: 'SuperAdmin'
+          },
+          context: {
+            employee_type: 'system_admin'
           },
           permissions: ['offers:create', 'offers:read', 'offers:update', 'offers:delete']
         });
@@ -84,6 +115,40 @@ export function AuthProvider({ children }: AuthProviderProps) {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  /**
+   * Determine redirect path based on user type and role
+   */
+  const determineRedirectPath = (userData: any): string => {
+    // SuperAdmin always goes to dashboard
+    if (userData.role?.role === 'SuperAdmin') {
+      return '/dashboard';
+    }
+    
+    // Route based on user_type
+    if (userData.user_type === 'employee') {
+      const employeeType = userData.context?.employee_type;
+      
+      switch (employeeType) {
+        case 'system_admin':
+          return '/dashboard';
+        case 'field':
+          return '/sales/field-dashboard';
+        case 'facility':
+          return '/operations/facility-dashboard';
+        case 'hq':
+          const dept = userData.context?.department;
+          return dept ? `/hq/${dept}/dashboard` : '/dashboard';
+        default:
+          return '/dashboard';
+      }
+    } else if (userData.user_type === 'distributor') {
+      return '/distributor/catalog';
+    }
+    
+    // Default fallback
+    return '/dashboard';
   };
 
   const login = async (username: string, password: string): Promise<void> => {
@@ -106,9 +171,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
         
         toast.success('Login successful!');
         
+        // Determine redirect path based on user type
+        const redirectPath = determineRedirectPath(userData);
+        
         // Use setTimeout to ensure state updates have been processed
         setTimeout(() => {
-          router.push('/dashboard');
+          router.push(redirectPath);
         }, 100);
       } else {
         throw new Error(response.message || 'Login failed');
@@ -127,7 +195,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
-  const logout = async (): Promise<void> => {
+  const logout = async () => {
     try {
       setIsLoading(true);
       await authAPI.logout();

@@ -277,6 +277,60 @@ const employeeSchema = new mongoose.Schema(
       default: true,
       index: true,
     },
+    
+    // Employee type classification
+    employee_type: {
+      type: String,
+      enum: ['system_admin', 'field', 'facility', 'hq'],
+      required: [true, 'Employee type is required'],
+      index: true,
+      default: 'system_admin'
+    },
+    
+    // Territory assignments (for field employees)
+    territory_assignments: {
+      zone_ids: {
+        type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Territory' }],
+        default: []
+      },
+      region_ids: {
+        type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Territory' }],
+        default: []
+      },
+      area_ids: {
+        type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Territory' }],
+        default: []
+      },
+      db_point_ids: {
+        type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Territory' }],
+        default: []
+      },
+      // Flattened list of all territory IDs for efficient querying
+      all_territory_ids: {
+        type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Territory' }],
+        default: []
+      }
+    },
+    
+    // Facility assignments (for facility employees)
+    facility_assignments: {
+      factory_ids: {
+        type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Facility' }],
+        default: []
+      },
+      depot_ids: {
+        type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Facility' }],
+        default: []
+      }
+    },
+    
+    // Department (for hq employees)
+    department: {
+      type: String,
+      enum: ['sales', 'marketing', 'finance', 'hr', 'production', 'logistics', 'it', null],
+      default: null
+    },
+    
     created_at: {
       type: Date,
       required: [true, "Created at is required"],
@@ -304,6 +358,48 @@ const employeeSchema = new mongoose.Schema(
     collection: "employees",
   }
 );
+
+/**
+ * Validation middleware - ensure employee_type matches required context fields
+ */
+employeeSchema.pre('validate', function(next) {
+  // Field employees must have territory assignments
+  if (this.employee_type === 'field') {
+    if (!this.territory_assignments || 
+        !this.territory_assignments.all_territory_ids || 
+        this.territory_assignments.all_territory_ids.length === 0) {
+      return next(new Error('Field employees must have territory assignments'));
+    }
+  }
+
+  // Facility employees must have at least one facility assignment
+  if (this.employee_type === 'facility') {
+    const hasFactory = this.facility_assignments?.factory_ids?.length > 0;
+    const hasDepot = this.facility_assignments?.depot_ids?.length > 0;
+    if (!hasFactory && !hasDepot) {
+      return next(new Error('Facility employees must have at least one facility assignment (factory or depot)'));
+    }
+  }
+
+  // HQ employees must have a department
+  if (this.employee_type === 'hq') {
+    if (!this.department) {
+      return next(new Error('HQ employees must have a department'));
+    }
+  }
+
+  // System admins should not have context restrictions (warning only, not blocking)
+  if (this.employee_type === 'system_admin') {
+    if (this.territory_assignments?.all_territory_ids?.length > 0 ||
+        this.facility_assignments?.factory_ids?.length > 0 ||
+        this.facility_assignments?.depot_ids?.length > 0 ||
+        this.department) {
+      console.warn('Warning: System admin should not have context restrictions.');
+    }
+  }
+
+  next();
+});
 
 employeeSchema.pre("save", function (next) {
   if (!this.isNew) {

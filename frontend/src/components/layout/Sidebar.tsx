@@ -32,6 +32,7 @@ import {
   Badge as BadgeIcon,
   Warehouse as WarehouseIcon,
   ReceiptLong,
+  ViewList,
 } from '@mui/icons-material';
 import { useRouter, usePathname } from 'next/navigation';
 import { apiClient } from '@/lib/api';
@@ -91,6 +92,7 @@ const iconMap: Record<string, typeof Dashboard> = {
   FaTag: LocalOffer,
   FaTags: LocalOffer,
   FaOffers: LocalOffer,
+  FaBrowseOffers: ViewList, // Browse/List offers icon
   FaDemandOrders: Inventory,
   FaDO: ReceiptLong,
   FaBox: Inventory,

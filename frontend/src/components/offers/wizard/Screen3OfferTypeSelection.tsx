@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   Card,
@@ -14,7 +14,8 @@ import {
   ListItem,
   ListItemIcon,
   ListItemText,
-  alpha
+  alpha,
+  Tooltip
 } from '@mui/material';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import { OFFER_TYPE_DEFINITIONS, type OfferTypeCode } from '@/types/offer';
@@ -33,8 +34,10 @@ const categoryColors = {
 
 export default function Screen3OfferTypeSelection({ 
   selectedOfferType, 
-  onSelectOfferType 
+  onSelectOfferType
 }: Screen3Props) {
+  const [expandedCategory, setExpandedCategory] = useState<string | false>(false);
+
   return (
     <Box sx={{ width: '100%', maxWidth: 1200, mx: 'auto', p: { xs: 2, sm: 3 } }}>
       <Box mb={3} textAlign="center">
@@ -58,12 +61,56 @@ export default function Screen3OfferTypeSelection({
         {OFFER_TYPE_DEFINITIONS.map((offerType) => {
           const isSelected = selectedOfferType === offerType.code;
           
+          // Create tooltip content with all features
+          const tooltipContent = (
+            <Box sx={{ p: 1 }}>
+              <Typography variant="subtitle2" fontWeight={600} gutterBottom>
+                Key Features:
+              </Typography>
+              <List dense disablePadding>
+                {offerType.features.map((feature: string, index: number) => (
+                  <ListItem key={index} sx={{ py: 0.25, px: 0 }}>
+                    <ListItemIcon sx={{ minWidth: 24 }}>
+                      <CheckCircleOutlineIcon sx={{ fontSize: 14, color: 'success.light' }} />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary={feature}
+                      primaryTypographyProps={{
+                        variant: 'caption',
+                        sx: { fontSize: '0.75rem' }
+                      }}
+                    />
+                  </ListItem>
+                ))}
+              </List>
+            </Box>
+          );
+          
           return (
             <Grid2 size={{ xs: 12, sm: 6, md: 4, lg: 3 }} key={offerType.code}>
+              <Tooltip
+                title={tooltipContent}
+                placement="right"
+                arrow
+                enterDelay={800}
+                leaveDelay={200}
+                componentsProps={{
+                  tooltip: {
+                    sx: {
+                      bgcolor: 'grey.900',
+                      maxWidth: 350,
+                      '& .MuiTooltip-arrow': {
+                        color: 'grey.900',
+                      },
+                    },
+                  },
+                }}
+              >
               <Card 
                 elevation={isSelected ? 8 : 2}
                 sx={{
                   height: '100%',
+                  minHeight: { xs: 200, sm: 220 },
                   transition: 'all 0.3s ease',
                   border: isSelected ? 2 : 1,
                   borderColor: isSelected ? 'primary.main' : 'divider',
@@ -122,68 +169,11 @@ export default function Screen3OfferTypeSelection({
                         sx={{ 
                           fontSize: { xs: '0.8rem', sm: '0.85rem' },
                           lineHeight: 1.4,
-                          minHeight: { xs: 'auto', sm: 60 },
                           flexGrow: 1
                         }}
                       >
                         {offerType.description}
                       </Typography>
-
-                      {/* Features */}
-                      <Box>
-                        <Typography 
-                          variant="caption" 
-                          fontWeight={600} 
-                          color="text.secondary"
-                          display="block"
-                          mb={0.5}
-                        >
-                          Key Features:
-                        </Typography>
-                        <List dense disablePadding>
-                          {offerType.features.slice(0, 3).map((feature, index) => (
-                            <ListItem 
-                              key={index} 
-                              disablePadding 
-                              sx={{ 
-                                py: 0.25,
-                                alignItems: 'flex-start'
-                              }}
-                            >
-                              <ListItemIcon sx={{ minWidth: 24, mt: 0.5 }}>
-                                <CheckCircleOutlineIcon 
-                                  sx={{ 
-                                    fontSize: 14,
-                                    color: 'success.main'
-                                  }} 
-                                />
-                              </ListItemIcon>
-                              <ListItemText 
-                                primary={feature}
-                                primaryTypographyProps={{
-                                  variant: 'caption',
-                                  fontSize: '0.75rem',
-                                  lineHeight: 1.3
-                                }}
-                              />
-                            </ListItem>
-                          ))}
-                          {offerType.features.length > 3 && (
-                            <ListItem disablePadding sx={{ py: 0.25 }}>
-                              <ListItemText 
-                                primary={`+${offerType.features.length - 3} more`}
-                                primaryTypographyProps={{
-                                  variant: 'caption',
-                                  fontSize: '0.7rem',
-                                  fontStyle: 'italic',
-                                  color: 'text.secondary',
-                                  ml: 3
-                                }}
-                              />
-                            </ListItem>
-                          )}
-                        </List>
-                      </Box>
 
                       {/* Selected Indicator */}
                       {isSelected && (
@@ -211,6 +201,7 @@ export default function Screen3OfferTypeSelection({
                   </CardContent>
                 </CardActionArea>
               </Card>
+              </Tooltip>
             </Grid2>
           );
         })}
@@ -228,7 +219,7 @@ export default function Screen3OfferTypeSelection({
         }}
       >
         <Typography variant="body2" color="info.darker">
-          💡 <strong>Note:</strong> After selecting an offer type, you'll proceed to Screen 4 to configure specific parameters for the chosen offer type.
+          💡 <strong>Note:</strong> Hover over any card to see all key features. After selecting an offer type, you'll proceed to Screen 4 to configure specific parameters for the chosen offer type.
         </Typography>
       </Box>
     </Box>

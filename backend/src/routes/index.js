@@ -27,7 +27,8 @@ const roleRoutes = require("./roles");
 const brandRoutes = require("./brands");
 const categoryRoutes = require("./categories");
 const factoryRoutes = require("./factories");
-const depotRoutes = require("./depots");
+const depotRoutes = require("./depots"); // Legacy - for backward compatibility
+const facilityRoutes = require("./facilities"); // New unified routes
 const transportRoutes = require("./transports");
 const menuRoutes = require("./menu-items");
 const permissionRoutes = require("./permissions");
@@ -244,10 +245,19 @@ router.use("/product/offers", offersRoutes);
 router.use("/factories", factoryRoutes);
 
 /**
- * Depot Management Routes
- * @route   /api/depots/*
- * @desc    Depot CRUD operations and management
+ * Facility Management Routes (NEW - Unified Depots & Factories)
+ * @route   /api/facilities/*
+ * @desc    Unified facility CRUD operations (depots and factories)
  * @access  Private (authenticated users)
+ */
+router.use("/facilities", facilityRoutes);
+
+/**
+ * Depot Management Routes (LEGACY - For backward compatibility)
+ * @route   /api/depots/*
+ * @desc    Depot CRUD operations (now uses facilities with type='Depot')
+ * @access  Private (authenticated users)
+ * @deprecated Use /api/facilities instead
  */
 router.use("/depots", depotRoutes);
 

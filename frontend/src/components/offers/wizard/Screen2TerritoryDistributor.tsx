@@ -76,63 +76,137 @@ export default function Screen2TerritoryDistributor({
     loadZones();
   }, []);
 
-  // Load regions when zones change
+  // Load regions when zones change OR when zones mode changes
   useEffect(() => {
-    if (data.selectedZones.length > 0) {
-      loadRegionsForZones(data.selectedZones);
-    } else {
-      setRegions([]);
-      setAreas([]);
-      setDbPoints([]);
-      setDistributors([]);
-      onChange({ 
-        selectedRegions: [], 
-        selectedAreas: [], 
-        selectedDbPoints: [],
-        selectedDistributors: []
-      });
-    }
-  }, [data.selectedZones]);
+    if (zones.length === 0) return; // Wait for zones to load first
 
-  // Load areas when regions change
-  useEffect(() => {
-    if (data.selectedRegions.length > 0) {
-      loadAreasForRegions(data.selectedRegions);
+    if (data.zonesIncludeMode === 'include') {
+      // Include mode: load regions only for selected zones
+      if (data.selectedZones.length > 0) {
+        loadRegionsForZones(data.selectedZones);
+      } else {
+        setRegions([]);
+        // Clear child selections if there are no zones selected
+        if (data.selectedRegions.length > 0 || data.selectedAreas.length > 0 || data.selectedDbPoints.length > 0 || data.selectedDistributors.length > 0) {
+          setAreas([]);
+          setDbPoints([]);
+          setDistributors([]);
+          onChange({ 
+            selectedRegions: [], 
+            selectedAreas: [], 
+            selectedDbPoints: [],
+            selectedDistributors: []
+          });
+        }
+      }
     } else {
-      setAreas([]);
-      setDbPoints([]);
-      setDistributors([]);
-      onChange({ 
-        selectedAreas: [], 
-        selectedDbPoints: [],
-        selectedDistributors: []
-      });
+      // Exclude mode: load regions for all zones EXCEPT selected ones
+      const zonesToLoad = data.selectedZones.length > 0
+        ? zones.filter(z => !data.selectedZones.includes(z._id)).map(z => z._id)
+        : zones.map(z => z._id); // If nothing selected, load all
+      
+      if (zonesToLoad.length > 0) {
+        loadRegionsForZones(zonesToLoad);
+      } else {
+        setRegions([]);
+      }
     }
-  }, [data.selectedRegions]);
+  }, [data.selectedZones, data.zonesIncludeMode, zones]);
 
-  // Load db points when areas change
+  // Load areas when regions change OR when regions mode changes
   useEffect(() => {
-    if (data.selectedAreas.length > 0) {
-      loadDbPointsForAreas(data.selectedAreas);
-    } else {
-      setDbPoints([]);
-      setDistributors([]);
-      onChange({ 
-        selectedDbPoints: [],
-        selectedDistributors: []
-      });
-    }
-  }, [data.selectedAreas]);
+    if (regions.length === 0 && data.selectedRegions.length === 0) return;
 
-  // Load distributors when db points change
-  useEffect(() => {
-    if (data.selectedDbPoints.length > 0 && productSegments.length > 0) {
-      loadDistributors(data.selectedDbPoints, productSegments);
+    if (data.regionsIncludeMode === 'include') {
+      // Include mode: load areas only for selected regions
+      if (data.selectedRegions.length > 0) {
+        loadAreasForRegions(data.selectedRegions);
+      } else {
+        setAreas([]);
+        // Clear child selections if there are items to clear
+        if (data.selectedAreas.length > 0 || data.selectedDbPoints.length > 0 || data.selectedDistributors.length > 0) {
+          setDbPoints([]);
+          setDistributors([]);
+          onChange({ 
+            selectedAreas: [], 
+            selectedDbPoints: [],
+            selectedDistributors: []
+          });
+        }
+      }
     } else {
-      setDistributors([]);
-      onChange({ selectedDistributors: [] });
+      // Exclude mode: load areas for all regions EXCEPT selected ones
+      const regionsToLoad = data.selectedRegions.length > 0
+        ? regions.filter(r => !data.selectedRegions.includes(r._id)).map(r => r._id)
+        : regions.map(r => r._id);
+      
+      if (regionsToLoad.length > 0) {
+        loadAreasForRegions(regionsToLoad);
+      } else {
+        setAreas([]);
+      }
     }
-  }, [data.selectedDbPoints, productSegments]);
+  }, [data.selectedRegions, data.regionsIncludeMode, regions]);
+
+  // Load db points when areas change OR when areas mode changes
+  useEffect(() => {
+    if (areas.length === 0 && data.selectedAreas.length === 0) return;
+
+    if (data.areasIncludeMode === 'include') {
+      // Include mode: load db points only for selected areas
+      if (data.selectedAreas.length > 0) {
+        loadDbPointsForAreas(data.selectedAreas);
+      } else {
+        setDbPoints([]);
+        // Clear child selections if there are items to clear
+        if (data.selectedDbPoints.length > 0 || data.selectedDistributors.length > 0) {
+          setDistributors([]);
+          onChange({ 
+            selectedDbPoints: [],
+            selectedDistributors: []
+          });
+        }
+      }
+    } else {
+      // Exclude mode: load db points for all areas EXCEPT selected ones
+      const areasToLoad = data.selectedAreas.length > 0
+        ? areas.filter(a => !data.selectedAreas.includes(a._id)).map(a => a._id)
+        : areas.map(a => a._id);
+      
+      if (areasToLoad.length > 0) {
+        loadDbPointsForAreas(areasToLoad);
+      } else {
+        setDbPoints([]);
+      }
+    }
+  }, [data.selectedAreas, data.areasIncludeMode, areas]);
+
+  // Load distributors when db points change OR when db points mode changes
+  useEffect(() => {
+    if (dbPoints.length === 0 && data.selectedDbPoints.length === 0) return;
+    if (productSegments.length === 0) return;
+
+    if (data.dbPointsIncludeMode === 'include') {
+      // Include mode: load distributors only for selected db points
+      if (data.selectedDbPoints.length > 0) {
+        loadDistributors(data.selectedDbPoints, productSegments);
+      } else {
+        setDistributors([]);
+        onChange({ selectedDistributors: [] });
+      }
+    } else {
+      // Exclude mode: load distributors for all db points EXCEPT selected ones
+      const dbPointsToLoad = data.selectedDbPoints.length > 0
+        ? dbPoints.filter(d => !data.selectedDbPoints.includes(d._id)).map(d => d._id)
+        : dbPoints.map(d => d._id);
+      
+      if (dbPointsToLoad.length > 0) {
+        loadDistributors(dbPointsToLoad, productSegments);
+      } else {
+        setDistributors([]);
+      }
+    }
+  }, [data.selectedDbPoints, data.dbPointsIncludeMode, dbPoints, productSegments]);
 
   const loadZones = async () => {
     setLoading(prev => ({ ...prev, zones: true }));
