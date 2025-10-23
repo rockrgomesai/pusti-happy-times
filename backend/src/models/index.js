@@ -18,9 +18,7 @@ const mongoose = require("mongoose");
 const Role = require("./Role");
 const User = require("./User");
 const Brand = require("./Brand");
-const Factory = require("./Factory");
-const Depot = require("./Depot"); // Legacy - kept for backward compatibility
-const Facility = require("./Facility"); // New unified model
+const Facility = require("./Facility"); // Unified model for factories and depots
 const Employee = require("./Employee");
 const Designation = require("./Designation");
 const Transport = require("./Transport");
@@ -33,11 +31,7 @@ const Distributor = require("./Distributor");
 const Offer = require("./Offer");
 
 // Import junction table models
-const {
-  RoleSidebarMenuItem,
-  RoleApiPermission,
-  RolePagePermission,
-} = require("./JunctionTables");
+const { RoleSidebarMenuItem, RoleApiPermission, RolePagePermission } = require("./JunctionTables");
 
 /**
  * Model Registry
@@ -48,9 +42,7 @@ const models = {
   Role,
   User,
   Brand,
-  Factory,
-  Depot, // Legacy
-  Facility, // New
+  Facility,
   Employee,
   Designation,
   Transport,
@@ -80,15 +72,13 @@ const validateModels = () => {
     "Role",
     "User",
     "Brand",
-    "Factory",
-    "Depot",
     "Facility",
     "Employee",
     "Designation",
     "Category",
-  "Product",
-  "Territory",
-  "Distributor",
+    "Product",
+    "Territory",
+    "Distributor",
     "SidebarMenuItem",
     "ApiPermission",
     "PagePermission",
@@ -184,9 +174,7 @@ module.exports = {
   Role,
   User,
   Brand,
-  Factory,
-  Depot, // Legacy
-  Facility, // New
+  Facility,
   Employee,
   Designation,
   Transport,

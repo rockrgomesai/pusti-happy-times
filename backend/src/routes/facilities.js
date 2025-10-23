@@ -27,9 +27,7 @@ const facilityValidation = [
     .withMessage("Facility type must be either 'Factory' or 'Depot'"),
 ];
 
-const idValidation = [
-  param("id").isMongoId().withMessage("Invalid facility ID format"),
-];
+const idValidation = [param("id").isMongoId().withMessage("Invalid facility ID format")];
 
 /**
  * Helpers
@@ -53,85 +51,73 @@ const getCurrentUserId = (req) => req.user?.id || req.user?._id;
  */
 
 // GET /api/facilities - list facilities with optional type filter
-router.get(
-  "/",
-  authenticate,
-  requireApiPermission("facilities:read"),
-  async (req, res) => {
-    try {
-      const { page = 1, limit = 50, sort = "name", type } = req.query;
-      const pageNumber = parseInt(page, 10);
-      const limitNumber = parseInt(limit, 10);
-      const sortField = typeof sort === "string" ? sort : "name";
-      const skip = (pageNumber - 1) * limitNumber;
+router.get("/", authenticate, requireApiPermission("facilities:read"), async (req, res) => {
+  try {
+    const { page = 1, limit = 50, sort = "name", type } = req.query;
+    const pageNumber = parseInt(page, 10);
+    const limitNumber = parseInt(limit, 10);
+    const sortField = typeof sort === "string" ? sort : "name";
+    const skip = (pageNumber - 1) * limitNumber;
 
-      // Build query filter
-      const filter = {};
-      if (type && ["Factory", "Depot"].includes(type)) {
-        filter.type = type;
-      }
-
-      const facilities = await Facility.find(filter)
-        .sort({ [sortField]: 1 })
-        .skip(skip)
-        .limit(limitNumber)
-        .populate("created_by", "username")
-        .populate("updated_by", "username");
-
-      const totalCount = await Facility.countDocuments(filter);
-      const totalPages = Math.ceil(totalCount / limitNumber) || 1;
-
-      res.json({
-        success: true,
-        data: facilities,
-        pagination: {
-          page: pageNumber,
-          limit: limitNumber,
-          totalCount,
-          totalPages,
-          hasNextPage: pageNumber < totalPages,
-          hasPrevPage: pageNumber > 1,
-        },
-      });
-    } catch (error) {
-      console.error("Error fetching facilities:", error);
-      res.status(500).json({
-        success: false,
-        message: "Error fetching facilities",
-        error:
-          process.env.NODE_ENV === "development" ? error.message : undefined,
-      });
+    // Build query filter
+    const filter = {};
+    if (type && ["Factory", "Depot"].includes(type)) {
+      filter.type = type;
     }
+
+    const facilities = await Facility.find(filter)
+      .sort({ [sortField]: 1 })
+      .skip(skip)
+      .limit(limitNumber)
+      .populate("created_by", "username")
+      .populate("updated_by", "username");
+
+    const totalCount = await Facility.countDocuments(filter);
+    const totalPages = Math.ceil(totalCount / limitNumber) || 1;
+
+    res.json({
+      success: true,
+      data: facilities,
+      pagination: {
+        page: pageNumber,
+        limit: limitNumber,
+        totalCount,
+        totalPages,
+        hasNextPage: pageNumber < totalPages,
+        hasPrevPage: pageNumber > 1,
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching facilities:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching facilities",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
   }
-);
+});
 
 // GET /api/facilities/depots - list only depots
-router.get(
-  "/depots",
-  authenticate,
-  requireApiPermission("facilities:read"),
-  async (req, res) => {
-    try {
-      const depots = await Facility.find({ type: "Depot" })
-        .sort({ name: 1 })
-        .select('_id name depot_id location active contact_person contact_mobile');
+router.get("/depots", authenticate, requireApiPermission("facilities:read"), async (req, res) => {
+  try {
+    const depots = await Facility.find({ type: "Depot" })
+      .sort({ name: 1 })
+      .select("_id name depot_id location active contact_person contact_mobile");
 
-      res.json({
-        success: true,
-        data: depots,
-        totalCount: depots.length,
-      });
-    } catch (error) {
-      console.error("Error fetching depots:", error);
-      res.status(500).json({
-        success: false,
-        message: "Error fetching depots",
-        error:
-          process.env.NODE_ENV === "development" ? error.message : undefined,
-      });
-    }
+    res.json({
+      success: true,
+      data: depots,
+      totalCount: depots.length,
+    });
+  } catch (error) {
+    console.error("Error fetching depots:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching depots",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
   }
-);
+});
 
 // GET /api/facilities/factories - list only factories
 router.get(
@@ -142,7 +128,7 @@ router.get(
     try {
       const factories = await Facility.find({ type: "Factory" })
         .sort({ name: 1 })
-        .select('_id name factory_id location active contact_person contact_mobile');
+        .select("_id name factory_id location active contact_person contact_mobile");
 
       res.json({
         success: true,
@@ -154,8 +140,7 @@ router.get(
       res.status(500).json({
         success: false,
         message: "Error fetching factories",
-        error:
-          process.env.NODE_ENV === "development" ? error.message : undefined,
+        error: process.env.NODE_ENV === "development" ? error.message : undefined,
       });
     }
   }
@@ -190,8 +175,7 @@ router.get(
       res.status(500).json({
         success: false,
         message: "Error fetching facility",
-        error:
-          process.env.NODE_ENV === "development" ? error.message : undefined,
+        error: process.env.NODE_ENV === "development" ? error.message : undefined,
       });
     }
   }
@@ -206,7 +190,8 @@ router.post(
   handleValidationErrors,
   async (req, res) => {
     try {
-      const { name, type, depot_id, factory_id, location, contact_person, contact_mobile, active } = req.body;
+      const { name, type, depot_id, factory_id, location, contact_person, contact_mobile, active } =
+        req.body;
       const currentUserId = getCurrentUserId(req);
 
       const existingFacility = await Facility.findOne({ name });
@@ -220,8 +205,8 @@ router.post(
       const newFacility = new Facility({
         name,
         type,
-        depot_id: type === 'Depot' ? depot_id : undefined,
-        factory_id: type === 'Factory' ? factory_id : undefined,
+        depot_id: type === "Depot" ? depot_id : undefined,
+        factory_id: type === "Factory" ? factory_id : undefined,
         location,
         contact_person,
         contact_mobile,
@@ -252,8 +237,7 @@ router.post(
       res.status(500).json({
         success: false,
         message: "Error creating facility",
-        error:
-          process.env.NODE_ENV === "development" ? error.message : undefined,
+        error: process.env.NODE_ENV === "development" ? error.message : undefined,
       });
     }
   }
@@ -269,7 +253,8 @@ router.put(
   handleValidationErrors,
   async (req, res) => {
     try {
-      const { name, type, depot_id, factory_id, location, contact_person, contact_mobile, active } = req.body;
+      const { name, type, depot_id, factory_id, location, contact_person, contact_mobile, active } =
+        req.body;
       const currentUserId = getCurrentUserId(req);
 
       const existingFacility = await Facility.findById(req.params.id);
@@ -296,8 +281,8 @@ router.put(
         {
           name,
           type,
-          depot_id: type === 'Depot' ? depot_id : existingFacility.depot_id,
-          factory_id: type === 'Factory' ? factory_id : existingFacility.factory_id,
+          depot_id: type === "Depot" ? depot_id : existingFacility.depot_id,
+          factory_id: type === "Factory" ? factory_id : existingFacility.factory_id,
           location,
           contact_person,
           contact_mobile,
@@ -331,8 +316,7 @@ router.put(
       res.status(500).json({
         success: false,
         message: "Error updating facility",
-        error:
-          process.env.NODE_ENV === "development" ? error.message : undefined,
+        error: process.env.NODE_ENV === "development" ? error.message : undefined,
       });
     }
   }
@@ -366,8 +350,7 @@ router.delete(
       res.status(500).json({
         success: false,
         message: "Error deleting facility",
-        error:
-          process.env.NODE_ENV === "development" ? error.message : undefined,
+        error: process.env.NODE_ENV === "development" ? error.message : undefined,
       });
     }
   }
@@ -378,103 +361,88 @@ router.delete(
  * @route   GET /api/v1/facilities/my-facilities
  * @access  Private (facility employees only)
  */
-router.get(
-  "/my-facilities",
-  authenticate,
-  async (req, res) => {
-    try {
-      // Check if user is a facility employee
-      const { user_type, employee_type, facility_assignments } = req.userContext || {};
-      
-      if (user_type !== 'employee' || employee_type !== 'facility') {
-        return res.status(403).json({
-          success: false,
-          message: "Access denied. Facility employee access required.",
-        });
-      }
+router.get("/my-facilities", authenticate, async (req, res) => {
+  try {
+    // Check if user is a facility employee
+    const { user_type, employee_type, facility_id } = req.userContext || {};
 
-      if (!facility_assignments) {
-        return res.json({
-          success: true,
-          data: { depots: [], factories: [] },
-        });
-      }
-
-      // Fetch assigned depots (type='Depot')
-      const depots = await Facility.find({
-        _id: { $in: facility_assignments.depot_ids || [] },
-        type: 'Depot'
-      }).select('_id depot_id name location active contact_person contact_mobile type');
-
-      // Fetch assigned factories (type='Factory')
-      const factories = await Facility.find({
-        _id: { $in: facility_assignments.factory_ids || [] },
-        type: 'Factory'
-      }).select('_id factory_id name location active contact_person contact_mobile type');
-
-      res.json({
-        success: true,
-        data: { depots, factories },
-      });
-    } catch (error) {
-      console.error("Error fetching my facilities:", error);
-      res.status(500).json({
+    if (user_type !== "employee" || employee_type !== "facility") {
+      return res.status(403).json({
         success: false,
-        message: "Error fetching facilities",
-        error: process.env.NODE_ENV === "development" ? error.message : undefined,
+        message: "Access denied. Facility employee access required.",
       });
     }
+
+    if (!facility_id) {
+      return res.json({
+        success: true,
+        data: { facility: null },
+      });
+    }
+
+    // Fetch assigned facility
+    const facility = await Facility.findById(facility_id).select(
+      "_id name location active contact_person contact_mobile type"
+    );
+
+    res.json({
+      success: true,
+      data: { facility },
+    });
+  } catch (error) {
+    console.error("Error fetching my facilities:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching facilities",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
   }
-);
+});
 
 /**
  * Get facility-specific stats
  * @route   GET /api/v1/facilities/stats
  * @access  Private (facility employees only)
  */
-router.get(
-  "/stats",
-  authenticate,
-  async (req, res) => {
-    try {
-      // Check if user is a facility employee
-      const { user_type, employee_type, facility_assignments } = req.userContext || {};
-      
-      if (user_type !== 'employee' || employee_type !== 'facility') {
-        return res.status(403).json({
-          success: false,
-          message: "Access denied. Facility employee access required.",
-        });
-      }
+router.get("/stats", authenticate, async (req, res) => {
+  try {
+    // Check if user is a facility employee
+    const { user_type, employee_type, facility_id } = req.userContext || {};
 
-      // Mock stats for now - replace with actual calculations
-      const stats = {
-        totalInventory: 15240,
-        pendingOrders: 23,
-        todayShipments: 12,
-        lowStockItems: 5,
-      };
-
-      // TODO: Implement actual stats calculation
-      // Example:
-      // const totalInventory = await Inventory.aggregate([
-      //   { $match: { facility_id: { $in: facility_assignments.depot_ids } } },
-      //   { $group: { _id: null, total: { $sum: '$quantity' } } }
-      // ]);
-
-      res.json({
-        success: true,
-        data: stats,
-      });
-    } catch (error) {
-      console.error("Error fetching facility stats:", error);
-      res.status(500).json({
+    if (user_type !== "employee" || employee_type !== "facility") {
+      return res.status(403).json({
         success: false,
-        message: "Error fetching statistics",
-        error: process.env.NODE_ENV === "development" ? error.message : undefined,
+        message: "Access denied. Facility employee access required.",
       });
     }
+
+    // Mock stats for now - replace with actual calculations
+    const stats = {
+      totalInventory: 15240,
+      pendingOrders: 23,
+      todayShipments: 12,
+      lowStockItems: 5,
+    };
+
+    // TODO: Implement actual stats calculation
+    // Example:
+    // const totalInventory = await Inventory.aggregate([
+    //   { $match: { facility_id: facility_id } },
+    //   { $group: { _id: null, total: { $sum: '$quantity' } } }
+    // ]);
+
+    res.json({
+      success: true,
+      data: stats,
+    });
+  } catch (error) {
+    console.error("Error fetching facility stats:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching statistics",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
   }
-);
+});
 
 module.exports = router;

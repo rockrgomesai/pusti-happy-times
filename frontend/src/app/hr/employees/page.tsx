@@ -49,6 +49,7 @@ import {
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import TerritorySelector from '@/components/common/TerritorySelector';
 import { toast } from 'react-hot-toast';
 import api from '@/lib/api';
 import ExportMenu from '@/components/common/ExportMenu';
@@ -77,10 +78,30 @@ interface PopulatedDesignation {
   name: string;
 }
 
+interface PopulatedFacility {
+  _id: string;
+  name: string;
+  type: 'Factory' | 'Depot';
+}
+
+interface PopulatedTerritory {
+  _id: string;
+  name: string;
+  level: number;
+}
+
 interface Employee {
   _id: string;
   employee_id: string;
+  employee_type: 'system_admin' | 'field' | 'facility' | 'hq';
   designation_id: string | PopulatedDesignation | null;
+  facility_id?: string | PopulatedFacility | null;
+  territory_assignments?: {
+    zone_ids?: (string | PopulatedTerritory)[];
+    region_ids?: (string | PopulatedTerritory)[];
+    area_ids?: (string | PopulatedTerritory)[];
+    db_point_ids?: (string | PopulatedTerritory)[];
+  };
   name: string;
   father_name?: string | null;
   mother_name?: string | null;
@@ -126,7 +147,9 @@ interface Employee {
 
 const employeeSchema = z.object({
   employee_id: z.string().min(1, 'Employee ID is required'),
+  employee_type: z.enum(['system_admin', 'field', 'facility', 'hq']),
   designation_id: z.string().min(1, 'Designation is required'),
+  facility_id: z.string().optional(),
   name: z.string().min(2, 'Name must be at least 2 characters'),
   father_name: z.string().optional(),
   mother_name: z.string().optional(),
@@ -235,6 +258,12 @@ export default function EmployeesPage() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [meta, setMeta] = useState<EmployeeMeta | null>(null);
   const [designations, setDesignations] = useState<DesignationOption[]>([]);
+  const [facilities, setFacilities] = useState<PopulatedFacility[]>([]);
+  const [territorySelection, setTerritorySelection] = useState<{
+    zone_id?: string;
+    region_id?: string;
+    area_id?: string;
+  }>({});
   const [loading, setLoading] = useState(true);
   const [metaLoading, setMetaLoading] = useState(true);
   const [viewMode, setViewMode] = useState<'cards' | 'list'>('cards');
@@ -333,11 +362,13 @@ export default function EmployeesPage() {
     control,
     handleSubmit,
     reset,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<EmployeeFormData>({
     resolver: zodResolver(employeeSchema),
     defaultValues: {
       employee_id: '',
+      employee_type: 'hq',
       designation_id: '',
       name: '',
       father_name: '',
@@ -376,6 +407,19 @@ export default function EmployeesPage() {
       active: true,
     },
   });
+
+  // Watch employee_type to determine what context fields to show
+  const selectedEmployeeType = watch('employee_type');
+  
+  // Determine if facility selector should show
+  const shouldShowFacilitySelector = useMemo(() => {
+    return selectedEmployeeType === 'facility';
+  }, [selectedEmployeeType]);
+  
+  // Determine if territory selector should show (for any field employee)
+  const shouldShowTerritorySelector = useMemo(() => {
+    return selectedEmployeeType === 'field';
+  }, [selectedEmployeeType]);
 
   const loadEmployees = async () => {
     try {
@@ -435,10 +479,25 @@ export default function EmployeesPage() {
     }
   };
 
+  const loadFacilities = async () => {
+    try {
+      const response = await api.get('/facilities', {
+        params: { limit: 200 },
+      });
+      const facilitiesData = response.data?.data?.items || response.data?.data || [];
+      setFacilities(facilitiesData);
+    } catch (error) {
+      console.error('Error loading facilities:', error);
+      // Don't show error toast - facilities are optional
+      setFacilities([]);
+    }
+  };
+
   useEffect(() => {
     loadEmployees();
     loadMeta();
     loadDesignations();
+    loadFacilities();
   }, []);
 
   const filteredEmployees = useMemo(() => {
@@ -521,49 +580,78 @@ export default function EmployeesPage() {
     setPage(0);
   };
 
-  const buildPayload = (values: EmployeeFormData) => ({
-    employee_id: values.employee_id.trim(),
-    designation_id: values.designation_id,
-    name: values.name.trim(),
-    father_name: toNullable(values.father_name),
-    mother_name: toNullable(values.mother_name),
-    date_birth: values.date_birth,
-    gender: values.gender,
-    religion: values.religion,
-    marital_status: values.marital_status,
-    nationality: toNullable(values.nationality),
-    national_id: toNullable(values.national_id),
-    passport_number: toNullable(values.passport_number),
-    passport_issue_date: toNullable(values.passport_issue_date),
-    mobile_personal: toNullable(values.mobile_personal),
-    email: toNullable(values.email),
-    emergency_contact: toNullable(values.emergency_contact),
-    emergency_mobile: toNullable(values.emergency_mobile),
-    blood_group: toNullable(values.blood_group),
-    present_address: {
-      holding_no: toNullable(values.present_address_holding_no),
-      road: toNullable(values.present_address_road),
-      city: toNullable(values.present_address_city),
-      post_code: toNumberOrNull(values.present_address_post_code),
-    },
-    permanent_address: {
-      holding_no: toNullable(values.permanent_address_holding_no),
-      village_road: toNullable(values.permanent_address_village_road),
-      union_ward: toNullable(values.permanent_address_union_ward),
-      upazila_thana: toNullable(values.permanent_address_upazila_thana),
-      district: toNullable(values.permanent_address_district),
-      division: toNullable(values.permanent_address_division),
-    },
-    ssc_year: toNumberOrNull(values.ssc_year),
-    highest_degree: toNullable(values.highest_degree),
-    last_organization: toNullable(values.last_organization),
-    last_position: toNullable(values.last_position),
-    experience_years: toNumberOrNull(values.experience_years),
-    reference_name: toNullable(values.reference_name),
-    reference_mobile: toNullable(values.reference_mobile),
-    remarks: toNullable(values.remarks),
-    active: values.active,
-  });
+  const buildPayload = (values: EmployeeFormData) => {
+    const payload: any = {
+      employee_id: values.employee_id.trim(),
+      employee_type: values.employee_type,
+      designation_id: values.designation_id,
+      name: values.name.trim(),
+      father_name: toNullable(values.father_name),
+      mother_name: toNullable(values.mother_name),
+      date_birth: values.date_birth,
+      gender: values.gender,
+      religion: values.religion,
+      marital_status: values.marital_status,
+      nationality: toNullable(values.nationality),
+      national_id: toNullable(values.national_id),
+      passport_number: toNullable(values.passport_number),
+      passport_issue_date: toNullable(values.passport_issue_date),
+      mobile_personal: toNullable(values.mobile_personal),
+      email: toNullable(values.email),
+      emergency_contact: toNullable(values.emergency_contact),
+      emergency_mobile: toNullable(values.emergency_mobile),
+      blood_group: toNullable(values.blood_group),
+      present_address: {
+        holding_no: toNullable(values.present_address_holding_no),
+        road: toNullable(values.present_address_road),
+        city: toNullable(values.present_address_city),
+        post_code: toNumberOrNull(values.present_address_post_code),
+      },
+      permanent_address: {
+        holding_no: toNullable(values.permanent_address_holding_no),
+        village_road: toNullable(values.permanent_address_village_road),
+        union_ward: toNullable(values.permanent_address_union_ward),
+        upazila_thana: toNullable(values.permanent_address_upazila_thana),
+        district: toNullable(values.permanent_address_district),
+        division: toNullable(values.permanent_address_division),
+      },
+      ssc_year: toNumberOrNull(values.ssc_year),
+      highest_degree: toNullable(values.highest_degree),
+      last_organization: toNullable(values.last_organization),
+      last_position: toNullable(values.last_position),
+      experience_years: toNumberOrNull(values.experience_years),
+      reference_name: toNullable(values.reference_name),
+      reference_mobile: toNullable(values.reference_mobile),
+      remarks: toNullable(values.remarks),
+      active: values.active,
+    };
+
+    // Add facility_id if employee_type is 'facility'
+    if (values.employee_type === 'facility' && values.facility_id) {
+      payload.facility_id = values.facility_id;
+    }
+
+    // Add territory assignments if employee_type is 'field'
+    if (values.employee_type === 'field' && territorySelection) {
+      const territory_assignments: any = {};
+      
+      if (territorySelection.zone_id) {
+        territory_assignments.zone_ids = [territorySelection.zone_id];
+      }
+      if (territorySelection.region_id) {
+        territory_assignments.region_ids = [territorySelection.region_id];
+      }
+      if (territorySelection.area_id) {
+        territory_assignments.area_ids = [territorySelection.area_id];
+      }
+      
+      if (Object.keys(territory_assignments).length > 0) {
+        payload.territory_assignments = territory_assignments;
+      }
+    }
+
+    return payload;
+  };
 
   const onSubmit = async (formData: EmployeeFormData) => {
     try {
@@ -576,8 +664,7 @@ export default function EmployeesPage() {
         toast.success('Employee created successfully');
       }
 
-      setOpenDialog(false);
-      setEditingEmployee(null);
+      handleCloseDialog();
       reset();
       loadEmployees();
     } catch (error) {
@@ -603,10 +690,16 @@ export default function EmployeesPage() {
 
   const mapEmployeeToForm = useCallback((employee: Employee): EmployeeFormData => ({
     employee_id: employee.employee_id ?? '',
+    employee_type: employee.employee_type ?? 'hq',
     designation_id: (() => {
       if (!employee.designation_id) return '';
       if (typeof employee.designation_id === 'string') return employee.designation_id;
       return employee.designation_id._id ?? '';
+    })(),
+    facility_id: (() => {
+      if (!employee.facility_id) return '';
+      if (typeof employee.facility_id === 'string') return employee.facility_id;
+      return employee.facility_id._id ?? '';
     })(),
     name: employee.name ?? '',
     father_name: employee.father_name ?? '',
@@ -661,6 +754,22 @@ export default function EmployeesPage() {
     (employee: Employee) => {
       setEditingEmployee(employee);
       reset(mapEmployeeToForm(employee));
+      
+      // Extract territory assignments
+      if (employee.territory_assignments) {
+        const zone_id = employee.territory_assignments.zone_ids?.[0];
+        const region_id = employee.territory_assignments.region_ids?.[0];
+        const area_id = employee.territory_assignments.area_ids?.[0];
+        
+        setTerritorySelection({
+          zone_id: typeof zone_id === 'string' ? zone_id : zone_id?._id,
+          region_id: typeof region_id === 'string' ? region_id : region_id?._id,
+          area_id: typeof area_id === 'string' ? area_id : area_id?._id,
+        });
+      } else {
+        setTerritorySelection({});
+      }
+      
       setOpenDialog(true);
     },
     [mapEmployeeToForm, reset]
@@ -668,9 +777,12 @@ export default function EmployeesPage() {
 
   const handleAddEmployee = useCallback(() => {
     setEditingEmployee(null);
+    setTerritorySelection({});
     reset({
       employee_id: '',
+      employee_type: 'hq',
       designation_id: '',
+      facility_id: '',
       name: '',
       father_name: '',
       mother_name: '',
@@ -709,6 +821,12 @@ export default function EmployeesPage() {
     });
     setOpenDialog(true);
   }, [meta?.defaultNationality, reset]);
+
+  const handleCloseDialog = useCallback(() => {
+    setOpenDialog(false);
+    setEditingEmployee(null);
+    setTerritorySelection({});
+  }, []);
 
   const employeeColumns = useMemo<EmployeeColumnDefinition[]>(
     () => [
@@ -1257,7 +1375,7 @@ export default function EmployeesPage() {
 
       <Dialog
         open={openDialog}
-        onClose={() => setOpenDialog(false)}
+        onClose={handleCloseDialog}
         fullWidth
         maxWidth="lg"
         PaperProps={{
@@ -1290,6 +1408,29 @@ export default function EmployeesPage() {
                 />
               </Grid>
               <Grid size={{ xs: 12, md: 6 }}>
+                <Controller
+                  name="employee_type"
+                  control={control}
+                  render={({ field }) => (
+                    <TextField
+                      select
+                      label="Employee Type"
+                      fullWidth
+                      {...field}
+                      value={field.value || 'hq'}
+                      error={Boolean(errors.employee_type)}
+                      helperText={errors.employee_type?.message || 'Select employee type to determine context requirements'}
+                      disabled={isSubmitting}
+                    >
+                      <MenuItem value="hq">HQ</MenuItem>
+                      <MenuItem value="field">Field</MenuItem>
+                      <MenuItem value="facility">Facility</MenuItem>
+                      <MenuItem value="system_admin">System Admin</MenuItem>
+                    </TextField>
+                  )}
+                />
+              </Grid>
+              <Grid size={{ xs: 12, md: 6 }}>
                 <TextField
                   select
                   label="Designation"
@@ -1306,6 +1447,57 @@ export default function EmployeesPage() {
                   ))}
                 </TextField>
               </Grid>
+              
+              {/* Facility Selector - Only for 'facility' employee type */}
+              {shouldShowFacilitySelector && (
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <TextField
+                    select
+                    label="Facility"
+                    fullWidth
+                    {...register('facility_id')}
+                    error={Boolean(errors.facility_id)}
+                    helperText={
+                      errors.facility_id?.message || 
+                      'Assign facility for Production (Factory) or Inventory (Depot)'
+                    }
+                    disabled={isSubmitting || facilities.length === 0}
+                  >
+                    <MenuItem value="">
+                      <em>No Facility</em>
+                    </MenuItem>
+                    {facilities.map((facility) => (
+                      <MenuItem key={facility._id} value={facility._id}>
+                        {facility.name} ({facility.type})
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                </Grid>
+              )}
+              
+              {/* Territory Selector - Only for 'field' employee type */}
+              {shouldShowTerritorySelector && (
+                <Grid size={{ xs: 12 }}>
+                  <Box sx={{ mb: 2 }}>
+                    <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                      Territory Assignment (Required for field employees)
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary" display="block" gutterBottom>
+                      Select territories based on employee's scope:
+                      • Zone only = Zonal level employee
+                      • Zone + Region = Regional level employee  
+                      • Zone + Region + Area = Area level employee
+                    </Typography>
+                    <TerritorySelector
+                      mode="free"
+                      value={territorySelection}
+                      onChange={setTerritorySelection}
+                      disabled={isSubmitting}
+                    />
+                  </Box>
+                </Grid>
+              )}
+              
               <Grid size={{ xs: 12, md: 6 }}>
                 <TextField
                   label="Full Name"
@@ -1667,7 +1859,7 @@ export default function EmployeesPage() {
           </Box>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 3 }}>
-          <Button onClick={() => setOpenDialog(false)} disabled={isSubmitting}>
+          <Button onClick={handleCloseDialog} disabled={isSubmitting}>
             Cancel
           </Button>
           <Button type="submit" variant="contained" disabled={isSubmitting}>

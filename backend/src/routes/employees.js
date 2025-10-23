@@ -50,14 +50,17 @@ const basePaginationValidation = [
   query("page").optional().isInt({ min: 1 }).toInt(),
   query("limit").optional().isInt({ min: 1, max: 500 }).toInt(),
   query("search").optional().isLength({ max: 200 }).trim(),
-  query("sort")
-    .optional()
-    .isIn(["name", "employee_id", "date_birth", "created_at"]),
+  query("sort").optional().isIn(["name", "employee_id", "date_birth", "created_at"]),
   query("order").optional().isIn(["asc", "desc"]),
 ];
 
 const employeeValidation = [
   body("employee_id").trim().notEmpty().withMessage("Employee ID is required"),
+  body("employee_type")
+    .notEmpty()
+    .withMessage("Employee type is required")
+    .isIn(["system_admin", "field", "facility", "hq"])
+    .withMessage("Invalid employee type"),
   body("designation_id")
     .notEmpty()
     .withMessage("Designation is required")
@@ -143,9 +146,7 @@ const employeeValidation = [
   body("active").optional().isBoolean().toBoolean(),
 ];
 
-const idValidation = [
-  param("id").isMongoId().withMessage("Invalid employee ID format"),
-];
+const idValidation = [param("id").isMongoId().withMessage("Invalid employee ID format")];
 
 const getCurrentUserId = (req) => req.user?.id || req.user?._id;
 
@@ -223,9 +224,7 @@ const buildEmployeePayload = (data, userId, isCreate = false) => {
     last_organization: normalizeNullableString(last_organization),
     last_position: normalizeNullableString(last_position),
     experience_years:
-      experience_years === undefined || experience_years === null
-        ? 0
-        : Number(experience_years),
+      experience_years === undefined || experience_years === null ? 0 : Number(experience_years),
     reference_name: normalizeNullableString(reference_name),
     reference_mobile: normalizeNullableString(reference_mobile),
     remarks: normalizeNullableString(remarks),
@@ -243,25 +242,20 @@ const buildEmployeePayload = (data, userId, isCreate = false) => {
 };
 
 // GET /api/employees/meta - enumeration metadata
-router.get(
-  "/meta",
-  authenticate,
-  requireApiPermission("employees:read"),
-  (req, res) => {
-    res.json({
-      success: true,
-      data: {
-        genders: genderEnums,
-        religions: religionEnums,
-        maritalStatuses: maritalEnums,
-        bloodGroups: bloodEnums,
-        divisions: divisionEnums,
-        districts: districtEnums,
-        defaultNationality: employeeSchema.path("nationality").defaultValue || "Bangladeshi",
-      },
-    });
-  }
-);
+router.get("/meta", authenticate, requireApiPermission("employees:read"), (req, res) => {
+  res.json({
+    success: true,
+    data: {
+      genders: genderEnums,
+      religions: religionEnums,
+      maritalStatuses: maritalEnums,
+      bloodGroups: bloodEnums,
+      divisions: divisionEnums,
+      districts: districtEnums,
+      defaultNationality: employeeSchema.path("nationality").defaultValue || "Bangladeshi",
+    },
+  });
+});
 
 // GET /api/employees
 router.get(
@@ -272,13 +266,7 @@ router.get(
   handleValidationErrors,
   async (req, res) => {
     try {
-      const {
-        page = 1,
-        limit = 10,
-        search,
-        sort = "name",
-        order = "asc",
-      } = req.query;
+      const { page = 1, limit = 10, search, sort = "name", order = "asc" } = req.query;
 
       const pageNumber = Math.max(Number(page) || 1, 1);
       const limitNumber = Math.min(Math.max(Number(limit) || 10, 1), 500);
@@ -347,10 +335,7 @@ router.get(
   handleValidationErrors,
   async (req, res) => {
     try {
-      const employee = await Employee.findById(req.params.id).populate(
-        "designation_id",
-        "name"
-      );
+      const employee = await Employee.findById(req.params.id).populate("designation_id", "name");
 
       if (!employee) {
         return res.status(404).json({
@@ -446,14 +431,10 @@ router.put(
 
       const payload = buildEmployeePayload(req.body, currentUserId, false);
 
-      const employee = await Employee.findByIdAndUpdate(
-        id,
-        payload,
-        {
-          new: true,
-          runValidators: true,
-        }
-      ).populate("designation_id", "name");
+      const employee = await Employee.findByIdAndUpdate(id, payload, {
+        new: true,
+        runValidators: true,
+      }).populate("designation_id", "name");
 
       if (!employee) {
         return res.status(404).json({

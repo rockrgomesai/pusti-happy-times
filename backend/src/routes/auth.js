@@ -87,11 +87,7 @@ const refreshTokenValidation = [
 ];
 
 const passwordResetRequestValidation = [
-  body("email")
-    .trim()
-    .isEmail()
-    .normalizeEmail()
-    .withMessage("Valid email is required"),
+  body("email").trim().isEmail().normalizeEmail().withMessage("Valid email is required"),
 ];
 
 const passwordResetValidation = [
@@ -178,35 +174,49 @@ router.post("/login", loginValidation, async (req, res) => {
 
     // Build context data based on user_type
     let contextData = {};
-    
-    if (user.user_type === 'employee' && user.employee_id) {
+
+    if (user.user_type === "employee" && user.employee_id) {
       const employee = user.employee_id; // Already populated
-      
+
       contextData = {
         employee_type: employee.employee_type,
         employee_code: employee.employee_id,
         employee_name: employee.name,
-        designation_id: employee.designation_id
+        designation_id: employee.designation_id,
       };
-      
+
       // Add context based on employee_type
-      if (employee.employee_type === 'field') {
+      if (employee.employee_type === "field") {
         contextData.territory_assignments = employee.territory_assignments;
-      } else if (employee.employee_type === 'facility') {
-        contextData.facility_assignments = employee.facility_assignments;
-      } else if (employee.employee_type === 'hq') {
-        contextData.department = employee.department;
+      } else if (employee.employee_type === "facility") {
+        contextData.facility_id = employee.facility_id;
       }
-      
-    } else if (user.user_type === 'distributor' && user.distributor_id) {
+
+      // Validate role-based context requirements
+      let facility = null;
+      if (employee.facility_id) {
+        const { Facility } = require("../models");
+        facility = await Facility.findById(employee.facility_id);
+      }
+
+      const validation = await User.validateRoleContext(user.role_id, employee, facility);
+      if (!validation.valid) {
+        return res.status(403).json({
+          success: false,
+          message: "Role context validation failed",
+          error: validation.error,
+          code: "ROLE_CONTEXT_INVALID",
+        });
+      }
+    } else if (user.user_type === "distributor" && user.distributor_id) {
       const distributor = user.distributor_id; // Already populated
-      
+
       contextData = {
         distributor_name: distributor.name,
         db_point_id: distributor.db_point_id,
         territorries: distributor.territorries,
         product_segment: distributor.product_segment,
-        skus_exclude: distributor.skus_exclude
+        skus_exclude: distributor.skus_exclude,
       };
     }
 
@@ -224,7 +234,7 @@ router.post("/login", loginValidation, async (req, res) => {
         id: user.role_id._id,
         role: user.role_id.role,
       },
-      context: contextData
+      context: contextData,
     };
 
     res.json({
@@ -457,17 +467,13 @@ router.post(
   "/change-password",
   authenticate,
   [
-    body("currentPassword")
-      .notEmpty()
-      .withMessage("Current password is required"),
+    body("currentPassword").notEmpty().withMessage("Current password is required"),
 
     body("newPassword")
       .isLength({ min: 6 })
       .withMessage("New password must be at least 6 characters long")
       .matches(/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*#?&]{6,}$/)
-      .withMessage(
-        "New password must contain at least one letter and one number"
-      ),
+      .withMessage("New password must contain at least one letter and one number"),
 
     body("confirmPassword").custom((value, { req }) => {
       if (value !== req.body.newPassword) {
@@ -492,13 +498,10 @@ router.post(
       const user = req.user;
 
       // Load user with password field
-      const userWithPassword = await User.findById(user._id).select(
-        "+password"
-      );
+      const userWithPassword = await User.findById(user._id).select("+password");
 
       // Verify current password
-      const isCurrentPasswordValid =
-        await userWithPassword.comparePassword(currentPassword);
+      const isCurrentPasswordValid = await userWithPassword.comparePassword(currentPassword);
 
       if (!isCurrentPasswordValid) {
         return res.status(400).json({
@@ -637,16 +640,12 @@ router.put(
   "/change-password",
   authenticate,
   [
-    body("currentPassword")
-      .notEmpty()
-      .withMessage("Current password is required"),
+    body("currentPassword").notEmpty().withMessage("Current password is required"),
     body("newPassword")
       .isLength({ min: 6 })
       .withMessage("New password must be at least 6 characters long")
       .matches(/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*#?&]{6,}$/)
-      .withMessage(
-        "New password must contain at least one letter and one number"
-      ),
+      .withMessage("New password must contain at least one letter and one number"),
   ],
   async (req, res) => {
     try {
@@ -679,10 +678,7 @@ router.put(
       // Check if password looks like a bcrypt hash
       if (user.password && user.password.startsWith("$2")) {
         // Bcrypt hash - use bcrypt.compare
-        isCurrentPasswordValid = await bcrypt.compare(
-          currentPassword,
-          user.password
-        );
+        isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.password);
       } else {
         // Plain text password - direct comparison (temporary fallback)
         isCurrentPasswordValid = currentPassword === user.password;
@@ -719,9 +715,7 @@ router.put(
       try {
         const redisClient = redis.getClient();
         if (redisClient && redisClient.isReady) {
-          const refreshTokenKeys = await redisClient.keys(
-            `refresh_token:${userId}:*`
-          );
+          const refreshTokenKeys = await redisClient.keys(`refresh_token:${userId}:*`);
           if (refreshTokenKeys.length > 0) {
             await redisClient.del(refreshTokenKeys);
           }
@@ -738,11 +732,7 @@ router.put(
           const currentToken = authHeader.substring(7);
           if (currentToken) {
             // Blacklist the current access token
-            await redis.blacklistToken(
-              currentToken,
-              24 * 60 * 60,
-              "password_changed"
-            );
+            await redis.blacklistToken(currentToken, 24 * 60 * 60, "password_changed");
           }
         }
       } catch (redisError) {
@@ -777,30 +767,30 @@ router.put(
 router.post("/logout-all-devices", authenticate, async (req, res) => {
   try {
     const user = req.user;
-    
+
     // Increment token version to invalidate all existing tokens
     user.tokenVersion = (user.tokenVersion || 0) + 1;
     await user.save();
-    
+
     // Clear refresh tokens from Redis
     try {
       await redis.deleteRefreshToken(user._id.toString());
     } catch (redisError) {
       console.error("Error clearing refresh tokens:", redisError);
     }
-    
+
     console.log(`User ${user.username} logged out from all devices`);
-    
+
     res.json({
       success: true,
-      message: "Logged out from all devices successfully"
+      message: "Logged out from all devices successfully",
     });
   } catch (error) {
     console.error("Logout all devices error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to logout from all devices",
-      code: "SERVER_ERROR"
+      code: "SERVER_ERROR",
     });
   }
 });
@@ -822,44 +812,44 @@ router.post(
         return res.status(400).json({
           success: false,
           message: "Validation failed",
-          errors: errors.array()
+          errors: errors.array(),
         });
       }
 
       const { userId } = req.body;
-      
+
       const targetUser = await User.findById(userId);
       if (!targetUser) {
         return res.status(404).json({
           success: false,
-          message: "User not found"
+          message: "User not found",
         });
       }
-      
+
       // Increment token version
       targetUser.tokenVersion = (targetUser.tokenVersion || 0) + 1;
       await targetUser.save();
-      
+
       // Clear refresh tokens
       try {
         await redis.deleteRefreshToken(userId);
       } catch (redisError) {
         console.error("Error clearing refresh tokens:", redisError);
       }
-      
+
       // Log the action
       console.log(`SuperAdmin ${req.user.username} forced logout for user ${targetUser.username}`);
-      
+
       res.json({
         success: true,
-        message: `All devices logged out for user: ${targetUser.username}`
+        message: `All devices logged out for user: ${targetUser.username}`,
       });
     } catch (error) {
       console.error("Admin logout user error:", error);
       res.status(500).json({
         success: false,
         message: "Failed to logout user",
-        code: "SERVER_ERROR"
+        code: "SERVER_ERROR",
       });
     }
   }
@@ -877,27 +867,26 @@ router.post(
   async (req, res) => {
     try {
       // Increment tokenVersion for ALL users
-      const result = await User.updateMany(
-        {},
-        { $inc: { tokenVersion: 1 } }
-      );
-      
+      const result = await User.updateMany({}, { $inc: { tokenVersion: 1 } });
+
       // Note: Redis refresh tokens will expire naturally or can be cleared manually
       // Clearing all Redis keys could be risky in production
-      
+
       // Log the action
-      console.log(`SuperAdmin ${req.user.username} forced logout for ALL users (${result.modifiedCount} users)`);
-      
+      console.log(
+        `SuperAdmin ${req.user.username} forced logout for ALL users (${result.modifiedCount} users)`
+      );
+
       res.json({
         success: true,
-        message: `All users logged out from all devices (${result.modifiedCount} users affected)`
+        message: `All users logged out from all devices (${result.modifiedCount} users affected)`,
       });
     } catch (error) {
       console.error("Admin logout all users error:", error);
       res.status(500).json({
         success: false,
         message: "Failed to logout all users",
-        code: "SERVER_ERROR"
+        code: "SERVER_ERROR",
       });
     }
   }

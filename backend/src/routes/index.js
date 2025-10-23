@@ -26,9 +26,7 @@ const userRoutes = require("./users");
 const roleRoutes = require("./roles");
 const brandRoutes = require("./brands");
 const categoryRoutes = require("./categories");
-const factoryRoutes = require("./factories");
-const depotRoutes = require("./depots"); // Legacy - for backward compatibility
-const facilityRoutes = require("./facilities"); // New unified routes
+const facilityRoutes = require("./facilities"); // Unified facility routes
 const transportRoutes = require("./transports");
 const menuRoutes = require("./menu-items");
 const permissionRoutes = require("./permissions");
@@ -172,8 +170,7 @@ router.get("/info", (req, res) => {
   brands: "/api/v1/brands",
   categories: "/api/v1/categories",
   products: "/api/v1/products",
-  factories: "/api/v1/factories",
-  depots: "/api/v1/depots",
+  facilities: "/api/v1/facilities",
   employees: "/api/v1/employees",
   menu: "/api/v1/menu-items",
   permissions: "/api/v1/permissions",
@@ -237,29 +234,12 @@ router.use("/product/offers", offersRoutes);
 
 
 /**
- * Factory Management Routes
- * @route   /api/factories/*
- * @desc    Factory CRUD operations and management
- * @access  Private (authenticated users)
- */
-router.use("/factories", factoryRoutes);
-
-/**
- * Facility Management Routes (NEW - Unified Depots & Factories)
+ * Facility Management Routes (Unified Depots & Factories)
  * @route   /api/facilities/*
  * @desc    Unified facility CRUD operations (depots and factories)
  * @access  Private (authenticated users)
  */
 router.use("/facilities", facilityRoutes);
-
-/**
- * Depot Management Routes (LEGACY - For backward compatibility)
- * @route   /api/depots/*
- * @desc    Depot CRUD operations (now uses facilities with type='Depot')
- * @access  Private (authenticated users)
- * @deprecated Use /api/facilities instead
- */
-router.use("/depots", depotRoutes);
 
 /**
  * Designation Management Routes
@@ -369,6 +349,7 @@ router.get("/routes", (req, res) => {
           users: "/api/users",
           roles: "/api/roles",
           brands: "/api/brands",
+          facilities: "/api/facilities",
           menu: "/api/menu",
           permissions: "/api/permissions",
         },

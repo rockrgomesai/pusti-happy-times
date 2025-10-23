@@ -301,6 +301,13 @@ export default function PermissionsPage() {
             value={selectedRole}
             label="Select Role"
             onChange={handleRoleChange}
+            MenuProps={{
+              PaperProps: {
+                style: {
+                  maxHeight: 400,
+                },
+              },
+            }}
           >
             {roles.map((role) => (
               <MenuItem key={role._id} value={role._id}>

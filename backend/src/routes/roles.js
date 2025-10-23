@@ -39,15 +39,11 @@ const roleValidation = [
     .isLength({ min: 2, max: 50 })
     .withMessage("Role name must be between 2 and 50 characters")
     .matches(/^[a-zA-Z0-9\s_-]+$/)
-    .withMessage(
-      "Role name can only contain letters, numbers, spaces, underscores, and hyphens"
-    ),
+    .withMessage("Role name can only contain letters, numbers, spaces, underscores, and hyphens"),
 ];
 
 // ID parameter validation
-const idValidation = [
-  param("id").isMongoId().withMessage("Invalid role ID format"),
-];
+const idValidation = [param("id").isMongoId().withMessage("Invalid role ID format")];
 
 /**
  * Helper Functions
@@ -84,67 +80,45 @@ const getCurrentUserId = (req) => {
  * @desc    Get all roles
  * @access  Private - requires roles:read permission
  */
-router.get(
-  "/",
-  authenticate,
-  requireApiPermission("roles:read"),
-  async (req, res) => {
-    try {
-      const { page = 1, limit = 10, sort = "role" } = req.query;
+router.get("/", authenticate, requireApiPermission("roles:read"), async (req, res) => {
+  try {
+    const { sort = "role" } = req.query;
 
-      const options = {
-        page: parseInt(page),
-        limit: parseInt(limit),
-        sort: { [sort]: 1 },
-      };
+    const sortOptions = { [sort]: 1 };
 
-      // Calculate skip value for pagination
-      const skip = (options.page - 1) * options.limit;
+    // Get all roles without pagination
+    const roles = await Role.find({}).sort(sortOptions);
 
-      // Get roles with pagination
-      const roles = await Role.find({})
-        .sort(options.sort)
-        .skip(skip)
-        .limit(options.limit);
+    // Get user count for each role
+    const rolesWithUserCount = await Promise.all(
+      roles.map(async (role) => {
+        const userCount = await User.countDocuments({ role_id: role._id });
+        return {
+          ...role.toObject(),
+          userCount,
+        };
+      })
+    );
 
-      // Get total count for pagination
-      const totalCount = await Role.countDocuments();
-      const totalPages = Math.ceil(totalCount / options.limit);
+    // Get total count
+    const totalCount = rolesWithUserCount.length;
 
-      // Get user count for each role
-      const rolesWithUserCount = await Promise.all(
-        roles.map(async (role) => {
-          const userCount = await User.countDocuments({ role_id: role._id });
-          return {
-            ...role.toObject(),
-            userCount,
-          };
-        })
-      );
-
-      res.json({
-        success: true,
-        data: rolesWithUserCount,
-        pagination: {
-          page: options.page,
-          limit: options.limit,
-          totalCount,
-          totalPages,
-          hasNextPage: options.page < totalPages,
-          hasPrevPage: options.page > 1,
-        },
-      });
-    } catch (error) {
-      console.error("Error fetching roles:", error);
-      res.status(500).json({
-        success: false,
-        message: "Error fetching roles",
-        error:
-          process.env.NODE_ENV === "development" ? error.message : undefined,
-      });
-    }
+    res.json({
+      success: true,
+      data: rolesWithUserCount,
+      pagination: {
+        totalCount,
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching roles:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching roles",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
   }
-);
+});
 
 /**
  * @route   GET /api/roles/:id
@@ -183,8 +157,7 @@ router.get(
       res.status(500).json({
         success: false,
         message: "Error fetching role",
-        error:
-          process.env.NODE_ENV === "development" ? error.message : undefined,
+        error: process.env.NODE_ENV === "development" ? error.message : undefined,
       });
     }
   }
@@ -215,21 +188,20 @@ router.get(
       }
 
       // Get all permissions for this role
-      const [apiPermissions, pagePermissions, sidebarPermissions] =
-        await Promise.all([
-          RoleApiPermission.find({ role_id: roleId }).populate(
-            "api_permission_id",
-            "api_permissions"
-          ),
-          RolePagePermission.find({ role_id: roleId }).populate(
-            "page_permission_id",
-            "pg_permissions"
-          ),
-          RoleSidebarMenuItem.find({ role_id: roleId }).populate(
-            "sidebar_menu_item_id",
-            "label href icon"
-          ),
-        ]);
+      const [apiPermissions, pagePermissions, sidebarPermissions] = await Promise.all([
+        RoleApiPermission.find({ role_id: roleId }).populate(
+          "api_permission_id",
+          "api_permissions"
+        ),
+        RolePagePermission.find({ role_id: roleId }).populate(
+          "page_permission_id",
+          "pg_permissions"
+        ),
+        RoleSidebarMenuItem.find({ role_id: roleId }).populate(
+          "sidebar_menu_item_id",
+          "label href icon"
+        ),
+      ]);
 
       res.json({
         success: true,
@@ -247,8 +219,7 @@ router.get(
       res.status(500).json({
         success: false,
         message: "Error fetching role permissions",
-        error:
-          process.env.NODE_ENV === "development" ? error.message : undefined,
+        error: process.env.NODE_ENV === "development" ? error.message : undefined,
       });
     }
   }
@@ -308,8 +279,7 @@ router.post(
       res.status(500).json({
         success: false,
         message: "Error creating role",
-        error:
-          process.env.NODE_ENV === "development" ? error.message : undefined,
+        error: process.env.NODE_ENV === "development" ? error.message : undefined,
       });
     }
   }
@@ -385,8 +355,7 @@ router.put(
       res.status(500).json({
         success: false,
         message: "Error updating role",
-        error:
-          process.env.NODE_ENV === "development" ? error.message : undefined,
+        error: process.env.NODE_ENV === "development" ? error.message : undefined,
       });
     }
   }
@@ -442,8 +411,7 @@ router.delete(
       res.status(500).json({
         success: false,
         message: "Error deleting role",
-        error:
-          process.env.NODE_ENV === "development" ? error.message : undefined,
+        error: process.env.NODE_ENV === "development" ? error.message : undefined,
       });
     }
   }
@@ -463,14 +431,8 @@ router.post(
     .isArray()
     .withMessage("API permission IDs must be an array")
     .custom((value) => {
-      if (
-        !value.every(
-          (id) => typeof id === "string" && id.match(/^[0-9a-fA-F]{24}$/)
-        )
-      ) {
-        throw new Error(
-          "All API permission IDs must be valid MongoDB ObjectIds"
-        );
+      if (!value.every((id) => typeof id === "string" && id.match(/^[0-9a-fA-F]{24}$/))) {
+        throw new Error("All API permission IDs must be valid MongoDB ObjectIds");
       }
       return true;
     }),
@@ -511,8 +473,7 @@ router.post(
       res.status(500).json({
         success: false,
         message: "Error updating API permissions",
-        error:
-          process.env.NODE_ENV === "development" ? error.message : undefined,
+        error: process.env.NODE_ENV === "development" ? error.message : undefined,
       });
     }
   }
@@ -532,14 +493,8 @@ router.post(
     .isArray()
     .withMessage("Page permission IDs must be an array")
     .custom((value) => {
-      if (
-        !value.every(
-          (id) => typeof id === "string" && id.match(/^[0-9a-fA-F]{24}$/)
-        )
-      ) {
-        throw new Error(
-          "All page permission IDs must be valid MongoDB ObjectIds"
-        );
+      if (!value.every((id) => typeof id === "string" && id.match(/^[0-9a-fA-F]{24}$/))) {
+        throw new Error("All page permission IDs must be valid MongoDB ObjectIds");
       }
       return true;
     }),
@@ -580,8 +535,7 @@ router.post(
       res.status(500).json({
         success: false,
         message: "Error updating page permissions",
-        error:
-          process.env.NODE_ENV === "development" ? error.message : undefined,
+        error: process.env.NODE_ENV === "development" ? error.message : undefined,
       });
     }
   }
@@ -601,11 +555,7 @@ router.post(
     .isArray()
     .withMessage("Sidebar menu IDs must be an array")
     .custom((value) => {
-      if (
-        !value.every(
-          (id) => typeof id === "string" && id.match(/^[0-9a-fA-F]{24}$/)
-        )
-      ) {
+      if (!value.every((id) => typeof id === "string" && id.match(/^[0-9a-fA-F]{24}$/))) {
         throw new Error("All sidebar menu IDs must be valid MongoDB ObjectIds");
       }
       return true;
@@ -647,8 +597,7 @@ router.post(
       res.status(500).json({
         success: false,
         message: "Error updating sidebar permissions",
-        error:
-          process.env.NODE_ENV === "development" ? error.message : undefined,
+        error: process.env.NODE_ENV === "development" ? error.message : undefined,
       });
     }
   }

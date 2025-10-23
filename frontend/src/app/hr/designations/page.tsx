@@ -240,7 +240,10 @@ export default function DesignationsPage() {
   // Handle add new designation
   const handleAddDesignation = () => {
     setEditingDesignation(null);
-    reset();
+    reset({
+      name: '',
+      active: true,
+    });
     setOpenDialog(true);
   };
 

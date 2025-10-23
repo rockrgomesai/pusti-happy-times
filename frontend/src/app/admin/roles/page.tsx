@@ -36,6 +36,7 @@ import {
   Security as SecurityIcon,
   Group as GroupIcon,
 } from '@mui/icons-material';
+import { TablePagination } from '@mui/material';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -85,6 +86,8 @@ export default function RolesPage() {
   const [visibleRoleColumnIds, setVisibleRoleColumnIds] = useState<string[]>([]);
   const [persistedRoleColumnIds, setPersistedRoleColumnIds] = useState<string[]>([]);
   const roleColumnStateHydratedRef = useRef(false);
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
 
   // Form setup
   const {
@@ -126,6 +129,22 @@ export default function RolesPage() {
   const filteredRoles = roles.filter((role) => {
     return role.role.toLowerCase().includes(searchTerm.toLowerCase());
   });
+
+  // Paginate filtered roles
+  const paginatedRoles = filteredRoles.slice(
+    page * rowsPerPage,
+    page * rowsPerPage + rowsPerPage
+  );
+
+  // Pagination handlers
+  const handleChangePage = (_event: unknown, newPage: number) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
 
   // Handle form submission
   const onSubmit = async (data: RoleFormData) => {
@@ -188,7 +207,9 @@ export default function RolesPage() {
   // Handle add new role
   const handleAddRole = () => {
     setEditingRole(null);
-    reset();
+    reset({
+      role: '',
+    });
     setOpenDialog(true);
   };
 
@@ -444,13 +465,14 @@ export default function RolesPage() {
 
   // Render card view
   const renderCardView = () => (
-    <Box sx={{ maxHeight: 'calc(100vh - 300px)', overflow: 'auto', pr: 1 }}>
-      <Box sx={{ 
-        display: 'grid', 
-        gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', 
-        gap: 3 
-      }}>
-        {filteredRoles.map((role) => (
+    <>
+      <Box sx={{ maxHeight: 'calc(100vh - 350px)', overflow: 'auto', pr: 1 }}>
+        <Box sx={{ 
+          display: 'grid', 
+          gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', 
+          gap: 3 
+        }}>
+          {paginatedRoles.map((role) => (
           <Card
             key={role._id}
             sx={{
@@ -518,36 +540,59 @@ export default function RolesPage() {
         ))}
       </Box>
     </Box>
+      <TablePagination
+        component={Paper}
+        count={filteredRoles.length}
+        page={page}
+        onPageChange={handleChangePage}
+        rowsPerPage={rowsPerPage}
+        onRowsPerPageChange={handleChangeRowsPerPage}
+        rowsPerPageOptions={[5, 10, 25, 50]}
+        sx={{ mt: 2 }}
+      />
+    </>
   );
 
   // Render list view
   const renderListView = () => (
-    <Box sx={{ maxHeight: 'calc(100vh - 300px)', overflow: 'auto' }}>
-      <TableContainer component={Paper}>
-        <Table stickyHeader sx={{ minWidth: roleTableMinWidth }}>
-          <TableHead>
-            <TableRow>
-              {visibleRoleColumns.map((column) => (
-                <TableCell key={column.id} align={column.align}>
-                  <Typography sx={{ fontWeight: 'bold' }}>{column.label}</Typography>
-                </TableCell>
-              ))}
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {filteredRoles.map((role) => (
-              <TableRow key={role._id}>
+    <>
+      <Box sx={{ maxHeight: 'calc(100vh - 350px)', overflow: 'auto' }}>
+        <TableContainer component={Paper}>
+          <Table stickyHeader sx={{ minWidth: roleTableMinWidth }}>
+            <TableHead>
+              <TableRow>
                 {visibleRoleColumns.map((column) => (
                   <TableCell key={column.id} align={column.align}>
-                    {column.renderCell(role)}
+                    <Typography sx={{ fontWeight: 'bold' }}>{column.label}</Typography>
                   </TableCell>
                 ))}
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
-    </Box>
+            </TableHead>
+            <TableBody>
+              {paginatedRoles.map((role) => (
+                <TableRow key={role._id}>
+                  {visibleRoleColumns.map((column) => (
+                    <TableCell key={column.id} align={column.align}>
+                      {column.renderCell(role)}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </Box>
+      <TablePagination
+        component={Paper}
+        count={filteredRoles.length}
+        page={page}
+        onPageChange={handleChangePage}
+        rowsPerPage={rowsPerPage}
+        onRowsPerPageChange={handleChangeRowsPerPage}
+        rowsPerPageOptions={[5, 10, 25, 50]}
+        sx={{ mt: 2 }}
+      />
+    </>
   );
 
   return (

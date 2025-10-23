@@ -48,13 +48,11 @@ import {
   Email as EmailIcon,
 } from '@mui/icons-material';
 import { TableSortLabel, TablePagination } from '@mui/material';
-import { useForm, Controller } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import { toast } from 'react-hot-toast';
 import api from '@/lib/api';
 import ColumnVisibilityMenu from '@/components/common/ColumnVisibilityMenu';
 import { calculateTableMinWidth } from '@/lib/tableUtils';
+import UserFormDialog from './UserFormDialog';
 
 // User type definition (matches backend model exactly)
 interface User {
@@ -65,6 +63,16 @@ interface User {
     _id: string;
     role: string;
   };
+  user_type: 'employee' | 'distributor';
+  employee_id?: {
+    _id: string;
+    employee_id: string;
+    name: string;
+  } | string | null;
+  distributor_id?: {
+    _id: string;
+    name: string;
+  } | string | null;
   active: boolean;
   created_at: string;
   updated_at: string;
@@ -77,17 +85,6 @@ interface Role {
   _id: string;
   role: string;
 }
-
-// User form schema (matches actual database fields)
-const userSchema = z.object({
-  username: z.string().min(3, 'Username must be at least 3 characters'),
-  email: z.string().email('Invalid email address'),
-  password: z.string().min(6, 'Password must be at least 6 characters').optional(),
-  role_id: z.string().min(1, 'Role is required'),
-  active: z.boolean(),
-});
-
-type UserFormData = z.infer<typeof userSchema>;
 
 const USER_COLUMN_STORAGE_KEY = 'admin-users-visible-columns-v1';
 
@@ -122,23 +119,6 @@ export default function UsersPage() {
   const [visibleUserColumnIds, setVisibleUserColumnIds] = useState<string[]>([]);
   const [persistedUserColumnIds, setPersistedUserColumnIds] = useState<string[]>([]);
   const userColumnStateHydratedRef = useRef(false);
-
-  // Form setup
-  const {
-    control,
-    handleSubmit,
-    reset,
-    formState: { errors, isSubmitting },
-  } = useForm<UserFormData>({
-    resolver: zodResolver(userSchema),
-    defaultValues: {
-      username: '',
-      email: '',
-      password: '',
-      role_id: '',
-      active: true,
-    },
-  });
 
   // Load users
   const loadUsers = async () => {
@@ -258,35 +238,23 @@ export default function UsersPage() {
     setPage(0);
   };
 
-  // Handle form submission
-  const onSubmit = async (data: UserFormData) => {
-    try {
-      const submitData = {
-        ...data,
-        // Only include password if it's provided (for create) or if editing and password is changed
-        ...(data.password && data.password.length > 0 ? { password: data.password } : {}),
-      };
+  // Handle edit user
+  const handleEditUser = useCallback((user: User) => {
+    setEditingUser(user);
+    setOpenDialog(true);
+  }, []);
 
-      if (editingUser) {
-        // Remove password from update if empty
-        if (!data.password || data.password.length === 0) {
-          delete submitData.password;
-        }
-  await api.put(`/users/${editingUser._id}`, submitData);
-        toast.success('User updated successfully');
-      } else {
-        await api.post('/users', submitData);
-        toast.success('User created successfully');
-      }
-      
-      setOpenDialog(false);
-      reset();
-      setEditingUser(null);
-      loadUsers();
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to save user';
-      toast.error(errorMessage);
-    }
+  // Handle add new user
+  const handleAddUser = () => {
+    setEditingUser(null);
+    setOpenDialog(true);
+  };
+
+  // Handle successful user save
+  const handleUserSaveSuccess = () => {
+    setOpenDialog(false);
+    setEditingUser(null);
+    loadUsers();
   };
 
   // Handle delete user
@@ -294,7 +262,7 @@ export default function UsersPage() {
     if (!userToDelete) return;
     
     try {
-  await api.delete(`/users/${userToDelete}`);
+      await api.delete(`/users/${userToDelete}`);
       toast.success('User deleted successfully');
       setDeleteConfirmOpen(false);
       setUserToDelete(null);
@@ -303,26 +271,6 @@ export default function UsersPage() {
       const errorMessage = error instanceof Error ? error.message : 'Failed to delete user';
       toast.error(errorMessage);
     }
-  };
-
-  // Handle edit user
-  const handleEditUser = useCallback((user: User) => {
-    setEditingUser(user);
-    reset({
-      username: user.username,
-      email: user.email,
-      password: '', // Don't populate password for security
-      role_id: user.role_id._id,
-      active: user.active,
-    });
-    setOpenDialog(true);
-  }, [reset]);
-
-  // Handle add new user
-  const handleAddUser = () => {
-    setEditingUser(null);
-    reset();
-    setOpenDialog(true);
   };
 
   // Format date
@@ -820,136 +768,18 @@ export default function UsersPage() {
         renderListView()
       )}
 
-      {/* Add/Edit Dialog */}
-      <Dialog 
-        open={openDialog} 
-        onClose={() => setOpenDialog(false)}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>
-          {editingUser ? 'Edit User' : 'Add New User'}
-        </DialogTitle>
-        <form onSubmit={handleSubmit(onSubmit)}>
-          <DialogContent>
-            <Grid container spacing={2}>
-              <Grid size={12}>
-                <Controller
-                  name="username"
-                  control={control}
-                  render={({ field }) => (
-                    <TextField
-                      {...field}
-                      label="Username"
-                      fullWidth
-                      error={!!errors.username}
-                      helperText={errors.username?.message}
-                      margin="normal"
-                      placeholder="Enter username"
-                    />
-                  )}
-                />
-              </Grid>
-              
-              <Grid size={12}>
-                <Controller
-                  name="email"
-                  control={control}
-                  render={({ field }) => (
-                    <TextField
-                      {...field}
-                      label="Email"
-                      type="email"
-                      fullWidth
-                      error={!!errors.email}
-                      helperText={errors.email?.message}
-                      margin="normal"
-                      placeholder="Enter email address"
-                    />
-                  )}
-                />
-              </Grid>
-              
-              <Grid size={12}>
-                <Controller
-                  name="password"
-                  control={control}
-                  render={({ field }) => (
-                    <TextField
-                      {...field}
-                      label={editingUser ? "New Password (leave blank to keep current)" : "Password"}
-                      type="password"
-                      fullWidth
-                      error={!!errors.password}
-                      helperText={errors.password?.message}
-                      margin="normal"
-                      placeholder="Enter password"
-                    />
-                  )}
-                />
-              </Grid>
-              
-              <Grid size={12}>
-                <Controller
-                  name="role_id"
-                  control={control}
-                  render={({ field }) => (
-                    <FormControl fullWidth margin="normal" error={!!errors.role_id}>
-                      <InputLabel>Role</InputLabel>
-                      <Select
-                        {...field}
-                        label="Role"
-                      >
-                        {roles.map((role) => (
-                          <MenuItem key={role._id} value={role._id}>
-                            {role.role}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                      {errors.role_id && (
-                        <Typography variant="caption" color="error" sx={{ ml: 2, mt: 0.5 }}>
-                          {errors.role_id.message}
-                        </Typography>
-                      )}
-                    </FormControl>
-                  )}
-                />
-              </Grid>
-              
-              <Grid size={12}>
-                <Controller
-                  name="active"
-                  control={control}
-                  render={({ field }) => (
-                    <FormControlLabel
-                      control={
-                        <Switch
-                          checked={field.value}
-                          onChange={field.onChange}
-                        />
-                      }
-                      label="Active User"
-                      sx={{ mt: 1 }}
-                    />
-                  )}
-                />
-              </Grid>
-            </Grid>
-          </DialogContent>
-          <DialogActions sx={{ p: 3 }}>
-            <Button onClick={() => setOpenDialog(false)}>
-              Cancel
-            </Button>
-            <Button 
-              type="submit" 
-              variant="contained"
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? 'Saving...' : (editingUser ? 'Update' : 'Create')}
-            </Button>
-          </DialogActions>
-        </form>
-      </Dialog>
+      {/* Add/Edit User Dialog */}
+      <UserFormDialog
+        key={editingUser?._id || 'new-user'}
+        open={openDialog}
+        onClose={() => {
+          setOpenDialog(false);
+          setEditingUser(null);
+        }}
+        onSuccess={handleUserSaveSuccess}
+        editingUser={editingUser}
+        roles={roles}
+      />
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={deleteConfirmOpen} onClose={() => setDeleteConfirmOpen(false)}>

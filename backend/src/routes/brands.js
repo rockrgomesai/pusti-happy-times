@@ -31,16 +31,11 @@ const brandValidation = [
     .withMessage("Brand name is required")
     .isLength({ min: 1, max: 100 })
     .withMessage("Brand name must be between 1 and 100 characters"),
-  body("active")
-    .optional()
-    .isBoolean()
-    .withMessage("Active must be a boolean value"),
+  body("active").optional().isBoolean().withMessage("Active must be a boolean value"),
 ];
 
 // ID parameter validation
-const idValidation = [
-  param("id").isMongoId().withMessage("Invalid brand ID format"),
-];
+const idValidation = [param("id").isMongoId().withMessage("Invalid brand ID format")];
 
 /**
  * Helper Functions
@@ -77,58 +72,37 @@ const getCurrentUserId = (req) => {
  * @desc    Get all brands
  * @access  Private - requires brands:read permission
  */
-router.get(
-  "/",
-  authenticate,
-  requireApiPermission("brands:read"),
-  async (req, res) => {
-    try {
-      const { page = 1, limit = 10, sort = "brand" } = req.query;
+router.get("/", authenticate, requireApiPermission("brands:read"), async (req, res) => {
+  try {
+    const { sort = "name" } = req.query;
 
-      const options = {
-        page: parseInt(page),
-        limit: parseInt(limit),
-        sort: { [sort]: 1 },
-      };
+    const sortOptions = { [sort]: 1 };
 
-      // Calculate skip value for pagination
-      const skip = (options.page - 1) * options.limit;
+    // Get all brands without pagination
+    const brands = await Brand.find({})
+      .sort(sortOptions)
+      .populate("created_by", "username")
+      .populate("updated_by", "username");
 
-      // Get brands with pagination
-      const brands = await Brand.find({})
-        .sort(options.sort)
-        .skip(skip)
-        .limit(options.limit)
-        .populate("created_by", "username")
-        .populate("updated_by", "username");
+    // Get total count
+    const totalCount = brands.length;
 
-      // Get total count for pagination
-      const totalCount = await Brand.countDocuments();
-      const totalPages = Math.ceil(totalCount / options.limit);
-
-      res.json({
-        success: true,
-        data: brands,
-        pagination: {
-          page: options.page,
-          limit: options.limit,
-          totalCount,
-          totalPages,
-          hasNextPage: options.page < totalPages,
-          hasPrevPage: options.page > 1,
-        },
-      });
-    } catch (error) {
-      console.error("Error fetching brands:", error);
-      res.status(500).json({
-        success: false,
-        message: "Error fetching brands",
-        error:
-          process.env.NODE_ENV === "development" ? error.message : undefined,
-      });
-    }
+    res.json({
+      success: true,
+      data: brands,
+      pagination: {
+        totalCount,
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching brands:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching brands",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
   }
-);
+});
 
 /**
  * @route   GET /api/brands/:id
@@ -163,8 +137,7 @@ router.get(
       res.status(500).json({
         success: false,
         message: "Error fetching brand",
-        error:
-          process.env.NODE_ENV === "development" ? error.message : undefined,
+        error: process.env.NODE_ENV === "development" ? error.message : undefined,
       });
     }
   }
@@ -228,8 +201,7 @@ router.post(
       res.status(500).json({
         success: false,
         message: "Error creating brand",
-        error:
-          process.env.NODE_ENV === "development" ? error.message : undefined,
+        error: process.env.NODE_ENV === "development" ? error.message : undefined,
       });
     }
   }
@@ -253,10 +225,10 @@ router.put(
       const currentUserId = getCurrentUserId(req);
 
       // Debug logging
-      console.log('🔍 UPDATE BRAND - Request body:', req.body);
-      console.log('🔍 UPDATE BRAND - Extracted brand:', brand);
-      console.log('🔍 UPDATE BRAND - Extracted active:', active);
-      console.log('🔍 UPDATE BRAND - Active type:', typeof active);
+      console.log("🔍 UPDATE BRAND - Request body:", req.body);
+      console.log("🔍 UPDATE BRAND - Extracted brand:", brand);
+      console.log("🔍 UPDATE BRAND - Extracted active:", active);
+      console.log("🔍 UPDATE BRAND - Active type:", typeof active);
 
       // Check if brand exists
       const existingBrand = await Brand.findById(req.params.id);
@@ -267,7 +239,7 @@ router.put(
         });
       }
 
-      console.log('🔍 UPDATE BRAND - Existing brand:', existingBrand);
+      console.log("🔍 UPDATE BRAND - Existing brand:", existingBrand);
 
       // Check if new brand name already exists (excluding current brand)
       const duplicateBrand = await Brand.findOne({
@@ -293,21 +265,17 @@ router.put(
         updateData.active = active;
       }
 
-      console.log('🔍 UPDATE BRAND - Update data:', updateData);
+      console.log("🔍 UPDATE BRAND - Update data:", updateData);
 
       // Update brand
-      const updatedBrand = await Brand.findByIdAndUpdate(
-        req.params.id,
-        updateData,
-        {
-          new: true,
-          runValidators: true,
-        }
-      )
+      const updatedBrand = await Brand.findByIdAndUpdate(req.params.id, updateData, {
+        new: true,
+        runValidators: true,
+      })
         .populate("created_by", "username")
         .populate("updated_by", "username");
 
-      console.log('🔍 UPDATE BRAND - Updated brand:', updatedBrand);
+      console.log("🔍 UPDATE BRAND - Updated brand:", updatedBrand);
 
       res.json({
         success: true,
@@ -328,8 +296,7 @@ router.put(
       res.status(500).json({
         success: false,
         message: "Error updating brand",
-        error:
-          process.env.NODE_ENV === "development" ? error.message : undefined,
+        error: process.env.NODE_ENV === "development" ? error.message : undefined,
       });
     }
   }
@@ -369,8 +336,7 @@ router.delete(
       res.status(500).json({
         success: false,
         message: "Error deleting brand",
-        error:
-          process.env.NODE_ENV === "development" ? error.message : undefined,
+        error: process.env.NODE_ENV === "development" ? error.message : undefined,
       });
     }
   }

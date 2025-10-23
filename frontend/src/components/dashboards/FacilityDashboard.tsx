@@ -38,10 +38,7 @@ interface User {
     employee_name?: string;
     employee_code?: string;
     employee_type?: string;
-    facility_assignments?: {
-      depot_ids?: string[];
-      factory_ids?: string[];
-    };
+    facility_id?: string;
   };
 }
 
@@ -49,10 +46,10 @@ interface FacilityDashboardProps {
   user: User;
 }
 
-interface Depot {
+interface Facility {
   _id: string;
-  depot_id: string;
   name: string;
+  type: 'Factory' | 'Depot';
   location?: string;
   active: boolean;
   contact_person?: string;
@@ -68,8 +65,7 @@ interface FacilityStats {
 
 export default function FacilityDashboard({ user }: FacilityDashboardProps) {
   const theme = useTheme();
-  const [depots, setDepots] = useState<Depot[]>([]);
-  const [factories, setFactories] = useState<any[]>([]);
+  const [facility, setFacility] = useState<Facility | null>(null);
   const [stats, setStats] = useState<FacilityStats>({
     totalInventory: 0,
     pendingOrders: 0,
@@ -78,9 +74,6 @@ export default function FacilityDashboard({ user }: FacilityDashboardProps) {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  const depotCount = user.context?.facility_assignments?.depot_ids?.length || 0;
-  const factoryCount = user.context?.facility_assignments?.factory_ids?.length || 0;
 
   useEffect(() => {
     loadFacilityData();
@@ -91,15 +84,14 @@ export default function FacilityDashboard({ user }: FacilityDashboardProps) {
       setLoading(true);
       setError(null);
 
-      // Fetch assigned facilities
-      const facilitiesRes = await api.get('/depots/my-facilities');
+      // Fetch assigned facility
+      const facilitiesRes = await api.get('/facilities/my-facilities');
       if (facilitiesRes.data.success) {
-        setDepots(facilitiesRes.data.data.depots || []);
-        setFactories(facilitiesRes.data.data.factories || []);
+        setFacility(facilitiesRes.data.data.facility || null);
       }
 
       // Fetch facility stats
-      const statsRes = await api.get('/depots/stats');
+      const statsRes = await api.get('/facilities/stats');
       if (statsRes.data.success) {
         setStats(statsRes.data.data);
       }
@@ -139,15 +131,10 @@ export default function FacilityDashboard({ user }: FacilityDashboardProps) {
           </Box>
         </Box>
         <Box sx={{ display: 'flex', gap: 1, mt: 2 }}>
-          <Chip 
-            label={`${depotCount} Depot${depotCount !== 1 ? 's' : ''}`}
-            color="primary" 
-            size="small"
-          />
-          {factoryCount > 0 && (
+          {facility && (
             <Chip 
-              label={`${factoryCount} Factor${factoryCount !== 1 ? 'ies' : 'y'}`}
-              color="secondary" 
+              label={`${facility.type}: ${facility.name}`}
+              color={facility.type === 'Depot' ? 'primary' : 'secondary'}
               size="small"
             />
           )}
@@ -230,80 +217,77 @@ export default function FacilityDashboard({ user }: FacilityDashboardProps) {
           gap: 3,
         }}
       >
-        {/* Assigned Depots */}
+        {/* Assigned Facility */}
         <Card>
           <CardContent>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
               <Typography variant="h6" component="h2">
-                Your Assigned Depots
+                Your Assigned Facility
               </Typography>
-              <Chip 
-                label={`${depots.length} Active`} 
-                color="primary" 
-                size="small" 
-              />
+              {facility && (
+                <Chip 
+                  label={facility.active ? 'Active' : 'Inactive'} 
+                  color={facility.active ? 'success' : 'default'}
+                  size="small" 
+                />
+              )}
             </Box>
 
-            {depots.length === 0 ? (
+            {!facility ? (
               <Box sx={{ textAlign: 'center', py: 4 }}>
                 <Warehouse sx={{ fontSize: 60, color: 'text.disabled', mb: 2 }} />
                 <Typography color="text.secondary">
-                  No depots assigned yet
+                  No facility assigned yet
                 </Typography>
               </Box>
             ) : (
               <List>
-                {depots.map((depot, index) => (
-                  <React.Fragment key={depot._id}>
-                    {index > 0 && <Divider />}
-                    <ListItem
-                      sx={{
-                        '&:hover': {
-                          backgroundColor: 'action.hover',
-                          cursor: 'pointer',
-                        },
-                      }}
-                      component={Link}
-                      href={`/operations/depots/${depot._id}`}
-                    >
-                      <ListItemIcon>
-                        <LocationOn color="primary" />
-                      </ListItemIcon>
-                      <ListItemText
-                        primary={
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <Typography variant="body1" fontWeight="medium">
-                              {depot.name}
-                            </Typography>
-                            {depot.active && (
-                              <CheckCircle 
-                                sx={{ fontSize: 16, color: 'success.main' }} 
-                              />
-                            )}
-                          </Box>
-                        }
-                        secondary={
-                          <>
-                            <Typography variant="caption" component="span" display="block">
-                              ID: {depot.depot_id}
-                            </Typography>
-                            {depot.location && (
-                              <Typography variant="caption" component="span" display="block">
-                                {depot.location}
-                              </Typography>
-                            )}
-                            {depot.contact_person && (
-                              <Typography variant="caption" component="span" display="block">
-                                Contact: {depot.contact_person}
-                                {depot.contact_mobile && ` • ${depot.contact_mobile}`}
-                              </Typography>
-                            )}
-                          </>
-                        }
-                      />
-                    </ListItem>
-                  </React.Fragment>
-                ))}
+                <ListItem
+                  sx={{
+                    '&:hover': {
+                      backgroundColor: 'action.hover',
+                      cursor: 'pointer',
+                    },
+                  }}
+                  component={Link}
+                  href={`/master/facilities`}
+                >
+                  <ListItemIcon>
+                    <LocationOn color={facility.type === 'Depot' ? 'primary' : 'secondary'} />
+                  </ListItemIcon>
+                  <ListItemText
+                    primary={
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Typography variant="body1" fontWeight="medium">
+                          {facility.name}
+                        </Typography>
+                        {facility.active && (
+                          <CheckCircle 
+                            sx={{ fontSize: 16, color: 'success.main' }} 
+                          />
+                        )}
+                      </Box>
+                    }
+                    secondary={
+                      <>
+                        <Typography variant="caption" component="span" display="block">
+                          Type: {facility.type}
+                        </Typography>
+                        {facility.location && (
+                          <Typography variant="caption" component="span" display="block">
+                            Location: {facility.location}
+                          </Typography>
+                        )}
+                        {facility.contact_person && (
+                          <Typography variant="caption" component="span" display="block">
+                            Contact: {facility.contact_person}
+                            {facility.contact_mobile && ` • ${facility.contact_mobile}`}
+                          </Typography>
+                        )}
+                      </>
+                    }
+                  />
+                </ListItem>
               </List>
             )}
           </CardContent>
@@ -402,32 +386,6 @@ export default function FacilityDashboard({ user }: FacilityDashboardProps) {
         </Box>
       </Box>
 
-      {/* Factories Section (if assigned) */}
-      {factories.length > 0 && (
-        <Card sx={{ mt: 3 }}>
-          <CardContent>
-            <Typography variant="h6" gutterBottom>
-              Assigned Factories
-            </Typography>
-            <List>
-              {factories.map((factory, index) => (
-                <React.Fragment key={factory._id}>
-                  {index > 0 && <Divider />}
-                  <ListItem>
-                    <ListItemIcon>
-                      <Warehouse color="secondary" />
-                    </ListItemIcon>
-                    <ListItemText
-                      primary={factory.name}
-                      secondary={`ID: ${factory.factory_id}`}
-                    />
-                  </ListItem>
-                </React.Fragment>
-              ))}
-            </List>
-          </CardContent>
-        </Card>
-      )}
     </Box>
   );
 }

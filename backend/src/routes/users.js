@@ -14,6 +14,7 @@
  */
 
 const express = require("express");
+const mongoose = require("mongoose");
 const { body, validationResult, param } = require("express-validator");
 const { User, Role } = require("../models");
 const { authenticate, requireApiPermission } = require("../middleware/auth");
@@ -33,9 +34,7 @@ const userCreateValidation = [
     .isLength({ min: 3, max: 30 })
     .withMessage("Username must be between 3 and 30 characters")
     .matches(/^[a-zA-Z0-9_-]+$/)
-    .withMessage(
-      "Username can only contain letters, numbers, underscores, and hyphens"
-    ),
+    .withMessage("Username can only contain letters, numbers, underscores, and hyphens"),
 
   body("email")
     .trim()
@@ -43,16 +42,25 @@ const userCreateValidation = [
     .withMessage("Please provide a valid email address")
     .normalizeEmail(),
 
-  body("password")
-    .isLength({ min: 6 })
-    .withMessage("Password must be at least 6 characters long"),
+  body("password").isLength({ min: 6 }).withMessage("Password must be at least 6 characters long"),
 
   body("role_id").isMongoId().withMessage("Invalid role ID format"),
 
-  body("active")
-    .optional()
-    .isBoolean()
-    .withMessage("Active status must be a boolean"),
+  body("user_type")
+    .isIn(["employee", "distributor"])
+    .withMessage("User type must be either 'employee' or 'distributor'"),
+
+  body("employee_id")
+    .optional({ nullable: true })
+    .custom((value) => !value || mongoose.Types.ObjectId.isValid(value))
+    .withMessage("Invalid employee ID format"),
+
+  body("distributor_id")
+    .optional({ nullable: true })
+    .custom((value) => !value || mongoose.Types.ObjectId.isValid(value))
+    .withMessage("Invalid distributor ID format"),
+
+  body("active").optional().isBoolean().withMessage("Active status must be a boolean"),
 ];
 
 // User update validation rules (password optional)
@@ -65,9 +73,7 @@ const userUpdateValidation = [
     .isLength({ min: 3, max: 30 })
     .withMessage("Username must be between 3 and 30 characters")
     .matches(/^[a-zA-Z0-9_-]+$/)
-    .withMessage(
-      "Username can only contain letters, numbers, underscores, and hyphens"
-    ),
+    .withMessage("Username can only contain letters, numbers, underscores, and hyphens"),
 
   body("email")
     .optional()
@@ -78,17 +84,27 @@ const userUpdateValidation = [
 
   body("role_id").optional().isMongoId().withMessage("Invalid role ID format"),
 
-  body("active")
+  body("user_type")
     .optional()
-    .isBoolean()
-    .withMessage("Active status must be a boolean"),
+    .isIn(["employee", "distributor"])
+    .withMessage("User type must be either 'employee' or 'distributor'"),
+
+  body("employee_id")
+    .optional({ nullable: true })
+    .custom((value) => !value || mongoose.Types.ObjectId.isValid(value))
+    .withMessage("Invalid employee ID format"),
+
+  body("distributor_id")
+    .optional({ nullable: true })
+    .custom((value) => !value || mongoose.Types.ObjectId.isValid(value))
+    .withMessage("Invalid distributor ID format"),
+
+  body("active").optional().isBoolean().withMessage("Active status must be a boolean"),
 ];
 
 // Password change validation
 const passwordChangeValidation = [
-  body("currentPassword")
-    .notEmpty()
-    .withMessage("Current password is required"),
+  body("currentPassword").notEmpty().withMessage("Current password is required"),
 
   body("newPassword")
     .isLength({ min: 6 })
@@ -96,9 +112,7 @@ const passwordChangeValidation = [
 ];
 
 // ID parameter validation
-const idValidation = [
-  param("id").isMongoId().withMessage("Invalid user ID format"),
-];
+const idValidation = [param("id").isMongoId().withMessage("Invalid user ID format")];
 
 /**
  * Helper Functions
@@ -135,59 +149,38 @@ const getCurrentUserId = (req) => {
  * @desc    Get all users
  * @access  Private - requires users:read permission
  */
-router.get(
-  "/",
-  authenticate,
-  requireApiPermission("users:read"),
-  async (req, res) => {
-    try {
-      const { page = 1, limit = 10, sort = "username" } = req.query;
+router.get("/", authenticate, requireApiPermission("users:read"), async (req, res) => {
+  try {
+    const { sort = "username" } = req.query;
 
-      const options = {
-        page: parseInt(page),
-        limit: parseInt(limit),
-        sort: { [sort]: 1 },
-      };
+    const sortOptions = { [sort]: 1 };
 
-      // Calculate skip value for pagination
-      const skip = (options.page - 1) * options.limit;
+    // Get all users without pagination (exclude passwords)
+    const users = await User.find({})
+      .sort(sortOptions)
+      .populate("role_id", "role")
+      .populate("created_by", "username")
+      .populate("updated_by", "username");
 
-      // Get users with pagination (exclude passwords)
-      const users = await User.find({})
-        .sort(options.sort)
-        .skip(skip)
-        .limit(options.limit)
-        .populate("role_id", "role")
-        .populate("created_by", "username")
-        .populate("updated_by", "username");
+    // Get total count
+    const totalCount = users.length;
 
-      // Get total count for pagination
-      const totalCount = await User.countDocuments();
-      const totalPages = Math.ceil(totalCount / options.limit);
-
-      res.json({
-        success: true,
-        data: users,
-        pagination: {
-          page: options.page,
-          limit: options.limit,
-          totalCount,
-          totalPages,
-          hasNextPage: options.page < totalPages,
-          hasPrevPage: options.page > 1,
-        },
-      });
-    } catch (error) {
-      console.error("Error fetching users:", error);
-      res.status(500).json({
-        success: false,
-        message: "Error fetching users",
-        error:
-          process.env.NODE_ENV === "development" ? error.message : undefined,
-      });
-    }
+    res.json({
+      success: true,
+      data: users,
+      pagination: {
+        totalCount,
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching users:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching users",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
   }
-);
+});
 
 /**
  * @route   GET /api/users/:id
@@ -223,8 +216,7 @@ router.get(
       res.status(500).json({
         success: false,
         message: "Error fetching user",
-        error:
-          process.env.NODE_ENV === "development" ? error.message : undefined,
+        error: process.env.NODE_ENV === "development" ? error.message : undefined,
       });
     }
   }
@@ -243,7 +235,16 @@ router.post(
   handleValidationErrors,
   async (req, res) => {
     try {
-      const { username, email, password, role_id, active = true } = req.body;
+      const {
+        username,
+        email,
+        password,
+        role_id,
+        user_type,
+        employee_id,
+        distributor_id,
+        active = true,
+      } = req.body;
       const currentUserId = getCurrentUserId(req);
 
       // Verify role exists
@@ -272,6 +273,9 @@ router.post(
         email,
         password,
         role_id,
+        user_type,
+        employee_id: employee_id || null,
+        distributor_id: distributor_id || null,
         active,
         created_by: currentUserId,
         updated_by: currentUserId,
@@ -304,8 +308,7 @@ router.post(
       res.status(500).json({
         success: false,
         message: "Error creating user",
-        error:
-          process.env.NODE_ENV === "development" ? error.message : undefined,
+        error: process.env.NODE_ENV === "development" ? error.message : undefined,
       });
     }
   }
@@ -325,7 +328,7 @@ router.put(
   handleValidationErrors,
   async (req, res) => {
     try {
-      const { username, email, role_id, active } = req.body;
+      const { username, email, role_id, user_type, employee_id, distributor_id, active } = req.body;
       const currentUserId = getCurrentUserId(req);
 
       // Check if user exists
@@ -345,6 +348,9 @@ router.put(
 
       if (username !== undefined) updateData.username = username;
       if (email !== undefined) updateData.email = email;
+      if (user_type !== undefined) updateData.user_type = user_type;
+      if (employee_id !== undefined) updateData.employee_id = employee_id;
+      if (distributor_id !== undefined) updateData.distributor_id = distributor_id;
       if (role_id !== undefined) {
         // Verify role exists
         const role = await Role.findById(role_id);
@@ -380,14 +386,10 @@ router.put(
       }
 
       // Update user
-      const updatedUser = await User.findByIdAndUpdate(
-        req.params.id,
-        updateData,
-        {
-          new: true,
-          runValidators: true,
-        }
-      )
+      const updatedUser = await User.findByIdAndUpdate(req.params.id, updateData, {
+        new: true,
+        runValidators: true,
+      })
         .populate("role_id", "role")
         .populate("created_by", "username")
         .populate("updated_by", "username");
@@ -412,8 +414,7 @@ router.put(
       res.status(500).json({
         success: false,
         message: "Error updating user",
-        error:
-          process.env.NODE_ENV === "development" ? error.message : undefined,
+        error: process.env.NODE_ENV === "development" ? error.message : undefined,
       });
     }
   }
@@ -458,8 +459,7 @@ router.post(
       }
 
       // Verify current password
-      const isCurrentPasswordValid =
-        await user.comparePassword(currentPassword);
+      const isCurrentPasswordValid = await user.comparePassword(currentPassword);
       if (!isCurrentPasswordValid) {
         return res.status(400).json({
           success: false,
@@ -482,8 +482,7 @@ router.post(
       res.status(500).json({
         success: false,
         message: "Error changing password",
-        error:
-          process.env.NODE_ENV === "development" ? error.message : undefined,
+        error: process.env.NODE_ENV === "development" ? error.message : undefined,
       });
     }
   }
@@ -533,8 +532,7 @@ router.delete(
       res.status(500).json({
         success: false,
         message: "Error deleting user",
-        error:
-          process.env.NODE_ENV === "development" ? error.message : undefined,
+        error: process.env.NODE_ENV === "development" ? error.message : undefined,
       });
     }
   }

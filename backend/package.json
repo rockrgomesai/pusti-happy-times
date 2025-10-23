@@ -9,8 +9,6 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "seed:menu:categories": "node src/seeds/seedMenuCategories.js",
-    "seed:factories": "node seed-factories.js",
-  "seed:depots": "node seed-depots.js",
     "seed:employees": "node seed-employees.js",
     "seed:employees:two": "node scripts/seedTwoEmployees.js",
     "seed:categories": "node src/seeds/seedCategories.js",

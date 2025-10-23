@@ -1,10 +1,10 @@
 /**
  * Authentication Middleware
  * Pusti Happy Times - JWT Authentication & Authorization
- * 
+ *
  * This middleware handles JWT token validation, user authentication,
  * and role-based authorization for the application.
- * 
+ *
  * Features:
  * - JWT token validation and refresh
  * - User session management
@@ -14,9 +14,9 @@
  * - Request rate limiting
  */
 
-const jwt = require('jsonwebtoken');
-const { User, Role } = require('../models');
-const redis = require('../config/redis');
+const jwt = require("jsonwebtoken");
+const { User, Role } = require("../models");
+const redis = require("../config/redis");
 
 /**
  * JWT Token Management
@@ -28,15 +28,11 @@ class TokenManager {
    * @returns {string} JWT access token
    */
   static generateAccessToken(payload) {
-    return jwt.sign(
-      payload,
-      process.env.JWT_ACCESS_SECRET,
-      { 
-        expiresIn: process.env.JWT_ACCESS_EXPIRES_IN || '15m',
-        issuer: process.env.JWT_ISSUER || 'pusti-ht',
-        audience: process.env.JWT_AUDIENCE || 'pusti-ht-users'
-      }
-    );
+    return jwt.sign(payload, process.env.JWT_ACCESS_SECRET, {
+      expiresIn: process.env.JWT_ACCESS_EXPIRES_IN || "15m",
+      issuer: process.env.JWT_ISSUER || "pusti-ht",
+      audience: process.env.JWT_AUDIENCE || "pusti-ht-users",
+    });
   }
 
   /**
@@ -45,15 +41,11 @@ class TokenManager {
    * @returns {string} JWT refresh token
    */
   static generateRefreshToken(payload) {
-    return jwt.sign(
-      payload,
-      process.env.JWT_REFRESH_SECRET,
-      { 
-        expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d',
-        issuer: process.env.JWT_ISSUER || 'pusti-ht',
-        audience: process.env.JWT_AUDIENCE || 'pusti-ht-users'
-      }
-    );
+    return jwt.sign(payload, process.env.JWT_REFRESH_SECRET, {
+      expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || "7d",
+      issuer: process.env.JWT_ISSUER || "pusti-ht",
+      audience: process.env.JWT_AUDIENCE || "pusti-ht-users",
+    });
   }
 
   /**
@@ -63,8 +55,8 @@ class TokenManager {
    */
   static verifyAccessToken(token) {
     return jwt.verify(token, process.env.JWT_ACCESS_SECRET, {
-      issuer: process.env.JWT_ISSUER || 'pusti-ht',
-      audience: process.env.JWT_AUDIENCE || 'pusti-ht-users'
+      issuer: process.env.JWT_ISSUER || "pusti-ht",
+      audience: process.env.JWT_AUDIENCE || "pusti-ht-users",
     });
   }
 
@@ -75,8 +67,8 @@ class TokenManager {
    */
   static verifyRefreshToken(token) {
     return jwt.verify(token, process.env.JWT_REFRESH_SECRET, {
-      issuer: process.env.JWT_ISSUER || 'pusti-ht',
-      audience: process.env.JWT_AUDIENCE || 'pusti-ht-users'
+      issuer: process.env.JWT_ISSUER || "pusti-ht",
+      audience: process.env.JWT_AUDIENCE || "pusti-ht-users",
     });
   }
 
@@ -91,35 +83,31 @@ class TokenManager {
       userId: user._id,
       username: user.username,
       roleId: user.role_id,
-      tokenType: 'access',
-      
+      tokenType: "access",
+
       // User type and token version
       user_type: user.user_type,
-      tokenVersion: user.tokenVersion || 0
+      tokenVersion: user.tokenVersion || 0,
     };
 
     // Add employee context
-    if (user.user_type === 'employee') {
+    if (user.user_type === "employee") {
       payload.employee_id = user.employee_id?._id || user.employee_id;
       payload.employee_type = contextData.employee_type;
       payload.employee_code = contextData.employee_code;
-      
+
       // Add context based on employee_type
-      if (contextData.employee_type === 'field' && contextData.territory_assignments) {
+      if (contextData.employee_type === "field" && contextData.territory_assignments) {
         payload.territory_assignments = contextData.territory_assignments;
       }
-      
-      if (contextData.employee_type === 'facility' && contextData.facility_assignments) {
+
+      if (contextData.employee_type === "facility" && contextData.facility_assignments) {
         payload.facility_assignments = contextData.facility_assignments;
-      }
-      
-      if (contextData.employee_type === 'hq' && contextData.department) {
-        payload.department = contextData.department;
       }
     }
 
     // Add distributor context
-    if (user.user_type === 'distributor') {
+    if (user.user_type === "distributor") {
       payload.distributor_id = user.distributor_id?._id || user.distributor_id;
       payload.distributor_name = contextData.distributor_name;
       payload.db_point_id = contextData.db_point_id;
@@ -129,15 +117,15 @@ class TokenManager {
     const refreshPayload = {
       userId: user._id,
       username: user.username,
-      tokenType: 'refresh',
-      tokenVersion: user.tokenVersion || 0
+      tokenType: "refresh",
+      tokenVersion: user.tokenVersion || 0,
     };
 
     return {
       accessToken: this.generateAccessToken(payload),
       refreshToken: this.generateRefreshToken(refreshPayload),
-      expiresIn: process.env.JWT_ACCESS_EXPIRES_IN || '15m',
-      tokenType: 'Bearer'
+      expiresIn: process.env.JWT_ACCESS_EXPIRES_IN || "15m",
+      tokenType: "Bearer",
     };
   }
 }
@@ -150,11 +138,11 @@ const authenticate = async (req, res, next) => {
   try {
     // Extract token from Authorization header
     const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
       return res.status(401).json({
         success: false,
-        message: 'Access token required',
-        code: 'TOKEN_REQUIRED'
+        message: "Access token required",
+        code: "TOKEN_REQUIRED",
       });
     }
 
@@ -165,17 +153,17 @@ const authenticate = async (req, res, next) => {
     try {
       decoded = TokenManager.verifyAccessToken(token);
     } catch (tokenError) {
-      if (tokenError.name === 'TokenExpiredError') {
+      if (tokenError.name === "TokenExpiredError") {
         return res.status(401).json({
           success: false,
-          message: 'Access token expired',
-          code: 'TOKEN_EXPIRED'
+          message: "Access token expired",
+          code: "TOKEN_EXPIRED",
         });
-      } else if (tokenError.name === 'JsonWebTokenError') {
+      } else if (tokenError.name === "JsonWebTokenError") {
         return res.status(401).json({
           success: false,
-          message: 'Invalid access token',
-          code: 'TOKEN_INVALID'
+          message: "Invalid access token",
+          code: "TOKEN_INVALID",
         });
       }
       throw tokenError;
@@ -186,23 +174,23 @@ const authenticate = async (req, res, next) => {
     if (isBlacklisted) {
       return res.status(401).json({
         success: false,
-        message: 'Token has been revoked',
-        code: 'TOKEN_REVOKED'
+        message: "Token has been revoked",
+        code: "TOKEN_REVOKED",
       });
     }
 
     // Load user with role information
     const user = await User.findById(decoded.userId)
-      .populate('role_id')
-      .populate('employee_id')
-      .populate('distributor_id')
-      .select('+lastLogin +lastLoginIP');
+      .populate("role_id")
+      .populate("employee_id")
+      .populate("distributor_id")
+      .select("+lastLogin +lastLoginIP");
 
     if (!user) {
       return res.status(401).json({
         success: false,
-        message: 'User not found',
-        code: 'USER_NOT_FOUND'
+        message: "User not found",
+        code: "USER_NOT_FOUND",
       });
     }
 
@@ -210,8 +198,8 @@ const authenticate = async (req, res, next) => {
     if (decoded.tokenVersion !== undefined && user.tokenVersion !== decoded.tokenVersion) {
       return res.status(401).json({
         success: false,
-        message: 'Token has been invalidated',
-        code: 'TOKEN_VERSION_MISMATCH'
+        message: "Token has been invalidated",
+        code: "TOKEN_VERSION_MISMATCH",
       });
     }
 
@@ -219,8 +207,8 @@ const authenticate = async (req, res, next) => {
     if (!user.active) {
       return res.status(401).json({
         success: false,
-        message: 'Account is deactivated',
-        code: 'ACCOUNT_INACTIVE'
+        message: "Account is deactivated",
+        code: "ACCOUNT_INACTIVE",
       });
     }
 
@@ -228,9 +216,9 @@ const authenticate = async (req, res, next) => {
     if (user.isAccountLocked()) {
       return res.status(423).json({
         success: false,
-        message: 'Account is temporarily locked due to failed login attempts',
-        code: 'ACCOUNT_LOCKED',
-        lockUntil: user.lockUntil
+        message: "Account is temporarily locked due to failed login attempts",
+        code: "ACCOUNT_LOCKED",
+        lockUntil: user.lockUntil,
       });
     }
 
@@ -238,8 +226,8 @@ const authenticate = async (req, res, next) => {
     if (!user.role_id || !user.role_id.active) {
       return res.status(403).json({
         success: false,
-        message: 'User role is inactive',
-        code: 'ROLE_INACTIVE'
+        message: "User role is inactive",
+        code: "ROLE_INACTIVE",
       });
     }
 
@@ -256,9 +244,8 @@ const authenticate = async (req, res, next) => {
       distributor_id: decoded.distributor_id,
       territory_assignments: decoded.territory_assignments,
       facility_assignments: decoded.facility_assignments,
-      department: decoded.department,
       db_point_id: decoded.db_point_id,
-      product_segment: decoded.product_segment
+      product_segment: decoded.product_segment,
     };
 
     // Update last activity timestamp in Redis
@@ -266,15 +253,15 @@ const authenticate = async (req, res, next) => {
 
     next();
   } catch (error) {
-    console.error('Authentication error:', error.name || 'UnknownError');
-    console.error('Error message:', error.message);
-    console.error('Error at:', error.stack?.split('\n')[1]?.trim());
-    
+    console.error("Authentication error:", error.name || "UnknownError");
+    console.error("Error message:", error.message);
+    console.error("Error at:", error.stack?.split("\n")[1]?.trim());
+
     // Don't expose detailed error information to client
     return res.status(500).json({
       success: false,
-      message: 'Authentication failed',
-      code: 'AUTH_ERROR'
+      message: "Authentication failed",
+      code: "AUTH_ERROR",
     });
   }
 };
@@ -286,8 +273,8 @@ const authenticate = async (req, res, next) => {
 const optionalAuthenticate = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
-    
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
       // No token provided, continue without user
       req.user = null;
       req.token = null;
@@ -313,8 +300,8 @@ const requireRole = (...allowedRoles) => {
     if (!req.user) {
       return res.status(401).json({
         success: false,
-        message: 'Authentication required',
-        code: 'AUTH_REQUIRED'
+        message: "Authentication required",
+        code: "AUTH_REQUIRED",
       });
     }
 
@@ -322,10 +309,10 @@ const requireRole = (...allowedRoles) => {
     if (!allowedRoles.includes(userRole)) {
       return res.status(403).json({
         success: false,
-        message: 'Insufficient permissions',
-        code: 'INSUFFICIENT_PERMISSIONS',
+        message: "Insufficient permissions",
+        code: "INSUFFICIENT_PERMISSIONS",
         required: allowedRoles,
-        current: userRole
+        current: userRole,
       });
     }
 
@@ -343,34 +330,30 @@ const requirePermission = (permissionType, permissionCode) => {
       if (!req.user) {
         return res.status(401).json({
           success: false,
-          message: 'Authentication required',
-          code: 'AUTH_REQUIRED'
+          message: "Authentication required",
+          code: "AUTH_REQUIRED",
         });
       }
 
-      const hasPermission = await checkUserPermission(
-        req.user, 
-        permissionType, 
-        permissionCode
-      );
+      const hasPermission = await checkUserPermission(req.user, permissionType, permissionCode);
 
       if (!hasPermission) {
         return res.status(403).json({
           success: false,
-          message: 'Permission denied',
-          code: 'PERMISSION_DENIED',
+          message: "Permission denied",
+          code: "PERMISSION_DENIED",
           required: permissionCode,
-          type: permissionType
+          type: permissionType,
         });
       }
 
       next();
     } catch (error) {
-      console.error('Permission check error:', error);
+      console.error("Permission check error:", error);
       return res.status(500).json({
         success: false,
-        message: 'Permission check failed',
-        code: 'PERMISSION_ERROR'
+        message: "Permission check failed",
+        code: "PERMISSION_ERROR",
       });
     }
   };
@@ -386,32 +369,29 @@ const requireApiPermission = (permissionCode) => {
       if (!req.user) {
         return res.status(401).json({
           success: false,
-          message: 'Authentication required',
-          code: 'AUTH_REQUIRED'
+          message: "Authentication required",
+          code: "AUTH_REQUIRED",
         });
       }
 
-      const hasPermission = await checkApiPermission(
-        req.user,
-        permissionCode
-      );
+      const hasPermission = await checkApiPermission(req.user, permissionCode);
 
       if (!hasPermission) {
         return res.status(403).json({
           success: false,
-          message: 'API access denied',
-          code: 'API_ACCESS_DENIED',
-          permission: permissionCode
+          message: "API access denied",
+          code: "API_ACCESS_DENIED",
+          permission: permissionCode,
         });
       }
 
       next();
     } catch (error) {
-      console.error('API permission check error:', error);
+      console.error("API permission check error:", error);
       return res.status(500).json({
         success: false,
-        message: 'API permission check failed',
-        code: 'API_PERMISSION_ERROR'
+        message: "API permission check failed",
+        code: "API_PERMISSION_ERROR",
       });
     }
   };
@@ -421,13 +401,13 @@ const requireApiPermission = (permissionCode) => {
  * Self-only Access Middleware
  * Ensures user can only access their own data
  */
-const requireSelfOnly = (userIdParam = 'userId') => {
+const requireSelfOnly = (userIdParam = "userId") => {
   return (req, res, next) => {
     if (!req.user) {
       return res.status(401).json({
         success: false,
-        message: 'Authentication required',
-        code: 'AUTH_REQUIRED'
+        message: "Authentication required",
+        code: "AUTH_REQUIRED",
       });
     }
 
@@ -437,11 +417,11 @@ const requireSelfOnly = (userIdParam = 'userId') => {
     if (requestedUserId !== currentUserId) {
       // Check if user has admin privileges
       const userRole = req.user.role_id?.name;
-      if (!['SuperAdmin', 'SalesAdmin'].includes(userRole)) {
+      if (!["SuperAdmin", "SalesAdmin"].includes(userRole)) {
         return res.status(403).json({
           success: false,
-          message: 'Access denied: can only access own data',
-          code: 'SELF_ACCESS_ONLY'
+          message: "Access denied: can only access own data",
+          code: "SELF_ACCESS_ONLY",
         });
       }
     }
@@ -463,18 +443,18 @@ const requireUserType = (...allowedTypes) => {
     if (!req.userContext) {
       return res.status(401).json({
         success: false,
-        message: 'Authentication required',
-        code: 'AUTH_REQUIRED'
+        message: "Authentication required",
+        code: "AUTH_REQUIRED",
       });
     }
 
     if (!allowedTypes.includes(req.userContext.user_type)) {
       return res.status(403).json({
         success: false,
-        message: 'User type not authorized',
-        code: 'USER_TYPE_FORBIDDEN',
+        message: "User type not authorized",
+        code: "USER_TYPE_FORBIDDEN",
         required: allowedTypes,
-        current: req.userContext.user_type
+        current: req.userContext.user_type,
       });
     }
 
@@ -488,21 +468,21 @@ const requireUserType = (...allowedTypes) => {
  */
 const requireEmployeeType = (...allowedTypes) => {
   return (req, res, next) => {
-    if (!req.userContext || req.userContext.user_type !== 'employee') {
+    if (!req.userContext || req.userContext.user_type !== "employee") {
       return res.status(403).json({
         success: false,
-        message: 'Employee account required',
-        code: 'EMPLOYEE_REQUIRED'
+        message: "Employee account required",
+        code: "EMPLOYEE_REQUIRED",
       });
     }
 
     if (!allowedTypes.includes(req.userContext.employee_type)) {
       return res.status(403).json({
         success: false,
-        message: 'Employee type not authorized',
-        code: 'EMPLOYEE_TYPE_FORBIDDEN',
+        message: "Employee type not authorized",
+        code: "EMPLOYEE_TYPE_FORBIDDEN",
         required: allowedTypes,
-        current: req.userContext.employee_type
+        current: req.userContext.employee_type,
       });
     }
 
@@ -514,41 +494,41 @@ const requireEmployeeType = (...allowedTypes) => {
  * Require territory access (for field employees)
  * @param {string} territoryIdParam - Name of parameter or body field containing territory ID
  */
-const requireTerritoryAccess = (territoryIdParam = 'territoryId') => {
+const requireTerritoryAccess = (territoryIdParam = "territoryId") => {
   return (req, res, next) => {
     // System admins bypass territory restrictions
-    if (req.userContext?.employee_type === 'system_admin') {
+    if (req.userContext?.employee_type === "system_admin") {
       return next();
     }
 
-    if (!req.userContext || req.userContext.employee_type !== 'field') {
+    if (!req.userContext || req.userContext.employee_type !== "field") {
       return res.status(403).json({
         success: false,
-        message: 'Field employee account required',
-        code: 'FIELD_EMPLOYEE_REQUIRED'
+        message: "Field employee account required",
+        code: "FIELD_EMPLOYEE_REQUIRED",
       });
     }
 
     const requestedTerritoryId = req.params[territoryIdParam] || req.body[territoryIdParam];
     const assignments = req.userContext.territory_assignments;
-    
+
     if (!assignments || !assignments.all_territory_ids) {
       return res.status(403).json({
         success: false,
-        message: 'No territory assignments found',
-        code: 'NO_TERRITORY_ASSIGNMENTS'
+        message: "No territory assignments found",
+        code: "NO_TERRITORY_ASSIGNMENTS",
       });
     }
 
     const hasAccess = assignments.all_territory_ids.some(
-      id => id.toString() === requestedTerritoryId
+      (id) => id.toString() === requestedTerritoryId
     );
 
     if (!hasAccess) {
       return res.status(403).json({
         success: false,
-        message: 'Territory access denied',
-        code: 'TERRITORY_ACCESS_DENIED'
+        message: "Territory access denied",
+        code: "TERRITORY_ACCESS_DENIED",
       });
     }
 
@@ -561,84 +541,51 @@ const requireTerritoryAccess = (territoryIdParam = 'territoryId') => {
  * @param {string} facilityIdParam - Name of parameter or body field containing facility ID
  * @param {string} facilityType - Optional: 'factory' or 'depot' to restrict type
  */
-const requireFacilityAccess = (facilityIdParam = 'facilityId', facilityType = null) => {
+const requireFacilityAccess = (facilityIdParam = "facilityId", facilityType = null) => {
   return (req, res, next) => {
     // System admins bypass facility restrictions
-    if (req.userContext?.employee_type === 'system_admin') {
+    if (req.userContext?.employee_type === "system_admin") {
       return next();
     }
 
-    if (!req.userContext || req.userContext.employee_type !== 'facility') {
+    if (!req.userContext || req.userContext.employee_type !== "facility") {
       return res.status(403).json({
         success: false,
-        message: 'Facility employee account required',
-        code: 'FACILITY_EMPLOYEE_REQUIRED'
+        message: "Facility employee account required",
+        code: "FACILITY_EMPLOYEE_REQUIRED",
       });
     }
 
     const requestedFacilityId = req.params[facilityIdParam] || req.body[facilityIdParam];
     const assignments = req.userContext.facility_assignments;
-    
+
     if (!assignments) {
       return res.status(403).json({
         success: false,
-        message: 'No facility assignments found',
-        code: 'NO_FACILITY_ASSIGNMENTS'
+        message: "No facility assignments found",
+        code: "NO_FACILITY_ASSIGNMENTS",
       });
     }
 
     let hasAccess = false;
-    
-    if (!facilityType || facilityType === 'factory') {
-      hasAccess = hasAccess || (assignments.factory_ids || []).some(
-        id => id.toString() === requestedFacilityId
-      );
+
+    if (!facilityType || facilityType === "factory") {
+      hasAccess =
+        hasAccess ||
+        (assignments.factory_ids || []).some((id) => id.toString() === requestedFacilityId);
     }
-    
-    if (!facilityType || facilityType === 'depot') {
-      hasAccess = hasAccess || (assignments.depot_ids || []).some(
-        id => id.toString() === requestedFacilityId
-      );
+
+    if (!facilityType || facilityType === "depot") {
+      hasAccess =
+        hasAccess ||
+        (assignments.depot_ids || []).some((id) => id.toString() === requestedFacilityId);
     }
 
     if (!hasAccess) {
       return res.status(403).json({
         success: false,
-        message: 'Facility access denied',
-        code: 'FACILITY_ACCESS_DENIED'
-      });
-    }
-
-    next();
-  };
-};
-
-/**
- * Require department access (for hq employees)
- * @param {...string} allowedDepartments - Allowed departments
- */
-const requireDepartment = (...allowedDepartments) => {
-  return (req, res, next) => {
-    // System admins bypass department restrictions
-    if (req.userContext?.employee_type === 'system_admin') {
-      return next();
-    }
-
-    if (!req.userContext || req.userContext.employee_type !== 'hq') {
-      return res.status(403).json({
-        success: false,
-        message: 'HQ employee account required',
-        code: 'HQ_EMPLOYEE_REQUIRED'
-      });
-    }
-
-    if (!allowedDepartments.includes(req.userContext.department)) {
-      return res.status(403).json({
-        success: false,
-        message: 'Department access denied',
-        code: 'DEPARTMENT_ACCESS_DENIED',
-        required: allowedDepartments,
-        current: req.userContext.department
+        message: "Facility access denied",
+        code: "FACILITY_ACCESS_DENIED",
       });
     }
 
@@ -659,52 +606,52 @@ const requireDepartment = (...allowedDepartments) => {
  */
 async function checkUserPermission(user, permissionType, permissionCode) {
   try {
-    const { 
-      RoleMenuPermission, 
-      RolePagePermission, 
-      RoleApiPermission 
-    } = require('../models/JunctionTables');
+    const {
+      RoleMenuPermission,
+      RolePagePermission,
+      RoleApiPermission,
+    } = require("../models/JunctionTables");
 
     let JunctionModel;
     let permissionField;
 
     // Determine which junction table to use
     switch (permissionType.toLowerCase()) {
-      case 'menu':
+      case "menu":
         JunctionModel = RoleMenuPermission;
-        permissionField = 'menu_permission_id';
+        permissionField = "menu_permission_id";
         break;
-      case 'page':
+      case "page":
         JunctionModel = RolePagePermission;
-        permissionField = 'page_permission_id';
+        permissionField = "page_permission_id";
         break;
-      case 'api':
+      case "api":
         JunctionModel = RoleApiPermission;
-        permissionField = 'api_permission_id';
+        permissionField = "api_permission_id";
         break;
       default:
         return false;
     }
 
     // Find permission by code
-    const { MenuPermission, PagePermission, ApiPermission } = require('../models/Permission');
+    const { MenuPermission, PagePermission, ApiPermission } = require("../models/Permission");
     let PermissionModel;
 
     switch (permissionType.toLowerCase()) {
-      case 'menu':
+      case "menu":
         PermissionModel = MenuPermission;
         break;
-      case 'page':
+      case "page":
         PermissionModel = PagePermission;
         break;
-      case 'api':
+      case "api":
         PermissionModel = ApiPermission;
         break;
     }
 
-    const permission = await PermissionModel.findOne({ 
-      code: permissionCode, 
-      active: true 
+    const permission = await PermissionModel.findOne({
+      code: permissionCode,
+      active: true,
     });
 
     if (!permission) {
@@ -715,12 +662,12 @@ async function checkUserPermission(user, permissionType, permissionCode) {
     const rolePermission = await JunctionModel.findOne({
       role_id: user.role_id._id,
       [permissionField]: permission._id,
-      active: true
+      active: true,
     });
 
     return rolePermission ? rolePermission.isValid() : false;
   } catch (error) {
-    console.error('Permission check error:', error);
+    console.error("Permission check error:", error);
     return false;
   }
 }
@@ -734,12 +681,12 @@ async function checkUserPermission(user, permissionType, permissionCode) {
  */
 async function checkApiPermission(user, permissionCode, method) {
   try {
-    const { ApiPermission } = require('../models/Permission');
-    const { RoleApiPermission } = require('../models/JunctionTables');
+    const { ApiPermission } = require("../models/Permission");
+    const { RoleApiPermission } = require("../models/JunctionTables");
 
     // Find API permission by permission code
     const apiPermission = await ApiPermission.findOne({
-      api_permissions: permissionCode
+      api_permissions: permissionCode,
     });
 
     if (!apiPermission) {
@@ -750,7 +697,7 @@ async function checkApiPermission(user, permissionCode, method) {
     // Check if role has this API permission
     const rolePermission = await RoleApiPermission.findOne({
       role_id: user.role_id._id,
-      api_permission_id: apiPermission._id
+      api_permission_id: apiPermission._id,
     });
 
     if (!rolePermission) {
@@ -760,7 +707,7 @@ async function checkApiPermission(user, permissionCode, method) {
 
     return true;
   } catch (error) {
-    console.error('API permission check error:', error);
+    console.error("API permission check error:", error);
     return false;
   }
 }
@@ -787,9 +734,8 @@ module.exports = {
   requireEmployeeType,
   requireTerritoryAccess,
   requireFacilityAccess,
-  requireDepartment,
 
   // Utility functions
   checkUserPermission,
-  checkApiPermission
+  checkApiPermission,
 };

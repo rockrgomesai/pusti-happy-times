@@ -29,11 +29,7 @@ interface User {
       db_point_ids?: string[];
       all_territory_ids?: string[];
     };
-    facility_assignments?: {
-      factory_ids?: string[];
-      depot_ids?: string[];
-    };
-    department?: string;
+    facility_id?: string; // Single facility assignment for facility employees
     
     // Distributor context
     distributor_name?: string;
@@ -138,8 +134,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         case 'facility':
           return '/operations/facility-dashboard';
         case 'hq':
-          const dept = userData.context?.department;
-          return dept ? `/hq/${dept}/dashboard` : '/dashboard';
+          return '/dashboard';
         default:
           return '/dashboard';
       }
