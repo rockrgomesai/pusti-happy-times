@@ -82,28 +82,25 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const initializeAuth = async () => {
     try {
+      console.log('🔄 Initializing auth, token exists:', tokenManager.isAuthenticated());
       if (tokenManager.isAuthenticated()) {
-        // TODO: Fetch user profile when endpoint is available
-        // For now, we'll assume the user is authenticated if token exists
-        // const userProfile = await fetchUserProfile();
-        // setUser(userProfile);
+        // Fetch user profile from backend
+        console.log('📡 Fetching user profile from /auth/me');
+        const response = await authAPI.getProfile();
+        console.log('✅ Profile response:', response);
         
-        // Temporary: Set a placeholder user if token exists
-        setUser({
-          id: 'temp',
-          username: 'user',
-          email: 'user@example.com',
-          active: true,
-          user_type: 'employee',
-          role: {
-            id: 'temp-role',
-            role: 'SuperAdmin'
-          },
-          context: {
-            employee_type: 'system_admin'
-          },
-          permissions: ['offers:create', 'offers:read', 'offers:update', 'offers:delete']
-        });
+        if (response.success && response.data?.user) {
+          const userData = {
+            ...response.data.user,
+            permissions: normalizePermissions(response.data.user.permissions),
+          } as User;
+          console.log('👤 Setting user:', userData);
+          setUser(userData);
+        } else {
+          // If profile fetch fails, clear tokens
+          console.log('❌ Profile fetch failed, clearing tokens');
+          tokenManager.clearTokens();
+        }
       }
     } catch (error) {
       console.error('Auth initialization error:', error);
@@ -122,24 +119,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
       return '/dashboard';
     }
     
-    // Route based on user_type
+    // All employees go to /dashboard (content will differ based on employee_type)
     if (userData.user_type === 'employee') {
-      const employeeType = userData.context?.employee_type;
-      
-      switch (employeeType) {
-        case 'system_admin':
-          return '/dashboard';
-        case 'field':
-          return '/sales/field-dashboard';
-        case 'facility':
-          return '/operations/facility-dashboard';
-        case 'hq':
-          return '/dashboard';
-        default:
-          return '/dashboard';
-      }
+      return '/dashboard';
     } else if (userData.user_type === 'distributor') {
-      return '/distributor/catalog';
+      return '/dashboard';
     }
     
     // Default fallback

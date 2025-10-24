@@ -225,6 +225,7 @@ userSchema.methods.getSafeProfile = function () {
     id: this._id,
     username: this.username,
     email: this.email,
+    user_type: this.user_type,
     active: this.active,
     created_at: this.created_at,
     created_by: this.created_by,

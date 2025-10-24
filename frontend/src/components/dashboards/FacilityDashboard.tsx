@@ -97,19 +97,11 @@ export default function FacilityDashboard({ user }: FacilityDashboardProps) {
       }
     } catch (err: any) {
       console.error('Failed to load facility data:', err);
+      console.error('Error response:', err.response?.data);
+      console.error('Error status:', err.response?.status);
       const message = err.response?.data?.message || 'Failed to load facility data';
       setError(message);
       toast.error(message);
-      
-      // Set mock data for development if API not available
-      if (err.response?.status === 404) {
-        setStats({
-          totalInventory: 15240,
-          pendingOrders: 23,
-          todayShipments: 12,
-          lowStockItems: 5,
-        });
-      }
     } finally {
       setLoading(false);
     }
@@ -293,46 +285,8 @@ export default function FacilityDashboard({ user }: FacilityDashboardProps) {
           </CardContent>
         </Card>
 
-        {/* Quick Actions & Alerts */}
+        {/* Alerts */}
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-          {/* Quick Actions */}
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Quick Actions
-              </Typography>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, mt: 2 }}>
-                <Button
-                  variant="contained"
-                  startIcon={<Inventory />}
-                  fullWidth
-                  component={Link}
-                  href="/operations/inventory"
-                >
-                  Update Inventory
-                </Button>
-                <Button
-                  variant="outlined"
-                  startIcon={<LocalShipping />}
-                  fullWidth
-                  component={Link}
-                  href="/operations/shipments"
-                >
-                  Process Shipment
-                </Button>
-                <Button
-                  variant="outlined"
-                  startIcon={<AddIcon />}
-                  fullWidth
-                  component={Link}
-                  href="/operations/orders"
-                >
-                  View Orders
-                </Button>
-              </Box>
-            </CardContent>
-          </Card>
-
           {/* Alerts */}
           {stats.lowStockItems > 0 && (
             <Card sx={{ borderLeft: 4, borderColor: 'error.main' }}>

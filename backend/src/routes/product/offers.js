@@ -3,6 +3,7 @@ const { query, body, param, validationResult } = require("express-validator");
 const { Territory, Distributor, Product, Category, Brand } = require("../../models");
 const Offer = require("../../models/Offer"); // Import directly
 const { requireApiPermission } = require("../../middleware/auth");
+const notificationService = require("../../services/notificationService");
 
 const router = express.Router();
 
@@ -22,10 +23,7 @@ router.get(
     param("type")
       .isIn(["zone", "region", "area", "db_point"])
       .withMessage("Invalid territory type"),
-    query("parent_id")
-      .optional()
-      .isMongoId()
-      .withMessage("Invalid parent ID"),
+    query("parent_id").optional().isMongoId().withMessage("Invalid parent ID"),
   ],
   async (req, res) => {
     try {
@@ -41,7 +39,7 @@ router.get(
       const { parent_id } = req.query;
 
       const filter = { type, active: true };
-      
+
       if (parent_id) {
         filter.parent_id = parent_id;
       } else if (type !== "zone") {
@@ -76,30 +74,26 @@ router.get(
  * GET /product/offers/territories
  * Get all territories
  */
-router.get(
-  "/territories",
-  requireApiPermission("offers:read"),
-  async (req, res) => {
-    try {
-      const territories = await Territory.find({ active: true })
-        .select("_id name code bangla_name type level parent_id ancestors")
-        .sort({ level: 1, name: 1 })
-        .lean();
+router.get("/territories", requireApiPermission("offers:read"), async (req, res) => {
+  try {
+    const territories = await Territory.find({ active: true })
+      .select("_id name code bangla_name type level parent_id ancestors")
+      .sort({ level: 1, name: 1 })
+      .lean();
 
-      res.json({
-        success: true,
-        data: territories,
-      });
-    } catch (error) {
-      console.error("Error fetching all territories:", error);
-      res.status(500).json({
-        success: false,
-        message: "Failed to fetch territories",
-        error: error.message,
-      });
-    }
+    res.json({
+      success: true,
+      data: territories,
+    });
+  } catch (error) {
+    console.error("Error fetching all territories:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch territories",
+      error: error.message,
+    });
   }
-);
+});
 
 // =====================
 // DISTRIBUTOR ROUTES
@@ -113,18 +107,10 @@ router.post(
   "/distributors/eligible",
   requireApiPermission("offers:read"),
   [
-    body("dbPointIds")
-      .isArray({ min: 1 })
-      .withMessage("At least one DB point required"),
-    body("dbPointIds.*")
-      .isMongoId()
-      .withMessage("Invalid DB point ID"),
-    body("segments")
-      .isArray({ min: 1 })
-      .withMessage("At least one product segment required"),
-    body("segments.*")
-      .isIn(["BIS", "BEV"])
-      .withMessage("Invalid product segment"),
+    body("dbPointIds").isArray({ min: 1 }).withMessage("At least one DB point required"),
+    body("dbPointIds.*").isMongoId().withMessage("Invalid DB point ID"),
+    body("segments").isArray({ min: 1 }).withMessage("At least one product segment required"),
+    body("segments.*").isIn(["BIS", "BEV"]).withMessage("Invalid product segment"),
   ],
   async (req, res) => {
     try {
@@ -174,11 +160,7 @@ router.post(
 router.get(
   "/distributors/by-dbpoint/:id",
   requireApiPermission("offers:read"),
-  [
-    param("id")
-      .isMongoId()
-      .withMessage("Invalid DB point ID"),
-  ],
+  [param("id").isMongoId().withMessage("Invalid DB point ID")],
   async (req, res) => {
     try {
       const errors = validationResult(req);
@@ -226,15 +208,9 @@ router.post(
   "/products/by-segment",
   requireApiPermission("offers:read"),
   [
-    body("segments")
-      .isArray({ min: 1 })
-      .withMessage("At least one segment required"),
-    body("segments.*")
-      .isIn(["BIS", "BEV"])
-      .withMessage("Invalid segment"),
-    body("type")
-      .isIn(["MANUFACTURED", "PROCURED"])
-      .withMessage("Invalid product type"),
+    body("segments").isArray({ min: 1 }).withMessage("At least one segment required"),
+    body("segments.*").isIn(["BIS", "BEV"]).withMessage("Invalid segment"),
+    body("type").isIn(["MANUFACTURED", "PROCURED"]).withMessage("Invalid product type"),
   ],
   async (req, res) => {
     try {
@@ -254,7 +230,7 @@ router.post(
         active: true,
       }).select("_id");
 
-      const categoryIds = categories.map(cat => cat._id);
+      const categoryIds = categories.map((cat) => cat._id);
 
       const products = await Product.find({
         category_id: { $in: categoryIds },
@@ -286,35 +262,31 @@ router.post(
  * GET /product/offers/products/procured
  * Get all PROCURED products (gift products)
  */
-router.get(
-  "/products/procured",
-  requireApiPermission("offers:read"),
-  async (req, res) => {
-    try {
-      const products = await Product.find({
-        product_type: "PROCURED",
-        active: true,
-      })
-        .select("_id name sku product_type category_id brand_id unit")
-        .populate("category_id", "name product_segment")
-        .populate("brand_id", "brand")
-        .sort({ name: 1 })
-        .lean();
+router.get("/products/procured", requireApiPermission("offers:read"), async (req, res) => {
+  try {
+    const products = await Product.find({
+      product_type: "PROCURED",
+      active: true,
+    })
+      .select("_id name sku product_type category_id brand_id unit")
+      .populate("category_id", "name product_segment")
+      .populate("brand_id", "brand")
+      .sort({ name: 1 })
+      .lean();
 
-      res.json({
-        success: true,
-        data: products,
-      });
-    } catch (error) {
-      console.error("Error fetching procured products:", error);
-      res.status(500).json({
-        success: false,
-        message: "Failed to fetch procured products",
-        error: error.message,
-      });
-    }
+    res.json({
+      success: true,
+      data: products,
+    });
+  } catch (error) {
+    console.error("Error fetching procured products:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch procured products",
+      error: error.message,
+    });
   }
-);
+});
 
 /**
  * POST /product/offers/products/grouped-by-category
@@ -324,12 +296,8 @@ router.post(
   "/products/grouped-by-category",
   requireApiPermission("offers:read"),
   [
-    body("segments")
-      .isArray({ min: 1 })
-      .withMessage("At least one segment required"),
-    body("segments.*")
-      .isIn(["BIS", "BEV"])
-      .withMessage("Invalid segment"),
+    body("segments").isArray({ min: 1 }).withMessage("At least one segment required"),
+    body("segments.*").isIn(["BIS", "BEV"]).withMessage("Invalid segment"),
   ],
   async (req, res) => {
     try {
@@ -351,42 +319,45 @@ router.post(
 
       // Find leaf categories (categories that are not parents)
       const parentIds = new Set(
-        allCategories
-          .filter(cat => cat.parent_id !== null)
-          .map(cat => cat.parent_id.toString())
+        allCategories.filter((cat) => cat.parent_id !== null).map((cat) => cat.parent_id.toString())
       );
 
-      const leafCategories = allCategories.filter(
-        cat => !parentIds.has(cat._id.toString())
-      );
+      const leafCategories = allCategories.filter((cat) => !parentIds.has(cat._id.toString()));
 
-      const leafCategoryIds = leafCategories.map(cat => cat._id);
+      const leafCategoryIds = leafCategories.map((cat) => cat._id);
 
       // Get products for leaf categories only
       const products = await Product.find({
         category_id: { $in: leafCategoryIds },
         active: true,
       })
-        .select("_id sku bangla_name product_type category_id brand_id unit ctn_pcs db_price mrp trade_price")
+        .select(
+          "_id sku bangla_name product_type category_id brand_id unit ctn_pcs db_price mrp trade_price"
+        )
         .populate("category_id", "name product_segment")
         .populate("brand_id", "brand")
         .lean();
 
       // Filter out products with missing populated fields
-      const validProducts = products.filter(p => p.category_id && p.category_id._id);
+      const validProducts = products.filter((p) => p.category_id && p.category_id._id);
 
       // Group products by category
       const grouped = leafCategories
         .sort((a, b) => a.name.localeCompare(b.name))
-        .map(category => ({
+        .map((category) => ({
           category: {
             _id: category._id,
             name: category.name,
             product_segment: category.product_segment,
           },
           products: validProducts
-            .filter(p => p.category_id && p.category_id._id && p.category_id._id.toString() === category._id.toString())
-            .map(p => ({
+            .filter(
+              (p) =>
+                p.category_id &&
+                p.category_id._id &&
+                p.category_id._id.toString() === category._id.toString()
+            )
+            .map((p) => ({
               _id: p._id,
               name: p.sku, // Use SKU as the name/identifier
               sku: p.sku,
@@ -397,11 +368,11 @@ router.post(
               db_price: p.db_price,
               mrp: p.mrp,
               category_id: p.category_id._id,
-              brand_id: p.brand_id ? p.brand_id._id : null
+              brand_id: p.brand_id ? p.brand_id._id : null,
             }))
             .sort((a, b) => a.sku.localeCompare(b.sku)), // Sort by SKU
         }))
-        .filter(group => group.products.length > 0); // Only include categories with products
+        .filter((group) => group.products.length > 0); // Only include categories with products
 
       res.json({
         success: true,
@@ -450,18 +421,14 @@ router.post(
         "CROSS_CATEGORY",
         "FIRST_ORDER",
         "LOYALTY_POINTS",
-        "FLASH_SALE"
+        "FLASH_SALE",
       ])
       .withMessage("Invalid offer type"),
     body("product_segments")
       .isArray({ min: 1 })
       .withMessage("At least one product segment is required"),
-    body("product_segments.*")
-      .isIn(["BIS", "BEV"])
-      .withMessage("Invalid product segment"),
-    body("start_date")
-      .isISO8601()
-      .withMessage("Valid start date is required"),
+    body("product_segments.*").isIn(["BIS", "BEV"]).withMessage("Invalid product segment"),
+    body("start_date").isISO8601().withMessage("Valid start date is required"),
     body("end_date")
       .isISO8601()
       .withMessage("Valid end date is required")
@@ -480,7 +447,7 @@ router.post(
     try {
       console.log("=== CREATE OFFER REQUEST ===");
       console.log("Request body:", JSON.stringify(req.body, null, 2));
-      
+
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
         console.log("Validation errors:", errors.array());
@@ -502,7 +469,7 @@ router.post(
         status,
         active,
         description,
-        internal_notes
+        internal_notes,
       } = req.body;
 
       console.log("Creating offer with data:");
@@ -525,29 +492,45 @@ router.post(
           zones: { ids: [], mode: "include" },
           regions: { ids: [], mode: "include" },
           areas: { ids: [], mode: "include" },
-          db_points: { ids: [], mode: "include" }
+          db_points: { ids: [], mode: "include" },
         },
         distributors: distributors || { ids: [], mode: "include" },
         config: config || {},
         description,
         internal_notes,
         created_by: req.user._id,
-        updated_by: req.user._id
+        updated_by: req.user._id,
       });
 
       await offer.save();
 
       console.log("Offer saved successfully with ID:", offer._id);
 
+      // Create notifications for eligible distributors (async, don't await)
+      if (status === "active" || (!status && active !== false)) {
+        notificationService
+          .notifyOfferCreated(offer)
+          .then((result) => {
+            console.log(`✅ Notifications created: ${result.created}/${result.total}`);
+          })
+          .catch((error) => {
+            console.error("❌ Error creating notifications:", error.message);
+          });
+      }
+
       // Populate references for response
       await offer.populate([
-        { path: "config.selectedProducts", select: "sku bangla_name unit db_price", strictPopulate: false },
+        {
+          path: "config.selectedProducts",
+          select: "sku bangla_name unit db_price",
+          strictPopulate: false,
+        },
         { path: "territories.zones.ids", select: "name type level", strictPopulate: false },
         { path: "territories.regions.ids", select: "name type level", strictPopulate: false },
         { path: "territories.areas.ids", select: "name type level", strictPopulate: false },
         { path: "territories.db_points.ids", select: "name type level", strictPopulate: false },
         { path: "distributors.ids", select: "name mobile db_point_id", strictPopulate: false },
-        { path: "created_by", select: "name email", strictPopulate: false }
+        { path: "created_by", select: "name email", strictPopulate: false },
       ]);
 
       res.status(201).json({
@@ -599,17 +582,11 @@ router.get(
         "CROSS_CATEGORY",
         "FIRST_ORDER",
         "LOYALTY_POINTS",
-        "FLASH_SALE"
+        "FLASH_SALE",
       ])
       .withMessage("Invalid offer type"),
-    query("active")
-      .optional()
-      .isBoolean()
-      .withMessage("Active must be boolean"),
-    query("page")
-      .optional()
-      .isInt({ min: 1 })
-      .withMessage("Page must be a positive integer"),
+    query("active").optional().isBoolean().withMessage("Active must be boolean"),
+    query("page").optional().isInt({ min: 1 }).withMessage("Page must be a positive integer"),
     query("limit")
       .optional()
       .isInt({ min: 1, max: 100 })
@@ -625,25 +602,18 @@ router.get(
         });
       }
 
-      const {
-        status,
-        offer_type,
-        active,
-        page = 1,
-        limit = 20,
-        search
-      } = req.query;
+      const { status, offer_type, active, page = 1, limit = 20, search } = req.query;
 
       // Build filter
       const filter = {};
-      
+
       if (status) filter.status = status;
       if (offer_type) filter.offer_type = offer_type;
-      if (active !== undefined) filter.active = active === 'true';
+      if (active !== undefined) filter.active = active === "true";
       if (search) {
         filter.$or = [
-          { name: { $regex: search, $options: 'i' } },
-          { description: { $regex: search, $options: 'i' } }
+          { name: { $regex: search, $options: "i" } },
+          { description: { $regex: search, $options: "i" } },
         ];
       }
 
@@ -657,18 +627,18 @@ router.get(
           .populate({
             path: "config.selectedProducts",
             select: "sku bangla_name unit",
-            strictPopulate: false
+            strictPopulate: false,
           })
           .populate({
             path: "created_by",
             select: "name email",
-            strictPopulate: false
+            strictPopulate: false,
           })
           .sort({ createdAt: -1 })
           .skip(skip)
           .limit(parseInt(limit))
           .lean(),
-        Offer.countDocuments(filter)
+        Offer.countDocuments(filter),
       ]);
 
       res.json({
@@ -678,8 +648,8 @@ router.get(
           page: parseInt(page),
           limit: parseInt(limit),
           total,
-          pages: Math.ceil(total / parseInt(limit))
-        }
+          pages: Math.ceil(total / parseInt(limit)),
+        },
       });
     } catch (error) {
       console.error("Error fetching offers:", error);
@@ -699,11 +669,7 @@ router.get(
 router.get(
   "/:id",
   requireApiPermission("offers:read"),
-  [
-    param("id")
-      .isMongoId()
-      .withMessage("Invalid offer ID"),
-  ],
+  [param("id").isMongoId().withMessage("Invalid offer ID")],
   async (req, res) => {
     try {
       const errors = validationResult(req);
@@ -718,47 +684,47 @@ router.get(
         .populate({
           path: "config.selectedProducts",
           select: "sku bangla_name unit db_price mrp",
-          strictPopulate: false
+          strictPopulate: false,
         })
         .populate({
           path: "territories.zones.ids",
           select: "name type level",
-          strictPopulate: false
+          strictPopulate: false,
         })
         .populate({
           path: "territories.regions.ids",
           select: "name type level",
-          strictPopulate: false
+          strictPopulate: false,
         })
         .populate({
           path: "territories.areas.ids",
           select: "name type level",
-          strictPopulate: false
+          strictPopulate: false,
         })
         .populate({
           path: "territories.db_points.ids",
           select: "name type level",
-          strictPopulate: false
+          strictPopulate: false,
         })
         .populate({
           path: "distributors.ids",
           select: "name mobile db_point_id",
-          strictPopulate: false
+          strictPopulate: false,
         })
         .populate({
           path: "created_by",
           select: "name email",
-          strictPopulate: false
+          strictPopulate: false,
         })
         .populate({
           path: "updated_by",
           select: "name email",
-          strictPopulate: false
+          strictPopulate: false,
         })
         .populate({
           path: "approved_by",
           select: "name email",
-          strictPopulate: false
+          strictPopulate: false,
         })
         .lean();
 
@@ -784,7 +750,6 @@ router.get(
   }
 );
 
-
 /**
  * PUT /product/offers/:id
  * Update offer
@@ -795,11 +760,34 @@ router.put(
   [
     param("id").isMongoId().withMessage("Invalid offer ID"),
     body("name").optional().trim().notEmpty().withMessage("Name cannot be empty"),
-    body("offer_type").optional().isIn(["FLAT_DISCOUNT_PCT", "FLAT_DISCOUNT_AMT", "DISCOUNT_SLAB_PCT", "DISCOUNT_SLAB_AMT", "FREE_PRODUCT", "BUNDLE_OFFER", "BOGO", "CASHBACK", "VOLUME_DISCOUNT", "CROSS_CATEGORY", "FIRST_ORDER", "LOYALTY_POINTS", "FLASH_SALE"]).withMessage("Invalid offer type"),
-    body("product_segments").optional().isArray({ min: 1 }).withMessage("Product segments must be a non-empty array"),
+    body("offer_type")
+      .optional()
+      .isIn([
+        "FLAT_DISCOUNT_PCT",
+        "FLAT_DISCOUNT_AMT",
+        "DISCOUNT_SLAB_PCT",
+        "DISCOUNT_SLAB_AMT",
+        "FREE_PRODUCT",
+        "BUNDLE_OFFER",
+        "BOGO",
+        "CASHBACK",
+        "VOLUME_DISCOUNT",
+        "CROSS_CATEGORY",
+        "FIRST_ORDER",
+        "LOYALTY_POINTS",
+        "FLASH_SALE",
+      ])
+      .withMessage("Invalid offer type"),
+    body("product_segments")
+      .optional()
+      .isArray({ min: 1 })
+      .withMessage("Product segments must be a non-empty array"),
     body("start_date").optional().isISO8601().withMessage("Invalid start date"),
     body("end_date").optional().isISO8601().withMessage("Invalid end date"),
-    body("status").optional().isIn(["draft", "active", "paused", "expired", "completed"]).withMessage("Invalid status"),
+    body("status")
+      .optional()
+      .isIn(["draft", "active", "paused", "expired", "completed"])
+      .withMessage("Invalid status"),
   ],
   async (req, res) => {
     try {
@@ -827,51 +815,54 @@ router.put(
         }
       }
 
-      const offer = await Offer.findByIdAndUpdate(id, updateData, { new: true, runValidators: true })
+      const offer = await Offer.findByIdAndUpdate(id, updateData, {
+        new: true,
+        runValidators: true,
+      })
         .populate({
           path: "config.selectedProducts",
           select: "sku bangla_name unit db_price mrp",
-          strictPopulate: false
+          strictPopulate: false,
         })
         .populate({
           path: "territories.zones.ids",
           select: "name type level",
-          strictPopulate: false
+          strictPopulate: false,
         })
         .populate({
           path: "territories.regions.ids",
           select: "name type level",
-          strictPopulate: false
+          strictPopulate: false,
         })
         .populate({
           path: "territories.areas.ids",
           select: "name type level",
-          strictPopulate: false
+          strictPopulate: false,
         })
         .populate({
           path: "territories.db_points.ids",
           select: "name type level",
-          strictPopulate: false
+          strictPopulate: false,
         })
         .populate({
           path: "distributors.ids",
           select: "name mobile db_point_id",
-          strictPopulate: false
+          strictPopulate: false,
         })
         .populate({
           path: "created_by",
           select: "name email",
-          strictPopulate: false
+          strictPopulate: false,
         })
         .populate({
           path: "updated_by",
           select: "name email",
-          strictPopulate: false
+          strictPopulate: false,
         })
         .populate({
           path: "approved_by",
           select: "name email",
-          strictPopulate: false
+          strictPopulate: false,
         })
         .lean();
 
@@ -905,9 +896,7 @@ router.put(
 router.delete(
   "/:id",
   requireApiPermission("offers:delete"),
-  [
-    param("id").isMongoId().withMessage("Invalid offer ID"),
-  ],
+  [param("id").isMongoId().withMessage("Invalid offer ID")],
   async (req, res) => {
     try {
       const errors = validationResult(req);
@@ -919,14 +908,14 @@ router.delete(
       }
 
       const { id } = req.params;
-      
+
       // Soft delete - set status to completed and active to false
       const offer = await Offer.findByIdAndUpdate(
         id,
-        { 
-          status: "completed", 
+        {
+          status: "completed",
           active: false,
-          updated_by: req.user._id 
+          updated_by: req.user._id,
         },
         { new: true }
       ).lean();
@@ -980,18 +969,18 @@ router.patch(
 
       const offer = await Offer.findByIdAndUpdate(
         id,
-        { 
+        {
           active,
           updated_by: req.user._id,
           // If deactivating, set status to paused
-          ...(active === false && { status: "paused" })
+          ...(active === false && { status: "paused" }),
         },
         { new: true }
       )
         .populate({
           path: "config.selectedProducts",
           select: "sku bangla_name unit",
-          strictPopulate: false
+          strictPopulate: false,
         })
         .lean();
 
@@ -1025,9 +1014,7 @@ router.patch(
 router.post(
   "/:id/duplicate",
   requireApiPermission("offers:create"),
-  [
-    param("id").isMongoId().withMessage("Invalid offer ID"),
-  ],
+  [param("id").isMongoId().withMessage("Invalid offer ID")],
   async (req, res) => {
     try {
       const errors = validationResult(req);
@@ -1039,7 +1026,7 @@ router.post(
       }
 
       const { id } = req.params;
-      
+
       // Find the original offer
       const originalOffer = await Offer.findById(id).lean();
 
@@ -1078,37 +1065,37 @@ router.post(
         .populate({
           path: "config.selectedProducts",
           select: "sku bangla_name unit db_price mrp",
-          strictPopulate: false
+          strictPopulate: false,
         })
         .populate({
           path: "territories.zones.ids",
           select: "name type level",
-          strictPopulate: false
+          strictPopulate: false,
         })
         .populate({
           path: "territories.regions.ids",
           select: "name type level",
-          strictPopulate: false
+          strictPopulate: false,
         })
         .populate({
           path: "territories.areas.ids",
           select: "name type level",
-          strictPopulate: false
+          strictPopulate: false,
         })
         .populate({
           path: "territories.db_points.ids",
           select: "name type level",
-          strictPopulate: false
+          strictPopulate: false,
         })
         .populate({
           path: "distributors.ids",
           select: "name mobile db_point_id",
-          strictPopulate: false
+          strictPopulate: false,
         })
         .populate({
           path: "created_by",
           select: "name email",
-          strictPopulate: false
+          strictPopulate: false,
         })
         .lean();
 

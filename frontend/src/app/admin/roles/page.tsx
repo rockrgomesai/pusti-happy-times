@@ -557,25 +557,61 @@ export default function RolesPage() {
   const renderListView = () => (
     <>
       <Box sx={{ maxHeight: 'calc(100vh - 350px)', overflow: 'auto' }}>
-        <TableContainer component={Paper}>
+        <TableContainer component={Paper} sx={{ overflowX: 'auto' }}>
           <Table stickyHeader sx={{ minWidth: roleTableMinWidth }}>
             <TableHead>
               <TableRow>
-                {visibleRoleColumns.map((column) => (
-                  <TableCell key={column.id} align={column.align}>
-                    <Typography sx={{ fontWeight: 'bold' }}>{column.label}</Typography>
-                  </TableCell>
-                ))}
+                {visibleRoleColumns.map((column) => {
+                  const isActions = column.id === 'actions';
+                  return (
+                    <TableCell 
+                      key={column.id} 
+                      align={column.align}
+                      sx={{
+                        fontWeight: 'bold',
+                        whiteSpace: 'nowrap',
+                        backgroundColor: 'background.paper',
+                        ...(isActions
+                          ? {
+                              position: 'sticky',
+                              right: 0,
+                              zIndex: 4,
+                              boxShadow: (theme) => `-4px 0 8px -4px ${theme.palette.grey[300]}`,
+                            }
+                          : {}),
+                      }}
+                    >
+                      <Typography sx={{ fontWeight: 'bold' }}>{column.label}</Typography>
+                    </TableCell>
+                  );
+                })}
               </TableRow>
             </TableHead>
             <TableBody>
               {paginatedRoles.map((role) => (
                 <TableRow key={role._id}>
-                  {visibleRoleColumns.map((column) => (
-                    <TableCell key={column.id} align={column.align}>
-                      {column.renderCell(role)}
-                    </TableCell>
-                  ))}
+                  {visibleRoleColumns.map((column) => {
+                    const isActions = column.id === 'actions';
+                    return (
+                      <TableCell 
+                        key={column.id} 
+                        align={column.align}
+                        sx={{
+                          backgroundColor: 'background.paper',
+                          ...(isActions
+                            ? {
+                                position: 'sticky',
+                                right: 0,
+                                zIndex: 3,
+                                boxShadow: (theme) => `-4px 0 8px -4px ${theme.palette.grey[200]}`,
+                              }
+                            : {}),
+                        }}
+                      >
+                        {column.renderCell(role)}
+                      </TableCell>
+                    );
+                  })}
                 </TableRow>
               ))}
             </TableBody>

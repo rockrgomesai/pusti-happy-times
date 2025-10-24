@@ -101,8 +101,8 @@ class TokenManager {
         payload.territory_assignments = contextData.territory_assignments;
       }
 
-      if (contextData.employee_type === "facility" && contextData.facility_assignments) {
-        payload.facility_assignments = contextData.facility_assignments;
+      if (contextData.employee_type === "facility" && contextData.facility_id) {
+        payload.facility_id = contextData.facility_id;
       }
     }
 
@@ -243,7 +243,7 @@ const authenticate = async (req, res, next) => {
       employee_id: decoded.employee_id,
       distributor_id: decoded.distributor_id,
       territory_assignments: decoded.territory_assignments,
-      facility_assignments: decoded.facility_assignments,
+      facility_id: decoded.facility_id,
       db_point_id: decoded.db_point_id,
       product_segment: decoded.product_segment,
     };

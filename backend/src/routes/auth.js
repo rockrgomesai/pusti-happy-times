@@ -442,9 +442,9 @@ router.get("/me", authenticate, async (req, res) => {
           ...userData,
           role: {
             id: req.user.role_id._id,
-            name: req.user.role_id.name,
-            description: req.user.role_id.description,
+            role: req.user.role_id.role,
           },
+          context: req.userContext || {}, // Include context from token
         },
       },
     });

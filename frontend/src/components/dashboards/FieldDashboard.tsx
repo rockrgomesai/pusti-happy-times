@@ -1,8 +1,9 @@
 'use client';
 
-import React from 'react';
-import { Box, Card, CardContent, Typography, Chip } from '@mui/material';
-import { Place } from '@mui/icons-material';
+import React, { useEffect, useState } from 'react';
+import { Box, Typography, Paper, CircularProgress } from '@mui/material';
+import { Person } from '@mui/icons-material';
+import { apiClient } from '@/lib/api';
 
 interface User {
   id: string;
@@ -10,8 +11,11 @@ interface User {
   context?: {
     employee_name?: string;
     employee_code?: string;
+    employee_type?: string;
     territory_assignments?: {
-      all_territory_ids?: string[];
+      zone_ids?: string[];
+      region_ids?: string[];
+      area_ids?: string[];
     };
   };
 }
@@ -20,61 +24,171 @@ interface FieldDashboardProps {
   user: User;
 }
 
+interface TerritoryNames {
+  zone?: string;
+  region?: string;
+  area?: string;
+}
+
 export default function FieldDashboard({ user }: FieldDashboardProps) {
-  const territoryCount = user.context?.territory_assignments?.all_territory_ids?.length || 0;
+  const employeeName = user.context?.employee_name || user.username;
+  const zoneIds = user.context?.territory_assignments?.zone_ids || [];
+  const regionIds = user.context?.territory_assignments?.region_ids || [];
+  const areaIds = user.context?.territory_assignments?.area_ids || [];
+
+  const [territoryNames, setTerritoryNames] = useState<TerritoryNames>({});
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchTerritoryNames = async () => {
+      const names: TerritoryNames = {};
+
+      try {
+        // Fetch zone name
+        if (zoneIds[0]) {
+          try {
+            const response = await apiClient.get<any>(`/territories/${zoneIds[0]}`);
+            if (response.success && response.data) {
+              names.zone = response.data.name;
+            }
+          } catch (err: any) {
+            // If 403, user doesn't have permission - show ID instead
+            if (err.response?.status === 403) {
+              names.zone = `Zone (${zoneIds[0].substring(0, 8)}...)`;
+            } else {
+              console.error('Failed to fetch zone:', err);
+            }
+          }
+        }
+
+        // Fetch region name
+        if (regionIds[0]) {
+          try {
+            const response = await apiClient.get<any>(`/territories/${regionIds[0]}`);
+            if (response.success && response.data) {
+              names.region = response.data.name;
+            }
+          } catch (err: any) {
+            // If 403, user doesn't have permission - show ID instead
+            if (err.response?.status === 403) {
+              names.region = `Region (${regionIds[0].substring(0, 8)}...)`;
+            } else {
+              console.error('Failed to fetch region:', err);
+            }
+          }
+        }
+
+        // Fetch area name
+        if (areaIds[0]) {
+          try {
+            const response = await apiClient.get<any>(`/territories/${areaIds[0]}`);
+            if (response.success && response.data) {
+              names.area = response.data.name;
+            }
+          } catch (err: any) {
+            // If 403, user doesn't have permission - show ID instead
+            if (err.response?.status === 403) {
+              names.area = `Area (${areaIds[0].substring(0, 8)}...)`;
+            } else {
+              console.error('Failed to fetch area:', err);
+            }
+          }
+        }
+
+        setTerritoryNames(names);
+      } catch (error) {
+        console.error('Error fetching territories:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (zoneIds.length > 0 || regionIds.length > 0 || areaIds.length > 0) {
+      fetchTerritoryNames();
+    } else {
+      setLoading(false);
+    }
+  }, [zoneIds, regionIds, areaIds]);
 
   return (
-    <Box>
-      {/* Header */}
-      <Box sx={{ mb: 4 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
-          <Place sx={{ fontSize: 40, color: 'primary.main' }} />
-          <Box>
-            <Typography variant="h3" component="h1">
-              Field Sales Dashboard
-            </Typography>
-            <Typography variant="body1" color="text.secondary">
-              Welcome, {user.context?.employee_name || user.username}!
-            </Typography>
-          </Box>
-        </Box>
-        <Box sx={{ display: 'flex', gap: 1, mt: 2 }}>
-          <Chip 
-            label={`${territoryCount} Territor${territoryCount !== 1 ? 'ies' : 'y'}`}
-            color="primary" 
-            size="small"
-          />
-          <Chip 
-            label={user.context?.employee_code || ''}
-            variant="outlined" 
-            size="small"
-          />
-        </Box>
-      </Box>
+    <Box sx={{ p: 3 }}>
+      {/* Welcome Header */}
+      <Typography variant="h4" component="h1" gutterBottom>
+        Dashboard
+      </Typography>
+      <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
+        Welcome back!
+      </Typography>
 
-      {/* Placeholder Content */}
-      <Card>
-        <CardContent>
-          <Typography variant="h6" gutterBottom>
-            Field Dashboard - Coming Soon
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Territory-based sales metrics and activities will be displayed here.
-          </Typography>
-          <Box sx={{ mt: 3 }}>
-            <Typography variant="body2" color="text.secondary">
-              Features in development:
+      {/* Employee Info Card - Top Right */}
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 3 }}>
+        <Paper 
+          elevation={2} 
+          sx={{ 
+            p: 3, 
+            minWidth: 300,
+            backgroundColor: 'background.paper',
+            border: '1px solid',
+            borderColor: 'divider'
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+            <Person sx={{ color: 'primary.main' }} />
+            <Typography variant="h6">
+              {employeeName}
             </Typography>
-            <ul>
-              <li>Territory performance</li>
-              <li>Sales targets vs actuals</li>
-              <li>Distributor management</li>
-              <li>Visit schedule</li>
-              <li>Order tracking</li>
-            </ul>
           </Box>
-        </CardContent>
-      </Card>
+
+          {loading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
+              <CircularProgress size={24} />
+            </Box>
+          ) : (
+            <Box sx={{ mt: 2 }}>
+              {territoryNames.zone && (
+                <Box sx={{ mb: 1.5 }}>
+                  <Typography variant="caption" color="text.secondary" display="block">
+                    Zone
+                  </Typography>
+                  <Typography variant="body2">
+                    {territoryNames.zone}
+                  </Typography>
+                </Box>
+              )}
+
+              {territoryNames.region && (
+                <Box sx={{ mb: 1.5 }}>
+                  <Typography variant="caption" color="text.secondary" display="block">
+                    Region
+                  </Typography>
+                  <Typography variant="body2">
+                    {territoryNames.region}
+                  </Typography>
+                </Box>
+              )}
+
+              {territoryNames.area && (
+                <Box sx={{ mb: 1.5 }}>
+                  <Typography variant="caption" color="text.secondary" display="block">
+                    Area
+                  </Typography>
+                  <Typography variant="body2">
+                    {territoryNames.area}
+                  </Typography>
+                </Box>
+              )}
+
+              {!territoryNames.zone && !territoryNames.region && !territoryNames.area && (
+                <Typography variant="body2" color="text.secondary">
+                  No territory assigned
+                </Typography>
+              )}
+            </Box>
+          )}
+        </Paper>
+      </Box>
     </Box>
   );
 }
+
+

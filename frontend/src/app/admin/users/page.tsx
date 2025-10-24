@@ -573,14 +573,31 @@ export default function UsersPage() {
 
   // Render list view
   const renderListView = () => (
-    <TableContainer component={Paper}>
+    <TableContainer component={Paper} sx={{ overflowX: 'auto' }}>
       <Table sx={{ minWidth: userTableMinWidth }}>
         <TableHead>
           <TableRow>
             {visibleUserColumns.map((column) => {
               const isSortable = Boolean(column.sortableKey);
+              const isActions = column.id === 'actions';
               return (
-                <TableCell key={column.id} align={column.align}>
+                <TableCell 
+                  key={column.id} 
+                  align={column.align}
+                  sx={{
+                    fontWeight: 'bold',
+                    whiteSpace: 'nowrap',
+                    backgroundColor: 'background.paper',
+                    ...(isActions
+                      ? {
+                          position: 'sticky',
+                          right: 0,
+                          zIndex: 4,
+                          boxShadow: (theme) => `-4px 0 8px -4px ${theme.palette.grey[300]}`,
+                        }
+                      : {}),
+                  }}
+                >
                   {isSortable ? (
                     <TableSortLabel
                       active={orderBy === column.sortableKey}
@@ -606,11 +623,28 @@ export default function UsersPage() {
         <TableBody>
           {paginatedUsers.map((user) => (
             <TableRow key={user._id} hover>
-              {visibleUserColumns.map((column) => (
-                <TableCell key={column.id} align={column.align}>
-                  {column.renderCell(user)}
-                </TableCell>
-              ))}
+              {visibleUserColumns.map((column) => {
+                const isActions = column.id === 'actions';
+                return (
+                  <TableCell 
+                    key={column.id} 
+                    align={column.align}
+                    sx={{
+                      backgroundColor: 'background.paper',
+                      ...(isActions
+                        ? {
+                            position: 'sticky',
+                            right: 0,
+                            zIndex: 3,
+                            boxShadow: (theme) => `-4px 0 8px -4px ${theme.palette.grey[200]}`,
+                          }
+                        : {}),
+                    }}
+                  >
+                    {column.renderCell(user)}
+                  </TableCell>
+                );
+              })}
             </TableRow>
           ))}
         </TableBody>

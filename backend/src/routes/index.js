@@ -14,11 +14,7 @@
  */
 
 const express = require("express");
-const {
-  authenticate,
-  requireRole,
-  requireApiPermission,
-} = require("../middleware/auth");
+const { authenticate, requireRole, requireApiPermission } = require("../middleware/auth");
 
 // Import route modules
 const authRoutes = require("./auth");
@@ -36,6 +32,7 @@ const productRoutes = require("./product/products");
 const offersRoutes = require("./product/offers");
 const territoryRoutes = require("./territories");
 const distributorRoutes = require("./distributors");
+const notificationRoutes = require("./notifications");
 
 const router = express.Router();
 
@@ -91,8 +88,8 @@ async function buildStatsPayload() {
   return {
     users: userCount,
     brands: brandCount,
-  roles: roleCount,
-  territories: territoryCount,
+    roles: roleCount,
+    territories: territoryCount,
     systemHealth: health,
     uptimeSeconds,
     generatedAt: new Date().toISOString(),
@@ -143,9 +140,7 @@ router.get("/stats/public", async (req, res) => {
     res.json({ success: true, cached: false, data });
   } catch (err) {
     console.error("Error building stats summary (public):", err);
-    res
-      .status(500)
-      .json({ success: false, message: "Failed to fetch public stats" });
+    res.status(500).json({ success: false, message: "Failed to fetch public stats" });
   }
 });
 
@@ -164,18 +159,18 @@ router.get("/info", (req, res) => {
       description: "Backend API for Pusti Happy Times MERN application",
       environment: process.env.NODE_ENV || "development",
       endpoints: {
-  auth: "/api/v1/auth",
-  users: "/api/v1/users",
-  roles: "/api/v1/roles",
-  brands: "/api/v1/brands",
-  categories: "/api/v1/categories",
-  products: "/api/v1/products",
-  facilities: "/api/v1/facilities",
-  employees: "/api/v1/employees",
-  menu: "/api/v1/menu-items",
-  permissions: "/api/v1/permissions",
-  territories: "/api/v1/territories",
-  distributors: "/api/v1/distributors",
+        auth: "/api/v1/auth",
+        users: "/api/v1/users",
+        roles: "/api/v1/roles",
+        brands: "/api/v1/brands",
+        categories: "/api/v1/categories",
+        products: "/api/v1/products",
+        facilities: "/api/v1/facilities",
+        employees: "/api/v1/employees",
+        menu: "/api/v1/menu-items",
+        permissions: "/api/v1/permissions",
+        territories: "/api/v1/territories",
+        distributors: "/api/v1/distributors",
       },
       features: [
         "JWT Authentication",
@@ -232,7 +227,6 @@ router.use("/product/products", productRoutes);
 router.use("/products", productRoutes);
 router.use("/product/offers", offersRoutes);
 
-
 /**
  * Facility Management Routes (Unified Depots & Factories)
  * @route   /api/facilities/*
@@ -281,7 +275,6 @@ router.use("/distributors", distributorRoutes);
  */
 router.use("/transports", transportRoutes);
 
-
 /**
  * Menu Management Routes
  * @route   /api/menu-items/*
@@ -297,6 +290,14 @@ router.use("/menu-items", menuRoutes);
  * @access  Private (admin roles only)
  */
 router.use("/permissions", requireRole("SuperAdmin"), permissionRoutes);
+
+/**
+ * Notification Routes
+ * @route   /api/notifications/*
+ * @desc    User notifications and alerts
+ * @access  Private (authenticated users)
+ */
+router.use("/notifications", notificationRoutes);
 
 /**
  * API Route Documentation Helper

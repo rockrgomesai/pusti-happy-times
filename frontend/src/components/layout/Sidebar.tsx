@@ -33,6 +33,8 @@ import {
   Warehouse as WarehouseIcon,
   ReceiptLong,
   ViewList,
+  Inventory2 as BoxIcon,
+  Label as TagIcon,
 } from '@mui/icons-material';
 import { useRouter, usePathname } from 'next/navigation';
 import { apiClient } from '@/lib/api';
@@ -89,13 +91,14 @@ const iconMap: Record<string, typeof Dashboard> = {
   FaKey: VpnKey,
   FaLock: Lock,
   FaDatabase: Storage,
-  FaTag: LocalOffer,
+  FaTag: TagIcon,
   FaTags: LocalOffer,
   FaOffers: LocalOffer,
   FaBrowseOffers: ViewList, // Browse/List offers icon
-  FaDemandOrders: Inventory,
+  FaDemandOrders: ReceiptLong,
   FaDO: ReceiptLong,
   FaBox: Inventory,
+  FaBoxOpen: BoxIcon,
   FaUserTag: BookmarkBorder, // User tagging/roles icon
   FaLayerGroup: Layers,
   FaTruck: LocalShipping, // Transport/shipping icon
@@ -197,10 +200,13 @@ export function Sidebar({ onItemClick }: SidebarProps) {
 
     let IconComponent = iconMap[iconName] || Dashboard;
 
+    // Use warehouse/depot icon for facilities, depots, and warehouses
     if (
       normalizedIconName.includes('depot') ||
       normalizedIconName.includes('warehouse') ||
-      normalizedLabel.includes('depot')
+      normalizedLabel.includes('depot') ||
+      normalizedLabel.includes('facilities') ||
+      normalizedLabel.includes('warehouse')
     ) {
       IconComponent = WarehouseIcon;
     }
@@ -252,6 +258,7 @@ export function Sidebar({ onItemClick }: SidebarProps) {
                 minWidth: 0,
                 mr: 2,
                 justifyContent: 'center',
+                color: '#ff0099',
               }}
             >
               {renderIcon(item.icon, isChild, item.label)}

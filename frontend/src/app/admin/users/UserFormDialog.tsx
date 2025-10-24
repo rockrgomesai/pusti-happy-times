@@ -273,7 +273,7 @@ export default function UserFormDialog({
       const response = await api.get('/employees', {
         params: { limit: 500 },
       });
-      const employeesData = response.data?.data?.items || [];
+      const employeesData = response.data?.data || [];
       setEmployees(employeesData);
     } catch (error) {
       console.error('Failed to load employees:', error);
@@ -289,7 +289,7 @@ export default function UserFormDialog({
       const response = await api.get('/distributors', {
         params: { limit: 500 },
       });
-      const distributorsData = response.data?.data?.items || [];
+      const distributorsData = response.data?.data || [];
       setDistributors(distributorsData);
     } catch (error) {
       console.error('Failed to load distributors:', error);
@@ -304,7 +304,7 @@ export default function UserFormDialog({
       const response = await api.get('/facilities', {
         params: { limit: 200 },
       });
-      const facilitiesData = response.data?.data?.items || [];
+      const facilitiesData = response.data?.data || [];
       setFacilities(facilitiesData);
     } catch (error) {
       console.error('Failed to load facilities:', error);

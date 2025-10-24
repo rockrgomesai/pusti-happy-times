@@ -146,6 +146,101 @@ router.get(
   }
 );
 
+/**
+ * Get facilities assigned to current facility employee
+ * @route   GET /api/v1/facilities/my-facilities
+ * @access  Private (facility employees only)
+ */
+router.get("/my-facilities", authenticate, async (req, res) => {
+  try {
+    // Check if user is a facility employee
+    const { user_type, employee_type, facility_id } = req.userContext || {};
+
+    console.log("🔍 /my-facilities userContext:", {
+      user_type,
+      employee_type,
+      facility_id,
+      fullContext: req.userContext,
+    });
+
+    if (user_type !== "employee" || employee_type !== "facility") {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied. Facility employee access required.",
+      });
+    }
+
+    if (!facility_id) {
+      return res.json({
+        success: true,
+        data: { facility: null },
+      });
+    }
+
+    // Fetch assigned facility
+    const facility = await Facility.findById(facility_id).select(
+      "_id name location active contact_person contact_mobile type"
+    );
+
+    res.json({
+      success: true,
+      data: { facility },
+    });
+  } catch (error) {
+    console.error("Error fetching my facilities:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching facilities",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
+});
+
+/**
+ * Get facility-specific stats
+ * @route   GET /api/v1/facilities/stats
+ * @access  Private (facility employees only)
+ */
+router.get("/stats", authenticate, async (req, res) => {
+  try {
+    // Check if user is a facility employee
+    const { user_type, employee_type, facility_id } = req.userContext || {};
+
+    if (user_type !== "employee" || employee_type !== "facility") {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied. Facility employee access required.",
+      });
+    }
+
+    // Return zero stats - actual implementation pending
+    const stats = {
+      totalInventory: 0,
+      pendingOrders: 0,
+      todayShipments: 0,
+      lowStockItems: 0,
+    };
+
+    // TODO: Implement actual stats calculation when inventory system is ready
+    // const totalInventory = await Inventory.aggregate([
+    //   { $match: { facility_id: facility_id } },
+    //   { $group: { _id: null, total: { $sum: '$quantity' } } }
+    // ]);
+
+    res.json({
+      success: true,
+      data: stats,
+    });
+  } catch (error) {
+    console.error("Error fetching facility stats:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching statistics",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
+});
+
 // GET /api/facilities/:id - single facility
 router.get(
   "/:id",
@@ -355,94 +450,5 @@ router.delete(
     }
   }
 );
-
-/**
- * Get facilities assigned to current facility employee
- * @route   GET /api/v1/facilities/my-facilities
- * @access  Private (facility employees only)
- */
-router.get("/my-facilities", authenticate, async (req, res) => {
-  try {
-    // Check if user is a facility employee
-    const { user_type, employee_type, facility_id } = req.userContext || {};
-
-    if (user_type !== "employee" || employee_type !== "facility") {
-      return res.status(403).json({
-        success: false,
-        message: "Access denied. Facility employee access required.",
-      });
-    }
-
-    if (!facility_id) {
-      return res.json({
-        success: true,
-        data: { facility: null },
-      });
-    }
-
-    // Fetch assigned facility
-    const facility = await Facility.findById(facility_id).select(
-      "_id name location active contact_person contact_mobile type"
-    );
-
-    res.json({
-      success: true,
-      data: { facility },
-    });
-  } catch (error) {
-    console.error("Error fetching my facilities:", error);
-    res.status(500).json({
-      success: false,
-      message: "Error fetching facilities",
-      error: process.env.NODE_ENV === "development" ? error.message : undefined,
-    });
-  }
-});
-
-/**
- * Get facility-specific stats
- * @route   GET /api/v1/facilities/stats
- * @access  Private (facility employees only)
- */
-router.get("/stats", authenticate, async (req, res) => {
-  try {
-    // Check if user is a facility employee
-    const { user_type, employee_type, facility_id } = req.userContext || {};
-
-    if (user_type !== "employee" || employee_type !== "facility") {
-      return res.status(403).json({
-        success: false,
-        message: "Access denied. Facility employee access required.",
-      });
-    }
-
-    // Mock stats for now - replace with actual calculations
-    const stats = {
-      totalInventory: 15240,
-      pendingOrders: 23,
-      todayShipments: 12,
-      lowStockItems: 5,
-    };
-
-    // TODO: Implement actual stats calculation
-    // Example:
-    // const totalInventory = await Inventory.aggregate([
-    //   { $match: { facility_id: facility_id } },
-    //   { $group: { _id: null, total: { $sum: '$quantity' } } }
-    // ]);
-
-    res.json({
-      success: true,
-      data: stats,
-    });
-  } catch (error) {
-    console.error("Error fetching facility stats:", error);
-    res.status(500).json({
-      success: false,
-      message: "Error fetching statistics",
-      error: process.env.NODE_ENV === "development" ? error.message : undefined,
-    });
-  }
-});
 
 module.exports = router;

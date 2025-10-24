@@ -213,6 +213,11 @@ export const authAPI = {
   }) => {
     const response = await api.put('/auth/change-password', passwordData);
     return response.data;
+  },
+
+  getProfile: async () => {
+    const response = await api.get('/auth/me');
+    return response.data;
   }
 };
 

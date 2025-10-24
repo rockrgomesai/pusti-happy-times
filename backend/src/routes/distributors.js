@@ -4,16 +4,12 @@
  */
 
 const express = require("express");
-const {
-  body,
-  param,
-  query,
-  validationResult,
-} = require("express-validator");
+const { body, param, query, validationResult } = require("express-validator");
 const mongoose = require("mongoose");
 const Distributor = require("../models/Distributor");
 const Territory = require("../models/Territory");
-const { requireApiPermission } = require("../middleware/auth");
+const Offer = require("../models/Offer");
+const { requireApiPermission, authenticate } = require("../middleware/auth");
 
 const router = express.Router();
 
@@ -85,15 +81,10 @@ const sanitizeDistributorPayload = (payload) => {
       ? payload.product_segment.map((segment) => segment)
       : [payload.product_segment];
   if (payload.skus_exclude !== undefined) {
-    const ids = Array.isArray(payload.skus_exclude)
-      ? payload.skus_exclude
-      : [payload.skus_exclude];
-    sanitized.skus_exclude = ids
-      .map((id) => parseObjectId(id))
-      .filter((value) => value != null);
+    const ids = Array.isArray(payload.skus_exclude) ? payload.skus_exclude : [payload.skus_exclude];
+    sanitized.skus_exclude = ids.map((id) => parseObjectId(id)).filter((value) => value != null);
   }
-  if (payload.distributor_type !== undefined)
-    sanitized.distributor_type = payload.distributor_type;
+  if (payload.distributor_type !== undefined) sanitized.distributor_type = payload.distributor_type;
   if (payload.erp_id !== undefined) sanitized.erp_id = payload.erp_id;
   if (payload.mobile !== undefined) sanitized.mobile = payload.mobile;
   if (payload.credit_limit !== undefined)
@@ -123,8 +114,7 @@ const sanitizeDistributorPayload = (payload) => {
     sanitized.emergency_contact = payload.emergency_contact;
   if (payload.emergency_relation !== undefined)
     sanitized.emergency_relation = payload.emergency_relation;
-  if (payload.emergency_mobile !== undefined)
-    sanitized.emergency_mobile = payload.emergency_mobile;
+  if (payload.emergency_mobile !== undefined) sanitized.emergency_mobile = payload.emergency_mobile;
   if (payload.unit !== undefined) sanitized.unit = payload.unit;
   if (payload.latitude !== undefined) sanitized.latitude = payload.latitude;
   if (payload.longitude !== undefined) sanitized.longitude = payload.longitude;
@@ -160,18 +150,17 @@ const distributorValidators = [
     .isLength({ min: 3, max: 160 })
     .withMessage("Distributor name must be between 3 and 160 characters"),
   buildTerritoryValidation(),
-  body("product_segment")
-    .custom((value) => {
-      const segments = Array.isArray(value) ? value : [value];
-      if (!segments.length) {
-        throw new Error("Product segment is required");
-      }
-      const invalid = segments.some((segment) => !PRODUCT_SEGMENTS.includes(segment));
-      if (invalid) {
-        throw new Error("Invalid product segment supplied");
-      }
-      return true;
-    }),
+  body("product_segment").custom((value) => {
+    const segments = Array.isArray(value) ? value : [value];
+    if (!segments.length) {
+      throw new Error("Product segment is required");
+    }
+    const invalid = segments.some((segment) => !PRODUCT_SEGMENTS.includes(segment));
+    if (invalid) {
+      throw new Error("Invalid product segment supplied");
+    }
+    return true;
+  }),
   body("skus_exclude")
     .optional()
     .custom((value) => {
@@ -186,14 +175,8 @@ const distributorValidators = [
     .isString()
     .custom((value) => DISTRIBUTOR_TYPES.includes(value))
     .withMessage("Invalid distributor type"),
-  body("erp_id")
-    .optional({ nullable: true })
-    .isInt()
-    .withMessage("ERP ID must be an integer"),
-  body("mobile")
-    .optional({ nullable: true })
-    .isString()
-    .withMessage("Mobile must be a string"),
+  body("erp_id").optional({ nullable: true }).isInt().withMessage("ERP ID must be an integer"),
+  body("mobile").optional({ nullable: true }).isString().withMessage("Mobile must be a string"),
   body("credit_limit")
     .optional({ nullable: true })
     .isNumeric()
@@ -242,26 +225,14 @@ const distributorValidators = [
     .isString()
     .custom((value) => ORDER_UNITS.includes(value))
     .withMessage("Unit must be CTN or PCS"),
-  body("latitude")
-    .optional({ nullable: true })
-    .isString()
-    .withMessage("Latitude must be a string"),
+  body("latitude").optional({ nullable: true }).isString().withMessage("Latitude must be a string"),
   body("longitude")
     .optional({ nullable: true })
     .isString()
     .withMessage("Longitude must be a string"),
-  body("address")
-    .optional({ nullable: true })
-    .isString()
-    .withMessage("Address must be a string"),
-  body("note")
-    .optional({ nullable: true })
-    .isString()
-    .withMessage("Note must be a string"),
-  body("active")
-    .optional({ nullable: true })
-    .isBoolean()
-    .withMessage("Active must be a boolean"),
+  body("address").optional({ nullable: true }).isString().withMessage("Address must be a string"),
+  body("note").optional({ nullable: true }).isString().withMessage("Note must be a string"),
+  body("active").optional({ nullable: true }).isBoolean().withMessage("Active must be a boolean"),
 ];
 
 router.get(
@@ -277,22 +248,12 @@ router.get(
       .optional()
       .custom((value) => DISTRIBUTOR_TYPES.includes(value))
       .withMessage("Invalid distributor type"),
-    query("active")
-      .optional()
-      .isBoolean()
-      .withMessage("Active flag must be boolean"),
+    query("active").optional().isBoolean().withMessage("Active flag must be boolean"),
   ],
   handleValidationErrors,
   async (req, res) => {
     try {
-      const {
-        search,
-        segment,
-        type,
-        active,
-        limit = 50,
-        offset = 0,
-      } = req.query;
+      const { search, segment, type, active, limit = 50, offset = 0 } = req.query;
 
       const queryBuilder = {};
 
@@ -475,6 +436,119 @@ router.delete(
       return res.status(500).json({
         success: false,
         message: "Failed to deactivate distributor",
+        error: error.message,
+      });
+    }
+  }
+);
+
+/**
+ * GET /distributors/my-offers
+ * Get offers eligible for the currently logged-in distributor
+ */
+router.get(
+  "/my-offers",
+  authenticate,
+  [
+    query("status")
+      .optional()
+      .isIn(["draft", "active", "paused", "expired", "completed"])
+      .withMessage("Invalid status"),
+    query("page").optional().isInt({ min: 1 }).withMessage("Page must be a positive integer"),
+    query("limit")
+      .optional()
+      .isInt({ min: 1, max: 100 })
+      .withMessage("Limit must be between 1 and 100"),
+  ],
+  async (req, res) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({
+          success: false,
+          errors: errors.array(),
+        });
+      }
+
+      // Check if user is a distributor
+      if (req.user.user_type !== "distributor") {
+        return res.status(403).json({
+          success: false,
+          message: "Access denied. Only distributors can access this endpoint.",
+        });
+      }
+
+      // Find the distributor record for this user
+      const distributor = await Distributor.findOne({
+        user_id: req.user._id,
+        active: true,
+      }).populate("db_point_id");
+
+      if (!distributor) {
+        return res.status(404).json({
+          success: false,
+          message: "Distributor record not found for this user",
+        });
+      }
+
+      const { status, page = 1, limit = 20 } = req.query;
+
+      // Use the Offer model's static method to find eligible offers
+      let offers = await Offer.findEligibleForDistributor(distributor._id);
+
+      // Additional filtering by status if provided
+      if (status) {
+        offers = offers.filter((offer) => offer.status === status);
+      }
+
+      // Sort by createdAt descending
+      offers.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+      // Calculate pagination
+      const skip = (parseInt(page) - 1) * parseInt(limit);
+      const total = offers.length;
+      const paginatedOffers = offers.slice(skip, skip + parseInt(limit));
+
+      // Populate references for the paginated results
+      const populatedOffers = await Offer.populate(paginatedOffers, [
+        {
+          path: "config.selectedProducts",
+          select: "sku bangla_name unit db_price mrp",
+          strictPopulate: false,
+        },
+        {
+          path: "created_by",
+          select: "name email",
+          strictPopulate: false,
+        },
+      ]);
+
+      res.json({
+        success: true,
+        data: populatedOffers,
+        pagination: {
+          page: parseInt(page),
+          limit: parseInt(limit),
+          total,
+          pages: Math.ceil(total / parseInt(limit)),
+        },
+        distributor: {
+          id: distributor._id,
+          name: distributor.name,
+          product_segment: distributor.product_segment,
+          db_point: distributor.db_point_id
+            ? {
+                id: distributor.db_point_id._id,
+                name: distributor.db_point_id.name,
+              }
+            : null,
+        },
+      });
+    } catch (error) {
+      console.error("Error fetching distributor offers:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to fetch offers",
         error: error.message,
       });
     }
