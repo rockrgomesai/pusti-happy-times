@@ -209,7 +209,7 @@ const ProductsPage: React.FC = () => {
       const [brandResponse, categoryResponse, depotResponse] = await Promise.allSettled([
         api.get('/brands', { params: { limit: 200 } }),
         api.get('/categories', { params: { limit: 200, active: true } }),
-        api.get('/depots', { params: { limit: 200 } }),
+        api.get('/facilities/depots'),
       ]);
 
       if (brandResponse.status === 'fulfilled' && isMountedRef.current) {
