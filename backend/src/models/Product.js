@@ -64,12 +64,15 @@ const productSchema = new mongoose.Schema(
     bangla_name: {
       type: String,
       trim: true,
-      unique: true,
-      sparse: true,
+      // Removed unique constraint - handled by manual validation in routes
+      // to avoid issues with multiple null values
     },
     erp_id: {
       type: Number,
-      sparse: true,
+      // Uses partial index to allow multiple null values for PROCURED products
+      // while enforcing uniqueness for MANUFACTURED products
+      // Index created manually with partialFilterExpression: { erp_id: { $type: "number" } }
+      // Required only for MANUFACTURED products (validated in pre-validate hook)
     },
     // Legacy field - kept for backward compatibility
     depot_ids: {
@@ -150,7 +153,10 @@ const productSchema = new mongoose.Schema(
 );
 
 productSchema.index({ product_type: 1, active: 1 }, { name: "idx_type_active" });
-productSchema.index({ brand_id: 1, category_id: 1, active: 1 }, { name: "idx_brand_category_active" });
+productSchema.index(
+  { brand_id: 1, category_id: 1, active: 1 },
+  { name: "idx_brand_category_active" }
+);
 productSchema.index({ product_type: 1, brand_id: 1 }, { name: "idx_type_brand" });
 productSchema.index({ sku: "text", bangla_name: "text" }, { name: "idx_text_search" });
 productSchema.index({ depot_ids: 1 }, { name: "idx_depot_ids" });
@@ -158,7 +164,7 @@ productSchema.index({ facility_ids: 1 }, { name: "idx_facility_ids" });
 
 const assignNullsForProcured = (doc) => {
   doc.bangla_name = null;
-  doc.erp_id = null;
+  doc.erp_id = null; // PROCURED products don't require erp_id
   doc.depot_ids = [];
   doc.facility_ids = [];
   doc.db_price = null;
@@ -173,14 +179,17 @@ productSchema.pre("validate", function (next) {
 
   if (this.product_type === "MANUFACTURED") {
     // Use facility_ids if available, otherwise fall back to depot_ids
-    const facilities = Array.isArray(this.facility_ids) && this.facility_ids.length > 0
-      ? this.facility_ids.filter((id) => id != null)
-      : Array.isArray(this.depot_ids)
-      ? this.depot_ids.filter((id) => id != null)
-      : [];
-    
+    const facilities =
+      Array.isArray(this.facility_ids) && this.facility_ids.length > 0
+        ? this.facility_ids.filter((id) => id != null)
+        : Array.isArray(this.depot_ids)
+          ? this.depot_ids.filter((id) => id != null)
+          : [];
+
     if (!facilities.length) {
-      const error = new Error("At least one facility (depot) is required for MANUFACTURED products");
+      const error = new Error(
+        "At least one facility (depot) is required for MANUFACTURED products"
+      );
       error.statusCode = 400;
       return next(error);
     }
@@ -194,7 +203,12 @@ productSchema.pre("validate", function (next) {
       error.statusCode = 400;
       return next(error);
     }
-    
+    if (this.erp_id == null) {
+      const error = new Error("erp_id is required for MANUFACTURED products");
+      error.statusCode = 400;
+      return next(error);
+    }
+
     // Sync both fields for backward compatibility
     this.facility_ids = facilities;
     this.depot_ids = facilities;
@@ -228,18 +242,18 @@ productSchema.pre("findOneAndUpdate", function (next) {
   if (set.unit) {
     set.unit = set.unit.toUpperCase();
   }
-  
+
   // Handle both depot_ids and facility_ids
   if (set.depot_ids || set.facility_ids) {
     const facilities = Array.isArray(set.facility_ids || set.depot_ids)
       ? (set.facility_ids || set.depot_ids).filter(Boolean)
       : [set.facility_ids || set.depot_ids].filter(Boolean);
-    
+
     // Sync both fields for backward compatibility
     set.facility_ids = facilities;
     set.depot_ids = facilities;
   }
-  
+
   set.updated_at = new Date();
   update.$set = set;
   this.setUpdate(update);
@@ -250,5 +264,33 @@ productSchema.statics.PRODUCT_TYPES = PRODUCT_TYPES;
 productSchema.statics.PRODUCT_UNITS = PRODUCT_UNITS;
 productSchema.statics.MANUFACTURED_UNITS = MANUFACTURED_UNITS;
 productSchema.statics.PROCURED_UNITS = PROCURED_UNITS;
+
+// Fix bangla_name index on model initialization
+productSchema.post("init", async function () {
+  const Product = this.constructor;
+  if (Product._indexFixed) return;
+
+  try {
+    const indexes = await Product.collection.indexes();
+    const banglaIndex = indexes.find((idx) => idx.name === "bangla_name_1");
+
+    // If index exists but isn't sparse, recreate it
+    if (banglaIndex && !banglaIndex.sparse) {
+      console.log("⚠️ Fixing bangla_name index - dropping and recreating as sparse...");
+      await Product.collection.dropIndex("bangla_name_1");
+      await Product.collection.createIndex(
+        { bangla_name: 1 },
+        { unique: true, sparse: true, name: "bangla_name_1" }
+      );
+      console.log("✅ bangla_name index fixed successfully");
+    }
+    Product._indexFixed = true;
+  } catch (err) {
+    // Silently fail if index operations fail (will retry on next document load)
+    if (err.message.includes("ns not found") || err.message.includes("IndexNotFound")) {
+      Product._indexFixed = true; // Mark as fixed if collection/index doesn't exist yet
+    }
+  }
+});
 
 module.exports = mongoose.model("Product", productSchema);

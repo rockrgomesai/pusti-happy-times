@@ -7,7 +7,7 @@ const fs = require("fs");
 const crypto = require("crypto");
 const multer = require("multer");
 
-const { Product, Brand, Category, Depot } = require("../../models");
+const { Product, Brand, Category, Facility } = require("../../models");
 const { requireApiPermission, checkApiPermission } = require("../../middleware/auth");
 
 const router = express.Router();
@@ -175,7 +175,6 @@ const applyBusinessRules = (payload, existing) => {
     payload.bangla_name = null;
     payload.erp_id = null;
   }
-
 };
 
 const buildFilters = (req) => {
@@ -308,42 +307,38 @@ const sanitizePayload = (body) => {
   return payload;
 };
 
-router.post(
-  "/upload-image",
-  ensureProductImagePermission,
-  (req, res) => {
-    const singleUpload = imageUpload.single("image");
+router.post("/upload-image", ensureProductImagePermission, (req, res) => {
+  const singleUpload = imageUpload.single("image");
 
-    singleUpload(req, res, (err) => {
-      if (err) {
-        const status = err.statusCode || (err instanceof multer.MulterError ? 400 : 500);
-        return res.status(status).json({
-          success: false,
-          message: err.message || "Failed to upload image",
-        });
-      }
-
-      if (!req.file) {
-        return res.status(400).json({
-          success: false,
-          message: "No image provided for upload",
-        });
-      }
-
-      const relativePath = `/images/${req.file.filename}`;
-
-      res.status(201).json({
-        success: true,
-        message: "Image uploaded successfully",
-        data: {
-          path: relativePath,
-          filename: req.file.filename,
-          size: req.file.size,
-        },
+  singleUpload(req, res, (err) => {
+    if (err) {
+      const status = err.statusCode || (err instanceof multer.MulterError ? 400 : 500);
+      return res.status(status).json({
+        success: false,
+        message: err.message || "Failed to upload image",
       });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: "No image provided for upload",
+      });
+    }
+
+    const relativePath = `/images/${req.file.filename}`;
+
+    res.status(201).json({
+      success: true,
+      message: "Image uploaded successfully",
+      data: {
+        path: relativePath,
+        filename: req.file.filename,
+        size: req.file.size,
+      },
     });
-  }
-);
+  });
+});
 
 router.get(
   "/",
@@ -352,9 +347,15 @@ router.get(
     query("page").optional().isInt({ min: 1 }).toInt(),
     query("limit").optional().isInt({ min: 1, max: 200 }).toInt(),
     query("product_type").optional().isIn(Product.PRODUCT_TYPES),
-    query("brand_id").optional().custom((value) => mongoose.isValidObjectId(value)),
-    query("category_id").optional().custom((value) => mongoose.isValidObjectId(value)),
-    query("depot_id").optional().custom((value) => mongoose.isValidObjectId(value)),
+    query("brand_id")
+      .optional()
+      .custom((value) => mongoose.isValidObjectId(value)),
+    query("category_id")
+      .optional()
+      .custom((value) => mongoose.isValidObjectId(value)),
+    query("depot_id")
+      .optional()
+      .custom((value) => mongoose.isValidObjectId(value)),
   ],
   ensureValidation,
   async (req, res) => {
@@ -408,7 +409,7 @@ router.get(
       const product = await Product.findById(req.params.id)
         .populate("brand_id", "brand")
         .populate("category_id", "name product_segment")
-  .populate("depot_ids", "name")
+        .populate("depot_ids", "name")
         .lean({ getters: true });
 
       if (!product) {
@@ -427,7 +428,11 @@ router.get(
 );
 
 const createValidators = [
-  body("product_type").exists().withMessage("product_type is required").bail().isIn(Product.PRODUCT_TYPES),
+  body("product_type")
+    .exists()
+    .withMessage("product_type is required")
+    .bail()
+    .isIn(Product.PRODUCT_TYPES),
   body("brand_id")
     .exists()
     .withMessage("brand_id is required")
@@ -446,6 +451,10 @@ const createValidators = [
       return ids.every((id) => mongoose.isValidObjectId(id));
     }),
   body("sku").exists().withMessage("sku is required").bail().isLength({ min: 1 }).trim(),
+  body("erp_id")
+    .optional({ values: "falsy" })
+    .custom((value) => value == null || (Number.isInteger(Number(value)) && Number(value) >= 1))
+    .withMessage("erp_id must be an integer >= 1"),
   body("trade_price").exists().withMessage("trade_price is required").bail().isFloat({ min: 0 }),
   body("wt_pcs").exists().withMessage("wt_pcs is required").bail().isFloat({ min: 0 }),
   body("unit").exists().withMessage("unit is required").bail().isIn(Product.PRODUCT_UNITS),
@@ -454,8 +463,12 @@ const createValidators = [
 const updateValidators = [
   param("id").custom((value) => mongoose.isValidObjectId(value)),
   body("product_type").optional().isIn(Product.PRODUCT_TYPES),
-  body("brand_id").optional().custom((value) => mongoose.isValidObjectId(value)),
-  body("category_id").optional().custom((value) => mongoose.isValidObjectId(value)),
+  body("brand_id")
+    .optional()
+    .custom((value) => mongoose.isValidObjectId(value)),
+  body("category_id")
+    .optional()
+    .custom((value) => mongoose.isValidObjectId(value)),
   body("depot_ids")
     .optional({ values: "falsy" })
     .custom((value) => {
@@ -465,11 +478,21 @@ const updateValidators = [
     }),
   body("trade_price").optional().isFloat({ min: 0 }),
   body("wt_pcs").optional().isFloat({ min: 0 }),
-  body("db_price").optional({ values: "falsy" }).custom((value) => value == null || Number(value) >= 0),
-  body("mrp").optional({ values: "falsy" }).custom((value) => value == null || Number(value) >= 0),
-  body("ctn_pcs").optional({ values: "falsy" }).custom((value) => value == null || Number(value) >= 0),
+  body("db_price")
+    .optional({ values: "falsy" })
+    .custom((value) => value == null || Number(value) >= 0),
+  body("mrp")
+    .optional({ values: "falsy" })
+    .custom((value) => value == null || Number(value) >= 0),
+  body("ctn_pcs")
+    .optional({ values: "falsy" })
+    .custom((value) => value == null || Number(value) >= 0),
   body("unit").optional().isIn(Product.PRODUCT_UNITS),
   body("sku").optional().isLength({ min: 1 }).trim(),
+  body("erp_id")
+    .optional({ values: "falsy" })
+    .custom((value) => value == null || (Number.isInteger(Number(value)) && Number(value) >= 1))
+    .withMessage("erp_id must be an integer >= 1"),
 ];
 
 router.post(
@@ -484,11 +507,42 @@ router.post(
       payload.created_by = actor;
       payload.updated_by = actor;
 
+      // Check for duplicate SKU, ERP ID, or Bangla name
+      if (payload.sku) {
+        const skuDuplicate = await Product.findOne({ sku: payload.sku });
+        if (skuDuplicate) {
+          return res.status(409).json({
+            success: false,
+            message: `Duplicate SKU detected: ${payload.sku}`,
+          });
+        }
+      }
+
+      if (payload.erp_id != null) {
+        const erpIdDuplicate = await Product.findOne({ erp_id: payload.erp_id });
+        if (erpIdDuplicate) {
+          return res.status(409).json({
+            success: false,
+            message: `Duplicate ERP ID detected: ${payload.erp_id}`,
+          });
+        }
+      }
+
+      if (payload.bangla_name) {
+        const banglaNameDuplicate = await Product.findOne({ bangla_name: payload.bangla_name });
+        if (banglaNameDuplicate) {
+          return res.status(409).json({
+            success: false,
+            message: `Duplicate Bangla name detected: ${payload.bangla_name}`,
+          });
+        }
+      }
+
       await Promise.all([
         checkReference(Brand, payload.brand_id, "Brand"),
         checkReference(Category, payload.category_id, "Category"),
         ...(Array.isArray(payload.depot_ids)
-          ? payload.depot_ids.map((id) => checkReference(Depot, id, "Depot"))
+          ? payload.depot_ids.map((id) => checkReference(Facility, id, "Facility"))
           : []),
       ]);
 
@@ -536,6 +590,57 @@ router.put(
       payload.updated_by = actor;
       payload.updated_at = new Date();
 
+      // Check for duplicate SKU or Bangla name (excluding current product)
+      console.log("🔍 Duplicate check - Product ID:", id);
+      console.log("🔍 Duplicate check - payload.sku:", payload.sku);
+      console.log("🔍 Duplicate check - payload.bangla_name:", payload.bangla_name);
+      console.log("🔍 Duplicate check - payload.erp_id:", payload.erp_id);
+
+      if (payload.sku) {
+        const skuDuplicate = await Product.findOne({
+          _id: { $ne: id },
+          sku: payload.sku,
+        });
+        console.log("🔍 SKU duplicate found:", skuDuplicate ? skuDuplicate._id : "none");
+        if (skuDuplicate) {
+          return res.status(409).json({
+            success: false,
+            message: `Duplicate SKU detected: ${payload.sku}`,
+          });
+        }
+      }
+
+      if (payload.erp_id != null) {
+        const erpIdDuplicate = await Product.findOne({
+          _id: { $ne: id },
+          erp_id: payload.erp_id,
+        });
+        console.log("🔍 ERP ID duplicate found:", erpIdDuplicate ? erpIdDuplicate._id : "none");
+        if (erpIdDuplicate) {
+          return res.status(409).json({
+            success: false,
+            message: `Duplicate ERP ID detected: ${payload.erp_id}`,
+          });
+        }
+      }
+
+      if (payload.bangla_name) {
+        const banglaNameDuplicate = await Product.findOne({
+          _id: { $ne: id },
+          bangla_name: payload.bangla_name,
+        });
+        console.log(
+          "🔍 Bangla name duplicate found:",
+          banglaNameDuplicate ? banglaNameDuplicate._id : "none"
+        );
+        if (banglaNameDuplicate) {
+          return res.status(409).json({
+            success: false,
+            message: `Duplicate Bangla name detected: ${payload.bangla_name}`,
+          });
+        }
+      }
+
       if (payload.brand_id) {
         await checkReference(Brand, payload.brand_id, "Brand");
       }
@@ -543,13 +648,9 @@ router.put(
         await checkReference(Category, payload.category_id, "Category");
       }
       if (payload.depot_ids !== undefined) {
-        const depots = Array.isArray(payload.depot_ids)
-          ? payload.depot_ids
-          : [payload.depot_ids];
+        const depots = Array.isArray(payload.depot_ids) ? payload.depot_ids : [payload.depot_ids];
         await Promise.all(
-          depots
-            .filter((id) => id != null)
-            .map((id) => checkReference(Depot, id, "Depot"))
+          depots.filter((id) => id != null).map((id) => checkReference(Facility, id, "Facility"))
         );
       }
 
@@ -562,7 +663,7 @@ router.put(
       )
         .populate("brand_id", "brand")
         .populate("category_id", "name product_segment")
-  .populate("depot_ids", "name");
+        .populate("depot_ids", "name");
 
       res.json({
         success: true,
@@ -646,44 +747,40 @@ router.patch(
   }
 );
 
-router.get(
-  "/stats/summary",
-  requireApiPermission("products:read"),
-  async (_req, res) => {
-    try {
-      const pipeline = [
-        {
-          $group: {
-            _id: "$product_type",
-            total: { $sum: 1 },
-            active: {
-              $sum: {
-                $cond: [{ $eq: ["$active", true] }, 1, 0],
-              },
+router.get("/stats/summary", requireApiPermission("products:read"), async (_req, res) => {
+  try {
+    const pipeline = [
+      {
+        $group: {
+          _id: "$product_type",
+          total: { $sum: 1 },
+          active: {
+            $sum: {
+              $cond: [{ $eq: ["$active", true] }, 1, 0],
             },
-            avgTradePrice: { $avg: "$trade_price" },
           },
+          avgTradePrice: { $avg: "$trade_price" },
         },
-        {
-          $project: {
-            product_type: "$_id",
-            total: 1,
-            active: 1,
-            inactive: { $subtract: ["$total", "$active"] },
-            avgTradePrice: { $round: ["$avgTradePrice", 2] },
-            _id: 0,
-          },
+      },
+      {
+        $project: {
+          product_type: "$_id",
+          total: 1,
+          active: 1,
+          inactive: { $subtract: ["$total", "$active"] },
+          avgTradePrice: { $round: ["$avgTradePrice", 2] },
+          _id: 0,
         },
-      ];
+      },
+    ];
 
-      const summary = await Product.aggregate(pipeline);
+    const summary = await Product.aggregate(pipeline);
 
-      res.json({ success: true, data: summary });
-    } catch (error) {
-      console.error("Error building product stats", error);
-      res.status(500).json({ success: false, message: "Failed to build product stats" });
-    }
+    res.json({ success: true, data: summary });
+  } catch (error) {
+    console.error("Error building product stats", error);
+    res.status(500).json({ success: false, message: "Failed to build product stats" });
   }
-);
+});
 
 module.exports = router;
