@@ -30,6 +30,7 @@ interface User {
       all_territory_ids?: string[];
     };
     facility_id?: string; // Single facility assignment for facility employees
+    factory_store_id?: string; // Factory store assignment for Production employees
     
     // Distributor context
     distributor_name?: string;

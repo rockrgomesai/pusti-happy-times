@@ -783,4 +783,71 @@ router.get("/stats/summary", requireApiPermission("products:read"), async (_req,
   }
 });
 
+/**
+ * @route   GET /products/manufactured/by-category
+ * @desc    Get MANUFACTURED products grouped by category/subcategory
+ * @access  Private (Production role)
+ */
+router.get(
+  "/manufactured/by-category",
+  requireApiPermission("products:read"),
+  async (_req, res) => {
+    try {
+      const products = await Product.find({
+        product_type: MANUFACTURED,
+        active: true,
+      })
+        .populate("category_id", "name")
+        .select("_id sku erp_id bangla_name english_name ctn_pcs wt_pcs category_id")
+        .sort({ bangla_name: 1 })
+        .lean();
+
+      // Group by category
+      const grouped = {};
+
+      products.forEach((product) => {
+        const categoryName = product.category_id?.name || "Uncategorized";
+        const key = categoryName;
+
+        if (!grouped[key]) {
+          grouped[key] = {
+            category: categoryName,
+            subcategory: null,
+            products: [],
+          };
+        }
+
+        grouped[key].products.push({
+          _id: product._id,
+          sku: product.sku,
+          erp_id: product.erp_id,
+          bangla_name: product.bangla_name,
+          english_name: product.english_name,
+          ctn_pcs: product.ctn_pcs,
+          wt_pcs: product.wt_pcs,
+        });
+      });
+
+      // Convert to array format
+      const result = Object.keys(grouped)
+        .sort()
+        .map((key) => grouped[key]);
+
+      res.json({
+        success: true,
+        data: result,
+        totalProducts: products.length,
+        totalGroups: result.length,
+      });
+    } catch (error) {
+      console.error("Error fetching manufactured products by category:", error);
+      res.status(500).json({
+        success: false,
+        message: "Error fetching manufactured products",
+        error: process.env.NODE_ENV === "development" ? error.message : undefined,
+      });
+    }
+  }
+);
+
 module.exports = router;

@@ -134,17 +134,30 @@ api.interceptors.response.use(
       }
       
       const refreshToken = tokenManager.getRefreshToken();
+      console.log('🔄 Got 401, attempting refresh with token:', refreshToken?.substring(0, 30) + '...');
+      
       if (refreshToken) {
         try {
           const response = await axios.post(`${API_BASE_URL}/auth/refresh`, {
             refreshToken
           });
           
-          const { accessToken, refreshToken: newRefreshToken } = response.data.data;
+          console.log('🔄 Refresh response:', response.data);
+          const { tokens } = response.data.data;
+          const { accessToken, refreshToken: newRefreshToken } = tokens;
+          
+          console.log('🔄 New accessToken:', accessToken?.substring(0, 30) + '...');
+          console.log('🔄 Storing new tokens in cookies');
           tokenManager.setTokens(accessToken, newRefreshToken);
           
+          console.log('🔄 Token stored, verifying:', tokenManager.getAccessToken()?.substring(0, 30) + '...');
+          
           // Retry the original request with new token
-          originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+          if (originalRequest) {
+            originalRequest.headers = originalRequest.headers || {};
+            originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+            console.log('🔄 Retrying original request with new token');
+          }
           return api(originalRequest);
         } catch (refreshError) {
           // Refresh failed, redirect to login

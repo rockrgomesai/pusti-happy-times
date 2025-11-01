@@ -103,6 +103,11 @@ class TokenManager {
 
       if (contextData.employee_type === "facility" && contextData.facility_id) {
         payload.facility_id = contextData.facility_id;
+
+        // Add factory_store_id if present (for Production role employees)
+        if (contextData.factory_store_id) {
+          payload.factory_store_id = contextData.factory_store_id;
+        }
       }
     }
 
@@ -138,7 +143,13 @@ const authenticate = async (req, res, next) => {
   try {
     // Extract token from Authorization header
     const authHeader = req.headers.authorization;
+    console.log(
+      "🔐 Auth header received:",
+      authHeader ? authHeader.substring(0, 30) + "..." : "NONE"
+    );
+
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      console.log("❌ No valid auth header");
       return res.status(401).json({
         success: false,
         message: "Access token required",
@@ -152,7 +163,9 @@ const authenticate = async (req, res, next) => {
     let decoded;
     try {
       decoded = TokenManager.verifyAccessToken(token);
+      console.log("✅ Token verified successfully for user:", decoded.userId);
     } catch (tokenError) {
+      console.error(`🔒 Token verification failed: ${tokenError.name} - ${tokenError.message}`);
       if (tokenError.name === "TokenExpiredError") {
         return res.status(401).json({
           success: false,
@@ -160,6 +173,7 @@ const authenticate = async (req, res, next) => {
           code: "TOKEN_EXPIRED",
         });
       } else if (tokenError.name === "JsonWebTokenError") {
+        console.error(`🔒 JWT Error details:`, tokenError);
         return res.status(401).json({
           success: false,
           message: "Invalid access token",
@@ -238,12 +252,14 @@ const authenticate = async (req, res, next) => {
 
     // Attach user context for authorization checks
     req.userContext = {
+      user_id: decoded.userId, // Add user_id for roleCheck middleware
       user_type: decoded.user_type,
       employee_type: decoded.employee_type,
       employee_id: decoded.employee_id,
       distributor_id: decoded.distributor_id,
       territory_assignments: decoded.territory_assignments,
       facility_id: decoded.facility_id,
+      factory_store_id: decoded.factory_store_id, // NEW: Factory store for Production employees
       db_point_id: decoded.db_point_id,
       product_segment: decoded.product_segment,
     };
@@ -684,13 +700,18 @@ async function checkApiPermission(user, permissionCode, method) {
     const { ApiPermission } = require("../models/Permission");
     const { RoleApiPermission } = require("../models/JunctionTables");
 
+    console.log("🔍 Checking permission:", permissionCode);
+    console.log("🔍 User role ID:", user.role_id._id);
+
     // Find API permission by permission code
     const apiPermission = await ApiPermission.findOne({
       api_permissions: permissionCode,
     });
 
+    console.log("🔍 API Permission found:", apiPermission?._id);
+
     if (!apiPermission) {
-      console.log(`Permission '${permissionCode}' not found in api_permissions`);
+      console.log(`❌ Permission '${permissionCode}' not found in api_permissions`);
       return false;
     }
 
@@ -700,11 +721,14 @@ async function checkApiPermission(user, permissionCode, method) {
       api_permission_id: apiPermission._id,
     });
 
+    console.log("🔍 Role permission found:", rolePermission?._id);
+
     if (!rolePermission) {
-      console.log(`Role ${user.role_id._id} does not have permission '${permissionCode}'`);
+      console.log(`❌ Role ${user.role_id._id} does not have permission '${permissionCode}'`);
       return false;
     }
 
+    console.log("✅ Permission check passed!");
     return true;
   } catch (error) {
     console.error("API permission check error:", error);

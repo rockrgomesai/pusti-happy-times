@@ -93,7 +93,11 @@ interface User {
 const userSchema = z.object({
   username: z.string().min(3, 'Username must be at least 3 characters'),
   email: z.string().email('Invalid email address'),
-  password: z.string().min(6, 'Password must be at least 6 characters').optional(),
+  password: z.string()
+    .optional()
+    .refine((val) => !val || val.length >= 6, {
+      message: 'Password must be at least 6 characters',
+    }),
   role_id: z.string().min(1, 'Role is required'),
   user_type: z.enum(['employee', 'distributor']),
   employee_id: z.string().optional().nullable(),

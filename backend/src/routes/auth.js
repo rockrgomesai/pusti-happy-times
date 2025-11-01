@@ -190,6 +190,11 @@ router.post("/login", loginValidation, async (req, res) => {
         contextData.territory_assignments = employee.territory_assignments;
       } else if (employee.employee_type === "facility") {
         contextData.facility_id = employee.facility_id;
+
+        // Add factory_store_id if present (for Production role employees)
+        if (employee.factory_store_id) {
+          contextData.factory_store_id = employee.factory_store_id;
+        }
       }
 
       // Validate role-based context requirements
@@ -222,6 +227,19 @@ router.post("/login", loginValidation, async (req, res) => {
 
     // Generate JWT tokens with context
     const tokens = TokenManager.generateTokenPair(user, contextData);
+
+    // Store refresh token in Redis
+    try {
+      await redis.storeRefreshToken(
+        user._id.toString(),
+        tokens.refreshToken,
+        7 * 24 * 60 * 60 // 7 days in seconds
+      );
+      console.log(`✅ Stored refresh token for user ${user.username} in Redis`);
+    } catch (redisError) {
+      console.error("⚠️ Failed to store refresh token in Redis:", redisError.message);
+      // Continue anyway - user can still use access token
+    }
 
     // Prepare user data for response (exclude password)
     const userData = {
@@ -318,15 +336,47 @@ router.post("/refresh", refreshTokenValidation, async (req, res) => {
       });
     }
 
-    // Generate new token pair
-    const tokens = TokenManager.generateTokenPair(user);
+    // Build context data based on user_type (same as login)
+    let contextData = {};
 
-    // Update refresh token in Redis
-    await redis.storeRefreshToken(
-      user._id.toString(),
-      tokens.refreshToken,
-      process.env.JWT_REFRESH_EXPIRES_IN || "8h"
-    );
+    if (user.user_type === "employee" && user.employee_id) {
+      // Populate employee data
+      await user.populate("employee_id");
+      const employee = user.employee_id;
+
+      contextData = {
+        employee_type: employee.employee_type,
+        employee_code: employee.employee_id,
+        employee_id: employee._id,
+      };
+
+      // Add context based on employee_type
+      if (employee.employee_type === "field") {
+        contextData.territory_assignments = employee.territory_assignments;
+      } else if (employee.employee_type === "facility") {
+        contextData.facility_id = employee.facility_id;
+
+        // Add factory_store_id if present (for Production role employees)
+        if (employee.factory_store_id) {
+          contextData.factory_store_id = employee.factory_store_id;
+        }
+      }
+    } else if (user.user_type === "distributor" && user.distributor_id) {
+      // Populate distributor data
+      await user.populate("distributor_id");
+      const distributor = user.distributor_id;
+
+      contextData = {
+        distributor_name: distributor.name,
+        db_point_id: distributor.db_point_id,
+      };
+    }
+
+    // Generate new token pair with context
+    const tokens = TokenManager.generateTokenPair(user, contextData);
+
+    // Update refresh token in Redis (7 days in seconds)
+    await redis.storeRefreshToken(user._id.toString(), tokens.refreshToken, 7 * 24 * 60 * 60);
 
     res.json({
       success: true,

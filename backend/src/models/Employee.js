@@ -305,6 +305,15 @@ const employeeSchema = new mongoose.Schema(
       index: true,
     },
 
+    // Factory store assignment (for facility employees with Production role)
+    // References a Depot-type facility that serves as the factory's internal store
+    factory_store_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Facility",
+      default: null,
+      index: true,
+    },
+
     created_at: {
       type: Date,
       required: [true, "Created at is required"],
@@ -336,7 +345,7 @@ const employeeSchema = new mongoose.Schema(
 /**
  * Validation middleware - ensure employee_type matches required context fields
  */
-employeeSchema.pre("validate", function (next) {
+employeeSchema.pre("validate", async function (next) {
   // Field employees must have territory assignments
   if (this.employee_type === "field") {
     if (
@@ -352,6 +361,32 @@ employeeSchema.pre("validate", function (next) {
   if (this.employee_type === "facility") {
     if (!this.facility_id) {
       return next(new Error("Facility employees must have a facility assignment"));
+    }
+
+    // Validate factory_store_id if provided
+    if (this.factory_store_id) {
+      try {
+        const Facility = mongoose.model("Facility");
+
+        // Verify factory_store_id references a Depot-type facility
+        const factoryStore = await Facility.findById(this.factory_store_id);
+        if (!factoryStore) {
+          return next(new Error("factory_store_id references a non-existent facility"));
+        }
+        if (factoryStore.type !== "Depot") {
+          return next(new Error("factory_store_id must reference a Depot-type facility"));
+        }
+
+        // Verify facility_id references a Factory-type facility
+        const factory = await Facility.findById(this.facility_id);
+        if (factory && factory.type !== "Factory") {
+          return next(
+            new Error("Employees with factory_store_id must be assigned to Factory-type facilities")
+          );
+        }
+      } catch (error) {
+        return next(error);
+      }
     }
   }
 

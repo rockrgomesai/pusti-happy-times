@@ -33,6 +33,8 @@ const offersRoutes = require("./product/offers");
 const territoryRoutes = require("./territories");
 const distributorRoutes = require("./distributors");
 const notificationRoutes = require("./notifications");
+const productionSendToStoreRoutes = require("./production/sendToStore");
+const inventoryFactoryToStoreRoutes = require("./inventory/factoryToStore");
 
 const router = express.Router();
 
@@ -298,6 +300,22 @@ router.use("/permissions", requireRole("SuperAdmin"), permissionRoutes);
  * @access  Private (authenticated users)
  */
 router.use("/notifications", notificationRoutes);
+
+/**
+ * Production Routes
+ * @route   /api/production/*
+ * @desc    Production module operations (Send to Store, etc.)
+ * @access  Private (Production role only)
+ */
+router.use("/production/send-to-store", productionSendToStoreRoutes);
+
+/**
+ * Inventory Routes
+ * @route   /api/inventory/*
+ * @desc    Inventory module operations (Receive goods, Stock management, etc.)
+ * @access  Private (Inventory role only)
+ */
+router.use("/inventory/factory-to-store", inventoryFactoryToStoreRoutes);
 
 /**
  * API Route Documentation Helper

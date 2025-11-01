@@ -96,6 +96,7 @@ interface Employee {
   employee_type: 'system_admin' | 'field' | 'facility' | 'hq';
   designation_id: string | PopulatedDesignation | null;
   facility_id?: string | PopulatedFacility | null;
+  factory_store_id?: string | PopulatedFacility | null; // NEW: Factory store for Production employees
   territory_assignments?: {
     zone_ids?: (string | PopulatedTerritory)[];
     region_ids?: (string | PopulatedTerritory)[];
@@ -150,6 +151,7 @@ const employeeSchema = z.object({
   employee_type: z.enum(['system_admin', 'field', 'facility', 'hq']),
   designation_id: z.string().min(1, 'Designation is required'),
   facility_id: z.string().optional(),
+  factory_store_id: z.string().optional(), // NEW: Factory store for Production employees
   name: z.string().min(2, 'Name must be at least 2 characters'),
   father_name: z.string().optional(),
   mother_name: z.string().optional(),
@@ -259,6 +261,7 @@ export default function EmployeesPage() {
   const [meta, setMeta] = useState<EmployeeMeta | null>(null);
   const [designations, setDesignations] = useState<DesignationOption[]>([]);
   const [facilities, setFacilities] = useState<PopulatedFacility[]>([]);
+  const [depotFacilities, setDepotFacilities] = useState<PopulatedFacility[]>([]); // NEW: Depot-type facilities for factory_store_id
   const [territorySelection, setTerritorySelection] = useState<{
     zone_id?: string;
     region_id?: string;
@@ -410,11 +413,24 @@ export default function EmployeesPage() {
 
   // Watch employee_type to determine what context fields to show
   const selectedEmployeeType = watch('employee_type');
+  const selectedFacilityId = watch('facility_id');
   
   // Determine if facility selector should show
   const shouldShowFacilitySelector = useMemo(() => {
     return selectedEmployeeType === 'facility';
   }, [selectedEmployeeType]);
+  
+  // Determine if factory store selector should show
+  // Only for facility employees at Factory-type facilities (for Production role)
+  // Inventory employees at Depot-type facilities don't need this
+  const shouldShowFactoryStoreSelector = useMemo(() => {
+    if (selectedEmployeeType !== 'facility' || !selectedFacilityId) {
+      return false;
+    }
+    // Find the selected facility and check if it's a Factory type
+    const selectedFacility = facilities.find(f => f._id === selectedFacilityId);
+    return selectedFacility?.type === 'Factory';
+  }, [selectedEmployeeType, selectedFacilityId, facilities]);
   
   // Determine if territory selector should show (for any field employee)
   const shouldShowTerritorySelector = useMemo(() => {
@@ -493,11 +509,23 @@ export default function EmployeesPage() {
     }
   };
 
+  const loadDepotFacilities = async () => {
+    try {
+      const response = await api.get('/facilities/depots');
+      const depotsData = response.data?.data || [];
+      setDepotFacilities(depotsData);
+    } catch (error) {
+      console.error('Error loading depot facilities:', error);
+      setDepotFacilities([]);
+    }
+  };
+
   useEffect(() => {
     loadEmployees();
     loadMeta();
     loadDesignations();
     loadFacilities();
+    loadDepotFacilities(); // NEW: Load depot facilities for factory_store_id
   }, []);
 
   const filteredEmployees = useMemo(() => {
@@ -629,6 +657,11 @@ export default function EmployeesPage() {
     // Add facility_id if employee_type is 'facility'
     if (values.employee_type === 'facility' && values.facility_id) {
       payload.facility_id = values.facility_id;
+      
+      // Add factory_store_id if provided (for Production role employees)
+      if (values.factory_store_id) {
+        payload.factory_store_id = values.factory_store_id;
+      }
     }
 
     // Add territory assignments if employee_type is 'field'
@@ -700,6 +733,11 @@ export default function EmployeesPage() {
       if (!employee.facility_id) return '';
       if (typeof employee.facility_id === 'string') return employee.facility_id;
       return employee.facility_id._id ?? '';
+    })(),
+    factory_store_id: (() => {
+      if (!employee.factory_store_id) return '';
+      if (typeof employee.factory_store_id === 'string') return employee.factory_store_id;
+      return employee.factory_store_id._id ?? '';
     })(),
     name: employee.name ?? '',
     father_name: employee.father_name ?? '',
@@ -783,6 +821,7 @@ export default function EmployeesPage() {
       employee_type: 'hq',
       designation_id: '',
       facility_id: '',
+      factory_store_id: '', // NEW: Factory store ID
       name: '',
       father_name: '',
       mother_name: '',
@@ -1122,6 +1161,16 @@ export default function EmployeesPage() {
                 <Typography variant="body2" color="text.secondary">
                   Designation: {getDesignationName(employee.designation_id, designations) || '-'}
                 </Typography>
+                {employee.facility_id && typeof employee.facility_id === 'object' && (
+                  <Typography variant="body2" color="text.secondary">
+                    Facility: {employee.facility_id.name} ({employee.facility_id.type})
+                  </Typography>
+                )}
+                {employee.factory_store_id && typeof employee.factory_store_id === 'object' && (
+                  <Typography variant="body2" color="text.secondary">
+                    Factory Store: {employee.factory_store_id.name}
+                  </Typography>
+                )}
                 <Typography variant="body2" color="text.secondary">
                   Mobile: {employee.mobile_personal || '-'}
                 </Typography>
@@ -1436,6 +1485,7 @@ export default function EmployeesPage() {
                   label="Designation"
                   fullWidth
                   {...register('designation_id')}
+                  value={watch('designation_id') || ''}
                   error={Boolean(errors.designation_id)}
                   helperText={errors.designation_id?.message}
                   disabled={isSubmitting || designations.length === 0}
@@ -1456,10 +1506,11 @@ export default function EmployeesPage() {
                     label="Facility"
                     fullWidth
                     {...register('facility_id')}
+                    value={watch('facility_id') || ''}
                     error={Boolean(errors.facility_id)}
                     helperText={
                       errors.facility_id?.message || 
-                      'Assign facility for Production (Factory) or Inventory (Depot)'
+                      'Production role: Select Factory. Inventory role: Select Depot'
                     }
                     disabled={isSubmitting || facilities.length === 0}
                   >
@@ -1469,6 +1520,34 @@ export default function EmployeesPage() {
                     {facilities.map((facility) => (
                       <MenuItem key={facility._id} value={facility._id}>
                         {facility.name} ({facility.type})
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                </Grid>
+              )}
+
+              {/* Factory Store Selector - Only for facility employees at Factory-type facilities (Production) */}
+              {shouldShowFactoryStoreSelector && (
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <TextField
+                    select
+                    label="Factory Store (Depot)"
+                    fullWidth
+                    {...register('factory_store_id')}
+                    value={watch('factory_store_id') || ''}
+                    error={Boolean(errors.factory_store_id)}
+                    helperText={
+                      errors.factory_store_id?.message || 
+                      'Select the depot within the factory for production storage (for Production role)'
+                    }
+                    disabled={isSubmitting || depotFacilities.length === 0}
+                  >
+                    <MenuItem value="">
+                      <em>No Factory Store</em>
+                    </MenuItem>
+                    {depotFacilities.map((depot) => (
+                      <MenuItem key={depot._id} value={depot._id}>
+                        {depot.name}
                       </MenuItem>
                     ))}
                   </TextField>
@@ -1542,6 +1621,7 @@ export default function EmployeesPage() {
                   label="Gender"
                   fullWidth
                   {...register('gender')}
+                  value={watch('gender') || ''}
                   error={Boolean(errors.gender)}
                   helperText={errors.gender?.message}
                   disabled={isSubmitting || !meta?.genders?.length}
@@ -1559,6 +1639,7 @@ export default function EmployeesPage() {
                   label="Religion"
                   fullWidth
                   {...register('religion')}
+                  value={watch('religion') || ''}
                   error={Boolean(errors.religion)}
                   helperText={errors.religion?.message}
                   disabled={isSubmitting || !meta?.religions?.length}
@@ -1576,6 +1657,7 @@ export default function EmployeesPage() {
                   label="Marital Status"
                   fullWidth
                   {...register('marital_status')}
+                  value={watch('marital_status') || ''}
                   error={Boolean(errors.marital_status)}
                   helperText={errors.marital_status?.message}
                   disabled={isSubmitting || !meta?.maritalStatuses?.length}
@@ -1661,6 +1743,7 @@ export default function EmployeesPage() {
                   label="Blood Group"
                   fullWidth
                   {...register('blood_group')}
+                  value={watch('blood_group') || ''}
                   disabled={isSubmitting || !meta?.bloodGroups?.length}
                 >
                   {(meta?.bloodGroups ?? []).map((group) => (
