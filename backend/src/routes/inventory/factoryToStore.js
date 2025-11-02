@@ -11,17 +11,17 @@ const FactoryStoreInventoryTransaction = require("../../models/FactoryStoreInven
 const ProductionSendToStore = require("../../models/ProductionSendToStore");
 const Notification = require("../../models/Notification");
 const { authenticate, requireApiPermission } = require("../../middleware/auth");
-const { requireInventoryRole } = require("../../middleware/roleCheck");
+const { requireInventoryRole, requireInventoryFactoryRole } = require("../../middleware/roleCheck");
 
 /**
  * @route   GET /api/v1/inventory/factory-to-store/pending-receipts
  * @desc    Get pending shipments from production (not yet received)
- * @access  Private - Inventory Role
+ * @access  Private - Inventory Factory Role ONLY
  */
 router.get(
   "/pending-receipts",
   authenticate,
-  requireInventoryRole,
+  requireInventoryFactoryRole,
   requireApiPermission("inventory:pending-receipts:read"),
   async (req, res) => {
     try {
@@ -91,12 +91,12 @@ router.get(
 /**
  * @route   POST /api/v1/inventory/factory-to-store/receive-from-production
  * @desc    Receive goods from production shipment (reverse of send-to-store)
- * @access  Private - Inventory Role
+ * @access  Private - Inventory Factory Role ONLY
  */
 router.post(
   "/receive-from-production",
   authenticate,
-  requireInventoryRole,
+  requireInventoryFactoryRole,
   requireApiPermission("inventory:receive:create"),
   async (req, res) => {
     // Skip transactions for non-replica-set MongoDB
@@ -167,7 +167,44 @@ router.post(
           batch_no: detail.batch_no,
         });
 
-        const receivedQty = parseFloat(detail.qty.$numberDecimal || detail.qty.toString());
+        // Parse received quantity - handle various formats
+        let receivedQty = 0;
+
+        console.log(`🔍 DEBUG detail.qty:`, detail.qty);
+        console.log(`🔍 DEBUG typeof detail.qty:`, typeof detail.qty);
+        console.log(`🔍 DEBUG detail:`, JSON.stringify(detail));
+
+        if (typeof detail.qty === "number") {
+          receivedQty = detail.qty;
+        } else if (detail.qty && detail.qty.$numberDecimal) {
+          receivedQty = parseFloat(detail.qty.$numberDecimal);
+        } else if (detail.qty && typeof detail.qty === "object" && detail.qty.toString) {
+          receivedQty = parseFloat(detail.qty.toString());
+        } else if (typeof detail.qty === "string") {
+          receivedQty = parseFloat(detail.qty);
+        } else {
+          console.error(`❌ Unable to parse qty from detail:`, detail);
+        }
+
+        console.log(
+          `📦 Processing product ${productId}, batch ${detail.batch_no}, receivedQty: ${receivedQty}`
+        );
+
+        if (isNaN(receivedQty)) {
+          console.error(`❌ Invalid receivedQty (NaN) for batch ${detail.batch_no}`);
+          return res.status(400).json({
+            success: false,
+            message: `Invalid quantity for batch ${detail.batch_no}. Please check the data.`,
+          });
+        }
+
+        if (receivedQty <= 0) {
+          console.error(`❌ Invalid receivedQty (${receivedQty}) for batch ${detail.batch_no}`);
+          return res.status(400).json({
+            success: false,
+            message: `Quantity must be greater than 0 for batch ${detail.batch_no}.`,
+          });
+        }
 
         if (inventoryRecord) {
           // Update existing record
@@ -289,6 +326,82 @@ router.post(
 );
 
 /**
+ * @route   GET /api/v1/inventory/factory-to-store/received-shipments
+ * @desc    Get all received shipments list (received from production)
+ * @access  Private - Inventory Factory Role ONLY
+ */
+router.get(
+  "/received-shipments",
+  authenticate,
+  requireInventoryFactoryRole,
+  requireApiPermission("inventory:view:read"),
+  async (req, res) => {
+    try {
+      const { facility_store_id } = req.userContext;
+      const { page = 1, limit = 20, search = "" } = req.query;
+
+      if (!facility_store_id) {
+        return res.status(400).json({
+          success: false,
+          message: "Factory store ID not found in user context",
+        });
+      }
+
+      const skip = (parseInt(page) - 1) * parseInt(limit);
+
+      // Build query for received shipments
+      const query = {
+        facility_store_id: new mongoose.Types.ObjectId(facility_store_id),
+        status: "received", // Already received
+      };
+
+      if (search) {
+        query.$or = [
+          { ref: { $regex: search, $options: "i" } },
+          { "details.batch_no": { $regex: search, $options: "i" } },
+        ];
+      }
+
+      const [shipments, total] = await Promise.all([
+        ProductionSendToStore.find(query)
+          .populate("facility_id", "name")
+          .populate("facility_store_id", "name")
+          .populate("user_id", "username")
+          .populate("received_by", "username")
+          .populate({
+            path: "details.product_id",
+            select: "sku bangla_name english_name erp_id ctn_pcs wt_pcs category_id",
+          })
+          .sort({ received_at: -1 }) // Latest received on top
+          .skip(skip)
+          .limit(parseInt(limit)),
+        ProductionSendToStore.countDocuments(query),
+      ]);
+
+      res.status(200).json({
+        success: true,
+        data: {
+          shipments,
+          pagination: {
+            total,
+            page: parseInt(page),
+            limit: parseInt(limit),
+            pages: Math.ceil(total / parseInt(limit)),
+          },
+        },
+      });
+    } catch (error) {
+      console.error("❌ Error fetching received shipments:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to fetch received shipments",
+        error: error.message,
+      });
+    }
+  }
+);
+
+/**
  * @route   POST /api/v1/inventory/factory-to-store/receive
  * @desc    Receive goods from production shipment
  * @access  Private - Inventory Role
@@ -311,8 +424,8 @@ router.post(
       }
 
       // Validate shipment exists and is pending
-      const shipment = await ProductionSendToStore.findById(shipment_id)
-        .populate("details.product_id");
+      const shipment =
+        await ProductionSendToStore.findById(shipment_id).populate("details.product_id");
 
       if (!shipment) {
         return res.status(404).json({
@@ -440,7 +553,7 @@ router.post(
 
 /**
  * @route   GET /api/v1/inventory/factory-to-store
- * @desc    Get current inventory levels
+ * @desc    Get current inventory levels (aggregated by product)
  * @access  Private - Inventory Role
  */
 router.get(
@@ -451,14 +564,7 @@ router.get(
   async (req, res) => {
     try {
       const { facility_store_id } = req.userContext;
-      const {
-        page = 1,
-        limit = 50,
-        search = "",
-        status = "active",
-        sort_by = "created_at",
-        sort_order = "desc",
-      } = req.query;
+      const { page = 1, limit = 50, search = "", sort_by = "sku", sort_order = "asc" } = req.query;
 
       if (!facility_store_id) {
         return res.status(400).json({
@@ -469,14 +575,13 @@ router.get(
 
       const skip = (parseInt(page) - 1) * parseInt(limit);
 
-      const query = {
+      // Build match stage for aggregation
+      const matchStage = {
         facility_store_id: new mongoose.Types.ObjectId(facility_store_id),
+        status: "active", // Only show active inventory
       };
 
-      if (status) {
-        query.status = status;
-      }
-
+      // If search, find matching products first
       if (search) {
         const products = await mongoose
           .model("Product")
@@ -489,25 +594,76 @@ router.get(
           })
           .select("_id");
 
-        query.$or = [
-          { batch_no: { $regex: search, $options: "i" } },
-          { product_id: { $in: products.map((p) => p._id) } },
-        ];
+        matchStage.product_id = { $in: products.map((p) => p._id) };
       }
 
-      const sortOptions = {};
-      sortOptions[sort_by] = sort_order === "asc" ? 1 : -1;
+      // Aggregate inventory by product (sum all batches)
+      const aggregationPipeline = [
+        { $match: matchStage },
+        {
+          $group: {
+            _id: "$product_id",
+            total_qty_ctn: { $sum: { $toDouble: "$qty_ctn" } },
+            batch_count: { $sum: 1 },
+            oldest_production_date: { $min: "$production_date" },
+            earliest_expiry_date: { $min: "$expiry_date" },
+          },
+        },
+        {
+          $lookup: {
+            from: "products",
+            localField: "_id",
+            foreignField: "_id",
+            as: "product",
+          },
+        },
+        { $unwind: "$product" },
+        {
+          $project: {
+            product_id: "$_id",
+            sku: "$product.sku",
+            erp_id: "$product.erp_id",
+            name: "$product.name",
+            ctn_pcs: "$product.ctn_pcs",
+            wt_pcs: "$product.wt_pcs",
+            total_qty_ctn: 1,
+            total_qty_pcs: { $multiply: ["$total_qty_ctn", "$product.ctn_pcs"] },
+            total_wt_mt: {
+              $divide: [
+                { $multiply: ["$total_qty_ctn", "$product.ctn_pcs", "$product.wt_pcs"] },
+                1000000, // Convert grams to MT
+              ],
+            },
+            batch_count: 1,
+            oldest_production_date: 1,
+            earliest_expiry_date: 1,
+          },
+        },
+      ];
 
-      const [inventory, total] = await Promise.all([
-        FactoryStoreInventory.find(query)
-          .populate("product_id", "sku name erp_id ctn_pcs wt_pcs category_id")
-          .populate("received_by", "username")
-          .populate("last_updated_by", "username")
-          .sort(sortOptions)
-          .skip(skip)
-          .limit(parseInt(limit)),
-        FactoryStoreInventory.countDocuments(query),
-      ]);
+      // Add sorting
+      const sortStage = {};
+      if (sort_by === "sku") {
+        sortStage.sku = sort_order === "asc" ? 1 : -1;
+      } else if (sort_by === "erp_id") {
+        sortStage.erp_id = sort_order === "asc" ? 1 : -1;
+      } else if (sort_by === "qty") {
+        sortStage.total_qty_ctn = sort_order === "asc" ? 1 : -1;
+      } else {
+        sortStage.sku = 1; // Default to SKU ascending
+      }
+      aggregationPipeline.push({ $sort: sortStage });
+
+      // Get total count before pagination
+      const countPipeline = [...aggregationPipeline, { $count: "total" }];
+      const countResult = await FactoryStoreInventory.aggregate(countPipeline);
+      const total = countResult.length > 0 ? countResult[0].total : 0;
+
+      // Add pagination
+      aggregationPipeline.push({ $skip: skip });
+      aggregationPipeline.push({ $limit: parseInt(limit) });
+
+      const inventory = await FactoryStoreInventory.aggregate(aggregationPipeline);
 
       res.status(200).json({
         success: true,

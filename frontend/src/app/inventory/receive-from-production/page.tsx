@@ -150,11 +150,17 @@ export default function ReceiveFromProductionPage() {
     setSuccess('');
 
     try {
+      // Normalize quantities to numbers before sending
+      const normalizedDetails = editableDetails.map(detail => ({
+        ...detail,
+        qty: typeof detail.qty === 'number' ? detail.qty : getQtyValue(detail.qty)
+      }));
+
       const response = await receiveFromProduction({
         shipment_id: selectedShipment._id,
         location: location || undefined,
         notes: notes || undefined,
-        details: editableDetails, // Send edited details
+        details: normalizedDetails, // Send normalized details with numeric quantities
       });
 
       setSuccess(response.message);

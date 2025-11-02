@@ -197,8 +197,12 @@ const requireInventoryRole = async (req, res, next) => {
     const userRole = user.role_id?.role;
     console.log("🎭 User role name:", userRole);
 
-    if (userRole !== "Inventory") {
-      console.log("❌ Role mismatch - expected Inventory, got:", userRole);
+    // Accept both "Inventory Factory" and "Inventory Depot" roles
+    if (userRole !== "Inventory Factory" && userRole !== "Inventory Depot") {
+      console.log(
+        "❌ Role mismatch - expected Inventory Factory or Inventory Depot, got:",
+        userRole
+      );
       return res.status(403).json({
         success: false,
         message: "Access denied. Inventory role required",
@@ -220,19 +224,38 @@ const requireInventoryRole = async (req, res, next) => {
       });
     }
 
-    if (!user.employee_id.factory_store_id) {
+    // Handle different depot configurations based on role
+    let depotId = null;
+
+    if (userRole === "Inventory Factory") {
+      // Factory store employees: work in depot inside factory
+      if (!user.employee_id.factory_store_id) {
+        return res.status(403).json({
+          success: false,
+          message: "Inventory Factory user must have a factory store assigned",
+        });
+      }
+      depotId = user.employee_id.factory_store_id;
+      req.userContext.facility_id = user.employee_id.facility_id; // The factory
+    } else if (userRole === "Inventory Depot") {
+      // Regular depot employees: work in independent depot
+      if (!user.employee_id.facility_id) {
+        return res.status(403).json({
+          success: false,
+          message: "Inventory Depot user must be assigned to a depot",
+        });
+      }
+      depotId = user.employee_id.facility_id; // Their depot
+    } else {
       return res.status(403).json({
         success: false,
-        message: "Inventory user must have a factory store (Depot) assigned",
+        message: "Invalid inventory role",
       });
     }
 
-    // Add role and facility info to request context
+    // Add role and depot info to request context
     req.userContext.role = userRole;
-    req.userContext.facility_store_id = user.employee_id.factory_store_id;
-    if (user.employee_id.facility_id) {
-      req.userContext.facility_id = user.employee_id.facility_id;
-    }
+    req.userContext.facility_store_id = depotId; // Unified field for all inventory endpoints
 
     next();
   } catch (error) {
@@ -245,8 +268,75 @@ const requireInventoryRole = async (req, res, next) => {
   }
 };
 
+/**
+ * Middleware specifically for Inventory Factory role
+ * Ensures user has Inventory Factory role and works inside a factory
+ */
+const requireInventoryFactoryRole = async (req, res, next) => {
+  try {
+    console.log("🎭 Checking inventory factory role for user:", req.userContext.user_id);
+
+    const User = require("../models/User");
+    const user = await User.findById(req.userContext.user_id)
+      .populate("role_id", "role")
+      .populate("employee_id");
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    const userRole = user.role_id?.role;
+
+    if (userRole !== "Inventory Factory") {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied. Inventory Factory role required",
+      });
+    }
+
+    if (!user.employee_id) {
+      return res.status(403).json({
+        success: false,
+        message: "User is not associated with an employee record",
+      });
+    }
+
+    if (!user.employee_id.facility_id) {
+      return res.status(403).json({
+        success: false,
+        message: "Inventory Factory user must be assigned to a facility (Factory)",
+      });
+    }
+
+    if (!user.employee_id.factory_store_id) {
+      return res.status(403).json({
+        success: false,
+        message: "Inventory Factory user must have a factory store (Depot) assigned",
+      });
+    }
+
+    // Add role and facility info to request context
+    req.userContext.role = userRole;
+    req.userContext.facility_id = user.employee_id.facility_id;
+    req.userContext.facility_store_id = user.employee_id.factory_store_id; // Use facility_store_id for compatibility with routes
+
+    next();
+  } catch (error) {
+    console.error("Error in requireInventoryFactoryRole middleware:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error checking inventory factory role",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
+};
+
 module.exports = {
   requireRole,
   requireProductionRole,
   requireInventoryRole,
+  requireInventoryFactoryRole,
 };

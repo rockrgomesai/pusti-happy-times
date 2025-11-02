@@ -101,6 +101,26 @@ export const getPendingReceipts = async (
 };
 
 /**
+ * Get received shipments list
+ */
+export const getReceivedShipments = async (
+  page = 1,
+  limit = 20,
+  search = ''
+): Promise<PendingReceiptsResponse> => {
+  try {
+    const response = await apiClient.get<PendingReceiptsResponse>(
+      '/inventory/factory-to-store/received-shipments',
+      { page, limit, search }
+    );
+    return response;
+  } catch (error) {
+    console.error('Error fetching received shipments:', error);
+    throw error;
+  }
+};
+
+/**
  * Receive goods from production shipment
  */
 export const receiveFromProduction = async (
