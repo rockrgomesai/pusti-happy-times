@@ -396,7 +396,7 @@ const fetchDbPoints = async (): Promise<TerritoryOption[]> => {
 
 const fetchDepots = async (): Promise<DepotOption[]> => {
   try {
-    const response = await api.get('/depots', {
+    const response = await api.get('/facilities/depots', {
       params: {
         limit: 200,
       },

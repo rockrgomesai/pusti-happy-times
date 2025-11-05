@@ -24,6 +24,7 @@ const brandRoutes = require("./brands");
 const categoryRoutes = require("./categories");
 const facilityRoutes = require("./facilities"); // Unified facility routes
 const transportRoutes = require("./transports");
+const bankRoutes = require("./master/banks");
 const menuRoutes = require("./menu-items");
 const permissionRoutes = require("./permissions");
 const designationRoutes = require("./designationRoutes");
@@ -35,6 +36,9 @@ const distributorRoutes = require("./distributors");
 const notificationRoutes = require("./notifications");
 const productionSendToStoreRoutes = require("./production/sendToStore");
 const inventoryFactoryToStoreRoutes = require("./inventory/factoryToStore");
+const inventoryRequisitionsRoutes = require("./inventory/requisitions");
+const customerLedgerRoutes = require("./finance/customerledger");
+const demandOrdersRoutes = require("./ordermanagement/demandorders");
 
 const router = express.Router();
 
@@ -238,6 +242,14 @@ router.use("/product/offers", offersRoutes);
 router.use("/facilities", facilityRoutes);
 
 /**
+ * Bank Management Routes
+ * @route   /api/master/banks/*
+ * @desc    Bank CRUD operations and management
+ * @access  Private (authenticated users)
+ */
+router.use("/master/banks", bankRoutes);
+
+/**
  * Designation Management Routes
  * @route   /api/designations/*
  * @desc    Job designation CRUD operations and management
@@ -316,6 +328,23 @@ router.use("/production/send-to-store", productionSendToStoreRoutes);
  * @access  Private (Inventory role only)
  */
 router.use("/inventory/factory-to-store", inventoryFactoryToStoreRoutes);
+router.use("/inventory/requisitions", inventoryRequisitionsRoutes);
+
+/**
+ * Finance Routes
+ * @route   /api/finance/*
+ * @desc    Finance module operations (Customer Ledger, etc.)
+ * @access  Private (authenticated users with proper permissions)
+ */
+router.use("/finance/customerledger", customerLedgerRoutes);
+
+/**
+ * Demand Orders Routes
+ * @route   /api/ordermanagement/demandorders
+ * @desc    Demand order management for distributors
+ * @access  Private (Distributor role only)
+ */
+router.use("/ordermanagement/demandorders", demandOrdersRoutes);
 
 /**
  * API Route Documentation Helper

@@ -109,31 +109,43 @@ export default function PermissionsPage() {
       // Fetch menu items with role assignments
       const menuResponse = await api.get(`/permissions/menu-items?roleId=${selectedRole}`);
       
-      if (menuResponse.data.success) {
-        setMenuItems(menuResponse.data.data);
-        console.log(menuResponse.data.data);
+      if (menuResponse.data?.success) {
+        setMenuItems(menuResponse.data.data || []);
+        console.log("Menu items loaded:", menuResponse.data.data);
+      } else {
+        setMenuItems([]);
       }
 
       // Fetch page permissions from pg_permissions collection
       const pageResponse = await api.get(`/permissions/page-permissions?roleId=${selectedRole}`);
       
-      if (pageResponse.data.success) {
-        setPagePermissions(pageResponse.data.data);
+      if (pageResponse.data?.success) {
+        setPagePermissions(pageResponse.data.data || []);
+      } else {
+        setPagePermissions([]);
       }
       
       // Fetch API permissions from api_permissions collection
       const apiResponse = await api.get(`/permissions/api-permissions?roleId=${selectedRole}`);
       
-      if (apiResponse.data.success) {
-        setApiPermissions(apiResponse.data.data);
+      if (apiResponse.data?.success) {
+        setApiPermissions(apiResponse.data.data || []);
+      } else {
+        setApiPermissions([]);
       }
       
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error fetching permissions:", error);
+      console.error("Error response:", error.response?.data);
+      console.error("Error status:", error.response?.status);
       setMessage({
         type: "error",
-        text: "Failed to fetch permissions",
+        text: error.response?.data?.message || "Failed to fetch permissions",
       });
+      // Set empty arrays on error to prevent undefined issues
+      setMenuItems([]);
+      setPagePermissions([]);
+      setApiPermissions([]);
     } finally {
       setLoading(false);
     }
@@ -339,6 +351,8 @@ export default function PermissionsPage() {
                 </Typography>
                 {loading ? (
                   <CircularProgress />
+                ) : menuItems.length === 0 ? (
+                  <Alert severity="info">No menu items found</Alert>
                 ) : (
                   <>
                     <Box
@@ -388,6 +402,8 @@ export default function PermissionsPage() {
                 </Typography>
                 {loading ? (
                   <CircularProgress />
+                ) : pagePermissions.length === 0 ? (
+                  <Alert severity="info">No page permissions found</Alert>
                 ) : (
                   <>
                     <Box
@@ -439,6 +455,8 @@ export default function PermissionsPage() {
                 </Typography>
                 {loading ? (
                   <CircularProgress />
+                ) : apiPermissions.length === 0 ? (
+                  <Alert severity="info">No API permissions found</Alert>
                 ) : (
                   <>
                     <Box
