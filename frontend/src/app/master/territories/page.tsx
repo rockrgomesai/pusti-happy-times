@@ -364,10 +364,7 @@ export default function TerritoriesPage() {
     [sortedTerritories, page, rowsPerPage]
   );
 
-  const currentTerritoryRows = useMemo(
-    () => (viewMode === 'cards' ? sortedTerritories : paginatedTerritories),
-    [viewMode, sortedTerritories, paginatedTerritories]
-  );
+  const currentTerritoryRows = paginatedTerritories;
 
   const fetchAllTerritories = useCallback(async () => [...sortedTerritories], [sortedTerritories]);
 
@@ -821,81 +818,93 @@ export default function TerritoriesPage() {
           </Typography>
         </Box>
       ) : viewMode === 'cards' ? (
-        <Box
-          display="grid"
-          gap={2}
-          gridTemplateColumns={{ xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' }}
-        >
-          {currentTerritoryRows.map((territory) => (
-            <Card
-              key={territory._id}
-              variant="outlined"
-              sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}
-            >
-              <CardContent sx={{ flexGrow: 1 }}>
-                <Stack direction="row" alignItems="center" spacing={1} mb={1}>
-                  <MapIcon color="primary" />
-                  <Typography variant="h6" fontWeight="bold">
-                    {territory.name}
+        <>
+          <Box
+            display="grid"
+            gap={2}
+            gridTemplateColumns={{ xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' }}
+          >
+            {currentTerritoryRows.map((territory) => (
+              <Card
+                key={territory._id}
+                variant="outlined"
+                sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}
+              >
+                <CardContent sx={{ flexGrow: 1 }}>
+                  <Stack direction="row" alignItems="center" spacing={1} mb={1}>
+                    <MapIcon color="primary" />
+                    <Typography variant="h6" fontWeight="bold">
+                      {territory.name}
+                    </Typography>
+                  </Stack>
+                  <Stack direction="row" spacing={1} mb={1}>
+                    <Chip size="small" color="primary" label={getTypeLabel(territory.type)} />
+                    <Chip
+                      size="small"
+                      color={territory.active ? 'success' : 'default'}
+                      label={territory.active ? 'Active' : 'Inactive'}
+                    />
+                  </Stack>
+                  <Typography variant="body2" color="text.secondary">
+                    Parent: <strong>{territory.parent?.name ?? '—'}</strong>
                   </Typography>
-                </Stack>
-                <Stack direction="row" spacing={1} mb={1}>
-                  <Chip size="small" color="primary" label={getTypeLabel(territory.type)} />
-                  <Chip
-                    size="small"
-                    color={territory.active ? 'success' : 'default'}
-                    label={territory.active ? 'Active' : 'Inactive'}
-                  />
-                </Stack>
-                <Typography variant="body2" color="text.secondary">
-                  Parent: <strong>{territory.parent?.name ?? '—'}</strong>
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Level: <strong>{getLevelLabel(territory.level)}</strong>
-                </Typography>
-              </CardContent>
-              <CardActions sx={{ justifyContent: 'space-between' }}>
-                <Typography variant="caption" color="text.secondary">
-                  Updated {formatDate(territory.updated_at)}
-                </Typography>
-                <Stack direction="row" spacing={1}>
-                  <Tooltip title="Edit Territory">
-                    <IconButton size="small" onClick={() => handleEditTerritory(territory)} color="primary">
-                      <EditIcon />
-                    </IconButton>
-                  </Tooltip>
-                  {territory.active ? (
-                    <Tooltip title="Deactivate Territory">
-                      <IconButton
-                        size="small"
-                        onClick={() => {
-                          setTerritoryToDelete(territory);
-                          setDeleteConfirmOpen(true);
-                        }}
-                        color="error"
-                      >
-                        <DeleteIcon />
+                  <Typography variant="body2" color="text.secondary">
+                    Level: <strong>{getLevelLabel(territory.level)}</strong>
+                  </Typography>
+                </CardContent>
+                <CardActions sx={{ justifyContent: 'space-between' }}>
+                  <Typography variant="caption" color="text.secondary">
+                    Updated {formatDate(territory.updated_at)}
+                  </Typography>
+                  <Stack direction="row" spacing={1}>
+                    <Tooltip title="Edit Territory">
+                      <IconButton size="small" onClick={() => handleEditTerritory(territory)} color="primary">
+                        <EditIcon />
                       </IconButton>
                     </Tooltip>
-                  ) : (
-                    <Tooltip title="Restore Territory">
-                      <IconButton
-                        size="small"
-                        onClick={() => {
-                          setTerritoryToRestore(territory);
-                          setRestoreConfirmOpen(true);
-                        }}
-                        color="success"
-                      >
-                        <RestoreIcon />
-                      </IconButton>
-                    </Tooltip>
-                  )}
-                </Stack>
-              </CardActions>
-            </Card>
-          ))}
-        </Box>
+                    {territory.active ? (
+                      <Tooltip title="Deactivate Territory">
+                        <IconButton
+                          size="small"
+                          onClick={() => {
+                            setTerritoryToDelete(territory);
+                            setDeleteConfirmOpen(true);
+                          }}
+                          color="error"
+                        >
+                          <DeleteIcon />
+                        </IconButton>
+                      </Tooltip>
+                    ) : (
+                      <Tooltip title="Restore Territory">
+                        <IconButton
+                          size="small"
+                          onClick={() => {
+                            setTerritoryToRestore(territory);
+                            setRestoreConfirmOpen(true);
+                          }}
+                          color="success"
+                        >
+                          <RestoreIcon />
+                        </IconButton>
+                      </Tooltip>
+                    )}
+                  </Stack>
+                </CardActions>
+              </Card>
+            ))}
+          </Box>
+          <TablePagination
+            component="div"
+            count={sortedTerritories.length}
+            page={page}
+            onPageChange={handleChangePage}
+            rowsPerPage={rowsPerPage}
+            onRowsPerPageChange={handleChangeRowsPerPage}
+            rowsPerPageOptions={[10, 25, 50, 100, 500]}
+            sx={{ mt: 2, borderTop: 1, borderColor: 'divider' }}
+          />
+        </>
       ) : (
         <Paper>
           <TableContainer>
@@ -971,7 +980,7 @@ export default function TerritoriesPage() {
             onPageChange={handleChangePage}
             rowsPerPage={rowsPerPage}
             onRowsPerPageChange={handleChangeRowsPerPage}
-            rowsPerPageOptions={[5, 10, 25, 50]}
+            rowsPerPageOptions={[10, 25, 50, 100, 500]}
           />
         </Paper>
       )}

@@ -1,96 +1,105 @@
 /**
  * Junction Table Models
  * Pusti Happy Times - Many-to-Many Relationship Models
- * 
+ *
  * This file contains junction table models for managing many-to-many
  * relationships in the permission system:
- * 
+ *
  * 1. RoleSidebarMenuItem - Links roles to sidebar menu items
- * 2. RoleApiPermission - Links roles to API permissions  
+ * 2. RoleApiPermission - Links roles to API permissions
  * 3. RolePagePermission - Links roles to page permissions
- * 
+ *
  * Database Schema matches: role_id (ObjectId), permission_id (ObjectId)
  */
 
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
 /**
  * Role Sidebar Menu Items Junction Table
  * Links roles to sidebar menu items for navigation access control
  * Database Collection: role_sidebar_menu_items
  */
-const roleSidebarMenuItemSchema = new mongoose.Schema({
-  // Role reference (matches database schema)
-  role_id: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Role',
-    required: [true, 'Role ID is required']
-  },
+const roleSidebarMenuItemSchema = new mongoose.Schema(
+  {
+    // Role reference (matches database schema)
+    role_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Role",
+      required: [true, "Role ID is required"],
+    },
 
-  // Sidebar menu item reference (matches database schema)
-  sidebar_menu_item_id: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'SidebarMenuItem',
-    required: [true, 'Sidebar menu item ID is required']
+    // Sidebar menu item reference (matches database schema)
+    sidebar_menu_item_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "SidebarMenuItem",
+      required: [true, "Sidebar menu item ID is required"],
+    },
+  },
+  {
+    // Schema options
+    timestamps: false, // Database schema doesn't include timestamps
+    versionKey: false, // Disable __v field
+    collection: "role_sidebar_menu_items", // Explicit collection name
   }
-}, {
-  // Schema options
-  timestamps: false, // Database schema doesn't include timestamps
-  versionKey: false, // Disable __v field
-  collection: 'role_sidebar_menu_items' // Explicit collection name
-});
+);
 
 /**
  * Role API Permissions Junction Table
  * Links roles to API permissions for endpoint access control
  * Database Collection: roles_api_permissions
  */
-const roleApiPermissionSchema = new mongoose.Schema({
-  // Role reference (matches database schema)
-  role_id: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Role',
-    required: [true, 'Role ID is required']
-  },
+const roleApiPermissionSchema = new mongoose.Schema(
+  {
+    // Role reference (matches database schema)
+    role_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Role",
+      required: [true, "Role ID is required"],
+    },
 
-  // API permission reference (matches database schema)
-  api_permission_id: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'ApiPermission',
-    required: [true, 'API permission ID is required']
+    // API permission reference (matches database schema)
+    api_permission_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "ApiPermission",
+      required: [true, "API permission ID is required"],
+    },
+  },
+  {
+    // Schema options
+    timestamps: false, // Database schema doesn't include timestamps
+    versionKey: false, // Disable __v field
+    collection: "role_api_permissions", // Explicit collection name (matches actual DB collection)
   }
-}, {
-  // Schema options
-  timestamps: false, // Database schema doesn't include timestamps
-  versionKey: false, // Disable __v field
-  collection: 'roles_api_permissions' // Explicit collection name
-});
+);
 
 /**
  * Role Page Permissions Junction Table
  * Links roles to page permissions for page access control
  * Database Collection: role_pg_permissions
  */
-const rolePagePermissionSchema = new mongoose.Schema({
-  // Role reference (matches database schema)
-  role_id: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Role',
-    required: [true, 'Role ID is required']
-  },
+const rolePagePermissionSchema = new mongoose.Schema(
+  {
+    // Role reference (matches database schema)
+    role_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Role",
+      required: [true, "Role ID is required"],
+    },
 
-  // Page permission reference (matches database schema)
-  pg_permission_id: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'PagePermission',
-    required: [true, 'Page permission ID is required']
+    // Page permission reference (matches database schema)
+    pg_permission_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "PagePermission",
+      required: [true, "Page permission ID is required"],
+    },
+  },
+  {
+    // Schema options
+    timestamps: false, // Database schema doesn't include timestamps
+    versionKey: false, // Disable __v field
+    collection: "role_pg_permissions", // Explicit collection name
   }
-}, {
-  // Schema options
-  timestamps: false, // Database schema doesn't include timestamps
-  versionKey: false, // Disable __v field
-  collection: 'role_pg_permissions' // Explicit collection name
-});
+);
 
 /**
  * Indexes for Performance Optimization
@@ -120,11 +129,11 @@ rolePagePermissionSchema.index({ role_id: 1, pg_permission_id: 1 }, { unique: tr
  * @param {String} roleId - Role ID
  * @returns {Array} Array of sidebar menu items for the role
  */
-roleSidebarMenuItemSchema.statics.getMenuItemsForRole = async function(roleId) {
+roleSidebarMenuItemSchema.statics.getMenuItemsForRole = async function (roleId) {
   try {
     return await this.find({ role_id: roleId })
-      .populate('sidebar_menu_item_id')
-      .sort({ 'sidebar_menu_item_id.m_order': 1 });
+      .populate("sidebar_menu_item_id")
+      .sort({ "sidebar_menu_item_id.m_order": 1 });
   } catch (error) {
     throw new Error(`Error fetching menu items for role: ${error.message}`);
   }
@@ -136,7 +145,7 @@ roleSidebarMenuItemSchema.statics.getMenuItemsForRole = async function(roleId) {
  * @param {String} menuItemId - Menu item ID
  * @returns {Boolean} True if role has access, false otherwise
  */
-roleSidebarMenuItemSchema.statics.hasMenuAccess = async function(roleId, menuItemId) {
+roleSidebarMenuItemSchema.statics.hasMenuAccess = async function (roleId, menuItemId) {
   try {
     const access = await this.findOne({ role_id: roleId, sidebar_menu_item_id: menuItemId });
     return !!access;
@@ -154,9 +163,9 @@ roleSidebarMenuItemSchema.statics.hasMenuAccess = async function(roleId, menuIte
  * @param {String} roleId - Role ID
  * @returns {Array} Array of API permissions for the role
  */
-roleApiPermissionSchema.statics.getPermissionsForRole = async function(roleId) {
+roleApiPermissionSchema.statics.getPermissionsForRole = async function (roleId) {
   try {
-    return await this.find({ role_id: roleId }).populate('api_permission_id');
+    return await this.find({ role_id: roleId }).populate("api_permission_id");
   } catch (error) {
     throw new Error(`Error fetching API permissions for role: ${error.message}`);
   }
@@ -168,12 +177,12 @@ roleApiPermissionSchema.statics.getPermissionsForRole = async function(roleId) {
  * @param {String} permissionName - Permission name (e.g., 'auth:login')
  * @returns {Boolean} True if role has permission, false otherwise
  */
-roleApiPermissionSchema.statics.hasApiPermission = async function(roleId, permissionName) {
+roleApiPermissionSchema.statics.hasApiPermission = async function (roleId, permissionName) {
   try {
-    const ApiPermission = mongoose.model('ApiPermission');
+    const ApiPermission = mongoose.model("ApiPermission");
     const permission = await ApiPermission.findOne({ api_permissions: permissionName });
     if (!permission) return false;
-    
+
     const access = await this.findOne({ role_id: roleId, api_permission_id: permission._id });
     return !!access;
   } catch (error) {
@@ -190,9 +199,9 @@ roleApiPermissionSchema.statics.hasApiPermission = async function(roleId, permis
  * @param {String} roleId - Role ID
  * @returns {Array} Array of page permissions for the role
  */
-rolePagePermissionSchema.statics.getPermissionsForRole = async function(roleId) {
+rolePagePermissionSchema.statics.getPermissionsForRole = async function (roleId) {
   try {
-    return await this.find({ role_id: roleId }).populate('pg_permission_id');
+    return await this.find({ role_id: roleId }).populate("pg_permission_id");
   } catch (error) {
     throw new Error(`Error fetching page permissions for role: ${error.message}`);
   }
@@ -204,12 +213,12 @@ rolePagePermissionSchema.statics.getPermissionsForRole = async function(roleId) 
  * @param {String} permissionName - Permission name (e.g., 'pg:dashboard')
  * @returns {Boolean} True if role has permission, false otherwise
  */
-rolePagePermissionSchema.statics.hasPagePermission = async function(roleId, permissionName) {
+rolePagePermissionSchema.statics.hasPagePermission = async function (roleId, permissionName) {
   try {
-    const PagePermission = mongoose.model('PagePermission');
+    const PagePermission = mongoose.model("PagePermission");
     const permission = await PagePermission.findOne({ pg_permissions: permissionName });
     if (!permission) return false;
-    
+
     const access = await this.findOne({ role_id: roleId, pg_permission_id: permission._id });
     return !!access;
   } catch (error) {
@@ -220,12 +229,12 @@ rolePagePermissionSchema.statics.hasPagePermission = async function(roleId, perm
 /**
  * Export Models
  */
-const RoleSidebarMenuItem = mongoose.model('RoleSidebarMenuItem', roleSidebarMenuItemSchema);
-const RoleApiPermission = mongoose.model('RoleApiPermission', roleApiPermissionSchema);
-const RolePagePermission = mongoose.model('RolePagePermission', rolePagePermissionSchema);
+const RoleSidebarMenuItem = mongoose.model("RoleSidebarMenuItem", roleSidebarMenuItemSchema);
+const RoleApiPermission = mongoose.model("RoleApiPermission", roleApiPermissionSchema);
+const RolePagePermission = mongoose.model("RolePagePermission", rolePagePermissionSchema);
 
 module.exports = {
   RoleSidebarMenuItem,
   RoleApiPermission,
-  RolePagePermission
+  RolePagePermission,
 };

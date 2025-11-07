@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   Box,
   Stepper,
@@ -20,7 +20,7 @@ import type { ProductSegment, OfferTypeCode } from '@/types/offer';
 
 // Import screen components
 import Screen1OfferScope from './Screen1OfferScope';
-import Screen2TerritoryDistributor from './Screen2TerritoryDistributor';
+import Screen2TerritoryDistributor, { Screen2Handle } from './Screen2TerritoryDistributor';
 import Screen3OfferTypeSelection from './Screen3OfferTypeSelection';
 import Screen4OfferConfiguration from './Screen4OfferConfiguration';
 import Screen5ReviewSubmit from './Screen5ReviewSubmit';
@@ -189,6 +189,9 @@ export default function OfferWizard({
   const [wizardData, setWizardData] = useState<WizardState>(getInitialWizardData());
   
   const [errors, setErrors] = useState<Record<string, string>>({});
+  
+  // Ref to access Screen2 component methods
+  const screen2Ref = useRef<Screen2Handle>(null);
 
   const updateWizardData = (data: Partial<WizardState>) => {
     setWizardData(prev => ({ ...prev, ...data }));
@@ -227,18 +230,9 @@ export default function OfferWizard({
   };
 
   const validateScreen2 = (): boolean => {
-    const newErrors: Record<string, string> = {};
-    
-    if (wizardData.selectedDbPoints.length === 0) {
-      newErrors.selectedDbPoints = 'Select at least one distribution point';
-    }
-    
-    if (wizardData.selectedDistributors.length === 0) {
-      newErrors.selectedDistributors = 'Select at least one distributor';
-    }
-    
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    // No validation required - auto-cascade will handle territory selection
+    // User can proceed with any level of territory selection (zones, regions, areas, db_points, or distributors)
+    return true;
   };
 
   const validateScreen3 = (): boolean => {
@@ -305,8 +299,19 @@ export default function OfferWizard({
     return true;
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     let isValid = true;
+    
+    // For Screen 2, perform auto-cascade before validation
+    if (activeStep === 1) {
+      try {
+        await screen2Ref.current?.performAutoCascade();
+      } catch (error) {
+        console.error('Auto-cascade failed:', error);
+        toast.error('Failed to auto-select territories');
+        return;
+      }
+    }
     
     switch (activeStep) {
       case 0:
@@ -362,6 +367,7 @@ export default function OfferWizard({
       case 1:
         return (
           <Screen2TerritoryDistributor
+            ref={screen2Ref}
             data={{
               selectedZones: wizardData.selectedZones,
               selectedRegions: wizardData.selectedRegions,

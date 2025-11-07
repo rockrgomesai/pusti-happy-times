@@ -1,6 +1,9 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'react-hot-toast';
 import {
   Box,
   Paper,
@@ -76,6 +79,8 @@ interface Shipment {
 }
 
 export default function SendToStoreListPage() {
+  const router = useRouter();
+  const { user, isLoading: authLoading } = useAuth();
   const [shipments, setShipments] = useState<Shipment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -85,6 +90,21 @@ export default function SendToStoreListPage() {
   const [totalCount, setTotalCount] = useState(0);
   const [selectedShipment, setSelectedShipment] = useState<Shipment | null>(null);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
+
+  // Check authentication and role
+  useEffect(() => {
+    if (authLoading) return;
+    if (!user) {
+      router.push('/login');
+      return;
+    }
+
+    if (user.role.role !== 'Inventory Factory') {
+      toast.error('Access denied. Inventory Factory role required.');
+      router.push('/dashboard');
+      return;
+    }
+  }, [user, authLoading, router]);
 
   const fetchShipments = async () => {
     try {
@@ -118,8 +138,10 @@ export default function SendToStoreListPage() {
   };
 
   useEffect(() => {
-    fetchShipments();
-  }, [page, rowsPerPage]);
+    if (!authLoading && user?.role?.role === 'Inventory Factory') {
+      fetchShipments();
+    }
+  }, [page, rowsPerPage, authLoading, user]);
 
   const handleSearch = () => {
     setPage(0);

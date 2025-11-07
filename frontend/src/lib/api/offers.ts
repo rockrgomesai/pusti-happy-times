@@ -19,6 +19,28 @@ export const territoriesApi = {
   getAll: async () => {
     const response = await api.get<{ success: boolean; data: Territory[] }>(`${BASE_URL}/territories`);
     return response.data.data;
+  },
+
+  // Get all descendant territories in single query - PERFORMANT
+  getDescendants: async (parentIds: string[], startLevel: number) => {
+    const response = await api.post<{
+      success: boolean;
+      data: {
+        all: Territory[];
+        grouped: {
+          regions: Territory[];
+          areas: Territory[];
+          db_points: Territory[];
+        };
+        counts: {
+          total: number;
+          regions: number;
+          areas: number;
+          db_points: number;
+        };
+      };
+    }>(`${BASE_URL}/territories/descendants`, { parentIds, startLevel });
+    return response.data.data;
   }
 };
 

@@ -45,8 +45,12 @@ const demandOrderItemSchema = new mongoose.Schema({
   },
   // For offer-based items
   offer_details: {
+    offer_id: mongoose.Schema.Types.ObjectId,
+    offer_name: String,
     offer_code: String,
     discount_percentage: Number,
+    discount_amount: Number,
+    original_subtotal: Number,
   },
 });
 
@@ -145,7 +149,7 @@ demandOrderSchema.pre("save", async function (next) {
     // Generate order number: DO-YYYYMMDD-XXXXX
     const date = new Date();
     const dateStr = date.toISOString().slice(0, 10).replace(/-/g, "");
-    
+
     // Find the last order number for today
     const lastOrder = await this.constructor
       .findOne({ order_number: new RegExp(`^DO-${dateStr}`) })

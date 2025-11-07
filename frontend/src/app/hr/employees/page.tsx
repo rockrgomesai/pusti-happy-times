@@ -171,7 +171,7 @@ const employeeSchema = z.object({
     .or(z.literal('')),
   emergency_contact: z.string().optional(),
   emergency_mobile: z.string().optional(),
-  blood_group: z.string().optional(),
+  blood_group: z.string().min(1, 'Blood group is required'),
   present_address_holding_no: z.string().optional(),
   present_address_road: z.string().optional(),
   present_address_city: z.string().optional(),
@@ -180,8 +180,8 @@ const employeeSchema = z.object({
   permanent_address_village_road: z.string().optional(),
   permanent_address_union_ward: z.string().optional(),
   permanent_address_upazila_thana: z.string().optional(),
-  permanent_address_district: z.string().optional(),
-  permanent_address_division: z.string().optional(),
+  permanent_address_district: z.string().min(1, 'District is required'),
+  permanent_address_division: z.string().min(1, 'Division is required'),
   ssc_year: z.string().optional(),
   highest_degree: z.string().optional(),
   last_organization: z.string().optional(),
@@ -628,7 +628,7 @@ export default function EmployeesPage() {
       email: toNullable(values.email),
       emergency_contact: toNullable(values.emergency_contact),
       emergency_mobile: toNullable(values.emergency_mobile),
-      blood_group: toNullable(values.blood_group),
+      blood_group: values.blood_group, // Required field, don't convert to null
       present_address: {
         holding_no: toNullable(values.present_address_holding_no),
         road: toNullable(values.present_address_road),
@@ -640,8 +640,8 @@ export default function EmployeesPage() {
         village_road: toNullable(values.permanent_address_village_road),
         union_ward: toNullable(values.permanent_address_union_ward),
         upazila_thana: toNullable(values.permanent_address_upazila_thana),
-        district: toNullable(values.permanent_address_district),
-        division: toNullable(values.permanent_address_division),
+        district: values.permanent_address_district, // Required field, don't convert to null
+        division: values.permanent_address_division, // Required field, don't convert to null
       },
       ssc_year: toNumberOrNull(values.ssc_year),
       highest_degree: toNullable(values.highest_degree),
@@ -1427,13 +1427,10 @@ export default function EmployeesPage() {
         onClose={handleCloseDialog}
         fullWidth
         maxWidth="lg"
-        PaperProps={{
-          component: 'form',
-          onSubmit: handleSubmit(onSubmit),
-        }}
       >
         <DialogTitle>{editingEmployee ? 'Edit Employee' : 'Add Employee'}</DialogTitle>
-        <DialogContent dividers>
+        <form onSubmit={handleSubmit(onSubmit)} noValidate>
+          <DialogContent dividers>
           {metaLoading && (
             <Alert severity="info" sx={{ mb: 2 }}>
               Loading employee metadata...
@@ -1447,13 +1444,19 @@ export default function EmployeesPage() {
           <Box sx={{ mt: 2 }}>
             <Grid container spacing={2}>
               <Grid size={{ xs: 12, md: 6 }}>
-                <TextField
-                  label="Employee ID"
-                  fullWidth
-                  {...register('employee_id')}
-                  error={Boolean(errors.employee_id)}
-                  helperText={errors.employee_id?.message}
-                  disabled={isSubmitting}
+                <Controller
+                  name="employee_id"
+                  control={control}
+                  render={({ field }) => (
+                    <TextField
+                      {...field}
+                      label="Employee ID"
+                      fullWidth
+                      error={Boolean(errors.employee_id)}
+                      helperText={errors.employee_id?.message}
+                      disabled={isSubmitting}
+                    />
+                  )}
                 />
               </Grid>
               <Grid size={{ xs: 12, md: 6 }}>
@@ -1480,22 +1483,27 @@ export default function EmployeesPage() {
                 />
               </Grid>
               <Grid size={{ xs: 12, md: 6 }}>
-                <TextField
-                  select
-                  label="Designation"
-                  fullWidth
-                  {...register('designation_id')}
-                  value={watch('designation_id') || ''}
-                  error={Boolean(errors.designation_id)}
-                  helperText={errors.designation_id?.message}
-                  disabled={isSubmitting || designations.length === 0}
-                >
-                  {designations.map((designation) => (
-                    <MenuItem key={designation._id} value={designation._id}>
-                      {designation.name}
-                    </MenuItem>
-                  ))}
-                </TextField>
+                <Controller
+                  name="designation_id"
+                  control={control}
+                  render={({ field }) => (
+                    <TextField
+                      {...field}
+                      select
+                      label="Designation"
+                      fullWidth
+                      error={Boolean(errors.designation_id)}
+                      helperText={errors.designation_id?.message}
+                      disabled={isSubmitting || designations.length === 0}
+                    >
+                      {designations.map((designation) => (
+                        <MenuItem key={designation._id} value={designation._id}>
+                          {designation.name}
+                        </MenuItem>
+                      ))}
+                    </TextField>
+                  )}
+                />
               </Grid>
               
               {/* Facility Selector - Only for 'facility' employee type */}
@@ -1578,13 +1586,19 @@ export default function EmployeesPage() {
               )}
               
               <Grid size={{ xs: 12, md: 6 }}>
-                <TextField
-                  label="Full Name"
-                  fullWidth
-                  {...register('name')}
-                  error={Boolean(errors.name)}
-                  helperText={errors.name?.message}
-                  disabled={isSubmitting}
+                <Controller
+                  name="name"
+                  control={control}
+                  render={({ field }) => (
+                    <TextField
+                      {...field}
+                      label="Full Name"
+                      fullWidth
+                      error={Boolean(errors.name)}
+                      helperText={errors.name?.message}
+                      disabled={isSubmitting}
+                    />
+                  )}
                 />
               </Grid>
               <Grid size={{ xs: 12, md: 6 }}>
@@ -1604,70 +1618,91 @@ export default function EmployeesPage() {
                 />
               </Grid>
               <Grid size={{ xs: 12, md: 6 }}>
-                <TextField
-                  type="date"
-                  label="Date of Birth"
-                  fullWidth
-                  InputLabelProps={{ shrink: true }}
-                  {...register('date_birth')}
-                  error={Boolean(errors.date_birth)}
-                  helperText={errors.date_birth?.message}
-                  disabled={isSubmitting}
+                <Controller
+                  name="date_birth"
+                  control={control}
+                  render={({ field }) => (
+                    <TextField
+                      {...field}
+                      type="date"
+                      label="Date of Birth"
+                      fullWidth
+                      InputLabelProps={{ shrink: true }}
+                      error={Boolean(errors.date_birth)}
+                      helperText={errors.date_birth?.message}
+                      disabled={isSubmitting}
+                    />
+                  )}
                 />
               </Grid>
               <Grid size={{ xs: 12, md: 4 }}>
-                <TextField
-                  select
-                  label="Gender"
-                  fullWidth
-                  {...register('gender')}
-                  value={watch('gender') || ''}
-                  error={Boolean(errors.gender)}
-                  helperText={errors.gender?.message}
-                  disabled={isSubmitting || !meta?.genders?.length}
-                >
-                  {(meta?.genders ?? []).map((gender) => (
-                    <MenuItem key={gender} value={gender}>
-                      {gender}
-                    </MenuItem>
-                  ))}
-                </TextField>
+                <Controller
+                  name="gender"
+                  control={control}
+                  render={({ field }) => (
+                    <TextField
+                      {...field}
+                      select
+                      label="Gender"
+                      fullWidth
+                      error={Boolean(errors.gender)}
+                      helperText={errors.gender?.message}
+                      disabled={isSubmitting || !meta?.genders?.length}
+                    >
+                      {(meta?.genders ?? []).map((gender) => (
+                        <MenuItem key={gender} value={gender}>
+                          {gender}
+                        </MenuItem>
+                      ))}
+                    </TextField>
+                  )}
+                />
               </Grid>
               <Grid size={{ xs: 12, md: 4 }}>
-                <TextField
-                  select
-                  label="Religion"
-                  fullWidth
-                  {...register('religion')}
-                  value={watch('religion') || ''}
-                  error={Boolean(errors.religion)}
-                  helperText={errors.religion?.message}
-                  disabled={isSubmitting || !meta?.religions?.length}
-                >
-                  {(meta?.religions ?? []).map((religion) => (
-                    <MenuItem key={religion} value={religion}>
-                      {religion}
-                    </MenuItem>
-                  ))}
-                </TextField>
+                <Controller
+                  name="religion"
+                  control={control}
+                  render={({ field }) => (
+                    <TextField
+                      {...field}
+                      select
+                      label="Religion"
+                      fullWidth
+                      error={Boolean(errors.religion)}
+                      helperText={errors.religion?.message}
+                      disabled={isSubmitting || !meta?.religions?.length}
+                    >
+                      {(meta?.religions ?? []).map((religion) => (
+                        <MenuItem key={religion} value={religion}>
+                          {religion}
+                        </MenuItem>
+                      ))}
+                    </TextField>
+                  )}
+                />
               </Grid>
               <Grid size={{ xs: 12, md: 4 }}>
-                <TextField
-                  select
-                  label="Marital Status"
-                  fullWidth
-                  {...register('marital_status')}
-                  value={watch('marital_status') || ''}
-                  error={Boolean(errors.marital_status)}
-                  helperText={errors.marital_status?.message}
-                  disabled={isSubmitting || !meta?.maritalStatuses?.length}
-                >
-                  {(meta?.maritalStatuses ?? []).map((status) => (
-                    <MenuItem key={status} value={status}>
-                      {status}
-                    </MenuItem>
-                  ))}
-                </TextField>
+                <Controller
+                  name="marital_status"
+                  control={control}
+                  render={({ field }) => (
+                    <TextField
+                      {...field}
+                      select
+                      label="Marital Status"
+                      fullWidth
+                      error={Boolean(errors.marital_status)}
+                      helperText={errors.marital_status?.message}
+                      disabled={isSubmitting || !meta?.maritalStatuses?.length}
+                    >
+                      {(meta?.maritalStatuses ?? []).map((status) => (
+                        <MenuItem key={status} value={status}>
+                          {status}
+                        </MenuItem>
+                      ))}
+                    </TextField>
+                  )}
+                />
               </Grid>
               <Grid size={{ xs: 12, md: 4 }}>
                 <TextField
@@ -1738,20 +1773,27 @@ export default function EmployeesPage() {
                 />
               </Grid>
               <Grid size={{ xs: 12, md: 4 }}>
-                <TextField
-                  select
-                  label="Blood Group"
-                  fullWidth
-                  {...register('blood_group')}
-                  value={watch('blood_group') || ''}
-                  disabled={isSubmitting || !meta?.bloodGroups?.length}
-                >
-                  {(meta?.bloodGroups ?? []).map((group) => (
-                    <MenuItem key={group} value={group}>
-                      {group}
-                    </MenuItem>
-                  ))}
-                </TextField>
+                <Controller
+                  name="blood_group"
+                  control={control}
+                  render={({ field }) => (
+                    <TextField
+                      {...field}
+                      select
+                      label="Blood Group"
+                      fullWidth
+                      error={Boolean(errors.blood_group)}
+                      helperText={errors.blood_group?.message}
+                      disabled={isSubmitting || !meta?.bloodGroups?.length}
+                    >
+                      {(meta?.bloodGroups ?? []).map((group) => (
+                        <MenuItem key={group} value={group}>
+                          {group}
+                        </MenuItem>
+                      ))}
+                    </TextField>
+                  )}
+                />
               </Grid>
 
               <Grid size={{ xs: 12 }}>
@@ -1830,34 +1872,50 @@ export default function EmployeesPage() {
                 />
               </Grid>
               <Grid size={{ xs: 12, md: 6 }}>
-                <TextField
-                  select
-                  label="District"
-                  fullWidth
-                  {...register('permanent_address_district')}
-                  disabled={isSubmitting || !meta?.districts?.length}
-                >
-                  {(meta?.districts ?? []).map((district) => (
-                    <MenuItem key={district} value={district}>
-                      {district}
-                    </MenuItem>
-                  ))}
-                </TextField>
+                <Controller
+                  name="permanent_address_district"
+                  control={control}
+                  render={({ field }) => (
+                    <TextField
+                      {...field}
+                      select
+                      label="District"
+                      fullWidth
+                      error={Boolean(errors.permanent_address_district)}
+                      helperText={errors.permanent_address_district?.message}
+                      disabled={isSubmitting || !meta?.districts?.length}
+                    >
+                      {(meta?.districts ?? []).map((district) => (
+                        <MenuItem key={district} value={district}>
+                          {district}
+                        </MenuItem>
+                      ))}
+                    </TextField>
+                  )}
+                />
               </Grid>
               <Grid size={{ xs: 12, md: 6 }}>
-                <TextField
-                  select
-                  label="Division"
-                  fullWidth
-                  {...register('permanent_address_division')}
-                  disabled={isSubmitting || !meta?.divisions?.length}
-                >
-                  {(meta?.divisions ?? []).map((division) => (
-                    <MenuItem key={division} value={division}>
-                      {division}
-                    </MenuItem>
-                  ))}
-                </TextField>
+                <Controller
+                  name="permanent_address_division"
+                  control={control}
+                  render={({ field }) => (
+                    <TextField
+                      {...field}
+                      select
+                      label="Division"
+                      fullWidth
+                      error={Boolean(errors.permanent_address_division)}
+                      helperText={errors.permanent_address_division?.message}
+                      disabled={isSubmitting || !meta?.divisions?.length}
+                    >
+                      {(meta?.divisions ?? []).map((division) => (
+                        <MenuItem key={division} value={division}>
+                          {division}
+                        </MenuItem>
+                      ))}
+                    </TextField>
+                  )}
+                />
               </Grid>
 
               <Grid size={{ xs: 12, md: 4 }}>
@@ -1949,6 +2007,7 @@ export default function EmployeesPage() {
             {editingEmployee ? 'Update' : 'Create'}
           </Button>
         </DialogActions>
+        </form>
       </Dialog>
 
       <Dialog

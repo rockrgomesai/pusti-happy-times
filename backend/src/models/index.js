@@ -30,6 +30,15 @@ const Territory = require("./Territory");
 const Distributor = require("./Distributor");
 const Offer = require("./Offer");
 
+// Import depot inventory models (new architecture)
+const DepotStock = require("./DepotStock");
+const DepotTransactionIn = require("./DepotTransactionIn");
+const DepotTransactionOut = require("./DepotTransactionOut");
+
+// Import legacy inventory models (for backward compatibility)
+const FactoryStoreInventory = require("./FactoryStoreInventory");
+const FactoryStoreInventoryTransaction = require("./FactoryStoreInventoryTransaction");
+
 // Import junction table models
 const { RoleSidebarMenuItem, RoleApiPermission, RolePagePermission } = require("./JunctionTables");
 
@@ -52,6 +61,15 @@ const models = {
   Distributor,
   Offer,
   SidebarMenuItem,
+
+  // Depot inventory models (new architecture)
+  DepotStock,
+  DepotTransactionIn,
+  DepotTransactionOut,
+
+  // Legacy inventory models (deprecated, use depot models instead)
+  FactoryStoreInventory,
+  FactoryStoreInventoryTransaction,
 
   // Permission models
   ApiPermission,
@@ -183,6 +201,15 @@ module.exports = {
   Territory,
   Distributor,
   SidebarMenuItem,
+
+  // Depot inventory models (new architecture)
+  DepotStock,
+  DepotTransactionIn,
+  DepotTransactionOut,
+
+  // Legacy inventory models (deprecated, use depot models instead)
+  FactoryStoreInventory,
+  FactoryStoreInventoryTransaction,
 
   // Permission models
   ApiPermission,

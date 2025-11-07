@@ -10,6 +10,7 @@ const express = require("express");
 const { body, param, query, validationResult } = require("express-validator");
 const { authenticate, requireApiPermission } = require("../middleware/auth");
 const { Employee } = require("../models");
+const { validateEmployeeRoleAssignments } = require("../utils/employeeValidation");
 
 const router = express.Router();
 
@@ -313,7 +314,7 @@ const buildEmployeePayload = (data, userId, isCreate = false) => {
     email: normalizeNullableString(email),
     emergency_contact: normalizeNullableString(emergency_contact),
     emergency_mobile: normalizeNullableString(emergency_mobile),
-    blood_group: normalizeNullableString(blood_group),
+    blood_group: blood_group, // Required field
     present_address: {
       holding_no: normalizeNullableString(present_address.holding_no),
       road: normalizeNullableString(present_address.road),
@@ -328,8 +329,8 @@ const buildEmployeePayload = (data, userId, isCreate = false) => {
       village_road: normalizeNullableString(permanent_address.village_road),
       union_ward: normalizeNullableString(permanent_address.union_ward),
       upazila_thana: normalizeNullableString(permanent_address.upazila_thana),
-      district: normalizeNullableString(permanent_address.district),
-      division: normalizeNullableString(permanent_address.division),
+      district: permanent_address.district, // Required field
+      division: permanent_address.division, // Required field
     },
     ssc_year: ssc_year === undefined || ssc_year === null ? null : Number(ssc_year),
     highest_degree: normalizeNullableString(highest_degree),
@@ -404,8 +405,7 @@ const buildPartialEmployeePayload = (data, userId) => {
     payload.emergency_contact = normalizeNullableString(data.emergency_contact);
   if (data.emergency_mobile !== undefined)
     payload.emergency_mobile = normalizeNullableString(data.emergency_mobile);
-  if (data.blood_group !== undefined)
-    payload.blood_group = normalizeNullableString(data.blood_group);
+  if (data.blood_group !== undefined) payload.blood_group = data.blood_group; // Required field
 
   if (data.present_address !== undefined) {
     payload.present_address = {
@@ -425,8 +425,8 @@ const buildPartialEmployeePayload = (data, userId) => {
       village_road: normalizeNullableString(data.permanent_address.village_road),
       union_ward: normalizeNullableString(data.permanent_address.union_ward),
       upazila_thana: normalizeNullableString(data.permanent_address.upazila_thana),
-      district: normalizeNullableString(data.permanent_address.district),
-      division: normalizeNullableString(data.permanent_address.division),
+      district: data.permanent_address.district, // Required field
+      division: data.permanent_address.division, // Required field
     };
   }
 
@@ -593,6 +593,40 @@ router.post(
 
       const payload = buildEmployeePayload(req.body, currentUserId, true);
       const employee = new Employee(payload);
+
+      // Validate role-specific requirements if user_id is provided in request
+      // (This allows checking role assignments during employee creation)
+      if (req.body.user_id) {
+        try {
+          const User = require("../models/User");
+          const Facility = require("../models/Facility");
+          const user = await User.findById(req.body.user_id).populate("role_id").lean();
+
+          if (user && user.role_id) {
+            const validation = await validateEmployeeRoleAssignments(
+              employee,
+              user.role_id,
+              Facility
+            );
+
+            if (!validation.valid) {
+              return res.status(400).json({
+                success: false,
+                message: `Employee assignment validation failed: ${validation.error}`,
+                error: validation.error,
+              });
+            }
+
+            if (validation.warnings.length > 0) {
+              console.warn("Employee creation warnings:", validation.warnings);
+            }
+          }
+        } catch (validationError) {
+          console.error("Error validating employee role assignments:", validationError);
+          // Continue with creation even if validation fails
+        }
+      }
+
       await employee.save();
 
       await employee.populate("designation_id", "name");
@@ -669,6 +703,45 @@ router.put(
       const payload = req.isPartialUpdate
         ? buildPartialEmployeePayload(req.body, currentUserId)
         : buildEmployeePayload(req.body, currentUserId, false);
+
+      // Validate role-specific requirements before updating
+      if (req.body.facility_id || req.body.factory_store_id) {
+        try {
+          const User = require("../models/User");
+          const Facility = require("../models/Facility");
+
+          // Find user associated with this employee
+          const user = await User.findOne({ employee_id: id }).populate("role_id").lean();
+
+          if (user && user.role_id) {
+            // Create a temporary employee object with updated values
+            const currentEmployee = await Employee.findById(id).lean();
+            const updatedEmployee = { ...currentEmployee, ...payload };
+
+            const validation = await validateEmployeeRoleAssignments(
+              updatedEmployee,
+              user.role_id,
+              Facility
+            );
+
+            if (!validation.valid) {
+              return res.status(400).json({
+                success: false,
+                message: `Employee assignment validation failed: ${validation.error}`,
+                error: validation.error,
+                suggestion: `For ${user.role_id.role} role: ${validation.error}`,
+              });
+            }
+
+            if (validation.warnings.length > 0) {
+              console.warn("Employee update warnings:", validation.warnings);
+            }
+          }
+        } catch (validationError) {
+          console.error("Error validating employee role assignments:", validationError);
+          // Continue with update even if validation fails
+        }
+      }
 
       const employee = await Employee.findByIdAndUpdate(id, payload, {
         new: true,

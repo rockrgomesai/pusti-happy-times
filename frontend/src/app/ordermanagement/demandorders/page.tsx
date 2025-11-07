@@ -1,6 +1,6 @@
-"use client";
+﻿"use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import {
   Container,
   Box,
@@ -43,6 +43,12 @@ import {
   useMediaQuery,
   useTheme,
   TablePagination,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  Checkbox,
+  FormControlLabel,
+  FormGroup,
 } from "@mui/material";
 import {
   Search,
@@ -60,10 +66,21 @@ import {
   Edit,
   Receipt,
   AddShoppingCart,
+  ExpandMore,
+  AttachMoney,
+  Send,
 } from "@mui/icons-material";
-import axios from "axios";
+import api from "@/lib/api";
 
 // Types
+interface Category {
+  _id: string;
+  name: string;
+  parent_id?: string;
+  product_segment: string;
+  children?: Category[];
+}
+
 interface Product {
   _id: string;
   sku: string;
@@ -74,21 +91,36 @@ interface Product {
   distributor_depot_qty: number;
   product_depots_qty: number;
   pending_qty: number;
+  category?: {
+    _id: string;
+    name: string;
+    parent_id?: string;
+    product_segment: string;
+  };
+  brand?: {
+    _id: string;
+    name: string;
+  };
 }
 
 interface Offer {
   _id: string;
-  sku: string;
-  offer_name: string;
-  offer_short_name: string;
-  original_price: number;
-  offer_price: number;
-  savings: number;
-  discount_percentage: number;
-  available_quantity: number;
-  distributor_depot_qty: number;
-  product_depots_qty: number;
-  pending_qty: number;
+  name: string;
+  offer_type: string;
+  product_segments: string[];
+  start_date: string;
+  end_date: string;
+  status: string;
+  active: boolean;
+  config: {
+    selectedProducts: string[];
+    applyToAllProducts?: boolean;
+    discountPercentage?: number;
+    discountAmount?: number;
+    minOrderValue?: number;
+    maxDiscountAmount?: number;
+  };
+  description?: string;
 }
 
 interface CartItem {
@@ -100,18 +132,24 @@ interface CartItem {
   subtotal: number;
   name: string;
   available_quantity: number;
+  offer_id?: string;
+  offer_name?: string;
+  discount_percentage?: number;
+  discount_amount?: number;
+  original_subtotal?: number;
 }
 
 interface ValidationResult {
+  product_id: string;
   sku: string;
-  requested: number;
-  available: number;
+  requested_qty: number;
+  distributor_depot_qty: number;
+  product_depots_qty: number;
+  total_available: number;
+  pending_qty: number;
+  available_after_pending: number;
   valid: boolean;
-  details: {
-    distributor_depot: number;
-    product_depots: number;
-    pending_qty: number;
-  };
+  error: string | null;
 }
 
 interface OrderItem {
@@ -121,8 +159,21 @@ interface OrderItem {
   quantity: number;
   unit_price: number;
   subtotal: number;
-  product_details?: any;
-  offer_details?: any;
+  product_details?: {
+    short_description?: string;
+    category?: string;
+    brand?: string;
+    unit_per_case?: number;
+  };
+  offer_details?: {
+    offer_id?: string;
+    offer_name?: string;
+    offer_code?: string;
+    discount_percentage?: number;
+    discount_amount?: number;
+    original_subtotal?: number;
+    offer_short_name?: string;
+  };
 }
 
 interface Order {
@@ -149,7 +200,9 @@ const DemandOrdersPage = () => {
   // State
   const [mainTab, setMainTab] = useState(0); // 0 = Catalog, 1 = My Orders
   const [catalogTab, setCatalogTab] = useState(0); // 0 = Products, 1 = Offers
+  const [categoryHierarchy, setCategoryHierarchy] = useState<Category[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
+  const [productsByCategory, setProductsByCategory] = useState<Record<string, { category: any; products: Product[] }>>({});
   const [offers, setOffers] = useState<Offer[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [cartDrawerOpen, setCartDrawerOpen] = useState(false);
@@ -172,8 +225,48 @@ const DemandOrdersPage = () => {
   const [totalOrders, setTotalOrders] = useState(0);
 
   // Filters
-  const [categoryFilter, setCategoryFilter] = useState("");
-  const [brandFilter, setBrandFilter] = useState("");
+  const [segmentFilter, setSegmentFilter] = useState<string>("all");
+  
+  // Product selection dialog
+  const [selectedProductForDialog, setSelectedProductForDialog] = useState<Product | null>(null);
+  const [dialogQuantity, setDialogQuantity] = useState<number>(1);
+  const [productDialogOpen, setProductDialogOpen] = useState(false);
+
+  // Offer details dialog
+  const [selectedOffer, setSelectedOffer] = useState<Offer | null>(null);
+  const [offerDialogOpen, setOfferDialogOpen] = useState(false);
+  const [offerProducts, setOfferProducts] = useState<Product[]>([]);
+  const [loadingOfferProducts, setLoadingOfferProducts] = useState(false);
+
+  // Accordion control for simple category groups
+  const [expandedPanel, setExpandedPanel] = useState<string | null>(null);
+
+  const handleAccordionChange = useCallback((panel: string) => {
+    setExpandedPanel((prev) => (prev === panel ? null : panel));
+  }, []);
+
+  // Open product dialog
+  const handleProductClick = useCallback((product: Product) => {
+    setSelectedProductForDialog(product);
+    setDialogQuantity(1);
+    setProductDialogOpen(true);
+  }, []);
+
+  // Add product from dialog to cart
+  const handleAddFromDialog = useCallback(() => {
+    if (selectedProductForDialog && dialogQuantity > 0) {
+      // Check if we're adding from an offer (offer dialog is still open)
+      if (selectedOffer) {
+        addToCartWithQuantity(selectedProductForDialog, "product", dialogQuantity, selectedOffer);
+      } else {
+        addToCartWithQuantity(selectedProductForDialog, "product", dialogQuantity);
+      }
+      setProductDialogOpen(false);
+      setSelectedProductForDialog(null);
+      setDialogQuantity(1);
+      setSuccess(`Added ${dialogQuantity} carton(s) of ${selectedProductForDialog.sku} to cart`);
+    }
+  }, [selectedProductForDialog, dialogQuantity, selectedOffer]);
 
   // Load catalogs
   useEffect(() => {
@@ -193,12 +286,17 @@ const DemandOrdersPage = () => {
     setLoading(true);
     setError(null);
     try {
-      const [productsRes, offersRes] = await Promise.all([
-        axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/ordermanagement/demandorders/catalog/products`),
-        axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/ordermanagement/demandorders/catalog/offers`),
+      // Load category hierarchy, products (manufactured only), and offers
+      // Note: Procured products are used in offers/gifts only, not in direct orders
+      const [hierarchyRes, productsRes, offersRes] = await Promise.all([
+        api.get("/ordermanagement/demandorders/catalog/category-hierarchy"),
+        api.get("/ordermanagement/demandorders/catalog/products"),
+        api.get("/ordermanagement/demandorders/catalog/offers"),
       ]);
 
-      setProducts(productsRes.data.data || []);
+      setCategoryHierarchy(hierarchyRes.data.data || []);
+      setProducts(productsRes.data.data.products || []);
+      setProductsByCategory(productsRes.data.data.productsByCategory || {});
       setOffers(offersRes.data.data || []);
     } catch (err: any) {
       setError(err.response?.data?.message || "Failed to load catalogs");
@@ -220,13 +318,13 @@ const DemandOrdersPage = () => {
         params.status = statusFilter;
       }
 
-      const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/ordermanagement/demandorders`,
+      const response = await api.get(
+        "/ordermanagement/demandorders",
         { params }
       );
 
-      setOrders(response.data.data || []);
-      setTotalOrders(response.data.total || 0);
+      setOrders(response.data.data.orders || []);
+      setTotalOrders(response.data.data.pagination?.total || 0);
     } catch (err: any) {
       setError(err.response?.data?.message || "Failed to load orders");
     } finally {
@@ -246,39 +344,278 @@ const DemandOrdersPage = () => {
     });
   }, [products, searchTerm]);
 
+  // Group products by category for accordion view
+  const productGroups = useMemo(() => {
+    const groups: Array<{
+      categoryId: string;
+      categoryName: string;
+      subcategoryName: string;
+      segment: string;
+      products: Product[];
+    }> = [];
+
+    Object.entries(productsByCategory).forEach(([categoryId, data]) => {
+      const { category, products: categoryProducts } = data;
+      
+      // Filter by search
+      const filtered = categoryProducts.filter((product) => {
+        if (!searchTerm) return true;
+        return (
+          product.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          product.short_description.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+      });
+
+      if (filtered.length > 0) {
+        groups.push({
+          categoryId,
+          categoryName: category.parent_name || category.name,
+          subcategoryName: category.parent_name ? category.name : '',
+          segment: category.product_segment,
+          products: filtered,
+        });
+      }
+    });
+
+    // Filter by segment
+    return segmentFilter === 'all' 
+      ? groups 
+      : groups.filter(g => g.segment === segmentFilter);
+  }, [productsByCategory, searchTerm, segmentFilter]);
+
   // Filter offers
   const filteredOffers = useMemo(() => {
     return offers.filter((offer) => {
       const matchesSearch =
         searchTerm === "" ||
-        offer.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        offer.offer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        offer.offer_short_name.toLowerCase().includes(searchTerm.toLowerCase());
+        offer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (offer.description && offer.description.toLowerCase().includes(searchTerm.toLowerCase()));
       
       return matchesSearch;
     });
   }, [offers, searchTerm]);
 
+  // Get active offers for a product - optimized with useMemo
+  const productOfferMap = useMemo(() => {
+    const map = new Map<string, Array<{offer: Offer, discount: number}>>();
+    
+    offers.forEach(offer => {
+      if (offer.status !== 'active' || !offer.active) return;
+      
+      // Check if offer applies to all products or specific ones
+      const productIds = offer.config?.applyToAllProducts 
+        ? products.map(p => p._id)
+        : (offer.config?.selectedProducts || []);
+      
+      productIds.forEach(productId => {
+        const discount = offer.config?.discountPercentage || 0;
+        if (!map.has(productId)) {
+          map.set(productId, []);
+        }
+        map.get(productId)!.push({ offer, discount });
+      });
+    });
+    
+    return map;
+  }, [offers, products]);
+
+  // Get best offer for a product
+  const getProductOfferInfo = (productId: string) => {
+    const productOffers = productOfferMap.get(productId);
+    if (!productOffers || productOffers.length === 0) return null;
+    
+    // Return offer with highest discount
+    const bestOffer = productOffers.reduce((best, current) => 
+      current.discount > best.discount ? current : best
+    );
+    
+    return {
+      hasOffer: true,
+      offerCount: productOffers.length,
+      bestDiscount: bestOffer.discount,
+      bestOfferName: bestOffer.offer.name,
+    };
+  };
+
+  // Offer functions
+  const openOfferDetails = async (offer: Offer) => {
+    setSelectedOffer(offer);
+    setOfferDialogOpen(true);
+    setLoadingOfferProducts(true);
+    
+    try {
+      // Fetch products that are eligible for this offer
+      const response = await api.get(`/ordermanagement/demandorders/catalog/products?segment=${offer.product_segments[0] || 'BIS'}`);
+      
+      if (response.data.success && response.data.data?.products) {
+        // Filter products to only show those in the offer's selectedProducts
+        const eligibleProducts = response.data.data.products.filter((product: Product) => 
+          offer.config?.selectedProducts?.includes(product._id)
+        );
+        setOfferProducts(eligibleProducts);
+      }
+    } catch (err) {
+      console.error("Error fetching offer products:", err);
+      setError("Failed to load offer products");
+    } finally {
+      setLoadingOfferProducts(false);
+    }
+  };
+
+  const closeOfferDialog = () => {
+    setOfferDialogOpen(false);
+    setSelectedOffer(null);
+    setOfferProducts([]);
+  };
+
+  // Calculate discount for a group of items with the same offer
+  const calculateOfferGroupDiscount = (items: CartItem[], offer?: Offer) => {
+    if (!offer?.config || items.length === 0) {
+      return { 
+        groupSubtotal: items.reduce((sum, item) => sum + (item.unit_price * item.quantity), 0),
+        discountAmount: 0, 
+        discountPercentage: 0,
+        groupTotal: items.reduce((sum, item) => sum + (item.unit_price * item.quantity), 0),
+      };
+    }
+
+    // Calculate group subtotal (before discount)
+    const groupSubtotal = items.reduce((sum, item) => sum + (item.unit_price * item.quantity), 0);
+    
+    let discountAmount = 0;
+    let discountPercentage = 0;
+
+    // Check minimum order value for the entire group
+    if (offer.config.minOrderValue && groupSubtotal < offer.config.minOrderValue) {
+      return { 
+        groupSubtotal, 
+        discountAmount: 0, 
+        discountPercentage: 0,
+        groupTotal: groupSubtotal,
+        meetsMinimum: false,
+        minOrderValue: offer.config.minOrderValue,
+      };
+    }
+
+    // Calculate discount on the group total
+    if (offer.config.discountPercentage) {
+      discountPercentage = offer.config.discountPercentage;
+      discountAmount = (groupSubtotal * discountPercentage) / 100;
+    } else if (offer.config.discountAmount) {
+      // For flat discount, apply once per group (not per item)
+      discountAmount = offer.config.discountAmount;
+    }
+
+    // Cap at maximum discount amount if specified
+    if (offer.config.maxDiscountAmount && discountAmount > offer.config.maxDiscountAmount) {
+      discountAmount = offer.config.maxDiscountAmount;
+    }
+
+    return { 
+      groupSubtotal,
+      discountAmount, 
+      discountPercentage,
+      groupTotal: groupSubtotal - discountAmount,
+      meetsMinimum: true,
+      minOrderValue: offer.config.minOrderValue,
+      maxDiscountAmount: offer.config.maxDiscountAmount,
+      isCapped: offer.config.maxDiscountAmount ? discountAmount >= offer.config.maxDiscountAmount : false,
+    };
+  };
+
+  // Legacy function for individual item discount (used in product dialog preview)
+  const calculateOfferDiscount = (originalSubtotal: number, quantity: number, offer?: Offer) => {
+    if (!offer?.config) {
+      return { discountAmount: 0, discountPercentage: 0 };
+    }
+
+    let discountAmount = 0;
+    let discountPercentage = 0;
+
+    // Check minimum order value (applies to this item's subtotal)
+    if (offer.config.minOrderValue && originalSubtotal < offer.config.minOrderValue) {
+      return { discountAmount: 0, discountPercentage: 0 };
+    }
+
+    // Calculate discount
+    if (offer.config.discountPercentage) {
+      discountPercentage = offer.config.discountPercentage;
+      discountAmount = (originalSubtotal * discountPercentage) / 100;
+    } else if (offer.config.discountAmount) {
+      discountAmount = offer.config.discountAmount * quantity;
+    }
+
+    // Cap at maximum discount amount if specified
+    if (offer.config.maxDiscountAmount && discountAmount > offer.config.maxDiscountAmount) {
+      discountAmount = offer.config.maxDiscountAmount;
+    }
+
+    return { discountAmount, discountPercentage };
+  };
+
+  // Group cart items by offer
+  const groupedCartItems = useMemo(() => {
+    const groups: Record<string, { offer: Offer | null; items: CartItem[] }> = {};
+    
+    cart.forEach((item) => {
+      const key = item.offer_id || 'no-offer';
+      if (!groups[key]) {
+        const offer = item.offer_id ? offers.find(o => o._id.toString() === item.offer_id?.toString()) : null;
+        groups[key] = {
+          offer: offer || null,
+          items: [],
+        };
+      }
+      groups[key].items.push(item);
+    });
+
+    return groups;
+  }, [cart, offers]);
+
   // Cart functions
   const addToCart = (item: Product | Offer, source: "product" | "offer") => {
+    addToCartWithQuantity(item, source, 1);
+  };
+
+  const addToCartWithQuantity = (item: Product | Offer, source: "product" | "offer", quantity: number, offer?: Offer) => {
     const existingItem = cart.find(
-      (ci) => ci.source === source && ci.source_id === item._id
+      (ci) => ci.source === source && ci.source_id === item._id && ci.offer_id === offer?._id
     );
 
     if (existingItem) {
-      updateCartItemQuantity(existingItem.source_id, existingItem.source, existingItem.quantity + 1);
+      updateCartItemQuantity(existingItem.source_id, existingItem.source, existingItem.quantity + quantity);
     } else {
+      if (source === "offer") {
+        // Offers are not directly added to cart - they're applied to products
+        // Show a message or dialog to select products for this offer
+        console.warn("Offers should be applied to products, not added to cart directly");
+        return;
+      }
+      
+      const product = item as Product;
+      const originalSubtotal = product.mrp * quantity;
+      
+      // Apply offer discount if present
+      const { discountAmount, discountPercentage } = calculateOfferDiscount(originalSubtotal, quantity, offer);
+      
+      const subtotal = originalSubtotal - discountAmount;
+      
       const newItem: CartItem = {
         source,
-        source_id: item._id,
-        sku: item.sku,
-        quantity: 1,
-        unit_price: source === "product" ? (item as Product).mrp : (item as Offer).offer_price,
-        subtotal: source === "product" ? (item as Product).mrp : (item as Offer).offer_price,
-        name: source === "product" 
-          ? (item as Product).short_description 
-          : (item as Offer).offer_short_name,
-        available_quantity: item.available_quantity,
+        source_id: product._id,
+        sku: product.sku,
+        quantity: quantity,
+        unit_price: product.mrp,
+        subtotal: subtotal,
+        name: product.short_description,
+        available_quantity: product.available_quantity,
+        ...(offer && {
+          offer_id: offer._id,
+          offer_name: offer.name,
+          discount_percentage: discountPercentage,
+          discount_amount: discountAmount,
+          original_subtotal: originalSubtotal,
+        }),
       };
       setCart([...cart, newItem]);
       if (isMobile) setCartDrawerOpen(true);
@@ -294,10 +631,10 @@ const DemandOrdersPage = () => {
     setCart(
       cart.map((item) => {
         if (item.source_id === sourceId && item.source === source) {
+          // Just update quantity - discount will be recalculated at group level
           return {
             ...item,
             quantity: newQuantity,
-            subtotal: item.unit_price * newQuantity,
           };
         }
         return item;
@@ -314,12 +651,23 @@ const DemandOrdersPage = () => {
     setValidationResults([]);
   };
 
-  // Calculate totals
+  // Calculate totals with offer-group discounts
   const cartTotals = useMemo(() => {
-    const total = cart.reduce((sum, item) => sum + item.subtotal, 0);
+    let total = 0;
+    let totalSavings = 0;
+    let originalTotal = 0;
     const itemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
-    return { total, itemCount };
-  }, [cart]);
+
+    // Calculate totals for each offer group
+    Object.values(groupedCartItems).forEach(({ offer, items }) => {
+      const groupCalc = calculateOfferGroupDiscount(items, offer || undefined);
+      originalTotal += groupCalc.groupSubtotal;
+      totalSavings += groupCalc.discountAmount;
+      total += groupCalc.groupTotal;
+    });
+
+    return { total, itemCount, totalSavings, originalTotal };
+  }, [cart, groupedCartItems]);
 
   // Validate cart
   const validateCart = async () => {
@@ -331,20 +679,19 @@ const DemandOrdersPage = () => {
     setValidating(true);
     setError(null);
     try {
-      const response = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/ordermanagement/demandorders/validate-cart`,
+      const response = await api.post(
+        "/ordermanagement/demandorders/validate-cart",
         {
           items: cart.map((item) => ({
-            source: item.source,
-            source_id: item.source_id,
+            product_id: item.source_id, // Backend expects product_id
             sku: item.sku,
             quantity: item.quantity,
           })),
         }
       );
 
-      setValidationResults(response.data.data.validation);
-      const allValid = response.data.data.validation.every((v: ValidationResult) => v.valid);
+      setValidationResults(response.data.data.results || []);
+      const allValid = response.data.data.valid;
       
       if (allValid) {
         setSuccess("Cart validated successfully! You can proceed to submit.");
@@ -360,41 +707,49 @@ const DemandOrdersPage = () => {
   };
 
   // Submit order
+  // Submit order - now just saves as draft
   const submitOrder = async () => {
     setLoading(true);
     setError(null);
     setSuccess(null);
     try {
-      // Create draft order
-      const createResponse = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/ordermanagement/demandorders`,
+      // Create draft order (no automatic submission)
+      const createResponse = await api.post(
+        "/ordermanagement/demandorders",
         {
           items: cart.map((item) => ({
             source: item.source,
             source_id: item.source_id,
+            source_ref: item.source === "product" ? "Product" : "Offer", // Required by model
             sku: item.sku,
             quantity: item.quantity,
             unit_price: item.unit_price,
+            subtotal: item.unit_price * item.quantity, // Required by model
+            // Include offer details if this item is from an offer
+            ...(item.offer_id && {
+              offer_details: {
+                offer_id: item.offer_id,
+                offer_name: item.offer_name,
+                discount_percentage: item.discount_percentage,
+                discount_amount: item.discount_amount,
+                original_subtotal: item.original_subtotal,
+              },
+            }),
           })),
         }
       );
 
-      const orderId = createResponse.data.data._id;
+      const orderNumber = createResponse.data.data.order_number;
 
-      // Submit order
-      const submitResponse = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/ordermanagement/demandorders/${orderId}/submit`
-      );
-
-      setSuccess(`Order ${submitResponse.data.data.order_number} submitted successfully!`);
+      setSuccess(`Draft order ${orderNumber} saved successfully! You can now add payment details.`);
       clearCart();
       setSubmitDialogOpen(false);
-      loadCatalogs(); // Refresh available quantities
       
-      // Switch to orders tab to see the new order
+      // Switch to orders tab to see the draft order
       setMainTab(1);
+      await loadOrders(); // Refresh orders list
     } catch (err: any) {
-      setError(err.response?.data?.message || "Failed to submit order");
+      setError(err.response?.data?.message || "Failed to save draft order");
     } finally {
       setLoading(false);
     }
@@ -403,8 +758,8 @@ const DemandOrdersPage = () => {
   // View order details
   const viewOrderDetails = async (orderId: string) => {
     try {
-      const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/ordermanagement/demandorders/${orderId}`
+      const response = await api.get(
+        `/ordermanagement/demandorders/${orderId}`
       );
       setSelectedOrder(response.data.data);
       setOrderDetailsOpen(true);
@@ -418,8 +773,8 @@ const DemandOrdersPage = () => {
     if (!confirm("Are you sure you want to delete this draft order?")) return;
 
     try {
-      await axios.delete(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/ordermanagement/demandorders/${orderId}`
+      await api.delete(
+        `/ordermanagement/demandorders/${orderId}`
       );
       setSuccess("Draft order deleted successfully");
       loadOrders();
@@ -431,8 +786,8 @@ const DemandOrdersPage = () => {
   // Edit draft order (load to cart)
   const editDraftOrder = async (orderId: string) => {
     try {
-      const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/ordermanagement/demandorders/${orderId}`
+      const response = await api.get(
+        `/ordermanagement/demandorders/${orderId}`
       );
       const order = response.data.data;
 
@@ -453,16 +808,25 @@ const DemandOrdersPage = () => {
           ? item.product_details?.short_description || item.sku
           : item.offer_details?.offer_short_name || item.sku,
         available_quantity: 0, // Will be refreshed from catalog
+        // Restore offer information if present
+        ...(item.offer_details?.offer_id && {
+          offer_id: item.offer_details.offer_id,
+          offer_name: item.offer_details.offer_name,
+          discount_percentage: item.offer_details.discount_percentage,
+          discount_amount: item.offer_details.discount_amount,
+          original_subtotal: item.offer_details.original_subtotal,
+        }),
       }));
 
       setCart(cartItems);
       setMainTab(0); // Switch to catalog tab
+      setCatalogTab(1); // Switch to Offers tab to see available offers
       setCartDrawerOpen(true);
-      setSuccess("Draft order loaded to cart. You can modify and resubmit.");
+      setSuccess("Draft loaded! Browse Offers tab to add more items to offer groups, or Products tab for regular items.");
 
       // Delete the draft since we're editing it
-      await axios.delete(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/ordermanagement/demandorders/${orderId}`
+      await api.delete(
+        `/ordermanagement/demandorders/${orderId}`
       );
     } catch (err: any) {
       setError(err.response?.data?.message || "Failed to load draft order");
@@ -504,10 +868,10 @@ const DemandOrdersPage = () => {
     const cartItem = cart.find((item) => item.source_id === sourceId && item.source === source);
     if (!cartItem) return null;
 
-    return validationResults.find((v) => v.sku === cartItem.sku);
+    return validationResults?.find((v) => v.sku === cartItem.sku) || null;
   };
 
-  // Cart component
+  // Cart component with offer-based grouping
   const CartContent = () => (
     <Box sx={{ p: 2 }}>
       <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
@@ -523,99 +887,211 @@ const DemandOrdersPage = () => {
         <Alert severity="info">Your cart is empty</Alert>
       ) : (
         <>
-          <List>
-            {cart.map((item) => {
-              const validation = getItemValidation(item.source_id, item.source);
-              return (
-                <React.Fragment key={`${item.source}-${item.source_id}`}>
-                  <ListItem
-                    sx={{
-                      flexDirection: "column",
-                      alignItems: "stretch",
-                      bgcolor: validation && !validation.valid ? "error.light" : "transparent",
-                      borderRadius: 1,
-                      mb: 1,
-                    }}
-                  >
-                    <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
-                      <Box sx={{ flex: 1 }}>
-                        <Typography variant="body2" fontWeight="bold">
-                          {item.sku}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {item.name}
-                        </Typography>
-                        <Chip
-                          label={item.source}
-                          size="small"
-                          color={item.source === "product" ? "primary" : "secondary"}
-                          sx={{ ml: 1 }}
-                        />
-                      </Box>
-                      <IconButton
-                        size="small"
-                        onClick={() => removeFromCart(item.source_id, item.source)}
-                      >
-                        <Delete />
-                      </IconButton>
+          {/* Render each offer group */}
+          {Object.entries(groupedCartItems).map(([groupKey, { offer, items }]) => {
+            const groupCalc = calculateOfferGroupDiscount(items, offer || undefined);
+            const isOfferGroup = groupKey !== 'no-offer';
+            
+            return (
+              <Accordion 
+                key={groupKey}
+                defaultExpanded
+                sx={{ mb: 2, '&:before': { display: 'none' } }}
+              >
+                <AccordionSummary expandIcon={<ExpandMore />}>
+                  <Box sx={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', pr: 2 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      {isOfferGroup && <LocalOffer color="success" fontSize="small" />}
+                      <Typography variant="subtitle1" fontWeight="bold">
+                        {isOfferGroup ? offer?.name : 'Regular Items'}
+                      </Typography>
+                      <Chip 
+                        label={`${items.length} ${items.length === 1 ? 'item' : 'items'}`} 
+                        size="small" 
+                      />
                     </Box>
-
-                    <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                        <IconButton
-                          size="small"
-                          onClick={() =>
-                            updateCartItemQuantity(item.source_id, item.source, item.quantity - 1)
-                          }
-                        >
-                          <Remove fontSize="small" />
-                        </IconButton>
-                        <Typography>{item.quantity}</Typography>
-                        <IconButton
-                          size="small"
-                          onClick={() =>
-                            updateCartItemQuantity(item.source_id, item.source, item.quantity + 1)
-                          }
-                        >
-                          <Add fontSize="small" />
-                        </IconButton>
-                      </Box>
-                      <Typography fontWeight="bold">₹{item.subtotal.toFixed(2)}</Typography>
+                    <Box sx={{ textAlign: 'right' }}>
+                      {groupCalc.discountAmount > 0 && (
+                        <Typography variant="caption" color="text.secondary" sx={{ textDecoration: 'line-through', display: 'block' }}>
+                          ৳{groupCalc.groupSubtotal.toFixed(2)}
+                        </Typography>
+                      )}
+                      <Typography variant="subtitle1" fontWeight="bold" color={groupCalc.discountAmount > 0 ? "success.main" : "text.primary"}>
+                        ৳{groupCalc.groupTotal.toFixed(2)}
+                      </Typography>
+                      {groupCalc.discountAmount > 0 && (
+                        <Typography variant="caption" color="success.main">
+                          Save ৳{groupCalc.discountAmount.toFixed(2)}
+                        </Typography>
+                      )}
                     </Box>
+                  </Box>
+                </AccordionSummary>
+                <AccordionDetails>
+                  {/* Show minimum order warning if not met */}
+                  {isOfferGroup && groupCalc.meetsMinimum === false && groupCalc.minOrderValue && (
+                    <Alert 
+                      severity="warning" 
+                      sx={{ 
+                        mb: 2,
+                        bgcolor: '#f3e5f5',
+                        color: '#4a148c',
+                        '& .MuiAlert-icon': { color: '#6a1b9a' }
+                      }}
+                    >
+                      Minimum order value: <strong>৳{groupCalc.minOrderValue.toFixed(2)}</strong>
+                      <br />
+                      Add <strong>৳{(groupCalc.minOrderValue - groupCalc.groupSubtotal).toFixed(2)}</strong> more to unlock <strong>{offer?.config?.discountPercentage}%</strong> discount
+                    </Alert>
+                  )}
+                  
+                  {/* Show discount cap info */}
+                  {isOfferGroup && groupCalc.isCapped && groupCalc.maxDiscountAmount && (
+                    <Alert 
+                      severity="info" 
+                      sx={{ 
+                        mb: 2,
+                        bgcolor: '#ede7f6',
+                        color: '#4a148c',
+                        '& .MuiAlert-icon': { color: '#673ab7' }
+                      }}
+                    >
+                      Discount capped at <strong>৳{groupCalc.maxDiscountAmount.toFixed(2)}</strong>
+                    </Alert>
+                  )}
 
-                    {validation && (
-                      <Alert
-                        severity={validation.valid ? "success" : "error"}
-                        sx={{ mt: 1 }}
-                        icon={validation.valid ? <CheckCircle /> : <Warning />}
-                      >
-                        {validation.valid ? (
-                          `Available: ${validation.available}`
-                        ) : (
-                          <>
-                            Insufficient stock!
-                            <br />
-                            Requested: {validation.requested}, Available: {validation.available}
-                            <br />
-                            <Typography variant="caption">
-                              (Depot: {validation.details.distributor_depot} + Product Depots:{" "}
-                              {validation.details.product_depots} - Pending: {validation.details.pending_qty})
+                  <List>
+                    {items.map((item) => {
+                      const validation = getItemValidation(item.source_id, item.source);
+                      const itemSubtotal = item.unit_price * item.quantity;
+                      
+                      return (
+                        <ListItem
+                          key={`${item.source}-${item.source_id}`}
+                          sx={{
+                            flexDirection: "column",
+                            alignItems: "stretch",
+                            bgcolor: validation && !validation.valid ? "error.light" : "transparent",
+                            borderRadius: 1,
+                            mb: 1,
+                            border: '1px solid',
+                            borderColor: 'divider',
+                          }}
+                        >
+                          <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
+                            <Box sx={{ flex: 1 }}>
+                              <Typography variant="body2" fontWeight="bold">
+                                {item.sku}
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                {item.name}
+                              </Typography>
+                            </Box>
+                            <IconButton
+                              size="small"
+                              onClick={() => removeFromCart(item.source_id, item.source)}
+                            >
+                              <Delete />
+                            </IconButton>
+                          </Box>
+
+                          <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                              <IconButton
+                                size="small"
+                                onClick={() =>
+                                  updateCartItemQuantity(item.source_id, item.source, item.quantity - 1)
+                                }
+                              >
+                                <Remove fontSize="small" />
+                              </IconButton>
+                              <TextField
+                                size="small"
+                                type="number"
+                                value={item.quantity}
+                                onChange={(e) => {
+                                  const newQty = parseInt(e.target.value) || 0;
+                                  if (newQty >= 0) {
+                                    updateCartItemQuantity(item.source_id, item.source, newQty);
+                                  }
+                                }}
+                                inputProps={{ min: 1, style: { textAlign: 'center', width: '60px' } }}
+                              />
+                              <IconButton
+                                size="small"
+                                onClick={() =>
+                                  updateCartItemQuantity(item.source_id, item.source, item.quantity + 1)
+                                }
+                              >
+                                <Add fontSize="small" />
+                              </IconButton>
+                            </Box>
+                            <Typography fontWeight="bold">
+                              ৳{itemSubtotal.toFixed(2)}
                             </Typography>
-                          </>
-                        )}
-                      </Alert>
-                    )}
-                  </ListItem>
-                  <Divider />
-                </React.Fragment>
-              );
-            })}
-          </List>
+                          </Box>
+
+                          {validation && (
+                            <Alert
+                              severity={validation.valid ? "success" : "error"}
+                              sx={{ mt: 1 }}
+                              icon={validation.valid ? <CheckCircle /> : <Warning />}
+                            >
+                              {validation.valid ? (
+                                `Available: ${validation.available_after_pending}`
+                              ) : (
+                                <>
+                                  Insufficient stock!
+                                  <br />
+                                  Requested: {validation.requested_qty}, Available: {validation.available_after_pending}
+                                  <br />
+                                  <Typography variant="caption">
+                                    (Depot: {validation.distributor_depot_qty} + Product Depots:{" "}
+                                    {validation.product_depots_qty} - Pending: {validation.pending_qty})
+                                  </Typography>
+                                </>
+                              )}
+                            </Alert>
+                          )}
+                        </ListItem>
+                      );
+                    })}
+                  </List>
+                </AccordionDetails>
+              </Accordion>
+            );
+          })}
 
           <Box sx={{ mt: 2, p: 2, bgcolor: "grey.100", borderRadius: 1 }}>
-            <Typography variant="h6">
-              Total: ₹{cartTotals.total.toFixed(2)}
-            </Typography>
+            {cartTotals.totalSavings > 0 && (
+              <>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                  <Typography variant="body2" color="text.secondary">
+                    Subtotal:
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    ৳{cartTotals.originalTotal.toFixed(2)}
+                  </Typography>
+                </Box>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                  <Typography variant="body2" color="success.main">
+                    Offer Savings:
+                  </Typography>
+                  <Typography variant="body2" color="success.main" fontWeight="bold">
+                    -৳{cartTotals.totalSavings.toFixed(2)}
+                  </Typography>
+                </Box>
+                <Divider sx={{ my: 1 }} />
+              </>
+            )}
+            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+              <Typography variant="h6">
+                Total:
+              </Typography>
+              <Typography variant="h6" color={cartTotals.totalSavings > 0 ? "success.main" : "text.primary"}>
+                ৳{cartTotals.total.toFixed(2)}
+              </Typography>
+            </Box>
             <Typography variant="caption" color="text.secondary">
               {cartTotals.itemCount} items
             </Typography>
@@ -638,7 +1114,7 @@ const DemandOrdersPage = () => {
               fullWidth
               startIcon={validating ? <CircularProgress size={20} /> : <CheckCircle />}
             >
-              {validating ? "Validating..." : "Validate & Submit"}
+              {validating ? "Validating..." : "Validate & Save Order"}
             </Button>
           </Box>
         </>
@@ -646,17 +1122,179 @@ const DemandOrdersPage = () => {
     </Box>
   );
 
+  // Simplified accordion view - similar to sendtostore
+  const CategoryProductsAccordion = ({ group, panelId }: {
+    group: {
+      categoryId: string;
+      categoryName: string;
+      subcategoryName: string;
+      segment: string;
+      products: Product[];
+    };
+    panelId: string;
+  }) => {
+    const inCartCount = group.products.filter(p => 
+      cart.some(item => item.source_id === p._id)
+    ).length;
+
+    return (
+      <Accordion
+        key={panelId}
+        expanded={expandedPanel === panelId}
+        onChange={() => handleAccordionChange(panelId)}
+        sx={{ mb: 2 }}
+      >
+        <AccordionSummary expandIcon={<ExpandMore />}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1 }}>
+            <Typography variant="h6">
+              {group.subcategoryName 
+                ? `${group.categoryName} > ${group.subcategoryName}`
+                : group.categoryName}
+            </Typography>
+            <Chip
+              label={group.segment}
+              size="small"
+              color={group.segment === 'BIS' ? 'warning' : 'info'}
+              variant="outlined"
+            />
+            <Chip
+              label={`${group.products.length} products`}
+              size="small"
+              color="default"
+            />
+            {inCartCount > 0 && (
+              <Chip
+                label={`${inCartCount} in cart`}
+                size="small"
+                color="success"
+              />
+            )}
+          </Box>
+        </AccordionSummary>
+        <AccordionDetails>
+          <TableContainer>
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell>SKU</TableCell>
+                  <TableCell>Description</TableCell>
+                  <TableCell align="right">MRP</TableCell>
+                  <TableCell align="right">Unit/Case</TableCell>
+                  <TableCell align="right">Available</TableCell>
+                  <TableCell>Brand</TableCell>
+                  <TableCell align="center">Action</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {group.products.map((product) => {
+                  const inCart = cart.find(item => item.source_id === product._id);
+                  const offerInfo = getProductOfferInfo(product._id);
+                  
+                  return (
+                    <TableRow 
+                      key={product._id}
+                      hover
+                      sx={{ 
+                        cursor: 'pointer',
+                        backgroundColor: inCart ? 'action.selected' : 'inherit'
+                      }}
+                      onClick={() => handleProductClick(product)}
+                    >
+                      <TableCell>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          {product.sku}
+                          {offerInfo && (
+                            <Chip
+                              icon={<LocalOffer sx={{ fontSize: 14 }} />}
+                              label={`${offerInfo.bestDiscount}% OFF`}
+                              size="small"
+                              sx={{
+                                bgcolor: '#f3e5f5',
+                                color: '#6a1b9a',
+                                fontWeight: 'bold',
+                                fontSize: '0.7rem',
+                                height: 20,
+                                '& .MuiChip-icon': { color: '#7b1fa2', fontSize: 14 }
+                              }}
+                            />
+                          )}
+                        </Box>
+                      </TableCell>
+                      <TableCell>{product.short_description}</TableCell>
+                      <TableCell align="right">৳{product.mrp.toFixed(2)}</TableCell>
+                      <TableCell align="right">{product.unit_per_case}</TableCell>
+                      <TableCell align="right">
+                        <Chip
+                          label={product.available_quantity}
+                          size="small"
+                          color={product.available_quantity > 0 ? 'success' : 'error'}
+                        />
+                      </TableCell>
+                      <TableCell>{product.brand?.name || '-'}</TableCell>
+                      <TableCell align="center">
+                        {inCart ? (
+                          <Chip
+                            label={`${inCart.quantity} in cart`}
+                            size="small"
+                            color="success"
+                            icon={<ShoppingCart />}
+                          />
+                        ) : (
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            startIcon={<Add />}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleProductClick(product);
+                            }}
+                            disabled={product.available_quantity <= 0}
+                          >
+                            Select
+                          </Button>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </AccordionDetails>
+      </Accordion>
+    );
+  };
+
   // Product card
   const ProductCard = ({ product }: { product: Product }) => {
     const inCart = cart.find((item) => item.source === "product" && item.source_id === product._id);
+    const offerInfo = getProductOfferInfo(product._id);
     
     return (
       <Card sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
         <CardContent sx={{ flex: 1 }}>
           <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
-            <Typography variant="h6" component="div" fontWeight="bold">
-              {product.sku}
-            </Typography>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, flex: 1 }}>
+              <Typography variant="h6" component="div" fontWeight="bold">
+                {product.sku}
+              </Typography>
+              {offerInfo && (
+                <Chip
+                  icon={<LocalOffer sx={{ fontSize: 14 }} />}
+                  label={`${offerInfo.bestDiscount}% OFF • ${offerInfo.offerCount} offer${offerInfo.offerCount > 1 ? 's' : ''}`}
+                  size="small"
+                  sx={{
+                    bgcolor: '#f3e5f5',
+                    color: '#6a1b9a',
+                    fontWeight: 'bold',
+                    fontSize: '0.7rem',
+                    height: 22,
+                    width: 'fit-content',
+                    '& .MuiChip-icon': { color: '#7b1fa2', fontSize: 14 }
+                  }}
+                />
+              )}
+            </Box>
             <Chip icon={<Inventory />} label="Product" size="small" color="primary" />
           </Box>
           
@@ -666,14 +1304,20 @@ const DemandOrdersPage = () => {
 
           <Box sx={{ mb: 1 }}>
             <Typography variant="body2">
-              <strong>MRP:</strong> ₹{product.mrp.toFixed(2)}
+              <strong>MRP:</strong> ৳{product.mrp.toFixed(2)}
             </Typography>
             <Typography variant="body2">
               <strong>Unit/Case:</strong> {product.unit_per_case}
             </Typography>
             <Typography
               variant="body2"
-              color={product.available_quantity > 0 ? "success.main" : "error.main"}
+              sx={{
+                bgcolor: product.available_quantity > 0 ? '#e8f5e9' : 'inherit',
+                color: product.available_quantity > 0 ? '#1b5e20' : 'error.main',
+                px: 1,
+                py: 0.5,
+                borderRadius: 1,
+              }}
             >
               <strong>Available:</strong> {product.available_quantity}
             </Typography>
@@ -709,42 +1353,53 @@ const DemandOrdersPage = () => {
       <Card sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
         <CardContent sx={{ flex: 1 }}>
           <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
-            <Typography variant="h6" component="div" fontWeight="bold">
-              {offer.sku}
-            </Typography>
             <Chip icon={<LocalOffer />} label="Offer" size="small" color="secondary" />
           </Box>
           
-          <Typography variant="body1" sx={{ mb: 1 }}>
-            {offer.offer_short_name}
+          <Typography variant="h6" sx={{ mb: 0.5, fontWeight: 600 }}>
+            {offer.name}
           </Typography>
-          <Typography variant="caption" color="text.secondary" sx={{ mb: 2, display: "block" }}>
-            {offer.offer_name}
-          </Typography>
+          
+          <Chip 
+            label={offer.offer_type?.replace(/_/g, ' ') || 'OFFER'} 
+            size="small" 
+            color="primary" 
+            sx={{ mb: 1 }}
+          />
 
           <Box sx={{ mb: 1 }}>
-            <Box sx={{ display: "flex", gap: 1, alignItems: "center", mb: 0.5 }}>
-              <Typography
-                variant="body2"
-                sx={{ textDecoration: "line-through", color: "text.disabled" }}
-              >
-                ₹{offer.original_price.toFixed(2)}
+            {/* Discount Information */}
+            {offer.config?.discountPercentage && (
+              <Typography variant="h6" color="success.main" sx={{ mb: 0.5 }}>
+                {offer.config.discountPercentage.toFixed(0)}% OFF
               </Typography>
-              <Typography variant="h6" color="error.main">
-                ₹{offer.offer_price.toFixed(2)}
+            )}
+            {offer.config?.discountAmount && (
+              <Typography variant="h6" color="success.main" sx={{ mb: 0.5 }}>
+                ৳{offer.config.discountAmount.toFixed(2)} OFF
               </Typography>
-            </Box>
-            <Typography variant="caption" color="success.main">
-              Save ₹{offer.savings.toFixed(2)} ({offer.discount_percentage.toFixed(0)}% off)
-            </Typography>
+            )}
             
-            <Typography
-              variant="body2"
-              color={offer.available_quantity > 0 ? "success.main" : "error.main"}
-              sx={{ mt: 1 }}
-            >
-              <strong>Available:</strong> {offer.available_quantity}
-            </Typography>
+            {/* Product Count */}
+            {offer.config?.selectedProducts?.length > 0 && (
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+                {offer.config.selectedProducts.length} {offer.config.selectedProducts.length === 1 ? 'Product' : 'Products'}
+              </Typography>
+            )}
+            
+            {/* Min Order Value */}
+            {offer.config?.minOrderValue && (
+              <Typography variant="caption" color="text.secondary" display="block">
+                Min Order: ৳{offer.config.minOrderValue.toFixed(2)}
+              </Typography>
+            )}
+            
+            {/* Validity */}
+            {offer.end_date && (
+              <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.5 }}>
+                Valid till: {new Date(offer.end_date).toLocaleDateString()}
+              </Typography>
+            )}
           </Box>
 
           {inCart && (
@@ -759,10 +1414,10 @@ const DemandOrdersPage = () => {
             variant="contained"
             fullWidth
             startIcon={<Add />}
-            onClick={() => addToCart(offer, "offer")}
-            disabled={offer.available_quantity <= 0}
+            onClick={() => openOfferDetails(offer)}
+            disabled={!offer.active || offer.status !== 'active'}
           >
-            Add to Cart
+            View Details
           </Button>
         </CardActions>
       </Card>
@@ -783,7 +1438,7 @@ const DemandOrdersPage = () => {
               startIcon={<ShoppingCart />}
               onClick={() => setCartDrawerOpen(true)}
             >
-              Cart (₹{cartTotals.total.toFixed(2)})
+              Cart (৳{cartTotals.total.toFixed(2)})
             </Button>
           </Badge>
         )}
@@ -858,6 +1513,20 @@ const DemandOrdersPage = () => {
                   }}
                 />
               </Grid2>
+              <Grid2 size={{ xs: 12, md: 4 }}>
+                <FormControl fullWidth>
+                  <InputLabel>Segment Filter</InputLabel>
+                  <Select
+                    value={segmentFilter}
+                    label="Segment Filter"
+                    onChange={(e) => setSegmentFilter(e.target.value)}
+                  >
+                    <MenuItem value="all">All Segments</MenuItem>
+                    <MenuItem value="BIS">BIS</MenuItem>
+                    <MenuItem value="BEV">BEV</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid2>
             </Grid2>
           </Paper>
 
@@ -876,21 +1545,23 @@ const DemandOrdersPage = () => {
             </Box>
           )}
 
-          {/* Products tab */}
+          {/* Products tab - Simple Accordion View */}
           {catalogTab === 0 && !loading && (
-            <Grid2 container spacing={2}>
-              {filteredProducts.length === 0 ? (
-                <Grid2 size={{ xs: 12 }}>
-                  <Alert severity="info">No products found</Alert>
-                </Grid2>
+            <>
+              {productGroups.length === 0 ? (
+                <Alert severity="info">No products found</Alert>
               ) : (
-                filteredProducts.map((product) => (
-                  <Grid2 size={{ xs: 12, sm: 6, md: 4, lg: 3 }} key={product._id}>
-                    <ProductCard product={product} />
-                  </Grid2>
-                ))
+                <Box>
+                  {productGroups.map((group, idx) => (
+                    <CategoryProductsAccordion
+                      key={group.categoryId}
+                      group={group}
+                      panelId={`product-group-${idx}`}
+                    />
+                  ))}
+                </Box>
               )}
-            </Grid2>
+            </>
           )}
 
           {/* Offers tab */}
@@ -976,7 +1647,7 @@ const DemandOrdersPage = () => {
                         />
                       </TableCell>
                       <TableCell align="right">{order.item_count}</TableCell>
-                      <TableCell align="right">₹{order.total_amount.toFixed(2)}</TableCell>
+                      <TableCell align="right">৳{order.total_amount.toFixed(2)}</TableCell>
                       <TableCell>{formatDate(order.created_at)}</TableCell>
                       <TableCell>{formatDate(order.submitted_at || "")}</TableCell>
                       <TableCell align="center">
@@ -1045,16 +1716,358 @@ const DemandOrdersPage = () => {
         <CartContent />
       </Drawer>
 
+      {/* Product Selection Dialog */}
+      <Dialog 
+        open={productDialogOpen} 
+        onClose={() => setProductDialogOpen(false)} 
+        maxWidth="sm" 
+        fullWidth
+      >
+        <DialogTitle>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography variant="h6">Add Product to Cart</Typography>
+            <IconButton onClick={() => setProductDialogOpen(false)}>
+              <Close />
+            </IconButton>
+          </Box>
+        </DialogTitle>
+        <DialogContent dividers>
+          {selectedProductForDialog && (
+            <>
+              <Box sx={{ mb: 3 }}>
+                <Typography variant="h6" gutterBottom>
+                  {selectedProductForDialog.sku}
+                </Typography>
+                <Typography variant="body2" color="text.secondary" gutterBottom>
+                  {selectedProductForDialog.short_description}
+                </Typography>
+                
+                <Box sx={{ display: 'flex', gap: 2, mt: 2, flexWrap: 'wrap' }}>
+                  <Chip 
+                    label={`MRP: ৳${selectedProductForDialog.mrp.toFixed(2)}`} 
+                    color="primary" 
+                  />
+                  <Chip 
+                    label={`${selectedProductForDialog.unit_per_case} units/case`} 
+                  />
+                </Box>
+              </Box>
+
+              <Paper sx={{ p: 2, mb: 2, bgcolor: '#e0f7fa', border: '1px solid #00acc1' }}>
+                <Typography variant="subtitle2" gutterBottom sx={{ color: '#006064', fontWeight: 'bold' }}>
+                  Availability
+                </Typography>
+                <Typography variant="h5" sx={{ color: '#00838f', fontWeight: 'bold' }}>
+                  {selectedProductForDialog.available_quantity} cartons
+                </Typography>
+                <Typography variant="caption" sx={{ color: '#004d40' }}>
+                  ({selectedProductForDialog.available_quantity * selectedProductForDialog.unit_per_case} pieces)
+                </Typography>
+              </Paper>
+
+              <TextField
+                fullWidth
+                label="Quantity (Cartons)"
+                type="number"
+                value={dialogQuantity}
+                onChange={(e) => setDialogQuantity(parseInt(e.target.value) || 1)}
+                inputProps={{ 
+                  min: 1, 
+                  max: selectedProductForDialog.available_quantity 
+                }}
+                helperText={`Maximum: ${selectedProductForDialog.available_quantity} cartons available`}
+              />
+
+              <Box sx={{ mt: 2, p: 2, bgcolor: 'grey.100', borderRadius: 1 }}>
+                <Typography variant="subtitle2">Order Summary</Typography>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 1 }}>
+                  <Typography>Quantity:</Typography>
+                  <Typography fontWeight="bold">{dialogQuantity} cartons</Typography>
+                </Box>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <Typography>Unit Price:</Typography>
+                  <Typography>৳{selectedProductForDialog.mrp.toFixed(2)}</Typography>
+                </Box>
+                {selectedOffer && (() => {
+                  const originalSubtotal = selectedProductForDialog.mrp * dialogQuantity;
+                  
+                  // Calculate current cart total for this offer group
+                  const cartItemsForThisOffer = cart.filter(item => item.offer_id === selectedOffer._id);
+                  const currentCartTotal = cartItemsForThisOffer.reduce((sum, item) => sum + (item.unit_price * item.quantity), 0);
+                  const totalWithNewItem = currentCartTotal + originalSubtotal;
+                  const meetsMinimum = !selectedOffer.config?.minOrderValue || totalWithNewItem >= selectedOffer.config.minOrderValue;
+                  const remainingToMinimum = selectedOffer.config?.minOrderValue ? Math.max(0, selectedOffer.config.minOrderValue - totalWithNewItem) : 0;
+                  
+                  // Calculate discount on the new item ONLY if minimum is met
+                  const { discountAmount, discountPercentage } = meetsMinimum 
+                    ? calculateOfferDiscount(originalSubtotal, dialogQuantity, selectedOffer)
+                    : { discountAmount: 0, discountPercentage: 0 };
+                  
+                  return (
+                    <>
+                      {selectedOffer.config?.minOrderValue && !meetsMinimum && (
+                        <Alert 
+                          severity="warning" 
+                          sx={{ 
+                            mt: 1,
+                            bgcolor: '#f3e5f5',
+                            color: '#4a148c',
+                            '& .MuiAlert-icon': { color: '#6a1b9a' }
+                          }}
+                        >
+                          Minimum order value: <strong>৳{selectedOffer.config.minOrderValue.toFixed(2)}</strong>
+                          <br />
+                          Current cart total: <strong>৳{currentCartTotal.toFixed(2)}</strong>
+                          <br />
+                          With this item: <strong>৳{totalWithNewItem.toFixed(2)}</strong>
+                          <br />
+                          Add <strong>৳{remainingToMinimum.toFixed(2)}</strong> more to unlock <strong>{selectedOffer.config.discountPercentage}%</strong> discount
+                        </Alert>
+                      )}
+                      {selectedOffer.config?.minOrderValue && meetsMinimum && currentCartTotal > 0 && (
+                        <Alert 
+                          severity="success" 
+                          sx={{ 
+                            mt: 1,
+                            bgcolor: '#f3e5f5',
+                            color: '#4a148c',
+                            '& .MuiAlert-icon': { color: '#7b1fa2' }
+                          }}
+                        >
+                          ✓ Minimum order value met! <strong>{selectedOffer.config.discountPercentage}%</strong> discount will apply to all items in this offer.
+                        </Alert>
+                      )}
+                      {discountAmount > 0 && (
+                        <>
+                          <Divider sx={{ my: 1 }} />
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <Typography color="text.secondary">Subtotal:</Typography>
+                            <Typography color="text.secondary">৳{originalSubtotal.toFixed(2)}</Typography>
+                          </Box>
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <Typography sx={{ color: '#00838f' }}>
+                              Offer Discount ({discountPercentage}%):
+                            </Typography>
+                            <Typography sx={{ color: '#00838f', fontWeight: 'bold' }}>
+                              -৳{discountAmount.toFixed(2)}
+                            </Typography>
+                          </Box>
+                          {selectedOffer.config?.maxDiscountAmount && discountAmount >= selectedOffer.config.maxDiscountAmount && (
+                            <Typography variant="caption" color="text.secondary">
+                              (Capped at max discount: ৳{selectedOffer.config.maxDiscountAmount.toFixed(2)})
+                            </Typography>
+                          )}
+                        </>
+                      )}
+                    </>
+                  );
+                })()}
+                <Divider sx={{ my: 1 }} />
+                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <Typography variant="h6">Total:</Typography>
+                  <Typography variant="h6" sx={{ color: selectedOffer ? '#00838f' : 'primary.main', fontWeight: 'bold' }}>
+                    ৳{(() => {
+                      const originalSubtotal = selectedProductForDialog.mrp * dialogQuantity;
+                      if (selectedOffer) {
+                        const { discountAmount } = calculateOfferDiscount(originalSubtotal, dialogQuantity, selectedOffer);
+                        return (originalSubtotal - discountAmount).toFixed(2);
+                      }
+                      return originalSubtotal.toFixed(2);
+                    })()}
+                  </Typography>
+                </Box>
+              </Box>
+            </>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setProductDialogOpen(false)}>
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handleAddFromDialog}
+            disabled={!selectedProductForDialog || dialogQuantity <= 0 || dialogQuantity > (selectedProductForDialog?.available_quantity || 0)}
+            startIcon={<AddShoppingCart />}
+          >
+            Add to Cart
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Offer Details Dialog */}
+      <Dialog 
+        open={offerDialogOpen} 
+        onClose={closeOfferDialog} 
+        maxWidth="md" 
+        fullWidth
+      >
+        <DialogTitle>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography variant="h6">{selectedOffer?.name}</Typography>
+            <IconButton onClick={closeOfferDialog}>
+              <Close />
+            </IconButton>
+          </Box>
+        </DialogTitle>
+        <DialogContent dividers>
+          {selectedOffer && (
+            <>
+              {/* Offer Details */}
+              <Box sx={{ mb: 3 }}>
+                <Box sx={{ display: 'flex', gap: 1, mb: 2, flexWrap: 'wrap' }}>
+                  <Chip 
+                    label={selectedOffer.offer_type.replace(/_/g, ' ')} 
+                    color="primary" 
+                  />
+                  <Chip 
+                    label={selectedOffer.status.toUpperCase()} 
+                    color={selectedOffer.status === 'active' ? 'success' : 'default'} 
+                  />
+                  {selectedOffer.product_segments.map((seg) => (
+                    <Chip key={seg} label={seg} size="small" />
+                  ))}
+                </Box>
+
+                {/* Discount Info */}
+                <Paper sx={{ p: 2, mb: 2, bgcolor: '#f3e5f5', border: '1px solid #9c27b0' }}>
+                  {selectedOffer.config?.discountPercentage && (
+                    <Typography variant="h4" color="#6a1b9a" gutterBottom sx={{ fontWeight: 'bold' }}>
+                      {selectedOffer.config.discountPercentage}% OFF
+                    </Typography>
+                  )}
+                  {selectedOffer.config?.discountAmount && (
+                    <Typography variant="h4" color="#6a1b9a" gutterBottom sx={{ fontWeight: 'bold' }}>
+                      ৳{selectedOffer.config.discountAmount.toFixed(2)} OFF
+                    </Typography>
+                  )}
+                  
+                  {selectedOffer.config?.minOrderValue && (
+                    <Typography variant="body2" sx={{ color: '#4a148c' }}>
+                      Minimum order value: <strong>৳{selectedOffer.config.minOrderValue.toFixed(2)}</strong>
+                    </Typography>
+                  )}
+                  
+                  {selectedOffer.config?.maxDiscountAmount && (
+                    <Typography variant="body2" sx={{ color: '#4a148c' }}>
+                      Maximum discount: <strong>৳{selectedOffer.config.maxDiscountAmount.toFixed(2)}</strong>
+                    </Typography>
+                  )}
+                </Paper>
+
+                {/* Validity */}
+                <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+                  <Typography variant="body2" color="text.secondary">
+                    Valid from: {new Date(selectedOffer.start_date).toLocaleDateString()}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Valid till: {new Date(selectedOffer.end_date).toLocaleDateString()}
+                  </Typography>
+                </Box>
+
+                {selectedOffer.description && (
+                  <Typography variant="body2" sx={{ mb: 2 }}>
+                    {selectedOffer.description}
+                  </Typography>
+                )}
+              </Box>
+
+              <Divider sx={{ my: 2 }} />
+
+              {/* Eligible Products */}
+              <Typography variant="h6" gutterBottom>
+                Eligible Products ({offerProducts.length})
+              </Typography>
+              
+              {loadingOfferProducts ? (
+                <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+                  <CircularProgress />
+                </Box>
+              ) : offerProducts.length === 0 ? (
+                <Alert severity="info">
+                  No eligible products found for this offer.
+                </Alert>
+              ) : (
+                <Box sx={{ maxHeight: '400px', overflow: 'auto' }}>
+                  <Grid2 container spacing={2}>
+                    {offerProducts.map((product) => {
+                      const offerInfo = getProductOfferInfo(product._id);
+                      
+                      return (
+                      <Grid2 size={{ xs: 12, sm: 6 }} key={product._id}>
+                        <Card variant="outlined">
+                          <CardContent>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+                              <Typography variant="subtitle2" gutterBottom>
+                                {product.sku}
+                              </Typography>
+                              {offerInfo && offerInfo.offerCount > 1 && (
+                                <Chip
+                                  label={`${offerInfo.offerCount} offers`}
+                                  size="small"
+                                  sx={{
+                                    bgcolor: '#f3e5f5',
+                                    color: '#6a1b9a',
+                                    fontWeight: 'bold',
+                                    fontSize: '0.65rem',
+                                    height: 18,
+                                  }}
+                                />
+                              )}
+                            </Box>
+                            <Typography variant="body2" color="text.secondary" gutterBottom>
+                              {product.short_description}
+                            </Typography>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 1 }}>
+                              <Typography variant="body2" fontWeight="bold">
+                                ৳{product.mrp.toFixed(2)}
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                {product.available_quantity} available
+                              </Typography>
+                            </Box>
+                          </CardContent>
+                          <CardActions>
+                            <Button 
+                              size="small" 
+                              fullWidth
+                              variant="outlined"
+                              onClick={() => {
+                                setSelectedProductForDialog(product);
+                                setDialogQuantity(1);
+                                setProductDialogOpen(true);
+                              }}
+                              disabled={product.available_quantity <= 0}
+                            >
+                              Add to Cart
+                            </Button>
+                          </CardActions>
+                        </Card>
+                      </Grid2>
+                    )})}
+                  </Grid2>
+                </Box>
+              )}
+            </>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={closeOfferDialog}>
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       {/* Submit confirmation dialog */}
       <Dialog open={submitDialogOpen} onClose={() => setSubmitDialogOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Confirm Order Submission</DialogTitle>
+        <DialogTitle>Save Order as Draft</DialogTitle>
         <DialogContent>
           <Typography variant="body1" sx={{ mb: 2 }}>
-            You are about to submit an order with {cartTotals.itemCount} items totaling ₹
+            You are about to save a draft order with {cartTotals.itemCount} items totaling ৳
             {cartTotals.total.toFixed(2)}.
           </Typography>
           <Alert severity="info">
-            Once submitted, your order will be sent for approval. You cannot modify it after submission.
+            The order will be saved as a draft. You can edit it, add payment receipts, and then submit for approval.
           </Alert>
         </DialogContent>
         <DialogActions>
@@ -1065,7 +2078,7 @@ const DemandOrdersPage = () => {
             disabled={loading}
             startIcon={loading ? <CircularProgress size={20} /> : null}
           >
-            {loading ? "Submitting..." : "Confirm & Submit"}
+            {loading ? "Saving..." : "Save Draft"}
           </Button>
         </DialogActions>
       </Dialog>
@@ -1206,8 +2219,8 @@ const DemandOrdersPage = () => {
                           />
                         </TableCell>
                         <TableCell align="right">{item.quantity}</TableCell>
-                        <TableCell align="right">₹{item.unit_price.toFixed(2)}</TableCell>
-                        <TableCell align="right">₹{item.subtotal.toFixed(2)}</TableCell>
+                        <TableCell align="right">৳{item.unit_price.toFixed(2)}</TableCell>
+                        <TableCell align="right">৳{item.subtotal.toFixed(2)}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -1226,7 +2239,7 @@ const DemandOrdersPage = () => {
                   <Divider />
                   <Box sx={{ display: "flex", justifyContent: "space-between", mt: 1 }}>
                     <Typography variant="h6">Total:</Typography>
-                    <Typography variant="h6">₹{selectedOrder.total_amount.toFixed(2)}</Typography>
+                    <Typography variant="h6">৳{selectedOrder.total_amount.toFixed(2)}</Typography>
                   </Box>
                 </Box>
               </Box>
@@ -1234,6 +2247,38 @@ const DemandOrdersPage = () => {
           )}
         </DialogContent>
         <DialogActions>
+          {selectedOrder?.status === "draft" && (
+            <>
+              <Button 
+                variant="outlined" 
+                color="primary"
+                startIcon={<AttachMoney />}
+                onClick={() => {
+                  // TODO: Open payment upload dialog
+                  console.log("Add payment for order:", selectedOrder._id);
+                }}
+              >
+                Add Payment
+              </Button>
+              <Button 
+                variant="contained" 
+                color="success"
+                startIcon={<Send />}
+                onClick={async () => {
+                  try {
+                    await api.post(`/ordermanagement/demandorders/${selectedOrder._id}/submit`);
+                    setSuccess(`Order ${selectedOrder.order_number || selectedOrder._id} submitted for approval!`);
+                    setOrderDetailsOpen(false);
+                    loadOrders();
+                  } catch (err: any) {
+                    setError(err.response?.data?.message || "Failed to submit order");
+                  }
+                }}
+              >
+                Submit for Approval
+              </Button>
+            </>
+          )}
           <Button onClick={() => setOrderDetailsOpen(false)}>Close</Button>
         </DialogActions>
       </Dialog>
@@ -1242,3 +2287,4 @@ const DemandOrdersPage = () => {
 };
 
 export default DemandOrdersPage;
+

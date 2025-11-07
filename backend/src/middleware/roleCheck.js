@@ -110,11 +110,12 @@ const requireProductionRole = async (req, res, next) => {
     const userRole = user.role_id?.role; // Use "role" field instead of "name"
     console.log("🎭 User role name:", userRole);
 
-    if (userRole !== "Production") {
-      console.log("❌ Role mismatch - expected Production, got:", userRole);
+    // Accept both "Production" (legacy) and "Inventory Factory" (new) roles
+    if (userRole !== "Production" && userRole !== "Inventory Factory") {
+      console.log("❌ Role mismatch - expected Production or Inventory Factory, got:", userRole);
       return res.status(403).json({
         success: false,
-        message: "Access denied. Production role required",
+        message: "Access denied. Production or Inventory Factory role required",
       });
     }
 

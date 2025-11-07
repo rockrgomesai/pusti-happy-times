@@ -9,27 +9,27 @@ async function fixDemandOrderMenu() {
     console.log("Connected to MongoDB\n");
 
     const SidebarMenuItem = mongoose.connection.db.collection("sidebar_menu_items");
-    
+
     // Update the "DO" menu item to point to the correct URL
-    const doMenuItem = await SidebarMenuItem.findOne({ 
-      href: "/demandorder/do" 
+    const doMenuItem = await SidebarMenuItem.findOne({
+      href: "/demandorder/do",
     });
 
     if (doMenuItem) {
       console.log("Found 'DO' menu item:", doMenuItem._id);
-      
+
       // Update it to point to the correct path
       const result = await SidebarMenuItem.updateOne(
         { _id: doMenuItem._id },
-        { 
-          $set: { 
+        {
+          $set: {
             href: "/ordermanagement/demandorders",
             label: "Place Orders",
-            icon: "FaFileInvoice"
-          } 
+            icon: "FaFileInvoice",
+          },
         }
       );
-      
+
       console.log("✓ Updated DO menu item to point to /ordermanagement/demandorders");
       console.log(`  Modified: ${result.modifiedCount} document(s)`);
     } else {
@@ -38,22 +38,22 @@ async function fixDemandOrderMenu() {
 
     // Also update the parent menu name if needed
     const demandOrdersParent = await SidebarMenuItem.findOne({
-      _id: new mongoose.Types.ObjectId("68ef0c679655dc4346b9fd89")
+      _id: new mongoose.Types.ObjectId("68ef0c679655dc4346b9fd89"),
     });
 
     if (demandOrdersParent) {
       console.log("\nFound parent 'Demand Orders' menu:", demandOrdersParent._id);
-      
+
       const result = await SidebarMenuItem.updateOne(
         { _id: demandOrdersParent._id },
         {
           $set: {
             label: "Order Management",
-            icon: "FaShoppingCart"
-          }
+            icon: "FaShoppingCart",
+          },
         }
       );
-      
+
       console.log("✓ Updated parent menu to 'Order Management'");
       console.log(`  Modified: ${result.modifiedCount} document(s)`);
     }
@@ -67,7 +67,7 @@ async function fixDemandOrderMenu() {
     }
 
     const updatedParent = await SidebarMenuItem.findOne({
-      _id: new mongoose.Types.ObjectId("68ef0c679655dc4346b9fd89")
+      _id: new mongoose.Types.ObjectId("68ef0c679655dc4346b9fd89"),
     });
     if (updatedParent) {
       console.log("✓ Parent menu label:", updatedParent.label);

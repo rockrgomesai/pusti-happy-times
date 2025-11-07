@@ -95,6 +95,73 @@ router.get("/territories", requireApiPermission("offers:read"), async (req, res)
   }
 });
 
+/**
+ * POST /product/offers/territories/descendants
+ * Get all descendant territories for given parent IDs - PERFORMANT bulk fetch
+ * This is used for auto-cascade selection in offer wizard
+ */
+router.post(
+  "/territories/descendants",
+  requireApiPermission("offers:read"),
+  [
+    body("parentIds").isArray({ min: 1 }).withMessage("At least one parent ID required"),
+    body("parentIds.*").isMongoId().withMessage("Invalid parent ID"),
+    body("startLevel").isInt({ min: 0, max: 3 }).withMessage("Invalid start level"),
+  ],
+  async (req, res) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({
+          success: false,
+          errors: errors.array(),
+        });
+      }
+
+      const { parentIds, startLevel } = req.body;
+
+      // Efficient query: Find all territories whose ancestors array contains any of the parentIds
+      // This gets ALL descendants in a single query (regions, areas, db_points)
+      const descendants = await Territory.find({
+        ancestors: { $in: parentIds },
+        level: { $gt: startLevel }, // Only get children, not the parents themselves
+        active: true,
+      })
+        .select("_id name code type level parent_id ancestors")
+        .sort({ level: 1, name: 1 })
+        .lean();
+
+      // Group by type for easier frontend processing
+      const grouped = {
+        regions: descendants.filter((t) => t.type === "region"),
+        areas: descendants.filter((t) => t.type === "area"),
+        db_points: descendants.filter((t) => t.type === "db_point"),
+      };
+
+      res.json({
+        success: true,
+        data: {
+          all: descendants,
+          grouped,
+          counts: {
+            total: descendants.length,
+            regions: grouped.regions.length,
+            areas: grouped.areas.length,
+            db_points: grouped.db_points.length,
+          },
+        },
+      });
+    } catch (error) {
+      console.error("Error fetching descendant territories:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to fetch descendant territories",
+        error: error.message,
+      });
+    }
+  }
+);
+
 // =====================
 // DISTRIBUTOR ROUTES
 // =====================

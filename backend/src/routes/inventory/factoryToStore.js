@@ -6,8 +6,9 @@
 const express = require("express");
 const router = express.Router();
 const mongoose = require("mongoose");
-const FactoryStoreInventory = require("../../models/FactoryStoreInventory");
-const FactoryStoreInventoryTransaction = require("../../models/FactoryStoreInventoryTransaction");
+const DepotStock = require("../../models/DepotStock");
+const DepotTransactionIn = require("../../models/DepotTransactionIn");
+const DepotTransactionOut = require("../../models/DepotTransactionOut");
 const ProductionSendToStore = require("../../models/ProductionSendToStore");
 const Notification = require("../../models/Notification");
 const { authenticate, requireApiPermission } = require("../../middleware/auth");
@@ -16,12 +17,12 @@ const { requireInventoryRole, requireInventoryFactoryRole } = require("../../mid
 /**
  * @route   GET /api/v1/inventory/factory-to-store/pending-receipts
  * @desc    Get pending shipments from production (not yet received)
- * @access  Private - Inventory Factory Role ONLY
+ * @access  Private - Inventory Role (Factory or Depot)
  */
 router.get(
   "/pending-receipts",
   authenticate,
-  requireInventoryFactoryRole,
+  requireInventoryRole,
   requireApiPermission("inventory:pending-receipts:read"),
   async (req, res) => {
     try {
@@ -90,18 +91,35 @@ router.get(
 
 /**
  * @route   POST /api/v1/inventory/factory-to-store/receive-from-production
- * @desc    Receive goods from production shipment (reverse of send-to-store)
- * @access  Private - Inventory Factory Role ONLY
+ * @desc    Receive goods from production shipment (with ACID transactions)
+ * @access  Private - Inventory Role (Factory or Depot)
  */
 router.post(
   "/receive-from-production",
   authenticate,
-  requireInventoryFactoryRole,
+  requireInventoryRole,
   requireApiPermission("inventory:receive:create"),
   async (req, res) => {
-    // Skip transactions for non-replica-set MongoDB
-    // Transactions will be added when replica set is configured
-    const USE_TRANSACTIONS = false; // Set to true when using replica set
+    // Try to use transactions if replica set is available
+    let session = null;
+    let useTransaction = false;
+
+    try {
+      // Check if we can use transactions (replica set)
+      const adminDb = mongoose.connection.db.admin();
+      const serverStatus = await adminDb.serverStatus();
+      useTransaction = serverStatus.repl && serverStatus.repl.setName;
+
+      if (useTransaction) {
+        session = await mongoose.startSession();
+        console.log("✅ Using MongoDB transactions");
+      } else {
+        console.log("⚠️  Standalone MongoDB - running without transactions");
+      }
+    } catch (error) {
+      console.log("⚠️  Transaction check failed - running without transactions");
+      useTransaction = false;
+    }
 
     try {
       const { shipment_id, location, notes, details: editedDetails } = req.body;
@@ -152,130 +170,144 @@ router.post(
       const detailsToProcess =
         editedDetails && editedDetails.length > 0 ? editedDetails : shipment.details;
 
-      // Process each product in the shipment
-      const inventoryRecords = [];
-      const transactions = [];
+      // Start transaction if available
+      if (useTransaction && session) {
+        await session.startTransaction();
+      }
 
-      for (const detail of detailsToProcess) {
-        // Extract product_id - could be nested or direct ObjectId
-        const productId = detail.product_id?._id || detail.product_id;
+      const stockRecords = [];
+      const transactionRecords = [];
 
-        // Find if this batch already exists in inventory
-        let inventoryRecord = await FactoryStoreInventory.findOne({
-          facility_store_id,
-          product_id: productId,
-          batch_no: detail.batch_no,
-        });
+      try {
+        // Process each product in the shipment
+        for (const detail of detailsToProcess) {
+          // Extract product_id - could be nested or direct ObjectId
+          const productId = detail.product_id?._id || detail.product_id;
 
-        // Parse received quantity - handle various formats
-        let receivedQty = 0;
+          // Parse received quantity - handle various formats
+          let receivedQty = 0;
 
-        console.log(`🔍 DEBUG detail.qty:`, detail.qty);
-        console.log(`🔍 DEBUG typeof detail.qty:`, typeof detail.qty);
-        console.log(`🔍 DEBUG detail:`, JSON.stringify(detail));
+          if (typeof detail.qty === "number") {
+            receivedQty = detail.qty;
+          } else if (detail.qty && detail.qty.$numberDecimal) {
+            receivedQty = parseFloat(detail.qty.$numberDecimal);
+          } else if (detail.qty && typeof detail.qty === "object" && detail.qty.toString) {
+            receivedQty = parseFloat(detail.qty.toString());
+          } else if (typeof detail.qty === "string") {
+            receivedQty = parseFloat(detail.qty);
+          } else {
+            console.error(`❌ Unable to parse qty from detail:`, detail);
+          }
 
-        if (typeof detail.qty === "number") {
-          receivedQty = detail.qty;
-        } else if (detail.qty && detail.qty.$numberDecimal) {
-          receivedQty = parseFloat(detail.qty.$numberDecimal);
-        } else if (detail.qty && typeof detail.qty === "object" && detail.qty.toString) {
-          receivedQty = parseFloat(detail.qty.toString());
-        } else if (typeof detail.qty === "string") {
-          receivedQty = parseFloat(detail.qty);
-        } else {
-          console.error(`❌ Unable to parse qty from detail:`, detail);
-        }
-
-        console.log(
-          `📦 Processing product ${productId}, batch ${detail.batch_no}, receivedQty: ${receivedQty}`
-        );
-
-        if (isNaN(receivedQty)) {
-          console.error(`❌ Invalid receivedQty (NaN) for batch ${detail.batch_no}`);
-          return res.status(400).json({
-            success: false,
-            message: `Invalid quantity for batch ${detail.batch_no}. Please check the data.`,
-          });
-        }
-
-        if (receivedQty <= 0) {
-          console.error(`❌ Invalid receivedQty (${receivedQty}) for batch ${detail.batch_no}`);
-          return res.status(400).json({
-            success: false,
-            message: `Quantity must be greater than 0 for batch ${detail.batch_no}.`,
-          });
-        }
-
-        if (inventoryRecord) {
-          // Update existing record
-          const currentQty = parseFloat(
-            inventoryRecord.qty_ctn.$numberDecimal || inventoryRecord.qty_ctn.toString()
+          console.log(
+            `📦 Processing product ${productId}, batch ${detail.batch_no}, receivedQty: ${receivedQty}`
           );
-          inventoryRecord.qty_ctn = currentQty + receivedQty;
-          inventoryRecord.status = "active";
-          inventoryRecord.last_updated_by = user_id;
-          inventoryRecord.last_updated_at = new Date();
-          if (location) inventoryRecord.location = location;
-          if (notes) inventoryRecord.notes = notes;
 
-          await inventoryRecord.save();
-        } else {
-          // Create new inventory record
-          inventoryRecord = new FactoryStoreInventory({
-            facility_store_id,
+          if (isNaN(receivedQty)) {
+            throw new Error(
+              `Invalid quantity for batch ${detail.batch_no}. Please check the data.`
+            );
+          }
+
+          if (receivedQty <= 0) {
+            throw new Error(`Quantity must be greater than 0 for batch ${detail.batch_no}.`);
+          }
+
+          // Find or create AGGREGATED depot stock record (depot + product only)
+          const findQuery = DepotStock.findOne({
+            depot_id: facility_store_id,
+            product_id: productId,
+          });
+
+          let stockRecord =
+            useTransaction && session ? await findQuery.session(session) : await findQuery;
+
+          let currentQty = 0;
+          let newQty = receivedQty;
+
+          if (stockRecord) {
+            // Update existing aggregated stock record
+            currentQty = parseFloat(
+              stockRecord.qty_ctn.$numberDecimal || stockRecord.qty_ctn.toString()
+            );
+            newQty = currentQty + receivedQty;
+
+            await stockRecord.addStock(receivedQty, useTransaction && session ? session : null);
+          } else {
+            // Create new aggregated stock record (no batch-level fields)
+            stockRecord = new DepotStock({
+              depot_id: facility_store_id,
+              product_id: productId,
+              qty_ctn: receivedQty,
+            });
+
+            if (useTransaction && session) {
+              await stockRecord.save({ session });
+            } else {
+              await stockRecord.save();
+            }
+          }
+
+          stockRecords.push(stockRecord);
+
+          // Create incoming transaction record
+          const transactionIn = new DepotTransactionIn({
+            depot_id: facility_store_id,
             product_id: productId,
             batch_no: detail.batch_no,
             production_date: detail.production_date,
             expiry_date: detail.expiry_date,
+            transaction_type: "from_production",
             qty_ctn: receivedQty,
-            initial_qty_ctn: receivedQty,
+            balance_after_qty_ctn: newQty,
+            reference_type: "ProductionSendToStore",
+            reference_id: shipment._id,
+            reference_no: shipment.ref,
+            source_facility_id: shipment.facility_id,
             location: location || "",
-            source_shipment_ref: shipment.ref,
-            source_shipment_id: shipment._id,
-            status: "active",
+            transaction_date: new Date(),
+            received_date: new Date(),
+            status: "approved",
             notes: notes || "",
-            received_by: user_id,
-            received_at: new Date(),
+            created_by: user_id,
+            approved_by: user_id,
+            approved_at: new Date(),
           });
 
-          await inventoryRecord.save();
+          if (useTransaction && session) {
+            await transactionIn.save({ session });
+          } else {
+            await transactionIn.save();
+          }
+          transactionRecords.push(transactionIn);
         }
 
-        inventoryRecords.push(inventoryRecord);
+        // Update shipment status
+        shipment.status = "received";
+        shipment.received_by = user_id;
+        shipment.received_at = new Date();
 
-        // Create transaction record
-        const transaction = new FactoryStoreInventoryTransaction({
-          facility_store_id,
-          product_id: productId,
-          batch_no: detail.batch_no,
-          transaction_type: "receipt",
-          qty_ctn: receivedQty,
-          balance_after: parseFloat(
-            inventoryRecord.qty_ctn.$numberDecimal || inventoryRecord.qty_ctn.toString()
-          ),
-          reference_type: "production_shipment",
-          reference_id: shipment._id,
-          reference_type_model: "ProductionSendToStore",
-          reference_no: shipment.ref,
-          production_date: detail.production_date,
-          expiry_date: detail.expiry_date,
-          location: location || "",
-          notes: notes || "",
-          created_by: user_id,
-          status: "approved",
-        });
-
-        await transaction.save();
-        transactions.push(transaction);
+        if (useTransaction && session) {
+          await shipment.save({ session });
+          // Commit the transaction
+          await session.commitTransaction();
+          console.log("✅ ACID transaction committed successfully");
+        } else {
+          await shipment.save();
+          console.log("✅ Data saved successfully (without transaction)");
+        }
+      } catch (error) {
+        // Rollback on any error
+        if (useTransaction && session) {
+          await session.abortTransaction();
+          console.error("❌ ACID transaction aborted:", error);
+        } else {
+          console.error("❌ Error during save:", error);
+        }
+        throw error;
       }
 
-      // Update shipment status
-      shipment.status = "received";
-      shipment.received_by = user_id;
-      shipment.received_at = new Date();
-      await shipment.save();
-
-      // Mark related notifications as read
+      // Mark related notifications as read (outside transaction)
       await Notification.updateMany(
         {
           shipment_id: shipment._id,
@@ -288,7 +320,7 @@ router.post(
         }
       );
 
-      // Create confirmation notification for production user
+      // Create confirmation notification for production user (outside transaction)
       try {
         await Notification.create({
           user_id: shipment.user_id,
@@ -310,8 +342,8 @@ router.post(
         message: `Shipment ${shipment.ref} received successfully`,
         data: {
           shipment,
-          inventory_records: inventoryRecords,
-          transactions,
+          stock_records: stockRecords,
+          transaction_records: transactionRecords,
         },
       });
     } catch (error) {
@@ -321,6 +353,11 @@ router.post(
         message: "Failed to receive goods",
         error: error.message,
       });
+    } finally {
+      // End the session if it was created
+      if (session) {
+        session.endSession();
+      }
     }
   }
 );
@@ -328,12 +365,12 @@ router.post(
 /**
  * @route   GET /api/v1/inventory/factory-to-store/received-shipments
  * @desc    Get all received shipments list (received from production)
- * @access  Private - Inventory Factory Role ONLY
+ * @access  Private - Inventory Role (Factory or Depot)
  */
 router.get(
   "/received-shipments",
   authenticate,
-  requireInventoryFactoryRole,
+  requireInventoryRole,
   requireApiPermission("inventory:view:read"),
   async (req, res) => {
     try {
@@ -402,158 +439,8 @@ router.get(
 );
 
 /**
- * @route   POST /api/v1/inventory/factory-to-store/receive
- * @desc    Receive goods from production shipment
- * @access  Private - Inventory Role
- */
-router.post(
-  "/receive",
-  authenticate,
-  requireInventoryRole,
-  requireApiPermission("inventory:receive:create"),
-  async (req, res) => {
-    try {
-      const { shipment_id, received_details, location, notes } = req.body;
-      const { user_id, facility_store_id } = req.userContext;
-
-      if (!facility_store_id) {
-        return res.status(400).json({
-          success: false,
-          message: "Factory store ID not found in user context",
-        });
-      }
-
-      // Validate shipment exists and is pending
-      const shipment =
-        await ProductionSendToStore.findById(shipment_id).populate("details.product_id");
-
-      if (!shipment) {
-        return res.status(404).json({
-          success: false,
-          message: "Shipment not found",
-        });
-      }
-
-      if (shipment.status !== "sent") {
-        return res.status(400).json({
-          success: false,
-          message: `Cannot receive shipment with status: ${shipment.status}`,
-        });
-      }
-
-      if (shipment.facility_store_id.toString() !== facility_store_id) {
-        return res.status(403).json({
-          success: false,
-          message: "Shipment is not for your facility store",
-        });
-      }
-
-      // Process each product in the shipment
-      const inventoryRecords = [];
-      const transactions = [];
-
-      for (const detail of shipment.details) {
-        // Find if this batch already exists in inventory
-        let inventoryRecord = await FactoryStoreInventory.findOne({
-          facility_store_id,
-          product_id: detail.product_id._id,
-          batch_no: detail.batch_no,
-        });
-
-        const receivedQty = parseFloat(detail.qty.$numberDecimal || detail.qty.toString());
-
-        if (inventoryRecord) {
-          // Update existing record
-          const currentQty = parseFloat(
-            inventoryRecord.qty_ctn.$numberDecimal || inventoryRecord.qty_ctn.toString()
-          );
-          inventoryRecord.qty_ctn = currentQty + receivedQty;
-          inventoryRecord.status = "active";
-          inventoryRecord.last_updated_by = user_id;
-          inventoryRecord.last_updated_at = new Date();
-          if (location) inventoryRecord.location = location;
-          if (notes) inventoryRecord.notes = notes;
-
-          await inventoryRecord.save();
-        } else {
-          // Create new inventory record
-          inventoryRecord = new FactoryStoreInventory({
-            facility_store_id,
-            product_id: detail.product_id._id,
-            batch_no: detail.batch_no,
-            production_date: detail.production_date,
-            expiry_date: detail.expiry_date,
-            qty_ctn: receivedQty,
-            initial_qty_ctn: receivedQty,
-            location: location || "",
-            source_shipment_ref: shipment.ref,
-            source_shipment_id: shipment._id,
-            status: "active",
-            notes: notes || "",
-            received_by: user_id,
-            received_at: new Date(),
-          });
-
-          await inventoryRecord.save();
-        }
-
-        inventoryRecords.push(inventoryRecord);
-
-        // Create transaction record
-        const transaction = new FactoryStoreInventoryTransaction({
-          facility_store_id,
-          product_id: detail.product_id._id,
-          batch_no: detail.batch_no,
-          transaction_type: "receipt",
-          qty_ctn: receivedQty,
-          balance_after: parseFloat(
-            inventoryRecord.qty_ctn.$numberDecimal || inventoryRecord.qty_ctn.toString()
-          ),
-          reference_type: "production_shipment",
-          reference_id: shipment._id,
-          reference_type_model: "ProductionSendToStore",
-          reference_no: shipment.ref,
-          production_date: detail.production_date,
-          expiry_date: detail.expiry_date,
-          location: location || "",
-          notes: notes || "",
-          created_by: user_id,
-          status: "approved",
-        });
-
-        await transaction.save();
-        transactions.push(transaction);
-      }
-
-      // Update shipment status
-      shipment.status = "received";
-      shipment.received_by = user_id;
-      shipment.received_at = new Date();
-      await shipment.save();
-
-      res.status(201).json({
-        success: true,
-        message: `Shipment ${shipment.ref} received successfully`,
-        data: {
-          shipment,
-          inventory_records: inventoryRecords,
-          transactions,
-        },
-      });
-    } catch (error) {
-      console.error("❌ Error receiving goods:", error);
-      res.status(500).json({
-        success: false,
-        message: "Failed to receive goods",
-        error: error.message,
-      });
-    }
-  }
-);
-
-/**
  * @route   GET /api/v1/inventory/factory-to-store
- * @desc    Get current inventory levels (aggregated by product)
+ * @desc    Get current inventory levels (aggregated by product) from depot_stocks
  * @access  Private - Inventory Role
  */
 router.get(
@@ -573,102 +460,62 @@ router.get(
         });
       }
 
-      const skip = (parseInt(page) - 1) * parseInt(limit);
+      // Use the new DepotStock model's getStockSummary method
+      const filters = {};
 
-      // Build match stage for aggregation
-      const matchStage = {
-        facility_store_id: new mongoose.Types.ObjectId(facility_store_id),
-        status: "active", // Only show active inventory
-      };
-
-      // If search, find matching products first
       if (search) {
         const products = await mongoose
           .model("Product")
           .find({
             $or: [
               { sku: { $regex: search, $options: "i" } },
-              { name: { $regex: search, $options: "i" } },
+              { bangla_name: { $regex: search, $options: "i" } },
+              { english_name: { $regex: search, $options: "i" } },
               { erp_id: { $regex: search, $options: "i" } },
             ],
           })
           .select("_id");
 
-        matchStage.product_id = { $in: products.map((p) => p._id) };
-      }
-
-      // Aggregate inventory by product (sum all batches)
-      const aggregationPipeline = [
-        { $match: matchStage },
-        {
-          $group: {
-            _id: "$product_id",
-            total_qty_ctn: { $sum: { $toDouble: "$qty_ctn" } },
-            batch_count: { $sum: 1 },
-            oldest_production_date: { $min: "$production_date" },
-            earliest_expiry_date: { $min: "$expiry_date" },
-          },
-        },
-        {
-          $lookup: {
-            from: "products",
-            localField: "_id",
-            foreignField: "_id",
-            as: "product",
-          },
-        },
-        { $unwind: "$product" },
-        {
-          $project: {
-            product_id: "$_id",
-            sku: "$product.sku",
-            erp_id: "$product.erp_id",
-            name: "$product.name",
-            ctn_pcs: "$product.ctn_pcs",
-            wt_pcs: "$product.wt_pcs",
-            total_qty_ctn: 1,
-            total_qty_pcs: { $multiply: ["$total_qty_ctn", "$product.ctn_pcs"] },
-            total_wt_mt: {
-              $divide: [
-                { $multiply: ["$total_qty_ctn", "$product.ctn_pcs", "$product.wt_pcs"] },
-                1000000, // Convert grams to MT
-              ],
+        if (products.length > 0) {
+          filters.product_id = { $in: products.map((p) => p._id) };
+        } else {
+          // No matching products, return empty result
+          return res.status(200).json({
+            success: true,
+            data: {
+              inventory: [],
+              pagination: {
+                total: 0,
+                page: parseInt(page),
+                limit: parseInt(limit),
+                pages: 0,
+              },
             },
-            batch_count: 1,
-            oldest_production_date: 1,
-            earliest_expiry_date: 1,
-          },
-        },
-      ];
-
-      // Add sorting
-      const sortStage = {};
-      if (sort_by === "sku") {
-        sortStage.sku = sort_order === "asc" ? 1 : -1;
-      } else if (sort_by === "erp_id") {
-        sortStage.erp_id = sort_order === "asc" ? 1 : -1;
-      } else if (sort_by === "qty") {
-        sortStage.total_qty_ctn = sort_order === "asc" ? 1 : -1;
-      } else {
-        sortStage.sku = 1; // Default to SKU ascending
+          });
+        }
       }
-      aggregationPipeline.push({ $sort: sortStage });
 
-      // Get total count before pagination
-      const countPipeline = [...aggregationPipeline, { $count: "total" }];
-      const countResult = await FactoryStoreInventory.aggregate(countPipeline);
-      const total = countResult.length > 0 ? countResult[0].total : 0;
+      const summary = await DepotStock.getStockSummary(facility_store_id, filters);
 
-      // Add pagination
-      aggregationPipeline.push({ $skip: skip });
-      aggregationPipeline.push({ $limit: parseInt(limit) });
+      // Apply sorting
+      const sortField = sort_by === "sku" ? "sku" : sort_by === "erp_id" ? "erp_id" : "sku";
+      const sortDir = sort_order === "desc" ? -1 : 1;
 
-      const inventory = await FactoryStoreInventory.aggregate(aggregationPipeline);
+      summary.sort((a, b) => {
+        if (a[sortField] < b[sortField]) return -sortDir;
+        if (a[sortField] > b[sortField]) return sortDir;
+        return 0;
+      });
+
+      // Apply pagination
+      const total = summary.length;
+      const skip = (parseInt(page) - 1) * parseInt(limit);
+      const paginatedSummary = summary.slice(skip, skip + parseInt(limit));
 
       res.status(200).json({
         success: true,
         data: {
-          inventory,
+          inventory: paginatedSummary,
           pagination: {
             total,
             page: parseInt(page),
@@ -690,7 +537,7 @@ router.get(
 
 /**
  * @route   GET /api/v1/inventory/factory-to-store/transactions
- * @desc    Get inventory transaction history
+ * @desc    Get inventory transaction history from depot_transactions_in
  * @access  Private - Inventory Role
  */
 router.get(
@@ -725,12 +572,12 @@ router.get(
       if (batch_no) filters.batch_no = batch_no;
 
       if (start_date || end_date) {
-        filters.created_at = {};
-        if (start_date) filters.created_at.$gte = new Date(start_date);
-        if (end_date) filters.created_at.$lte = new Date(end_date);
+        filters.transaction_date = {};
+        if (start_date) filters.transaction_date.$gte = new Date(start_date);
+        if (end_date) filters.transaction_date.$lte = new Date(end_date);
       }
 
-      const result = await FactoryStoreInventoryTransaction.getHistory(
+      const result = await DepotTransactionIn.getHistory(
         facility_store_id,
         filters,
         parseInt(page),
@@ -754,7 +601,7 @@ router.get(
 
 /**
  * @route   GET /api/v1/inventory/factory-to-store/dashboard
- * @desc    Get inventory dashboard data (low stock, expiring soon, summary)
+ * @desc    Get inventory dashboard data (low stock, expiring soon, summary) from depot_stocks
  * @access  Private - Inventory Role
  */
 router.get(
@@ -774,13 +621,14 @@ router.get(
       }
 
       const [lowStock, expiringSoon, todaySummary, statusCounts] = await Promise.all([
-        FactoryStoreInventory.getLowStock(facility_store_id, 10),
-        FactoryStoreInventory.getExpiringSoon(facility_store_id, 30),
-        FactoryStoreInventoryTransaction.getDailySummary(facility_store_id, new Date()),
-        FactoryStoreInventory.aggregate([
+        DepotStock.getLowStock(facility_store_id, 10),
+        DepotStock.getExpiringSoon(facility_store_id, 30),
+        DepotTransactionIn.getDailySummary(facility_store_id, new Date()),
+        DepotStock.aggregate([
           {
             $match: {
-              facility_store_id: new mongoose.Types.ObjectId(facility_store_id),
+              depot_id: new mongoose.Types.ObjectId(facility_store_id),
+              is_deleted: false,
             },
           },
           {

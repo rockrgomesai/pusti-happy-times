@@ -102,12 +102,7 @@ const corsOptions = {
       "http://localhost:3001",
     ];
 
-    console.log(
-      "🌐 CORS check - Origin:",
-      origin,
-      "Allowed:",
-      allowedOrigins.includes(origin)
-    );
+    console.log("🌐 CORS check - Origin:", origin, "Allowed:", allowedOrigins.includes(origin));
 
     if (allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
@@ -159,6 +154,16 @@ if (process.env.NODE_ENV === "development") {
 
 connectDB();
 scheduleDistributorPermissionBootstrap();
+
+// Run startup validations and migrations
+const validateEmployeeRoleAssignments = require("./src/migrations/validateEmployeeRoleAssignments");
+mongoose.connection.once("open", async () => {
+  try {
+    await validateEmployeeRoleAssignments();
+  } catch (error) {
+    console.error("Error running startup validations:", error);
+  }
+});
 
 // Connect to Redis
 connectRedis();

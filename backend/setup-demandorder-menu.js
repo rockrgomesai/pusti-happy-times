@@ -55,7 +55,7 @@ async function setupDemandOrderMenu() {
 
     // 1. Create Order Management parent menu
     let orderMgmtMenu = await SidebarMenuItem.findOne({ label: "Order Management" });
-    
+
     if (!orderMgmtMenu) {
       orderMgmtMenu = await SidebarMenuItem.create({
         label: "Order Management",
@@ -162,9 +162,7 @@ async function setupDemandOrderMenu() {
           role: "Distributor",
           api_permission_id: permission._id,
         });
-        console.log(
-          `✓ Assigned ${permission.api_permissions[0]} permission to Distributor role`
-        );
+        console.log(`✓ Assigned ${permission.api_permissions[0]} permission to Distributor role`);
       } else {
         console.log(
           `✓ Permission ${permission.api_permissions[0]} already assigned to Distributor role`

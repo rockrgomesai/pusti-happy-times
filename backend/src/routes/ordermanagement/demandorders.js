@@ -3,6 +3,8 @@ const DemandOrder = require("../../models/DemandOrder");
 const Product = require("../../models/Product");
 const Offer = require("../../models/Offer");
 const Distributor = require("../../models/Distributor");
+const Category = require("../../models/Category");
+const DepotStock = require("../../models/DepotStock");
 const { requireApiPermission, authenticate } = require("../../middleware/auth");
 
 const router = express.Router();
@@ -23,22 +25,51 @@ async function validateCartQuantities(distributorId, cartItems) {
     }
 
     // Extract unique product IDs from cart
-    const productIds = [...new Set(cartItems.map(item => item.product_id.toString()))];
+    const productIds = [...new Set(cartItems.map((item) => item.product_id.toString()))];
 
-    // Fetch all products in one query
+    // Fetch all products in one query - only MANUFACTURED products
     const products = await Product.find({
       _id: { $in: productIds },
       active: true,
+      product_type: "MANUFACTURED",
     })
-      .select("_id sku depot_ids stock_by_depot")
+      .select("_id sku depot_ids product_type")
       .lean();
 
     if (products.length !== productIds.length) {
-      return { valid: false, error: "Some products are inactive or not found" };
+      return { valid: false, error: "Some products are inactive, not manufactured, or not found" };
     }
 
     // Create product map for quick lookup
-    const productMap = new Map(products.map(p => [p._id.toString(), p]));
+    const productMap = new Map(products.map((p) => [p._id.toString(), p]));
+
+    // Get stock from DepotStock collection for all relevant depots and products
+    const relevantDepotIds = [];
+    if (distributor.delivery_depot_id) {
+      relevantDepotIds.push(distributor.delivery_depot_id);
+    }
+    products.forEach((p) => {
+      if (p.depot_ids && p.depot_ids.length > 0) {
+        relevantDepotIds.push(...p.depot_ids);
+      }
+    });
+
+    const depotStocks = await DepotStock.find({
+      depot_id: { $in: relevantDepotIds },
+      product_id: { $in: productIds },
+    })
+      .select("depot_id product_id qty_ctn")
+      .lean();
+
+    // Create stock lookup map: "depot_id:product_id" => qty_ctn
+    const stockMap = new Map();
+    depotStocks.forEach((stock) => {
+      const key = `${stock.depot_id.toString()}:${stock.product_id.toString()}`;
+      const qty = stock.qty_ctn.$numberDecimal
+        ? parseFloat(stock.qty_ctn.$numberDecimal)
+        : parseFloat(stock.qty_ctn);
+      stockMap.set(key, qty);
+    });
 
     // Get pending DO quantities in one aggregation query
     const pendingDOs = await DemandOrder.aggregate([
@@ -57,9 +88,7 @@ async function validateCartQuantities(distributorId, cartItems) {
       },
     ]);
 
-    const pendingMap = new Map(
-      pendingDOs.map(p => [p._id.toString(), p.totalPendingQty])
-    );
+    const pendingMap = new Map(pendingDOs.map((p) => [p._id.toString(), p.totalPendingQty]));
 
     // Validate each cart item
     const validationResults = [];
@@ -76,25 +105,22 @@ async function validateCartQuantities(distributorId, cartItems) {
         continue;
       }
 
-      // Calculate available quantity
+      // Calculate available quantity from DepotStock collection
       let distributorDepotQty = 0;
       let productDepotsQty = 0;
 
       // Get quantity from distributor's delivery depot
-      if (distributor.delivery_depot_id && product.stock_by_depot) {
-        const depotStock = product.stock_by_depot.find(
-          s => s.depot_id && s.depot_id.toString() === distributor.delivery_depot_id.toString()
-        );
-        if (depotStock) {
-          distributorDepotQty = depotStock.quantity || 0;
-        }
+      if (distributor.delivery_depot_id) {
+        const key = `${distributor.delivery_depot_id.toString()}:${product._id.toString()}`;
+        distributorDepotQty = stockMap.get(key) || 0;
       }
 
       // Get quantity from product's assigned depots
-      if (product.depot_ids && product.depot_ids.length > 0 && product.stock_by_depot) {
-        productDepotsQty = product.stock_by_depot
-          .filter(s => s.depot_id && product.depot_ids.some(d => d.toString() === s.depot_id.toString()))
-          .reduce((sum, s) => sum + (s.quantity || 0), 0);
+      if (product.depot_ids && product.depot_ids.length > 0) {
+        productDepotsQty = product.depot_ids.reduce((sum, depotId) => {
+          const key = `${depotId.toString()}:${product._id.toString()}`;
+          return sum + (stockMap.get(key) || 0);
+        }, 0);
       }
 
       // Get pending quantity
@@ -114,13 +140,14 @@ async function validateCartQuantities(distributorId, cartItems) {
         pending_qty: pendingQty,
         available_after_pending: availableAfterPending,
         valid: item.quantity <= availableAfterPending,
-        error: item.quantity > availableAfterPending
-          ? `Insufficient stock. Available: ${availableAfterPending}, Requested: ${item.quantity}`
-          : null,
+        error:
+          item.quantity > availableAfterPending
+            ? `Insufficient stock. Available: ${availableAfterPending}, Requested: ${item.quantity}`
+            : null,
       });
     }
 
-    const allValid = validationResults.every(r => r.valid);
+    const allValid = validationResults.every((r) => r.valid);
 
     return {
       valid: allValid,
@@ -134,8 +161,78 @@ async function validateCartQuantities(distributorId, cartItems) {
 }
 
 /**
+ * GET /ordermanagement/demandorders/catalog/category-hierarchy
+ * Get category hierarchy filtered by distributor segments
+ */
+router.get(
+  "/catalog/category-hierarchy",
+  authenticate,
+  requireApiPermission("demandorder:read"),
+  async (req, res) => {
+    try {
+      const { user } = req;
+
+      // Get distributor for current user
+      const distributor = await Distributor.findOne({ _id: user.distributor_id })
+        .select("product_segment")
+        .lean();
+
+      if (!distributor) {
+        return res.status(404).json({
+          success: false,
+          message: "Distributor not found",
+        });
+      }
+
+      // Get all categories for distributor segments
+      const categories = await Category.find({
+        active: true,
+        product_segment: { $in: distributor.product_segment },
+      })
+        .select("_id name parent_id product_segment")
+        .sort({ name: 1 })
+        .lean();
+
+      // Build hierarchy tree
+      const categoryMap = new Map();
+      const rootCategories = [];
+
+      // First pass: Create map of all categories
+      categories.forEach((cat) => {
+        categoryMap.set(cat._id.toString(), { ...cat, children: [] });
+      });
+
+      // Second pass: Build tree structure
+      categories.forEach((cat) => {
+        if (!cat.parent_id) {
+          rootCategories.push(categoryMap.get(cat._id.toString()));
+        } else {
+          const parent = categoryMap.get(cat.parent_id.toString());
+          if (parent) {
+            parent.children.push(categoryMap.get(cat._id.toString()));
+          }
+        }
+      });
+
+      res.json({
+        success: true,
+        data: rootCategories,
+      });
+    } catch (error) {
+      console.error("Error fetching category hierarchy:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to fetch category hierarchy",
+        error: error.message,
+      });
+    }
+  }
+);
+
+/**
  * GET /ordermanagement/demandorders/catalog/products
  * Get available products for distributor (filtered by segments, blacklist, active status)
+ * Grouped by category
  */
 router.get(
   "/catalog/products",
@@ -157,10 +254,21 @@ router.get(
         });
       }
 
-      // Build query
-      const query = {
+      // Get categories for distributor segments
+      const categoryIds = await Category.find({
         active: true,
         product_segment: { $in: distributor.product_segment },
+      })
+        .select("_id")
+        .lean();
+
+      const categoryIdList = categoryIds.map((c) => c._id);
+
+      // Build query - filter by category segments and MANUFACTURED products only
+      const query = {
+        active: true,
+        product_type: "MANUFACTURED", // Only show manufactured products
+        category_id: { $in: categoryIdList },
       };
 
       // Exclude blacklisted SKUs
@@ -169,16 +277,126 @@ router.get(
       }
 
       const products = await Product.find(query)
-        .select("_id sku short_description mrp category brand unit_per_case depot_ids stock_by_depot")
-        .populate("category", "name")
-        .populate("brand", "name")
+        .select("_id sku mrp category_id brand_id ctn_pcs depot_ids wt_pcs unit")
+        .populate({
+          path: "category_id",
+          select: "name parent_id product_segment",
+        })
+        .populate("brand_id", "name")
         .sort({ sku: 1 })
         .lean();
+
+      // Get stock from DepotStock collection for all relevant depots and products
+      const productIds = products.map((p) => p._id);
+      const relevantDepotIds = [];
+      if (distributor.delivery_depot_id) {
+        relevantDepotIds.push(distributor.delivery_depot_id);
+      }
+      products.forEach((p) => {
+        if (p.depot_ids && p.depot_ids.length > 0) {
+          relevantDepotIds.push(...p.depot_ids);
+        }
+      });
+
+      const depotStocks = await DepotStock.find({
+        depot_id: { $in: relevantDepotIds },
+        product_id: { $in: productIds },
+      })
+        .select("depot_id product_id qty_ctn")
+        .lean();
+
+      // Create stock lookup map: "depot_id:product_id" => qty_ctn
+      const stockMap = new Map();
+      depotStocks.forEach((stock) => {
+        const key = `${stock.depot_id.toString()}:${stock.product_id.toString()}`;
+        const qty = stock.qty_ctn.$numberDecimal
+          ? parseFloat(stock.qty_ctn.$numberDecimal)
+          : parseFloat(stock.qty_ctn);
+        stockMap.set(key, qty);
+      });
+
+      // Get pending DO quantities for all products in one aggregation query
+      const pendingDOs = await DemandOrder.aggregate([
+        {
+          $match: {
+            distributor_id: distributor._id,
+            status: "submitted",
+          },
+        },
+        { $unwind: "$items" },
+        {
+          $group: {
+            _id: "$items.source_id",
+            totalPendingQty: { $sum: "$items.quantity" },
+          },
+        },
+      ]);
+
+      const pendingMap = new Map(pendingDOs.map((p) => [p._id.toString(), p.totalPendingQty]));
+
+      // Transform to match frontend expectations and group by category
+      const transformedProducts = products.map((p) => {
+        // Generate description from category and brand
+        const categoryName = p.category_id?.name || "Product";
+        const brandName = p.brand_id?.name || "";
+        const description = `${categoryName}${brandName ? " - " + brandName : ""} (${p.wt_pcs?.toFixed(0) || 0}g)`;
+
+        // Calculate available quantity from DepotStock collection
+        let distributorDepotQty = 0;
+        let productDepotsQty = 0;
+
+        // Get quantity from distributor's delivery depot
+        if (distributor.delivery_depot_id) {
+          const key = `${distributor.delivery_depot_id.toString()}:${p._id.toString()}`;
+          distributorDepotQty = stockMap.get(key) || 0;
+        }
+
+        // Get quantity from product's assigned depots
+        if (p.depot_ids && p.depot_ids.length > 0) {
+          productDepotsQty = p.depot_ids.reduce((sum, depotId) => {
+            const key = `${depotId.toString()}:${p._id.toString()}`;
+            return sum + (stockMap.get(key) || 0);
+          }, 0);
+        }
+
+        // Get pending quantity
+        const pendingQty = pendingMap.get(p._id.toString()) || 0;
+
+        // Calculate available
+        const totalAvailable = distributorDepotQty + productDepotsQty;
+        const availableAfterPending = totalAvailable - pendingQty;
+
+        return {
+          ...p,
+          short_description: description,
+          unit_per_case: p.ctn_pcs || 0,
+          category: p.category_id,
+          brand: p.brand_id,
+          available_quantity: availableAfterPending,
+          distributor_depot_qty: distributorDepotQty,
+          product_depots_qty: productDepotsQty,
+          pending_qty: pendingQty,
+        };
+      });
+
+      // Group products by category
+      const productsByCategory = {};
+      transformedProducts.forEach((product) => {
+        const categoryId = product.category?._id?.toString() || "uncategorized";
+        if (!productsByCategory[categoryId]) {
+          productsByCategory[categoryId] = {
+            category: product.category,
+            products: [],
+          };
+        }
+        productsByCategory[categoryId].products.push(product);
+      });
 
       res.json({
         success: true,
         data: {
-          products,
+          products: transformedProducts,
+          productsByCategory,
           distributor_depot_id: distributor.delivery_depot_id,
         },
       });
@@ -196,6 +414,7 @@ router.get(
 /**
  * GET /ordermanagement/demandorders/catalog/offers
  * Get available offers for distributor
+ * Updated: 2025-11-07
  */
 router.get(
   "/catalog/offers",
@@ -205,35 +424,31 @@ router.get(
     try {
       const { user } = req;
 
-      const now = new Date();
+      console.log(
+        "🎁 Fetching offers for user:",
+        user.username,
+        "distributor_id:",
+        user.distributor_id
+      );
 
-      // Find active offers that are currently valid
-      const offers = await Offer.find({
-        active: true,
-        start_date: { $lte: now },
-        end_date: { $gte: now },
-      })
-        .populate("product_id", "sku short_description mrp unit_per_case")
-        .populate("applicable_distributors", "name")
-        .sort({ created_at: -1 })
-        .lean();
+      if (!user.distributor_id) {
+        return res.status(400).json({
+          success: false,
+          message: "User is not associated with a distributor",
+        });
+      }
 
-      // Filter offers applicable to this distributor
-      const applicableOffers = offers.filter(offer => {
-        if (!offer.applicable_distributors || offer.applicable_distributors.length === 0) {
-          return true; // Offer applies to all
-        }
-        return offer.applicable_distributors.some(
-          d => d._id.toString() === user.distributor_id.toString()
-        );
-      });
+      // Use the Offer model's static method to find eligible offers
+      const offers = await Offer.findEligibleForDistributor(user.distributor_id);
+
+      console.log("🎁 Found offers:", offers.length);
 
       res.json({
         success: true,
-        data: applicableOffers,
+        data: offers,
       });
     } catch (error) {
-      console.error("Error fetching offers catalog:", error);
+      console.error("❌ Error fetching offers catalog:", error);
       res.status(500).json({
         success: false,
         message: "Failed to fetch offers catalog",
@@ -284,205 +499,185 @@ router.post(
  * GET /ordermanagement/demandorders
  * Get demand orders for current distributor
  */
-router.get(
-  "/",
-  authenticate,
-  requireApiPermission("demandorder:read"),
-  async (req, res) => {
-    try {
-      const { user } = req;
-      const { status, page = 1, limit = 50 } = req.query;
+router.get("/", authenticate, requireApiPermission("demandorder:read"), async (req, res) => {
+  try {
+    const { user } = req;
+    const { status, page = 1, limit = 50 } = req.query;
 
-      const query = { distributor_id: user.distributor_id };
-      if (status) {
-        query.status = status;
-      }
-
-      const skip = (parseInt(page) - 1) * parseInt(limit);
-
-      const [orders, total] = await Promise.all([
-        DemandOrder.find(query)
-          .sort({ created_at: -1 })
-          .skip(skip)
-          .limit(parseInt(limit))
-          .populate("distributor_id", "name")
-          .populate("created_by", "username")
-          .populate("approved_by", "username")
-          .lean(),
-        DemandOrder.countDocuments(query),
-      ]);
-
-      res.json({
-        success: true,
-        data: {
-          orders,
-          pagination: {
-            total,
-            page: parseInt(page),
-            limit: parseInt(limit),
-            pages: Math.ceil(total / parseInt(limit)),
-          },
-        },
-      });
-    } catch (error) {
-      console.error("Error fetching demand orders:", error);
-      res.status(500).json({
-        success: false,
-        message: "Failed to fetch demand orders",
-        error: error.message,
-      });
+    const query = { distributor_id: user.distributor_id };
+    if (status) {
+      query.status = status;
     }
+
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    const [orders, total] = await Promise.all([
+      DemandOrder.find(query)
+        .sort({ created_at: -1 })
+        .skip(skip)
+        .limit(parseInt(limit))
+        .populate("distributor_id", "name")
+        .populate("created_by", "username")
+        .populate("approved_by", "username")
+        .lean(),
+      DemandOrder.countDocuments(query),
+    ]);
+
+    res.json({
+      success: true,
+      data: {
+        orders,
+        pagination: {
+          total,
+          page: parseInt(page),
+          limit: parseInt(limit),
+          pages: Math.ceil(total / parseInt(limit)),
+        },
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching demand orders:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch demand orders",
+      error: error.message,
+    });
   }
-);
+});
 
 /**
  * GET /ordermanagement/demandorders/:id
  * Get single demand order
  */
-router.get(
-  "/:id",
-  authenticate,
-  requireApiPermission("demandorder:read"),
-  async (req, res) => {
-    try {
-      const { user } = req;
+router.get("/:id", authenticate, requireApiPermission("demandorder:read"), async (req, res) => {
+  try {
+    const { user } = req;
 
-      const order = await DemandOrder.findOne({
-        _id: req.params.id,
-        distributor_id: user.distributor_id,
-      })
-        .populate("distributor_id", "name")
-        .populate("created_by", "username")
-        .populate("approved_by", "username")
-        .populate("rejected_by", "username")
-        .lean();
+    const order = await DemandOrder.findOne({
+      _id: req.params.id,
+      distributor_id: user.distributor_id,
+    })
+      .populate("distributor_id", "name")
+      .populate("created_by", "username")
+      .populate("approved_by", "username")
+      .populate("rejected_by", "username")
+      .lean();
 
-      if (!order) {
-        return res.status(404).json({
-          success: false,
-          message: "Demand order not found",
-        });
-      }
-
-      res.json({
-        success: true,
-        data: order,
-      });
-    } catch (error) {
-      console.error("Error fetching demand order:", error);
-      res.status(500).json({
+    if (!order) {
+      return res.status(404).json({
         success: false,
-        message: "Failed to fetch demand order",
-        error: error.message,
+        message: "Demand order not found",
       });
     }
+
+    res.json({
+      success: true,
+      data: order,
+    });
+  } catch (error) {
+    console.error("Error fetching demand order:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch demand order",
+      error: error.message,
+    });
   }
-);
+});
 
 /**
  * POST /ordermanagement/demandorders
  * Create new demand order (draft)
  */
-router.post(
-  "/",
-  authenticate,
-  requireApiPermission("demandorder:create"),
-  async (req, res) => {
-    try {
-      const { user } = req;
-      const { items, notes } = req.body;
+router.post("/", authenticate, requireApiPermission("demandorder:create"), async (req, res) => {
+  try {
+    const { user } = req;
+    const { items, notes } = req.body;
 
-      if (!items || !Array.isArray(items) || items.length === 0) {
-        return res.status(400).json({
-          success: false,
-          message: "Order must have at least one item",
-        });
-      }
-
-      // Create order
-      const order = new DemandOrder({
-        distributor_id: user.distributor_id,
-        items,
-        notes,
-        status: "draft",
-        created_by: user._id,
-      });
-
-      await order.save();
-
-      const populatedOrder = await DemandOrder.findById(order._id)
-        .populate("distributor_id", "name")
-        .populate("created_by", "username")
-        .lean();
-
-      res.status(201).json({
-        success: true,
-        message: "Demand order created successfully",
-        data: populatedOrder,
-      });
-    } catch (error) {
-      console.error("Error creating demand order:", error);
-      res.status(500).json({
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({
         success: false,
-        message: "Failed to create demand order",
-        error: error.message,
+        message: "Order must have at least one item",
       });
     }
+
+    // Create order
+    const order = new DemandOrder({
+      distributor_id: user.distributor_id,
+      items,
+      notes,
+      status: "draft",
+      created_by: user._id,
+    });
+
+    await order.save();
+
+    const populatedOrder = await DemandOrder.findById(order._id)
+      .populate("distributor_id", "name")
+      .populate("created_by", "username")
+      .lean();
+
+    res.status(201).json({
+      success: true,
+      message: "Demand order created successfully",
+      data: populatedOrder,
+    });
+  } catch (error) {
+    console.error("Error creating demand order:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to create demand order",
+      error: error.message,
+    });
   }
-);
+});
 
 /**
  * PUT /ordermanagement/demandorders/:id
  * Update demand order (draft only)
  */
-router.put(
-  "/:id",
-  authenticate,
-  requireApiPermission("demandorder:update"),
-  async (req, res) => {
-    try {
-      const { user } = req;
-      const { items, notes } = req.body;
+router.put("/:id", authenticate, requireApiPermission("demandorder:update"), async (req, res) => {
+  try {
+    const { user } = req;
+    const { items, notes } = req.body;
 
-      const order = await DemandOrder.findOne({
-        _id: req.params.id,
-        distributor_id: user.distributor_id,
-        status: "draft",
-      });
+    const order = await DemandOrder.findOne({
+      _id: req.params.id,
+      distributor_id: user.distributor_id,
+      status: "draft",
+    });
 
-      if (!order) {
-        return res.status(404).json({
-          success: false,
-          message: "Draft order not found or cannot be modified",
-        });
-      }
-
-      if (items) order.items = items;
-      if (notes !== undefined) order.notes = notes;
-      order.updated_by = user._id;
-
-      await order.save();
-
-      const populatedOrder = await DemandOrder.findById(order._id)
-        .populate("distributor_id", "name")
-        .populate("created_by", "username")
-        .lean();
-
-      res.json({
-        success: true,
-        message: "Demand order updated successfully",
-        data: populatedOrder,
-      });
-    } catch (error) {
-      console.error("Error updating demand order:", error);
-      res.status(500).json({
+    if (!order) {
+      return res.status(404).json({
         success: false,
-        message: "Failed to update demand order",
-        error: error.message,
+        message: "Draft order not found or cannot be modified",
       });
     }
+
+    if (items) order.items = items;
+    if (notes !== undefined) order.notes = notes;
+    order.updated_by = user._id;
+
+    await order.save();
+
+    const populatedOrder = await DemandOrder.findById(order._id)
+      .populate("distributor_id", "name")
+      .populate("created_by", "username")
+      .lean();
+
+    res.json({
+      success: true,
+      message: "Demand order updated successfully",
+      data: populatedOrder,
+    });
+  } catch (error) {
+    console.error("Error updating demand order:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to update demand order",
+      error: error.message,
+    });
   }
-);
+});
 
 /**
  * POST /ordermanagement/demandorders/:id/submit
@@ -510,7 +705,7 @@ router.post(
       }
 
       // Validate cart quantities before submission
-      const cartItems = order.items.map(item => ({
+      const cartItems = order.items.map((item) => ({
         product_id: item.source_id,
         sku: item.sku,
         quantity: item.quantity,

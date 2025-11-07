@@ -219,16 +219,16 @@ const SendToStorePage: React.FC = () => {
       return;
     }
 
-    // Check if user has Production role
-    if (user.role.role !== 'Production') {
-      toast.error('Access denied. Production role required.');
+    // Check if user has Inventory Factory role
+    if (user.role.role !== 'Inventory Factory') {
+      toast.error('Access denied. Inventory Factory role required.');
       router.push('/dashboard');
       return;
     }
 
     // Check if user has facility_id and factory_store_id
     if (!user.context.facility_id || !user.context.factory_store_id) {
-      toast.error('Production user must have facility and factory store assigned.');
+      toast.error('Inventory Factory user must have facility and factory store assigned.');
       router.push('/dashboard');
       return;
     }

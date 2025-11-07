@@ -104,8 +104,22 @@ const permanentAddressSubSchema = new mongoose.Schema(
     village_road: { type: String, default: null, trim: true },
     union_ward: { type: String, default: null, trim: true },
     upazila_thana: { type: String, default: null, trim: true },
-    district: { type: String, enum: DISTRICTS, default: null },
-    division: { type: String, enum: DIVISIONS, default: null },
+    district: {
+      type: String,
+      required: [true, "District is required"],
+      enum: {
+        values: DISTRICTS,
+        message: "{VALUE} is not a valid district",
+      },
+    },
+    division: {
+      type: String,
+      required: [true, "Division is required"],
+      enum: {
+        values: DIVISIONS,
+        message: "{VALUE} is not a valid division",
+      },
+    },
   },
   { _id: false, id: false }
 );
@@ -207,8 +221,11 @@ const employeeSchema = new mongoose.Schema(
     },
     blood_group: {
       type: String,
-      enum: BLOOD_GROUPS,
-      default: null,
+      required: [true, "Blood group is required"],
+      enum: {
+        values: BLOOD_GROUPS,
+        message: "{VALUE} is not a valid blood group",
+      },
     },
     present_address: {
       type: addressSubSchema,

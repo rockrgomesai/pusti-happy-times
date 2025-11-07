@@ -11,7 +11,7 @@ const Product = require("../../models/Product");
 const Facility = require("../../models/Facility");
 const Notification = require("../../models/Notification");
 const { authenticate } = require("../../middleware/auth");
-const { requireProductionRole } = require("../../middleware/roleCheck");
+const { requireInventoryFactoryRole } = require("../../middleware/roleCheck");
 const { requireApiPermission } = require("../../middleware/auth");
 
 // Validation middleware
@@ -28,12 +28,12 @@ const validateShipment = [
 /**
  * @route   GET /production/send-to-store
  * @desc    Get list of shipments with pagination and search
- * @access  Private (Production role only)
+ * @access  Private (Inventory Factory role only)
  */
 router.get(
   "/",
   authenticate,
-  requireProductionRole,
+  requireInventoryFactoryRole,
   requireApiPermission("production:send-to-store:read"),
   async (req, res) => {
     try {
@@ -98,12 +98,12 @@ router.get(
 /**
  * @route   POST /production/send-to-store
  * @desc    Create new shipment from factory to factory store
- * @access  Private (Production role only)
+ * @access  Private (Inventory Factory role only)
  */
 router.post(
   "/",
   authenticate,
-  requireProductionRole,
+  requireInventoryFactoryRole,
   requireApiPermission("production:send-to-store:create"),
   validateShipment,
   async (req, res) => {
@@ -210,14 +210,14 @@ router.post(
 );
 
 /**
- * @route   GET /production/send-to-store
+ * @route   GET /production/send-to-store/all
  * @desc    Get all shipments with pagination and filters
- * @access  Private (Production role only)
+ * @access  Private (Inventory Factory role only)
  */
 router.get(
   "/",
   authenticate,
-  requireProductionRole,
+  requireInventoryFactoryRole,
   requireApiPermission("production:send-to-store:read"),
   async (req, res) => {
     try {
@@ -293,12 +293,12 @@ router.get(
 /**
  * @route   GET /production/send-to-store/:id
  * @desc    Get single shipment by ID
- * @access  Private (Production role only)
+ * @access  Private (Inventory Factory role only)
  */
 router.get(
   "/:id",
   authenticate,
-  requireProductionRole,
+  requireInventoryFactoryRole,
   requireApiPermission("production:send-to-store:read"),
   [param("id").isMongoId().withMessage("Valid shipment ID is required")],
   async (req, res) => {
@@ -358,12 +358,12 @@ router.get(
 /**
  * @route   PUT /production/send-to-store/:id
  * @desc    Update shipment (only if status is draft)
- * @access  Private (Production role only)
+ * @access  Private (Inventory Factory role only)
  */
 router.put(
   "/:id",
   authenticate,
-  requireProductionRole,
+  requireInventoryFactoryRole,
   requireApiPermission("production:send-to-store:update"),
   [param("id").isMongoId().withMessage("Valid shipment ID is required")],
   validateShipment,
@@ -438,12 +438,12 @@ router.put(
 /**
  * @route   DELETE /production/send-to-store/:id
  * @desc    Cancel/soft delete shipment
- * @access  Private (Production role only)
+ * @access  Private (Inventory Factory role only)
  */
 router.delete(
   "/:id",
   authenticate,
-  requireProductionRole,
+  requireInventoryFactoryRole,
   requireApiPermission("production:send-to-store:delete"),
   [param("id").isMongoId().withMessage("Valid shipment ID is required")],
   async (req, res) => {
@@ -499,14 +499,14 @@ router.delete(
 );
 
 /**
- * @route   GET /production/batch-check
+ * @route   GET /production/send-to-store/batch-check
  * @desc    Check if batch number is available
- * @access  Private (Production role only)
+ * @access  Private (Inventory Factory role only)
  */
 router.get(
   "/batch-check",
   authenticate,
-  requireProductionRole,
+  requireInventoryFactoryRole,
   [
     query("batch_no").notEmpty().withMessage("Batch number is required"),
     query("product_id").isMongoId().withMessage("Valid product ID is required"),

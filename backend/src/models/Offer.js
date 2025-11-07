@@ -197,6 +197,8 @@ offerSchema.statics.findEligibleForDistributor = async function (distributorId) 
     throw new Error("Distributor not found");
   }
 
+  console.log("🔍 Distributor product_segment:", distributor.product_segment);
+
   const now = new Date();
 
   // Find active offers
@@ -208,19 +210,34 @@ offerSchema.statics.findEligibleForDistributor = async function (distributorId) 
     product_segments: { $in: distributor.product_segment },
   }).lean();
 
+  console.log("🔍 Found active offers matching segment:", offers.length);
+
   // Filter by territory and distributor eligibility
   const eligibleOffers = [];
 
   for (const offer of offers) {
+    console.log(`\n🔍 Checking offer: ${offer.name}`);
+    console.log(`   Distributors:`, offer.distributors);
+
     // Check specific distributor inclusion/exclusion
     if (offer.distributors?.ids && offer.distributors.ids.length > 0) {
-      const distributorIdString = distributorId.toString();
+      // Use distributor._id instead of distributorId (which got overwritten)
+      const distributorIdString = distributor._id.toString();
       const isInList = offer.distributors.ids.some((id) => id.toString() === distributorIdString);
 
+      console.log(`   Distributor._id string:`, distributorIdString);
+      console.log(
+        `   Offer distributor IDs:`,
+        offer.distributors.ids.map((id) => id.toString())
+      );
+      console.log(`   IsInList: ${isInList}, Mode: ${offer.distributors.mode}`);
+
       if (offer.distributors.mode === "exclude" && isInList) {
+        console.log(`   ❌ SKIPPED: Distributor excluded`);
         continue; // Excluded
       }
       if (offer.distributors.mode === "include" && !isInList) {
+        console.log(`   ❌ SKIPPED: Distributor not in include list`);
         continue; // Not included
       }
     }

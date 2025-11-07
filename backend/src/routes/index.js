@@ -36,6 +36,7 @@ const distributorRoutes = require("./distributors");
 const notificationRoutes = require("./notifications");
 const productionSendToStoreRoutes = require("./production/sendToStore");
 const inventoryFactoryToStoreRoutes = require("./inventory/factoryToStore");
+const inventoryLocalStockRoutes = require("./inventory/localStock");
 const inventoryRequisitionsRoutes = require("./inventory/requisitions");
 const customerLedgerRoutes = require("./finance/customerledger");
 const demandOrdersRoutes = require("./ordermanagement/demandorders");
@@ -328,6 +329,7 @@ router.use("/production/send-to-store", productionSendToStoreRoutes);
  * @access  Private (Inventory role only)
  */
 router.use("/inventory/factory-to-store", inventoryFactoryToStoreRoutes);
+router.use("/inventory/local-stock", inventoryLocalStockRoutes);
 router.use("/inventory/requisitions", inventoryRequisitionsRoutes);
 
 /**

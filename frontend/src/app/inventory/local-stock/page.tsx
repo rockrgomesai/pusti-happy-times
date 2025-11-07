@@ -49,8 +49,8 @@ interface InventoryItem {
   total_qty_pcs: number;
   total_wt_mt: number;
   batch_count: number;
-  oldest_production_date: string;
-  earliest_expiry_date: string;
+  oldest_production_date: string | null;
+  earliest_expiry_date: string | null;
 }
 
 interface Transaction {
@@ -217,18 +217,26 @@ export default function LocalStockPage() {
     setPage(0);
   };
 
-  const getDaysUntilExpiry = (expiryDate: string): number => {
+  const getDaysUntilExpiry = (expiryDate: string | null | undefined): number => {
+    if (!expiryDate) return 999999; // Large number for "no expiry"
     const today = new Date();
     const expiry = new Date(expiryDate);
+    if (isNaN(expiry.getTime())) return 999999; // Invalid date
     const diffTime = expiry.getTime() - today.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     return diffDays;
   };
 
-  const getExpiryWarning = (expiryDate: string) => {
+  const getExpiryWarning = (expiryDate: string | null | undefined) => {
+    if (!expiryDate) {
+      return { color: 'default' as const, text: 'N/A' };
+    }
+    
     const days = getDaysUntilExpiry(expiryDate);
     
-    if (days < 0) {
+    if (days >= 999999) {
+      return { color: 'default' as const, text: 'N/A' };
+    } else if (days < 0) {
       return { color: 'error' as const, text: 'Expired' };
     } else if (days <= 7) {
       return { color: 'error' as const, text: `${days}d left` };
@@ -419,7 +427,9 @@ export default function LocalStockPage() {
                     <TableCell>
                       <Box>
                         <Typography variant="body2">
-                          {format(new Date(item.earliest_expiry_date), 'dd/MM/yyyy')}
+                          {item.earliest_expiry_date 
+                            ? format(new Date(item.earliest_expiry_date), 'dd/MM/yyyy')
+                            : 'N/A'}
                         </Typography>
                         <Chip 
                           label={expiryWarning.text} 

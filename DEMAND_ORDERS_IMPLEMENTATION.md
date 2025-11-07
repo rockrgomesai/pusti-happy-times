@@ -1,6 +1,7 @@
 # Demand Orders Module - Implementation Complete
 
 ## Overview
+
 The Demand Orders module is a complete e-commerce-like procurement system designed exclusively for Distributor users to place orders for products and offers with real-time stock validation.
 
 ## Architecture
@@ -8,7 +9,9 @@ The Demand Orders module is a complete e-commerce-like procurement system design
 ### Backend Components
 
 #### 1. Model: `backend/src/models/DemandOrder.js`
+
 **Features:**
+
 - **Status Workflow**: draft → submitted → approved/rejected/cancelled
 - **Auto-Generated Order Numbers**: DO-YYYYMMDD-XXXXX format
 - **Dual Source Support**: Items can come from both products and offers
@@ -17,6 +20,7 @@ The Demand Orders module is a complete e-commerce-like procurement system design
 - **Rejection/Cancellation Reasons**: Stores explanatory text for status changes
 
 **Schema:**
+
 ```javascript
 {
   distributor_id: ObjectId (required),
@@ -39,43 +43,52 @@ The Demand Orders module is a complete e-commerce-like procurement system design
 ```
 
 #### 2. Routes: `backend/src/routes/ordermanagement/demandorders.js`
+
 **API Endpoints:**
 
 1. **GET /catalog/products**
+
    - Filters by distributor segments (BIS/BEV)
    - Excludes blacklisted SKUs (skus_exclude array)
    - Returns only active products
    - Calculates available quantity: (distributor_depot_qty + product_depots_qty) - pending_qty
 
 2. **GET /catalog/offers**
+
    - Returns active offers applicable to distributor
    - Includes original price, offer price, savings, discount percentage
    - Calculates available quantity same as products
 
 3. **POST /validate-cart**
+
    - Validates all cart items in a single request
    - Uses efficient aggregation to calculate pending order quantities
    - Returns per-item validation with available quantities and formula breakdown
 
 4. **GET /**
+
    - Lists distributor's orders with pagination
    - Supports status filtering
    - Returns order summaries
 
 5. **GET /:id**
+
    - Retrieves single order details
    - Includes embedded product/offer details for display
 
 6. **POST /**
+
    - Creates a draft order
    - Calculates totals automatically
    - Does not generate order number (draft only)
 
 7. **PUT /:id**
+
    - Updates draft orders only
    - Recalculates totals
 
 8. **POST /:id/submit**
+
    - Validates cart quantities
    - Generates order number
    - Changes status to "submitted"
@@ -86,6 +99,7 @@ The Demand Orders module is a complete e-commerce-like procurement system design
    - Cannot delete submitted/approved orders
 
 **Key Function: `validateCartQuantities()`**
+
 ```javascript
 // Efficient aggregation-based validation
 // 1. Get distributor's delivery depot
@@ -95,13 +109,16 @@ The Demand Orders module is a complete e-commerce-like procurement system design
 ```
 
 #### 3. Menu Setup: `backend/setup-demandorder-menu.js`
+
 **Creates:**
+
 - Order Management parent menu (icon: FaShoppingCart)
 - Demand Orders submenu at /ordermanagement/demandorders
 - 4 API permissions: demandorder:read, create, update, delete
 - Assigns all permissions to Distributor role ONLY
 
 **Execution Result:**
+
 ```
 ✅ Created Order Management parent menu
 ✅ Created Demand Orders submenu
@@ -120,10 +137,12 @@ The Demand Orders module is a complete e-commerce-like procurement system design
 **Main Features:**
 
 1. **Two-Tab Interface**
+
    - **Browse Catalog Tab**: Product and offer browsing with shopping cart
    - **My Orders Tab**: Order history with status filtering
 
 2. **Catalog View (Tab 1)**
+
    - **Sub-tabs**: Products and Offers
    - **Search**: Real-time search by SKU or description
    - **Product Cards**:
@@ -140,6 +159,7 @@ The Demand Orders module is a complete e-commerce-like procurement system design
      - Shows "In cart" badge if already added
 
 3. **Shopping Cart**
+
    - **Desktop**: Right-side drawer (400px width)
    - **Mobile**: Full-screen drawer
    - **Features**:
@@ -152,6 +172,7 @@ The Demand Orders module is a complete e-commerce-like procurement system design
      - "Validate & Submit" button
 
 4. **Cart Validation**
+
    - Calls POST /validate-cart endpoint
    - Displays per-item validation results
    - Shows available quantity vs requested
@@ -160,6 +181,7 @@ The Demand Orders module is a complete e-commerce-like procurement system design
    - Blocks submission if validation fails
 
 5. **Order Submission**
+
    - Confirmation dialog with order summary
    - Two-step process: Create draft → Submit
    - Success message shows generated order number
@@ -167,6 +189,7 @@ The Demand Orders module is a complete e-commerce-like procurement system design
    - Refreshes catalog to update available quantities
 
 6. **My Orders View (Tab 2)**
+
    - **Status Filter Dropdown**: All / Draft / Submitted / Approved / Rejected / Cancelled
    - **Orders Table**:
      - Columns: Order Number, Status, Items, Total Amount, Created, Submitted, Actions
@@ -178,6 +201,7 @@ The Demand Orders module is a complete e-commerce-like procurement system design
      - **Delete (Draft only)**: Removes draft order
 
 7. **Order Details Modal**
+
    - Order number and status
    - Created, submitted, approved/rejected dates
    - Rejection/cancellation reasons (if applicable)
@@ -194,24 +218,28 @@ The Demand Orders module is a complete e-commerce-like procurement system design
 ## Performance Optimizations
 
 ### 1. Efficient Stock Validation
+
 **Problem**: Calculating available stock for each product while accounting for pending orders could create N+1 queries
 
 **Solution**: Single aggregation query
+
 ```javascript
 // Aggregates all pending orders for distributor's products in ONE query
 DemandOrder.aggregate([
   { $match: { distributor_id, status: "submitted" } },
   { $unwind: "$items" },
-  { $group: { _id: "$items.source_id", pending_qty: { $sum: "$items.quantity" } } }
-])
+  { $group: { _id: "$items.source_id", pending_qty: { $sum: "$items.quantity" } } },
+]);
 ```
 
 ### 2. Frontend State Management
+
 - Cart state with useMemo for efficient filtering
 - Conditional loading (only load catalogs/orders when tab is active)
 - Debounced search (can be added if needed)
 
 ### 3. Data Embedding
+
 - Product/offer details embedded in order items
 - Eliminates need for joins when displaying order history
 - Preserves item details even if product/offer changes later
@@ -219,6 +247,7 @@ DemandOrder.aggregate([
 ## Validation Formula
 
 **Available Quantity Calculation:**
+
 ```
 available_qty = (distributor_depot_qty + product_depots_qty) - pending_orders_qty
 
@@ -229,6 +258,7 @@ Where:
 ```
 
 **Validation Rule:**
+
 ```
 requested_qty <= available_qty
 ```
@@ -236,18 +266,21 @@ requested_qty <= available_qty
 ## Security & Access Control
 
 **Role-Based Access:**
+
 - **ONLY Distributor role** can access this module
 - Menu item assigned exclusively to Distributor
 - All API endpoints check user role
 - Middleware enforces distributor_id from auth token (prevents cross-distributor access)
 
 **Permission Gates:**
+
 - demandorder:read - View orders and catalogs
 - demandorder:create - Create draft orders
 - demandorder:update - Update draft orders
 - demandorder:delete - Delete draft orders
 
 **Business Rules:**
+
 - Draft orders: Full CRUD access
 - Submitted orders: Read-only (cannot edit/delete)
 - Order submission: Validates stock before allowing submission
@@ -256,6 +289,7 @@ requested_qty <= available_qty
 ## Data Flow
 
 ### Order Placement Flow
+
 ```
 1. User browses catalog (Products/Offers tabs)
 2. Adds items to cart
@@ -277,6 +311,7 @@ requested_qty <= available_qty
 ```
 
 ### Edit Draft Flow
+
 ```
 1. User clicks Edit on draft order
 2. System loads order details
@@ -289,6 +324,7 @@ requested_qty <= available_qty
 ## Testing Checklist
 
 ### Backend Testing
+
 - [ ] Create draft order with products only
 - [ ] Create draft order with offers only
 - [ ] Create draft order with mixed (products + offers)
@@ -304,6 +340,7 @@ requested_qty <= available_qty
 - [ ] Test role-based access (non-distributor should fail)
 
 ### Frontend Testing
+
 - [ ] Browse products catalog
 - [ ] Browse offers catalog
 - [ ] Search by SKU and description
@@ -326,6 +363,7 @@ requested_qty <= available_qty
 - [ ] Full-screen cart drawer on mobile
 
 ### Integration Testing
+
 - [ ] Create order → Verify pending qty increases → Submit another order (should show reduced available stock)
 - [ ] Edit draft → Verify old draft deleted → Submit new order
 - [ ] Delete draft → Verify no longer in orders list
@@ -335,6 +373,7 @@ requested_qty <= available_qty
 ## Status Codes & Error Handling
 
 ### API Response Codes
+
 - **200**: Successful GET/PUT/DELETE operations
 - **201**: Successful POST (order created)
 - **400**: Bad request (validation failure, insufficient stock)
@@ -344,6 +383,7 @@ requested_qty <= available_qty
 - **500**: Server error
 
 ### Frontend Error Messages
+
 - "Failed to load catalogs"
 - "Cart is empty"
 - "Some items have insufficient stock. Please adjust quantities."
@@ -352,6 +392,7 @@ requested_qty <= available_qty
 - "Failed to delete order"
 
 ### Success Messages
+
 - "Order {order_number} submitted successfully!"
 - "Draft order deleted successfully"
 - "Cart validated successfully! You can proceed to submit."
@@ -360,32 +401,38 @@ requested_qty <= available_qty
 ## Future Enhancements (Not Implemented)
 
 1. **Order Approval Workflow**
+
    - Admin/Manager interface to approve/reject orders
    - Email notifications on status changes
    - Approval hierarchy based on order value
 
 2. **Inventory Reservation**
+
    - Reserve stock when order is submitted
    - Release reservation on rejection/cancellation
    - Timeout for pending reservations
 
 3. **Order Tracking**
+
    - Dispatch status
    - Delivery tracking
    - Proof of delivery upload
 
 4. **Analytics Dashboard**
+
    - Order statistics
    - Popular products/offers
    - Average order value
    - Fulfillment metrics
 
 5. **Bulk Upload**
+
    - CSV import for large orders
    - Template download
    - Validation and error reporting
 
 6. **Favorites/Quick Order**
+
    - Save frequently ordered items
    - Quick reorder from history
    - Order templates
@@ -398,9 +445,11 @@ requested_qty <= available_qty
 ## Database Collections Modified/Created
 
 ### New Collection
+
 - **demandorders**: Stores all demand orders
 
 ### Modified Collections
+
 - **sidebar_menu_items**: Added Order Management parent and Demand Orders submenu
 - **api_permissions**: Added 4 new permissions for demand orders
 - **role_sidebar_menu_items**: Linked Demand Orders to Distributor role
@@ -409,14 +458,17 @@ requested_qty <= available_qty
 ## Files Created/Modified
 
 ### Backend (Created)
+
 1. `backend/src/models/DemandOrder.js` (211 lines)
 2. `backend/src/routes/ordermanagement/demandorders.js` (570+ lines)
 3. `backend/setup-demandorder-menu.js` (165 lines)
 
 ### Backend (Modified)
+
 1. `backend/src/routes/index.js` - Registered demand orders routes
 
 ### Frontend (Created)
+
 1. `frontend/src/app/ordermanagement/demandorders/page.tsx` (1,300+ lines)
 
 ## Deployment Steps
@@ -434,17 +486,17 @@ requested_qty <= available_qty
 
 ## API Endpoint Summary
 
-| Method | Endpoint | Description | Auth Required |
-|--------|----------|-------------|---------------|
-| GET | `/ordermanagement/demandorders/catalog/products` | Get filtered product catalog | Yes (Distributor) |
-| GET | `/ordermanagement/demandorders/catalog/offers` | Get active offers catalog | Yes (Distributor) |
-| POST | `/ordermanagement/demandorders/validate-cart` | Validate cart quantities | Yes (Distributor) |
-| GET | `/ordermanagement/demandorders` | List orders with pagination | Yes (Distributor) |
-| GET | `/ordermanagement/demandorders/:id` | Get order details | Yes (Distributor) |
-| POST | `/ordermanagement/demandorders` | Create draft order | Yes (Distributor) |
-| PUT | `/ordermanagement/demandorders/:id` | Update draft order | Yes (Distributor) |
-| POST | `/ordermanagement/demandorders/:id/submit` | Submit order for approval | Yes (Distributor) |
-| DELETE | `/ordermanagement/demandorders/:id` | Delete draft order | Yes (Distributor) |
+| Method | Endpoint                                         | Description                  | Auth Required     |
+| ------ | ------------------------------------------------ | ---------------------------- | ----------------- |
+| GET    | `/ordermanagement/demandorders/catalog/products` | Get filtered product catalog | Yes (Distributor) |
+| GET    | `/ordermanagement/demandorders/catalog/offers`   | Get active offers catalog    | Yes (Distributor) |
+| POST   | `/ordermanagement/demandorders/validate-cart`    | Validate cart quantities     | Yes (Distributor) |
+| GET    | `/ordermanagement/demandorders`                  | List orders with pagination  | Yes (Distributor) |
+| GET    | `/ordermanagement/demandorders/:id`              | Get order details            | Yes (Distributor) |
+| POST   | `/ordermanagement/demandorders`                  | Create draft order           | Yes (Distributor) |
+| PUT    | `/ordermanagement/demandorders/:id`              | Update draft order           | Yes (Distributor) |
+| POST   | `/ordermanagement/demandorders/:id/submit`       | Submit order for approval    | Yes (Distributor) |
+| DELETE | `/ordermanagement/demandorders/:id`              | Delete draft order           | Yes (Distributor) |
 
 ## Component Hierarchy
 
@@ -481,20 +533,24 @@ DemandOrdersPage
 ```
 
 ## Implementation Time
+
 - **Backend**: ~3 hours (Model, Routes, Validation, Setup)
 - **Frontend**: ~4 hours (Catalog, Cart, Orders List, Details, Mobile UI)
 - **Testing**: ~2 hours (Both environments)
 - **Total**: ~9 hours
 
 ## Completion Status
+
 ✅ **100% Complete** - All features implemented, tested, and documented
 
 **Ready for:**
+
 - Payment Module Integration
 - Final Submission
 - Production Deployment
 
 ---
-*Document Generated: November 6, 2025*
-*Module Version: 1.0.0*
-*Developer Notes: SKU-first design, mobile-optimized, efficient validation, distributor-exclusive access*
+
+_Document Generated: November 6, 2025_
+_Module Version: 1.0.0_
+_Developer Notes: SKU-first design, mobile-optimized, efficient validation, distributor-exclusive access_
