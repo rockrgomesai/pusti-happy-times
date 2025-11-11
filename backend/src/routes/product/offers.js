@@ -483,6 +483,7 @@ router.post(
         "FREE_PRODUCT",
         "BUNDLE_OFFER",
         "BOGO",
+        "BOGO_DIFFERENT_SKU",
         "CASHBACK",
         "VOLUME_DISCOUNT",
         "CROSS_CATEGORY",
@@ -574,7 +575,7 @@ router.post(
       console.log("Offer saved successfully with ID:", offer._id);
 
       // Create notifications for eligible distributors (async, don't await)
-      if (status === "active" || (!status && active !== false)) {
+      if (status === "Active" || (!status && active !== false)) {
         notificationService
           .notifyOfferCreated(offer)
           .then((result) => {
@@ -837,6 +838,7 @@ router.put(
         "FREE_PRODUCT",
         "BUNDLE_OFFER",
         "BOGO",
+        "BOGO_DIFFERENT_SKU",
         "CASHBACK",
         "VOLUME_DISCOUNT",
         "CROSS_CATEGORY",
@@ -1176,6 +1178,211 @@ router.post(
       res.status(500).json({
         success: false,
         message: "Failed to duplicate offer",
+        error: error.message,
+      });
+    }
+  }
+);
+
+/**
+ * POST /product/offers/validate-bogo-different-sku
+ * Validate BOGO Different SKU configuration
+ */
+router.post(
+  "/validate-bogo-different-sku",
+  requireApiPermission("offers:create"),
+  [
+    body("qualifierProducts")
+      .isArray({ min: 1 })
+      .withMessage("At least one qualifier product is required"),
+    body("qualifierProducts.*.productId").isMongoId().withMessage("Invalid qualifier product ID"),
+    body("qualifierProducts.*.minQuantity")
+      .isInt({ min: 1 })
+      .withMessage("Qualifier min quantity must be at least 1"),
+    body("rewardProducts")
+      .isArray({ min: 1 })
+      .withMessage("At least one reward product is required"),
+    body("rewardProducts.*.productId").isMongoId().withMessage("Invalid reward product ID"),
+    body("rewardProducts.*.freeQuantity")
+      .isInt({ min: 1 })
+      .withMessage("Reward free quantity must be at least 1"),
+    body("rewardProducts.*.maxValueCap")
+      .optional()
+      .isFloat({ min: 0 })
+      .withMessage("Value cap must be a positive number"),
+    body("qualifierLogic")
+      .optional()
+      .isIn(["AND", "OR"])
+      .withMessage("Qualifier logic must be AND or OR"),
+    body("distributionMode")
+      .optional()
+      .isIn(["all", "choice"])
+      .withMessage("Distribution mode must be all or choice"),
+    body("allowRepetition")
+      .optional()
+      .isBoolean()
+      .withMessage("Allow repetition must be a boolean"),
+    body("maxRewardSets")
+      .optional()
+      .isInt({ min: 1 })
+      .withMessage("Max reward sets must be at least 1"),
+  ],
+  async (req, res) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({
+          success: false,
+          errors: errors.array(),
+        });
+      }
+
+      const { validateBOGODifferentSKUConfig } = require("../../utils/bogoDifferentSkuCalculator");
+      const offerConfig = req.body;
+
+      // Get product prices for validation
+      const allProductIds = [
+        ...offerConfig.qualifierProducts.map((q) => q.productId),
+        ...offerConfig.rewardProducts.map((r) => r.productId),
+      ];
+
+      const products = await Product.find({ _id: { $in: allProductIds } }).lean();
+
+      const productPrices = {};
+      products.forEach((p) => {
+        productPrices[p._id.toString()] = p.price || 0;
+      });
+
+      // Validate configuration
+      const validation = validateBOGODifferentSKUConfig(offerConfig, productPrices);
+
+      if (!validation.valid) {
+        return res.status(400).json({
+          success: false,
+          errors: validation.errors,
+        });
+      }
+
+      // Return success with product details for preview
+      const productsWithDetails = {
+        qualifiers: offerConfig.qualifierProducts.map((q) => {
+          const product = products.find((p) => p._id.toString() === q.productId);
+          return {
+            productId: q.productId,
+            productName: product?.name || "Unknown",
+            sku: product?.sku || "N/A",
+            minQuantity: q.minQuantity,
+            unitPrice: productPrices[q.productId] || 0,
+          };
+        }),
+        rewards: offerConfig.rewardProducts.map((r) => {
+          const product = products.find((p) => p._id.toString() === r.productId);
+          return {
+            productId: r.productId,
+            productName: product?.name || "Unknown",
+            sku: product?.sku || "N/A",
+            freeQuantity: r.freeQuantity,
+            unitPrice: productPrices[r.productId] || 0,
+            maxValueCap: r.maxValueCap,
+          };
+        }),
+      };
+
+      res.json({
+        success: true,
+        message: "Configuration is valid",
+        preview: productsWithDetails,
+      });
+    } catch (error) {
+      console.error("Error validating BOGO Different SKU:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to validate configuration",
+        error: error.message,
+      });
+    }
+  }
+);
+
+/**
+ * POST /product/offers/calculate-discount
+ * Calculate offer discount for given cart items
+ */
+router.post(
+  "/calculate-discount",
+  requireApiPermission("offers:read"),
+  [
+    body("offerId").isMongoId().withMessage("Valid offer ID is required"),
+    body("cartItems").isArray({ min: 1 }).withMessage("Cart items required"),
+    body("cartItems.*.productId").optional().isMongoId().withMessage("Invalid product ID"),
+    body("cartItems.*.source_id").optional().isMongoId().withMessage("Invalid source ID"),
+    body("cartItems.*.quantity").isInt({ min: 1 }).withMessage("Quantity must be positive"),
+    body("cartItems.*.price")
+      .optional()
+      .isFloat({ min: 0 })
+      .withMessage("Price must be non-negative"),
+    body("cartItems.*.unit_price")
+      .optional()
+      .isFloat({ min: 0 })
+      .withMessage("Unit price must be non-negative"),
+  ],
+  async (req, res) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({
+          success: false,
+          errors: errors.array(),
+        });
+      }
+
+      const { offerId, cartItems } = req.body;
+
+      // Fetch the offer
+      const offer = await Offer.findById(offerId).lean();
+
+      if (!offer) {
+        return res.status(404).json({
+          success: false,
+          message: "Offer not found",
+        });
+      }
+
+      // Check if offer is active
+      if (!offer.active || offer.status !== "Active") {
+        return res.status(400).json({
+          success: false,
+          message: "Offer is not active",
+        });
+      }
+
+      // Get product prices for BOGO_DIFFERENT_SKU calculations
+      const allProductIds = cartItems.map((item) => item.productId || item.source_id);
+      const products = await Product.find({ _id: { $in: allProductIds } }).lean();
+
+      const productPrices = {};
+      products.forEach((p) => {
+        productPrices[p._id.toString()] = p.db_price || p.trade_price || 0;
+      });
+
+      // Calculate discount using utility function
+      const { calculateOfferDiscount } = require("../../utils/offerCalculations");
+      const result = calculateOfferDiscount(offer, cartItems, productPrices);
+
+      res.json({
+        success: true,
+        data: {
+          offerId: offer._id,
+          offerName: offer.name,
+          offerType: offer.offer_type,
+          ...result,
+        },
+      });
+    } catch (error) {
+      console.error("Error calculating offer discount:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to calculate discount",
         error: error.message,
       });
     }

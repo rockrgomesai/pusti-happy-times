@@ -60,7 +60,7 @@ const OFFER_TYPES = [
   "FLASH_SALE"
 ];
 
-const OFFER_STATUS = ["draft", "active", "paused", "expired", "completed"];
+const OFFER_STATUS = ["Draft", "Active", "Paused", "Expired", "Completed"];
 
 interface Offer {
   _id: string;
@@ -81,15 +81,15 @@ interface Offer {
 
 const getStatusColor = (status: string): "default" | "primary" | "secondary" | "error" | "warning" | "info" | "success" => {
   switch (status) {
-    case 'active':
+    case 'Active':
       return 'success';
-    case 'draft':
+    case 'Draft':
       return 'default';
-    case 'paused':
+    case 'Paused':
       return 'warning';
-    case 'expired':
+    case 'Expired':
       return 'error';
-    case 'completed':
+    case 'Completed':
       return 'info';
     default:
       return 'default';

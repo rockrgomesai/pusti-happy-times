@@ -8,6 +8,7 @@ const OFFER_TYPES = [
   "FREE_PRODUCT",
   "BUNDLE_OFFER",
   "BOGO",
+  "BOGO_DIFFERENT_SKU",
   "CASHBACK",
   "VOLUME_DISCOUNT",
   "CROSS_CATEGORY",
@@ -16,7 +17,7 @@ const OFFER_TYPES = [
   "FLASH_SALE",
 ];
 
-const OFFER_STATUS = ["draft", "active", "paused", "expired", "completed"];
+const OFFER_STATUS = ["Draft", "Active", "Paused", "Expired", "Completed"];
 const PRODUCT_SEGMENTS = ["BIS", "BEV"];
 
 const territorySelectionSchema = new mongoose.Schema(
@@ -67,6 +68,26 @@ const getProductSchema = new mongoose.Schema(
     productId: { type: mongoose.Schema.Types.ObjectId, ref: "Product", required: true },
     quantity: { type: Number, required: true, min: 1 },
     discountPercentage: { type: Number, min: 0, max: 100 },
+    isPromotionalGift: { type: Boolean, default: false }, // If true, product is added as free gift (not from cart)
+  },
+  { _id: false }
+);
+
+// Schema for BOGO Different SKU qualifier products
+const qualifierProductSchema = new mongoose.Schema(
+  {
+    productId: { type: mongoose.Schema.Types.ObjectId, ref: "Product", required: true },
+    minQuantity: { type: Number, required: true, min: 1 },
+  },
+  { _id: false }
+);
+
+// Schema for BOGO Different SKU reward products
+const rewardProductSchema = new mongoose.Schema(
+  {
+    productId: { type: mongoose.Schema.Types.ObjectId, ref: "Product", required: true },
+    freeQuantity: { type: Number, required: true, min: 1 },
+    maxValueCap: { type: Number, min: 0 }, // Max value of free product per set
   },
   { _id: false }
 );
@@ -78,7 +99,7 @@ const offerSchema = new mongoose.Schema(
     product_segments: [{ type: String, enum: PRODUCT_SEGMENTS, required: true }],
     start_date: { type: Date, required: true, index: true },
     end_date: { type: Date, required: true, index: true },
-    status: { type: String, enum: OFFER_STATUS, default: "draft", index: true },
+    status: { type: String, enum: OFFER_STATUS, default: "Draft", index: true },
     active: { type: Boolean, default: true, index: true },
 
     territories: {
@@ -101,6 +122,9 @@ const offerSchema = new mongoose.Schema(
       volumeSlabs: [volumeSlabSchema],
       buyProducts: [buyProductSchema],
       getProducts: [getProductSchema],
+      bundlePrice: { type: Number, min: 0 }, // Fixed bundle price for BUNDLE_OFFER
+      buyQuantity: { type: Number, min: 1, default: 1 }, // For BOGO: buy this many
+      getQuantity: { type: Number, min: 1, default: 1 }, // For BOGO: get this many
       cashbackPercentage: { type: Number, min: 0, max: 100 },
       cashbackAmount: { type: Number, min: 0 },
       maxCashback: { type: Number, min: 0 },
@@ -111,6 +135,13 @@ const offerSchema = new mongoose.Schema(
       requiredCategories: [{ type: mongoose.Schema.Types.ObjectId, ref: "Category" }],
       minCategoriesRequired: { type: Number, min: 1 },
       firstOrderOnly: { type: Boolean, default: false },
+      // BOGO Different SKU specific fields
+      qualifierProducts: [qualifierProductSchema],
+      rewardProducts: [rewardProductSchema],
+      qualifierLogic: { type: String, enum: ["AND", "OR"], default: "AND" },
+      distributionMode: { type: String, enum: ["all", "choice"], default: "all" },
+      allowRepetition: { type: Boolean, default: false },
+      maxRewardSets: { type: Number, min: 1 }, // Max number of reward sets per order
     },
 
     stats: {

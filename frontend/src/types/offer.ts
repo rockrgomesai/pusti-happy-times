@@ -13,6 +13,7 @@ export type OfferTypeCode =
   | 'FREE_PRODUCT'
   | 'BUNDLE_OFFER'
   | 'BOGO'
+  | 'BOGO_DIFFERENT_SKU'
   | 'CASHBACK'
   | 'VOLUME_DISCOUNT'
   | 'CROSS_CATEGORY'
@@ -155,6 +156,14 @@ export const OFFER_TYPE_DEFINITIONS: OfferTypeDefinition[] = [
     icon: '🎯',
     category: 'Free Product',
     features: ['Popular promotion', '1:1 ratio', 'Clear value proposition']
+  },
+  {
+    code: 'BOGO_DIFFERENT_SKU',
+    name: 'BOGO - Different Products',
+    description: 'Buy specific products, get different products free or discounted',
+    icon: '🎁',
+    category: 'Free Product',
+    features: ['Buy X Get Y', 'Cross-product promotion', 'AND/OR qualifier logic', 'Value cap control']
   },
   {
     code: 'CASHBACK',

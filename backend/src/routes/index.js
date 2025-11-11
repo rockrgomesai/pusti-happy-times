@@ -25,6 +25,7 @@ const categoryRoutes = require("./categories");
 const facilityRoutes = require("./facilities"); // Unified facility routes
 const transportRoutes = require("./transports");
 const bankRoutes = require("./master/banks");
+const bdBankRoutes = require("./master/bd-banks");
 const menuRoutes = require("./menu-items");
 const permissionRoutes = require("./permissions");
 const designationRoutes = require("./designationRoutes");
@@ -40,6 +41,7 @@ const inventoryLocalStockRoutes = require("./inventory/localStock");
 const inventoryRequisitionsRoutes = require("./inventory/requisitions");
 const customerLedgerRoutes = require("./finance/customerledger");
 const demandOrdersRoutes = require("./ordermanagement/demandorders");
+const collectionsRoutes = require("./ordermanagement/collections");
 
 const router = express.Router();
 
@@ -251,6 +253,14 @@ router.use("/facilities", facilityRoutes);
 router.use("/master/banks", bankRoutes);
 
 /**
+ * BD Banks Management Routes
+ * @route   /api/master/bd-banks/*
+ * @desc    Bangladesh banks CRUD operations and management
+ * @access  Private (authenticated users)
+ */
+router.use("/master/bd-banks", bdBankRoutes);
+
+/**
  * Designation Management Routes
  * @route   /api/designations/*
  * @desc    Job designation CRUD operations and management
@@ -347,6 +357,14 @@ router.use("/finance/customerledger", customerLedgerRoutes);
  * @access  Private (Distributor role only)
  */
 router.use("/ordermanagement/demandorders", demandOrdersRoutes);
+
+/**
+ * Collections Routes
+ * @route   /api/ordermanagement/collections
+ * @desc    Payment collections from distributors
+ * @access  Private (Distributor role only)
+ */
+router.use("/ordermanagement/collections", collectionsRoutes);
 
 /**
  * API Route Documentation Helper

@@ -1,25 +1,14 @@
 const mongoose = require("mongoose");
-require("dotenv").config();
+const Role = require("./src/models/Role");
 
-const checkRoles = async () => {
-  try {
-    await mongoose.connect(process.env.MONGODB_URI);
-    console.log("✅ Connected to MongoDB\n");
+const MONGO_URI = "mongodb://admin:password123@localhost:27017/pusti_happy_times?authSource=admin";
 
-    const roles = await mongoose.connection.db.collection("roles").find({}).toArray();
-    console.log(`📋 Found ${roles.length} roles:\n`);
+async function listRoles() {
+  await mongoose.connect(MONGO_URI);
+  const roles = await Role.find({}, "role");
+  console.log("Available roles:");
+  roles.forEach((r) => console.log(`  - "${r.role}" (${r._id})`));
+  await mongoose.connection.close();
+}
 
-    roles.forEach((role) => {
-      console.log(`   - ${role.name} (${role._id})`);
-      console.log(`     Description: ${role.description || "N/A"}`);
-      console.log();
-    });
-
-    await mongoose.disconnect();
-  } catch (error) {
-    console.error("❌ Error:", error);
-    process.exit(1);
-  }
-};
-
-checkRoles();
+listRoles();

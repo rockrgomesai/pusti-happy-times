@@ -32,6 +32,8 @@ const helmet = require("helmet");
 const compression = require("compression");
 const fs = require("fs");
 const path = require("path");
+const http = require("http");
+const { Server } = require("socket.io");
 // const rateLimit = require('express-rate-limit');
 const mongoSanitize = require("express-mongo-sanitize");
 const hpp = require("hpp");
@@ -122,12 +124,18 @@ app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
 const publicDir = path.join(__dirname, "public");
 const imagesDir = path.join(publicDir, "images");
+const uploadsDir = path.join(publicDir, "uploads");
 
 if (!fs.existsSync(imagesDir)) {
   fs.mkdirSync(imagesDir, { recursive: true });
 }
 
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
 app.use("/images", express.static(imagesDir));
+app.use("/uploads", express.static(uploadsDir));
 
 // Data sanitization against NoSQL query injection
 app.use(mongoSanitize());
@@ -150,20 +158,34 @@ if (process.env.NODE_ENV === "development") {
  * Initialize MongoDB and Redis connections
  */
 
-// Connect to MongoDB
-
-connectDB();
-scheduleDistributorPermissionBootstrap();
-
-// Run startup validations and migrations
+// Initialize database connections and run startup tasks
 const validateEmployeeRoleAssignments = require("./src/migrations/validateEmployeeRoleAssignments");
-mongoose.connection.once("open", async () => {
+
+const initializeDatabases = async () => {
   try {
+    // Connect to MongoDB first
+    await connectDB();
+
+    // Wait for connection to be fully ready
+    if (mongoose.connection.readyState !== 1) {
+      await new Promise((resolve) => {
+        mongoose.connection.once("open", resolve);
+      });
+    }
+
+    // Run startup validations and migrations after MongoDB is connected
     await validateEmployeeRoleAssignments();
+
+    // Then initialize distributor permissions
+    await scheduleDistributorPermissionBootstrap();
   } catch (error) {
-    console.error("Error running startup validations:", error);
+    console.error("❌ Error during database initialization:", error);
+    process.exit(1);
   }
-});
+};
+
+// Start database initialization
+initializeDatabases();
 
 // Connect to Redis
 connectRedis();
@@ -241,7 +263,33 @@ app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 
-const server = app.listen(PORT, () => {
+// Create HTTP server and Socket.io instance
+const server = http.createServer(app);
+const allowedSocketOrigins = process.env.ALLOWED_ORIGINS?.split(",") || [
+  "http://localhost:3000",
+  "http://localhost:3001",
+];
+const io = new Server(server, {
+  cors: {
+    origin: allowedSocketOrigins,
+    methods: ["GET", "POST"],
+    credentials: true,
+  },
+});
+
+// Socket.io connection handling
+io.on("connection", (socket) => {
+  console.log(`✅ Socket connected: ${socket.id}`);
+
+  socket.on("disconnect", () => {
+    console.log(`❌ Socket disconnected: ${socket.id}`);
+  });
+});
+
+// Make io available globally for emitting events from routes
+global.io = io;
+
+server.listen(PORT, () => {
   console.log(`
   ╔══════════════════════════════════════════════════════════════╗
   ║                    PUSTI HAPPY TIMES API                     ║
@@ -252,6 +300,7 @@ const server = app.listen(PORT, () => {
   ║  Database:    MongoDB + Redis                                ║
   ║  Version:     ${(process.env.APP_VERSION || "1.0.0").padEnd(47)} ║
   ║  Time:        ${new Date().toLocaleString().padEnd(47)} ║
+  ║  WebSocket:   Enabled                                        ║
   ╚══════════════════════════════════════════════════════════════╝
   `);
 });

@@ -12,7 +12,7 @@
     "seed:employees": "node seed-employees.js",
     "seed:employees:two": "node scripts/seedTwoEmployees.js",
     "seed:categories": "node src/seeds/seedCategories.js",
-  "seed:distributors": "node src/seeds/seedDistributors.js",
+    "seed:distributors": "node src/seeds/seedDistributors.js",
     "permissions:employees": "node insert-employee-permissions.js",
     "seed:products": "node scripts/seedProducts.js"
   },
@@ -42,7 +42,8 @@
     "mongoose": "^7.5.0",
     "morgan": "^1.10.0",
     "multer": "^2.0.2",
-    "redis": "^4.6.7"
+    "redis": "^4.6.7",
+    "socket.io": "^4.8.1"
   },
   "devDependencies": {
     "eslint": "^8.47.0",

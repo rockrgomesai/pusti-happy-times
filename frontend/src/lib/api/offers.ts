@@ -141,5 +141,13 @@ export const offersApi = {
   getProductsGroupedByCategory: async (segments: ProductSegment[]) => {
     const response = await api.post<{ success: boolean; data: any[] }>(`${BASE_URL}/products/grouped-by-category`, { segments });
     return response.data.data;
+  },
+
+  calculateDiscount: async (offerId: string, cartItems: any[]) => {
+    const response = await api.post<{ success: boolean; data: any }>(`${BASE_URL}/calculate-discount`, {
+      offerId,
+      cartItems,
+    });
+    return response.data.data;
   }
 };

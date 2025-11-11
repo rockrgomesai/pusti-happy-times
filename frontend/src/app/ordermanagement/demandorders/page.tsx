@@ -20,6 +20,7 @@ import {
   List,
   ListItem,
   ListItemText,
+  ListItemSecondaryAction,
   Divider,
   Alert,
   CircularProgress,
@@ -232,11 +233,17 @@ const DemandOrdersPage = () => {
   const [dialogQuantity, setDialogQuantity] = useState<number>(1);
   const [productDialogOpen, setProductDialogOpen] = useState(false);
 
+  // Product browser dialog (for adding to cart from within cart view)
+  const [productBrowserOpen, setProductBrowserOpen] = useState(false);
+  const [browserSearchTerm, setBrowserSearchTerm] = useState("");
+
   // Offer details dialog
   const [selectedOffer, setSelectedOffer] = useState<Offer | null>(null);
   const [offerDialogOpen, setOfferDialogOpen] = useState(false);
   const [offerProducts, setOfferProducts] = useState<Product[]>([]);
   const [loadingOfferProducts, setLoadingOfferProducts] = useState(false);
+  // Track temporary selections within offer dialog (product_id -> quantity)
+  const [offerSelections, setOfferSelections] = useState<Record<string, number>>({});
 
   // Accordion control for simple category groups
   const [expandedPanel, setExpandedPanel] = useState<string | null>(null);
@@ -400,7 +407,7 @@ const DemandOrdersPage = () => {
     const map = new Map<string, Array<{offer: Offer, discount: number}>>();
     
     offers.forEach(offer => {
-      if (offer.status !== 'active' || !offer.active) return;
+      if (offer.status !== 'Active' || !offer.active) return;
       
       // Check if offer applies to all products or specific ones
       const productIds = offer.config?.applyToAllProducts 
@@ -443,6 +450,14 @@ const DemandOrdersPage = () => {
     setOfferDialogOpen(true);
     setLoadingOfferProducts(true);
     
+    // Check if this offer already has items in the cart
+    const existingItems = cart.filter(item => item.offer_id === offer._id);
+    const initialSelections: Record<string, number> = {};
+    existingItems.forEach(item => {
+      initialSelections[item.source_id] = item.quantity;
+    });
+    setOfferSelections(initialSelections);
+    
     try {
       // Fetch products that are eligible for this offer
       const response = await api.get(`/ordermanagement/demandorders/catalog/products?segment=${offer.product_segments[0] || 'BIS'}`);
@@ -466,6 +481,63 @@ const DemandOrdersPage = () => {
     setOfferDialogOpen(false);
     setSelectedOffer(null);
     setOfferProducts([]);
+    setOfferSelections({});
+  };
+
+  // Handle quantity change in offer dialog
+  const updateOfferSelection = (productId: string, quantity: number) => {
+    setOfferSelections(prev => {
+      if (quantity <= 0) {
+        const newSelections = { ...prev };
+        delete newSelections[productId];
+        return newSelections;
+      }
+      return { ...prev, [productId]: quantity };
+    });
+  };
+
+  // Apply offer selections to cart (replaces all items for this offer)
+  const applyOfferToCart = () => {
+    if (!selectedOffer) return;
+
+    // Remove all existing items for this offer from cart
+    const cartWithoutThisOffer = cart.filter(item => item.offer_id !== selectedOffer._id);
+
+    // Add new selections
+    const newItems: CartItem[] = [];
+    Object.entries(offerSelections).forEach(([productId, quantity]) => {
+      const product = offerProducts.find(p => p._id === productId);
+      if (product && quantity > 0) {
+        const originalSubtotal = product.mrp * quantity;
+        const { discountAmount, discountPercentage } = calculateOfferDiscount(originalSubtotal, quantity, selectedOffer);
+        const subtotal = originalSubtotal - discountAmount;
+
+        newItems.push({
+          source: "product",
+          source_id: product._id,
+          sku: product.sku,
+          quantity: quantity,
+          unit_price: product.mrp,
+          subtotal: subtotal,
+          name: product.short_description,
+          available_quantity: product.available_quantity,
+          offer_id: selectedOffer._id,
+          offer_name: selectedOffer.name,
+          discount_percentage: discountPercentage,
+          discount_amount: discountAmount,
+          original_subtotal: originalSubtotal,
+        });
+      }
+    });
+
+    setCart([...cartWithoutThisOffer, ...newItems]);
+    closeOfferDialog();
+    
+    if (newItems.length > 0) {
+      setSuccess(`Updated ${selectedOffer.name} with ${newItems.length} products`);
+    } else {
+      setSuccess(`Removed all items from ${selectedOffer.name}`);
+    }
   };
 
   // Calculate discount for a group of items with the same offer
@@ -583,7 +655,7 @@ const DemandOrdersPage = () => {
     );
 
     if (existingItem) {
-      updateCartItemQuantity(existingItem.source_id, existingItem.source, existingItem.quantity + quantity);
+      updateCartItemQuantity(existingItem.source_id, existingItem.source, existingItem.quantity + quantity, offer?._id);
     } else {
       if (source === "offer") {
         // Offers are not directly added to cart - they're applied to products
@@ -622,7 +694,7 @@ const DemandOrdersPage = () => {
     }
   };
 
-  const updateCartItemQuantity = (sourceId: string, source: string, newQuantity: number) => {
+  const updateCartItemQuantity = (sourceId: string, source: string, newQuantity: number, offerId?: string) => {
     if (newQuantity <= 0) {
       removeFromCart(sourceId, source);
       return;
@@ -630,7 +702,8 @@ const DemandOrdersPage = () => {
 
     setCart(
       cart.map((item) => {
-        if (item.source_id === sourceId && item.source === source) {
+        // Match by source_id, source, AND offer_id to avoid updating wrong item
+        if (item.source_id === sourceId && item.source === source && item.offer_id === offerId) {
           // Just update quantity - discount will be recalculated at group level
           return {
             ...item,
@@ -739,9 +812,9 @@ const DemandOrdersPage = () => {
         }
       );
 
-      const orderNumber = createResponse.data.data.order_number;
+      const orderId = createResponse.data.data._id;
 
-      setSuccess(`Draft order ${orderNumber} saved successfully! You can now add payment details.`);
+      setSuccess(`Draft order saved successfully! You can now add payment details.`);
       clearCart();
       setSubmitDialogOpen(false);
       
@@ -876,11 +949,21 @@ const DemandOrdersPage = () => {
     <Box sx={{ p: 2 }}>
       <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
         <Typography variant="h6">Shopping Cart ({cartTotals.itemCount})</Typography>
-        {isMobile && (
-          <IconButton onClick={() => setCartDrawerOpen(false)}>
-            <Close />
-          </IconButton>
-        )}
+        <Box sx={{ display: "flex", gap: 1 }}>
+          <Button
+            size="small"
+            variant="outlined"
+            startIcon={<AddShoppingCart />}
+            onClick={() => setProductBrowserOpen(true)}
+          >
+            Add Product
+          </Button>
+          {isMobile && (
+            <IconButton onClick={() => setCartDrawerOpen(false)}>
+              <Close />
+            </IconButton>
+          )}
+        </Box>
       </Box>
 
       {cart.length === 0 ? (
@@ -960,6 +1043,20 @@ const DemandOrdersPage = () => {
                     </Alert>
                   )}
 
+                  {/* Edit offer button */}
+                  {isOfferGroup && offer && (
+                    <Box sx={{ mb: 2, display: 'flex', justifyContent: 'flex-end' }}>
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        startIcon={<Edit />}
+                        onClick={() => openOfferDetails(offer)}
+                      >
+                        Edit Offer Items
+                      </Button>
+                    </Box>
+                  )}
+
                   <List>
                     {items.map((item) => {
                       const validation = getItemValidation(item.source_id, item.source);
@@ -1000,7 +1097,7 @@ const DemandOrdersPage = () => {
                               <IconButton
                                 size="small"
                                 onClick={() =>
-                                  updateCartItemQuantity(item.source_id, item.source, item.quantity - 1)
+                                  updateCartItemQuantity(item.source_id, item.source, item.quantity - 1, item.offer_id)
                                 }
                               >
                                 <Remove fontSize="small" />
@@ -1012,7 +1109,7 @@ const DemandOrdersPage = () => {
                                 onChange={(e) => {
                                   const newQty = parseInt(e.target.value) || 0;
                                   if (newQty >= 0) {
-                                    updateCartItemQuantity(item.source_id, item.source, newQty);
+                                    updateCartItemQuantity(item.source_id, item.source, newQty, item.offer_id);
                                   }
                                 }}
                                 inputProps={{ min: 1, style: { textAlign: 'center', width: '60px' } }}
@@ -1020,7 +1117,7 @@ const DemandOrdersPage = () => {
                               <IconButton
                                 size="small"
                                 onClick={() =>
-                                  updateCartItemQuantity(item.source_id, item.source, item.quantity + 1)
+                                  updateCartItemQuantity(item.source_id, item.source, item.quantity + 1, item.offer_id)
                                 }
                               >
                                 <Add fontSize="small" />
@@ -1415,7 +1512,7 @@ const DemandOrdersPage = () => {
             fullWidth
             startIcon={<Add />}
             onClick={() => openOfferDetails(offer)}
-            disabled={!offer.active || offer.status !== 'active'}
+            disabled={!offer.active || offer.status !== 'Active'}
           >
             View Details
           </Button>
@@ -1904,7 +2001,14 @@ const DemandOrdersPage = () => {
       >
         <DialogTitle>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Typography variant="h6">{selectedOffer?.name}</Typography>
+            <Box>
+              <Typography variant="h6">{selectedOffer?.name}</Typography>
+              {selectedOffer && cart.some(item => item.offer_id === selectedOffer._id) && (
+                <Typography variant="caption" color="text.secondary">
+                  Editing existing offer in cart
+                </Typography>
+              )}
+            </Box>
             <IconButton onClick={closeOfferDialog}>
               <Close />
             </IconButton>
@@ -1922,7 +2026,7 @@ const DemandOrdersPage = () => {
                   />
                   <Chip 
                     label={selectedOffer.status.toUpperCase()} 
-                    color={selectedOffer.status === 'active' ? 'success' : 'default'} 
+                    color={selectedOffer.status === 'Active' ? 'success' : 'default'} 
                   />
                   {selectedOffer.product_segments.map((seg) => (
                     <Chip key={seg} label={seg} size="small" />
@@ -1992,28 +2096,46 @@ const DemandOrdersPage = () => {
                   <Grid2 container spacing={2}>
                     {offerProducts.map((product) => {
                       const offerInfo = getProductOfferInfo(product._id);
+                      const currentQty = offerSelections[product._id] || 0;
                       
                       return (
                       <Grid2 size={{ xs: 12, sm: 6 }} key={product._id}>
-                        <Card variant="outlined">
+                        <Card 
+                          variant="outlined"
+                          sx={{
+                            border: currentQty > 0 ? '2px solid' : '1px solid',
+                            borderColor: currentQty > 0 ? 'success.main' : 'divider',
+                            bgcolor: currentQty > 0 ? 'success.50' : 'background.paper'
+                          }}
+                        >
                           <CardContent>
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
                               <Typography variant="subtitle2" gutterBottom>
                                 {product.sku}
                               </Typography>
-                              {offerInfo && offerInfo.offerCount > 1 && (
-                                <Chip
-                                  label={`${offerInfo.offerCount} offers`}
-                                  size="small"
-                                  sx={{
-                                    bgcolor: '#f3e5f5',
-                                    color: '#6a1b9a',
-                                    fontWeight: 'bold',
-                                    fontSize: '0.65rem',
-                                    height: 18,
-                                  }}
-                                />
-                              )}
+                              <Box sx={{ display: 'flex', gap: 0.5 }}>
+                                {currentQty > 0 && (
+                                  <Chip
+                                    label={`${currentQty} in selection`}
+                                    size="small"
+                                    color="success"
+                                    sx={{ height: 20, fontSize: '0.7rem' }}
+                                  />
+                                )}
+                                {offerInfo && offerInfo.offerCount > 1 && (
+                                  <Chip
+                                    label={`${offerInfo.offerCount} offers`}
+                                    size="small"
+                                    sx={{
+                                      bgcolor: '#f3e5f5',
+                                      color: '#6a1b9a',
+                                      fontWeight: 'bold',
+                                      fontSize: '0.65rem',
+                                      height: 20,
+                                    }}
+                                  />
+                                )}
+                              </Box>
                             </Box>
                             <Typography variant="body2" color="text.secondary" gutterBottom>
                               {product.short_description}
@@ -2027,20 +2149,58 @@ const DemandOrdersPage = () => {
                               </Typography>
                             </Box>
                           </CardContent>
-                          <CardActions>
-                            <Button 
-                              size="small" 
-                              fullWidth
-                              variant="outlined"
-                              onClick={() => {
-                                setSelectedProductForDialog(product);
-                                setDialogQuantity(1);
-                                setProductDialogOpen(true);
-                              }}
-                              disabled={product.available_quantity <= 0}
-                            >
-                              Add to Cart
-                            </Button>
+                          <CardActions sx={{ justifyContent: 'space-between', px: 2 }}>
+                            {currentQty > 0 ? (
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
+                                <IconButton
+                                  size="small"
+                                  onClick={() => updateOfferSelection(product._id, currentQty - 1)}
+                                  color="primary"
+                                >
+                                  <Remove />
+                                </IconButton>
+                                <TextField
+                                  size="small"
+                                  type="number"
+                                  value={currentQty}
+                                  onChange={(e) => {
+                                    const val = parseInt(e.target.value) || 0;
+                                    updateOfferSelection(product._id, Math.min(val, product.available_quantity));
+                                  }}
+                                  inputProps={{ 
+                                    min: 0, 
+                                    max: product.available_quantity,
+                                    style: { textAlign: 'center', width: '60px' }
+                                  }}
+                                />
+                                <IconButton
+                                  size="small"
+                                  onClick={() => updateOfferSelection(product._id, currentQty + 1)}
+                                  disabled={currentQty >= product.available_quantity}
+                                  color="primary"
+                                >
+                                  <Add />
+                                </IconButton>
+                                <IconButton
+                                  size="small"
+                                  onClick={() => updateOfferSelection(product._id, 0)}
+                                  color="error"
+                                >
+                                  <Delete />
+                                </IconButton>
+                              </Box>
+                            ) : (
+                              <Button 
+                                size="small" 
+                                fullWidth
+                                variant="outlined"
+                                onClick={() => updateOfferSelection(product._id, 1)}
+                                disabled={product.available_quantity <= 0}
+                                startIcon={<Add />}
+                              >
+                                Add
+                              </Button>
+                            )}
                           </CardActions>
                         </Card>
                       </Grid2>
@@ -2051,8 +2211,222 @@ const DemandOrdersPage = () => {
             </>
           )}
         </DialogContent>
+        <DialogActions sx={{ flexDirection: 'column', alignItems: 'stretch', gap: 2, p: 2 }}>
+          {/* Summary */}
+          {Object.keys(offerSelections).length > 0 && selectedOffer && (() => {
+            // Calculate preview totals
+            let totalQty = 0;
+            let subtotal = 0;
+            Object.entries(offerSelections).forEach(([productId, qty]) => {
+              const product = offerProducts.find(p => p._id === productId);
+              if (product) {
+                totalQty += qty;
+                subtotal += product.mrp * qty;
+              }
+            });
+
+            const groupCalc = calculateOfferGroupDiscount(
+              Object.entries(offerSelections)
+                .map(([productId, qty]) => {
+                  const product = offerProducts.find(p => p._id === productId);
+                  if (!product) return null;
+                  return {
+                    source: "product" as const,
+                    source_id: productId,
+                    sku: product.sku,
+                    quantity: qty,
+                    unit_price: product.mrp,
+                    subtotal: 0, // Will be calculated
+                    name: product.short_description,
+                    available_quantity: product.available_quantity,
+                    offer_id: selectedOffer._id,
+                    offer_name: selectedOffer.name,
+                  };
+                })
+                .filter((item): item is NonNullable<typeof item> => item !== null),
+              selectedOffer
+            );
+
+            return (
+              <Paper sx={{ p: 2, bgcolor: '#f3e5f5', border: '1px solid #9c27b0' }}>
+                <Typography variant="subtitle2" gutterBottom sx={{ color: '#6a1b9a', fontWeight: 'bold' }}>
+                  Selection Summary
+                </Typography>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                  <Typography variant="body2">
+                    {Object.keys(offerSelections).length} products, {totalQty} cartons
+                  </Typography>
+                  <Typography variant="body2" fontWeight="bold">
+                    ৳{subtotal.toFixed(2)}
+                  </Typography>
+                </Box>
+                {groupCalc.discountAmount > 0 && (
+                  <>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                      <Typography variant="body2" color="success.main">
+                        Discount ({groupCalc.discountPercentage}%)
+                      </Typography>
+                      <Typography variant="body2" color="success.main" fontWeight="bold">
+                        -৳{groupCalc.discountAmount.toFixed(2)}
+                      </Typography>
+                    </Box>
+                    <Divider sx={{ my: 1 }} />
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <Typography variant="subtitle1" fontWeight="bold">
+                        Final Total:
+                      </Typography>
+                      <Typography variant="subtitle1" fontWeight="bold" color="success.main">
+                        ৳{groupCalc.groupTotal.toFixed(2)}
+                      </Typography>
+                    </Box>
+                  </>
+                )}
+                {groupCalc.meetsMinimum === false && (
+                  <Alert severity="warning" sx={{ mt: 1 }}>
+                    Add ৳{((groupCalc.minOrderValue || 0) - subtotal).toFixed(2)} more to unlock discount
+                  </Alert>
+                )}
+              </Paper>
+            );
+          })()}
+          
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <Button onClick={closeOfferDialog} fullWidth>
+              Cancel
+            </Button>
+            <Button 
+              onClick={applyOfferToCart} 
+              variant="contained"
+              fullWidth
+              disabled={Object.keys(offerSelections).length === 0}
+              startIcon={<ShoppingCart />}
+            >
+              Apply to Cart
+            </Button>
+          </Box>
+        </DialogActions>
+      </Dialog>
+
+      {/* Product Browser Dialog (for adding from cart) */}
+      <Dialog 
+        open={productBrowserOpen} 
+        onClose={() => setProductBrowserOpen(false)} 
+        maxWidth="md" 
+        fullWidth
+        fullScreen={isMobile}
+      >
+        <DialogTitle>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography variant="h6">Browse Products</Typography>
+            <IconButton onClick={() => setProductBrowserOpen(false)}>
+              <Close />
+            </IconButton>
+          </Box>
+        </DialogTitle>
+        <DialogContent dividers>
+          <TextField
+            fullWidth
+            placeholder="Search by SKU or description..."
+            value={browserSearchTerm}
+            onChange={(e) => setBrowserSearchTerm(e.target.value)}
+            sx={{ mb: 2 }}
+            InputProps={{
+              startAdornment: <Search sx={{ mr: 1, color: 'text.secondary' }} />
+            }}
+          />
+
+          {loading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+              <CircularProgress />
+            </Box>
+          ) : (
+            <List>
+              {products
+                .filter(product => {
+                  if (!browserSearchTerm) return true;
+                  const search = browserSearchTerm.toLowerCase();
+                  return (
+                    product.sku.toLowerCase().includes(search) ||
+                    product.short_description.toLowerCase().includes(search)
+                  );
+                })
+                .map((product) => {
+                  const isInCart = cart.some(item => item.source_id === product._id);
+                  
+                  return (
+                    <ListItem
+                      key={product._id}
+                      sx={{
+                        border: '1px solid',
+                        borderColor: 'divider',
+                        borderRadius: 1,
+                        mb: 1,
+                        bgcolor: isInCart ? 'action.hover' : 'background.paper'
+                      }}
+                    >
+                      <ListItemText
+                        primary={
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Typography variant="subtitle1" fontWeight="bold">
+                              {product.sku}
+                            </Typography>
+                            {isInCart && (
+                              <Chip label="In Cart" size="small" color="primary" />
+                            )}
+                          </Box>
+                        }
+                        secondary={
+                          <Box>
+                            <Typography variant="body2" color="text.secondary">
+                              {product.short_description}
+                            </Typography>
+                            <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
+                              <Chip 
+                                label={`৳${product.mrp.toFixed(2)}`} 
+                                size="small" 
+                                color="primary"
+                              />
+                              <Chip 
+                                label={`${product.available_quantity} cartons`} 
+                                size="small"
+                                color={product.available_quantity > 0 ? 'success' : 'error'}
+                              />
+                            </Box>
+                          </Box>
+                        }
+                      />
+                      <ListItemSecondaryAction>
+                        <Button
+                          variant="outlined"
+                          size="small"
+                          disabled={product.available_quantity === 0}
+                          onClick={() => {
+                            setProductBrowserOpen(false);
+                            handleProductClick(product);
+                          }}
+                          startIcon={<AddShoppingCart />}
+                        >
+                          {isInCart ? 'Add More' : 'Add'}
+                        </Button>
+                      </ListItemSecondaryAction>
+                    </ListItem>
+                  );
+                })}
+              {products.filter(product => {
+                if (!browserSearchTerm) return true;
+                const search = browserSearchTerm.toLowerCase();
+                return (
+                  product.sku.toLowerCase().includes(search) ||
+                  product.short_description.toLowerCase().includes(search)
+                );
+              }).length === 0 && (
+                <Alert severity="info">No products found</Alert>
+              )}
+            </List>
+          )}
+        </DialogContent>
         <DialogActions>
-          <Button onClick={closeOfferDialog}>
+          <Button onClick={() => setProductBrowserOpen(false)}>
             Close
           </Button>
         </DialogActions>

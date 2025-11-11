@@ -29,6 +29,9 @@ const Product = require("./Product");
 const Territory = require("./Territory");
 const Distributor = require("./Distributor");
 const Offer = require("./Offer");
+const BdBank = require("./BdBank");
+const Collection = require("./Collection");
+const DemandOrder = require("./DemandOrder");
 
 // Import depot inventory models (new architecture)
 const DepotStock = require("./DepotStock");
@@ -60,6 +63,9 @@ const models = {
   Territory,
   Distributor,
   Offer,
+  BdBank,
+  Collection,
+  DemandOrder,
   SidebarMenuItem,
 
   // Depot inventory models (new architecture)
@@ -200,6 +206,9 @@ module.exports = {
   Product,
   Territory,
   Distributor,
+  BdBank,
+  Collection,
+  DemandOrder,
   SidebarMenuItem,
 
   // Depot inventory models (new architecture)

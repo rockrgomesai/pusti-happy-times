@@ -10,6 +10,7 @@ const NOTIFICATION_TYPES = [
   "offer_ending", // Offer ending soon
   "order_status", // Order status update
   "payment", // Payment related
+  "collection", // Collection/payment status update
   "system", // System announcements
   "alert", // Important alerts
   // Inventory notifications
@@ -87,6 +88,13 @@ const notificationSchema = new mongoose.Schema(
     inventory_id: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "FactoryStoreInventory",
+      default: null,
+      index: true,
+    },
+
+    collection_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Collection",
       default: null,
       index: true,
     },

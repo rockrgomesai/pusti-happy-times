@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from '@/theme/ThemeProvider';
 import { AuthProvider } from '@/contexts/AuthContext';
+import { SocketProvider } from '@/contexts/SocketContext';
 import { ClientLayout } from '@/components/layout/ClientLayout';
 import { Toaster } from 'react-hot-toast';
 
@@ -41,9 +42,11 @@ export default function RootLayout({
       >
         <ThemeProvider>
           <AuthProvider>
-            <ClientLayout>
-              {children}
-            </ClientLayout>
+            <SocketProvider>
+              <ClientLayout>
+                {children}
+              </ClientLayout>
+            </SocketProvider>
             <Toaster
               position="top-center"
               toastOptions={{

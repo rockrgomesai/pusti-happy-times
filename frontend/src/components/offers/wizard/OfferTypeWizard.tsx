@@ -76,7 +76,26 @@ interface WizardState {
       productId: string;
       quantity: number;
       discountPercentage?: number;
+      isPromotionalGift?: boolean; // If true, added as free gift at ৳0
     }>;
+    bundlePrice?: number; // Fixed price for bundle
+    buyQuantity?: number; // For BOGO
+    getQuantity?: number; // For BOGO
+    
+    // BOGO Different SKU
+    qualifierProducts?: Array<{
+      productId: string;
+      minQuantity: number;
+    }>;
+    rewardProducts?: Array<{
+      productId: string;
+      freeQuantity: number;
+      maxValueCap?: number;
+    }>;
+    qualifierLogic?: 'AND' | 'OR';
+    distributionMode?: 'all' | 'choice';
+    allowRepetition?: boolean;
+    maxRewardSets?: number;
     
     // Cashback
     cashbackPercentage?: number;
