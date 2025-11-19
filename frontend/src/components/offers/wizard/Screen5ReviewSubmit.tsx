@@ -58,6 +58,17 @@ interface Screen5Props {
       pointsValue?: number;
       stockLimit?: number;
       orderLimit?: number;
+      // VOLUME_DISCOUNT
+      volumeTiers?: Array<{
+        minQuantity: number;
+        discountPercentage?: number;
+        discountAmount?: number;
+        maxDiscount?: number;
+      }>;
+      // CROSS_CATEGORY
+      minTriggerAmount?: number;
+      triggerCategories?: string[];
+      rewardCategories?: string[];
     };
   };
   onStepChange: (step: number) => void;
@@ -319,6 +330,93 @@ export default function Screen5ReviewSubmit({ data, onStepChange, onSubmit, mode
               <Typography variant="body2" color="text.secondary">Point Value:</Typography>
               <Typography variant="body2" fontWeight={600}>৳{config.pointsValue}</Typography>
             </Box>
+          </Stack>
+        );
+
+      case 'VOLUME_DISCOUNT':
+        return (
+          <Stack spacing={1}>
+            <Typography variant="body2" color="text.secondary" fontWeight={600}>
+              Volume Tiers:
+            </Typography>
+            {config.volumeTiers?.map((tier: any, index: number) => (
+              <Box key={index} sx={{ pl: 2, py: 0.5, bgcolor: 'background.paper', borderRadius: 1 }}>
+                <Typography variant="caption" display="block">
+                  {tier.minQuantity}+ units: {' '}
+                  <strong>
+                    {tier.discountPercentage !== undefined 
+                      ? `${tier.discountPercentage}%` 
+                      : `৳${tier.discountAmount}`
+                    } off
+                    {tier.maxDiscount && ` (capped at ৳${tier.maxDiscount})`}
+                  </strong>
+                </Typography>
+              </Box>
+            ))}
+            {config.applyToAllProducts && (
+              <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
+                <Typography variant="caption" color="success.main">
+                  ✓ Applies to all products
+                </Typography>
+              </Box>
+            )}
+          </Stack>
+        );
+
+      case 'CROSS_CATEGORY':
+        return (
+          <Stack spacing={1}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+              <Typography variant="body2" color="text.secondary">Min Trigger Amount:</Typography>
+              <Typography variant="body2" fontWeight={600}>৳{config.minTriggerAmount}</Typography>
+            </Box>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+              <Typography variant="body2" color="text.secondary">Reward Discount:</Typography>
+              <Typography variant="body2" fontWeight={600}>
+                {config.discountPercentage !== undefined 
+                  ? `${config.discountPercentage}%` 
+                  : `৳${config.discountAmount}`
+                }
+              </Typography>
+            </Box>
+            {config.maxDiscountAmount && (
+              <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                <Typography variant="body2" color="text.secondary">Max Discount:</Typography>
+                <Typography variant="body2" fontWeight={600}>৳{config.maxDiscountAmount}</Typography>
+              </Box>
+            )}
+          </Stack>
+        );
+
+      case 'FIRST_ORDER':
+        return (
+          <Stack spacing={1}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+              <Typography variant="body2" color="text.secondary">Discount:</Typography>
+              <Typography variant="body2" fontWeight={600}>
+                {config.discountPercentage !== undefined 
+                  ? `${config.discountPercentage}%` 
+                  : `৳${config.discountAmount}`
+                }
+              </Typography>
+            </Box>
+            {config.minOrderValue && (
+              <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                <Typography variant="body2" color="text.secondary">Min Order Value:</Typography>
+                <Typography variant="body2" fontWeight={600}>৳{config.minOrderValue}</Typography>
+              </Box>
+            )}
+            {config.maxDiscountAmount && (
+              <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                <Typography variant="body2" color="text.secondary">Max Discount:</Typography>
+                <Typography variant="body2" fontWeight={600}>৳{config.maxDiscountAmount}</Typography>
+              </Box>
+            )}
+            <Alert severity="success" sx={{ mt: 1 }}>
+              <Typography variant="caption">
+                Only valid for first-time orders
+              </Typography>
+            </Alert>
           </Stack>
         );
 

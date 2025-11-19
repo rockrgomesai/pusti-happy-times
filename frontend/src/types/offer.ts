@@ -10,6 +10,7 @@ export type OfferTypeCode =
   | 'FLAT_DISCOUNT_AMT'
   | 'DISCOUNT_SLAB_PCT'
   | 'DISCOUNT_SLAB_AMT'
+  | 'SKU_DISCOUNT_AMOUNT'
   | 'FREE_PRODUCT'
   | 'BUNDLE_OFFER'
   | 'BOGO'
@@ -132,6 +133,14 @@ export const OFFER_TYPE_DEFINITIONS: OfferTypeDefinition[] = [
     icon: '💵',
     category: 'Discount',
     features: ['Volume-based savings', 'Clear tier benefits', 'Scales with order size']
+  },
+  {
+    code: 'SKU_DISCOUNT_AMOUNT',
+    name: 'SKU Discount Amount',
+    description: 'Individual per-unit discounts for specific SKUs with custom date ranges',
+    icon: '🏷️',
+    category: 'Discount',
+    features: ['Per-SKU customization', 'Unit-based discount', 'Individual date ranges', 'Flexible product mix']
   },
   {
     code: 'FREE_PRODUCT',

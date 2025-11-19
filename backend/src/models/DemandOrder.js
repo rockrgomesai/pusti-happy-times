@@ -143,29 +143,52 @@ const demandOrderSchema = new mongoose.Schema(
   }
 );
 
-// Generate order number on submit
+// Generate order number immediately when creating/saving (even for drafts)
 demandOrderSchema.pre("save", async function (next) {
-  if (this.status === "submitted" && !this.order_number) {
-    // Generate order number: DO-YYYYMMDD-XXXXX
-    const date = new Date();
-    const dateStr = date.toISOString().slice(0, 10).replace(/-/g, "");
+  if (!this.order_number && this.isNew) {
+    try {
+      // Get distributor's ERP ID
+      const Distributor = mongoose.model("Distributor");
+      const distributor = await Distributor.findById(this.distributor_id)
+        .select("erp_id")
+        .lean();
 
-    // Find the last order number for today
-    const lastOrder = await this.constructor
-      .findOne({ order_number: new RegExp(`^DO-${dateStr}`) })
-      .sort({ order_number: -1 })
-      .select("order_number")
-      .lean();
-
-    let sequence = 1;
-    if (lastOrder && lastOrder.order_number) {
-      const lastSeq = parseInt(lastOrder.order_number.split("-")[2]);
-      if (!isNaN(lastSeq)) {
-        sequence = lastSeq + 1;
+      if (!distributor || !distributor.erp_id) {
+        return next(new Error("Distributor ERP ID is required to generate order number"));
       }
-    }
 
-    this.order_number = `DO-${dateStr}-${sequence.toString().padStart(5, "0")}`;
+      const currentYear = new Date().getFullYear();
+      const erpId = distributor.erp_id;
+      
+      // Generate order number: DO-YYYY-ERPID-NNNNN
+      // Example: DO-2025-12345-00001
+      const prefix = `DO-${currentYear}-${erpId}`;
+
+      // Find the last order number for this year and distributor
+      const lastOrder = await this.constructor
+        .findOne({ 
+          order_number: new RegExp(`^${prefix}-`),
+          distributor_id: this.distributor_id 
+        })
+        .sort({ order_number: -1 })
+        .select("order_number")
+        .lean();
+
+      let sequence = 1;
+      if (lastOrder && lastOrder.order_number) {
+        const parts = lastOrder.order_number.split("-");
+        if (parts.length === 4) {
+          const lastSeq = parseInt(parts[3]);
+          if (!isNaN(lastSeq)) {
+            sequence = lastSeq + 1;
+          }
+        }
+      }
+
+      this.order_number = `${prefix}-${sequence.toString().padStart(5, "0")}`;
+    } catch (error) {
+      return next(error);
+    }
   }
   next();
 });

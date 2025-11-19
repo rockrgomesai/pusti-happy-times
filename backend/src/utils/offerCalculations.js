@@ -581,6 +581,575 @@ function calculateBundleOffer(cartItems, offerConfig, productPrices = {}) {
 }
 
 /**
+ * Calculate SKU_DISCOUNT_AMOUNT offer (per-SKU unit-based discount with individual date ranges)
+ * @param {Array} cartItems - Array of cart items
+ * @param {Object} offerConfig - Offer configuration
+ * @param {Object} productPrices - Map of productId to price
+ * @returns {Object} { eligible, discountedItems, totalDiscount, message }
+ */
+function calculateSkuDiscountAmount(cartItems, offerConfig, productPrices = {}) {
+  const { skuDiscounts = [] } = offerConfig;
+
+  if (!skuDiscounts || skuDiscounts.length === 0) {
+    return {
+      eligible: false,
+      discountedItems: [],
+      totalDiscount: 0,
+      message: "No SKU discounts configured",
+    };
+  }
+
+  const currentDate = new Date();
+  const discountedItems = [];
+  let totalDiscount = 0;
+  let applicableSkusCount = 0;
+
+  // Build cart quantity map
+  const cartQuantities = {};
+  cartItems.forEach((item) => {
+    const productIdStr = item.productId?.toString() || item.source_id?.toString();
+    if (productIdStr) {
+      cartQuantities[productIdStr] = (cartQuantities[productIdStr] || 0) + (item.quantity || 0);
+    }
+  });
+
+  // Process each SKU discount configuration
+  for (const skuDiscount of skuDiscounts) {
+    const productIdStr = skuDiscount.productId.toString();
+    const quantityInCart = cartQuantities[productIdStr] || 0;
+
+    // Skip if product not in cart
+    if (quantityInCart === 0) {
+      continue;
+    }
+
+    // Check if current date is within this SKU's valid date range
+    const startDate = new Date(skuDiscount.startDate);
+    const endDate = new Date(skuDiscount.endDate);
+
+    if (currentDate < startDate || currentDate > endDate) {
+      // SKU discount not active for current date
+      continue;
+    }
+
+    // Calculate discount: unit-based (discount per unit × quantity)
+    const discountPerUnit = skuDiscount.discountAmount || 0;
+    const itemDiscount = discountPerUnit * quantityInCart;
+    const productPrice = productPrices[productIdStr] || 0;
+
+    discountedItems.push({
+      productId: skuDiscount.productId,
+      quantity: quantityInCart,
+      discountPerUnit: parseFloat(discountPerUnit.toFixed(2)),
+      totalDiscount: parseFloat(itemDiscount.toFixed(2)),
+      unitPrice: productPrice,
+      effectiveUnitPrice: Math.max(0, productPrice - discountPerUnit),
+      validFrom: startDate,
+      validUntil: endDate,
+    });
+
+    totalDiscount += itemDiscount;
+    applicableSkusCount++;
+  }
+
+  if (discountedItems.length === 0) {
+    return {
+      eligible: false,
+      discountedItems: [],
+      totalDiscount: 0,
+      message: "No applicable SKU discounts for items in cart or discounts not active",
+    };
+  }
+
+  return {
+    eligible: true,
+    discountedItems,
+    totalDiscount: parseFloat(totalDiscount.toFixed(2)),
+    applicableSkusCount,
+    message: `${applicableSkusCount} SKU discount(s) applied, total savings: ৳${totalDiscount.toFixed(2)}`,
+  };
+}
+
+/**
+ * Calculate CASHBACK offer
+ * @param {Array} cartItems - Array of cart items
+ * @param {Object} offerConfig - Offer configuration
+ * @param {Array} selectedProducts - Array of product IDs
+ * @returns {Object} Calculation result
+ */
+function calculateCashback(cartItems, offerConfig, selectedProducts = []) {
+  const { cashbackPercentage, cashbackAmount, maxCashback, minOrderValue } = offerConfig;
+
+  // Filter cart items for selected products (or all if none specified)
+  const eligibleItems = selectedProducts.length > 0
+    ? cartItems.filter(item => selectedProducts.includes(item.productId || item.product_id))
+    : cartItems;
+
+  if (eligibleItems.length === 0) {
+    return {
+      eligible: false,
+      discount: 0,
+      cashback: 0,
+      message: "No eligible products in cart for cashback offer",
+    };
+  }
+
+  // Calculate total for eligible items
+  const eligibleTotal = eligibleItems.reduce((sum, item) => {
+    const price = item.price || item.unit_price || 0;
+    const quantity = item.quantity || 0;
+    return sum + (price * quantity);
+  }, 0);
+
+  // Check minimum order value
+  if (minOrderValue && eligibleTotal < minOrderValue) {
+    return {
+      eligible: false,
+      discount: 0,
+      cashback: 0,
+      message: `Minimum order value of ৳${minOrderValue} required. Current: ৳${eligibleTotal.toFixed(2)}`,
+      remainingAmount: minOrderValue - eligibleTotal,
+    };
+  }
+
+  // Calculate cashback
+  let calculatedCashback = 0;
+  if (cashbackPercentage !== undefined) {
+    calculatedCashback = (eligibleTotal * cashbackPercentage) / 100;
+  } else if (cashbackAmount !== undefined) {
+    calculatedCashback = cashbackAmount;
+  }
+
+  // Apply maximum cashback cap
+  if (maxCashback && calculatedCashback > maxCashback) {
+    calculatedCashback = maxCashback;
+  }
+
+  return {
+    eligible: true,
+    discount: 0, // Cashback doesn't reduce order total immediately
+    cashback: calculatedCashback,
+    message: `You will receive ৳${calculatedCashback.toFixed(2)} cashback on this order!`,
+    details: {
+      eligibleAmount: eligibleTotal,
+      cashbackRate: cashbackPercentage ? `${cashbackPercentage}%` : `৳${cashbackAmount}`,
+      maxCashback,
+    },
+  };
+}
+
+/**
+ * Calculate FLASH_SALE offer
+ * @param {Array} cartItems - Array of cart items
+ * @param {Object} offerConfig - Offer configuration
+ * @param {Array} selectedProducts - Array of product IDs
+ * @param {Object} offerUsage - Current usage stats (optional)
+ * @returns {Object} Calculation result
+ */
+function calculateFlashSale(cartItems, offerConfig, selectedProducts = [], offerUsage = {}) {
+  const { discountPercentage, stockLimit, orderLimit, minOrderValue, maxDiscountAmount } = offerConfig;
+  const { totalOrders = 0, totalQuantitySold = 0 } = offerUsage;
+
+  // Check stock limit
+  if (stockLimit && totalQuantitySold >= stockLimit) {
+    return {
+      eligible: false,
+      discount: 0,
+      message: "Flash sale stock has been exhausted",
+      stockExhausted: true,
+    };
+  }
+
+  // Check order limit per distributor
+  if (orderLimit && totalOrders >= orderLimit) {
+    return {
+      eligible: false,
+      discount: 0,
+      message: `You have reached the maximum order limit (${orderLimit}) for this flash sale`,
+      limitReached: true,
+    };
+  }
+
+  // Filter cart items for selected products (or all if none specified)
+  const eligibleItems = selectedProducts.length > 0
+    ? cartItems.filter(item => selectedProducts.includes(item.productId || item.product_id))
+    : cartItems;
+
+  if (eligibleItems.length === 0) {
+    return {
+      eligible: false,
+      discount: 0,
+      message: "No eligible products in cart for flash sale",
+    };
+  }
+
+  // Calculate total for eligible items
+  const eligibleTotal = eligibleItems.reduce((sum, item) => {
+    const price = item.price || item.unit_price || 0;
+    const quantity = item.quantity || 0;
+    return sum + (price * quantity);
+  }, 0);
+
+  // Check minimum order value
+  if (minOrderValue && eligibleTotal < minOrderValue) {
+    return {
+      eligible: false,
+      discount: 0,
+      message: `Minimum order value of ৳${minOrderValue} required for flash sale. Current: ৳${eligibleTotal.toFixed(2)}`,
+      remainingAmount: minOrderValue - eligibleTotal,
+    };
+  }
+
+  // Calculate discount
+  let discount = (eligibleTotal * discountPercentage) / 100;
+
+  // Apply maximum discount cap
+  if (maxDiscountAmount && discount > maxDiscountAmount) {
+    discount = maxDiscountAmount;
+  }
+
+  return {
+    eligible: true,
+    discount,
+    message: `Flash Sale: ${discountPercentage}% off! You save ৳${discount.toFixed(2)}`,
+    details: {
+      eligibleAmount: eligibleTotal,
+      discountPercentage,
+      stockRemaining: stockLimit ? stockLimit - totalQuantitySold : "Unlimited",
+      ordersRemaining: orderLimit ? orderLimit - totalOrders : "Unlimited",
+    },
+  };
+}
+
+/**
+ * Calculate LOYALTY_POINTS offer
+ * @param {Array} cartItems - Array of cart items
+ * @param {Object} offerConfig - Offer configuration
+ * @param {Array} selectedProducts - Array of product IDs
+ * @returns {Object} Calculation result
+ */
+function calculateLoyaltyPoints(cartItems, offerConfig, selectedProducts = []) {
+  const { pointsPerUnit, pointsValue, minOrderValue } = offerConfig;
+
+  if (!pointsPerUnit || !pointsValue) {
+    return {
+      eligible: false,
+      discount: 0,
+      points: 0,
+      message: "Invalid loyalty points configuration",
+    };
+  }
+
+  // Filter cart items for selected products (or all if none specified)
+  const eligibleItems = selectedProducts.length > 0
+    ? cartItems.filter(item => selectedProducts.includes(item.productId || item.product_id))
+    : cartItems;
+
+  if (eligibleItems.length === 0) {
+    return {
+      eligible: false,
+      discount: 0,
+      points: 0,
+      message: "No eligible products in cart for loyalty points",
+    };
+  }
+
+  // Calculate total quantity and value
+  const totalQuantity = eligibleItems.reduce((sum, item) => sum + (item.quantity || 0), 0);
+  const eligibleTotal = eligibleItems.reduce((sum, item) => {
+    const price = item.price || item.unit_price || 0;
+    const quantity = item.quantity || 0;
+    return sum + (price * quantity);
+  }, 0);
+
+  // Check minimum order value
+  if (minOrderValue && eligibleTotal < minOrderValue) {
+    return {
+      eligible: false,
+      discount: 0,
+      points: 0,
+      message: `Minimum order value of ৳${minOrderValue} required for loyalty points. Current: ৳${eligibleTotal.toFixed(2)}`,
+      remainingAmount: minOrderValue - eligibleTotal,
+    };
+  }
+
+  // Calculate points earned
+  const pointsEarned = totalQuantity * pointsPerUnit;
+  const pointsMonetaryValue = pointsEarned * pointsValue;
+
+  return {
+    eligible: true,
+    discount: 0, // Points don't reduce current order total
+    points: pointsEarned,
+    pointsValue: pointsMonetaryValue,
+    message: `You will earn ${pointsEarned.toFixed(0)} loyalty points (worth ৳${pointsMonetaryValue.toFixed(2)})!`,
+    details: {
+      totalUnits: totalQuantity,
+      pointsPerUnit,
+      pointsValue,
+      eligibleAmount: eligibleTotal,
+    },
+  };
+}
+
+/**
+ * Calculate VOLUME_DISCOUNT offer
+ * @param {Array} cartItems - Array of cart items
+ * @param {Object} offerConfig - Offer configuration
+ * @param {Array} selectedProducts - Array of product IDs
+ * @returns {Object} Calculation result
+ */
+function calculateVolumeDiscount(cartItems, offerConfig, selectedProducts = []) {
+  const { volumeTiers, applyToAllProducts } = offerConfig;
+
+  if (!volumeTiers || volumeTiers.length === 0) {
+    return {
+      eligible: false,
+      discount: 0,
+      message: "No volume tiers configured",
+    };
+  }
+
+  // Filter cart items for selected products (or all if applyToAllProducts is true)
+  const eligibleItems = applyToAllProducts || selectedProducts.length === 0
+    ? cartItems
+    : cartItems.filter(item => selectedProducts.includes(item.productId || item.product_id));
+
+  if (eligibleItems.length === 0) {
+    return {
+      eligible: false,
+      discount: 0,
+      message: "No eligible products in cart for volume discount",
+    };
+  }
+
+  // Calculate total quantity
+  const totalQuantity = eligibleItems.reduce((sum, item) => sum + (item.quantity || 0), 0);
+
+  // Find applicable tier (highest tier where minQuantity is met)
+  const sortedTiers = [...volumeTiers].sort((a, b) => b.minQuantity - a.minQuantity);
+  const applicableTier = sortedTiers.find(tier => totalQuantity >= tier.minQuantity);
+
+  if (!applicableTier) {
+    const lowestTier = [...volumeTiers].sort((a, b) => a.minQuantity - b.minQuantity)[0];
+    return {
+      eligible: false,
+      discount: 0,
+      message: `Buy ${lowestTier.minQuantity} or more units to unlock volume discount`,
+      remainingQuantity: lowestTier.minQuantity - totalQuantity,
+      nextTier: lowestTier,
+    };
+  }
+
+  // Calculate discount based on tier type
+  const eligibleTotal = eligibleItems.reduce((sum, item) => {
+    const price = item.price || item.unit_price || 0;
+    const quantity = item.quantity || 0;
+    return sum + (price * quantity);
+  }, 0);
+
+  let discount = 0;
+  if (applicableTier.discountPercentage !== undefined) {
+    discount = (eligibleTotal * applicableTier.discountPercentage) / 100;
+  } else if (applicableTier.discountAmount !== undefined) {
+    discount = applicableTier.discountAmount;
+  }
+
+  // Apply maximum discount cap if specified
+  if (applicableTier.maxDiscount && discount > applicableTier.maxDiscount) {
+    discount = applicableTier.maxDiscount;
+  }
+
+  // Find next tier for upsell message
+  const nextTier = sortedTiers.reverse().find(tier => tier.minQuantity > totalQuantity);
+
+  return {
+    eligible: true,
+    discount,
+    message: `Volume Discount: ${totalQuantity} units qualify for ${applicableTier.discountPercentage || applicableTier.discountAmount}${applicableTier.discountPercentage ? '%' : '৳'} off!`,
+    details: {
+      totalQuantity,
+      currentTier: applicableTier,
+      nextTier: nextTier ? {
+        minQuantity: nextTier.minQuantity,
+        discount: nextTier.discountPercentage || nextTier.discountAmount,
+        remaining: nextTier.minQuantity - totalQuantity,
+      } : null,
+      eligibleAmount: eligibleTotal,
+    },
+  };
+}
+
+/**
+ * Calculate CROSS_CATEGORY offer
+ * @param {Array} cartItems - Array of cart items with category information
+ * @param {Object} offerConfig - Offer configuration
+ * @returns {Object} Calculation result
+ */
+function calculateCrossCategory(cartItems, offerConfig) {
+  const { 
+    triggerCategories, 
+    rewardCategories, 
+    minTriggerAmount, 
+    discountPercentage, 
+    discountAmount,
+    maxDiscountAmount 
+  } = offerConfig;
+
+  if (!triggerCategories || triggerCategories.length === 0 || !rewardCategories || rewardCategories.length === 0) {
+    return {
+      eligible: false,
+      discount: 0,
+      message: "Invalid cross-category offer configuration",
+    };
+  }
+
+  // Calculate trigger category total
+  const triggerItems = cartItems.filter(item => 
+    triggerCategories.includes(item.categoryId || item.category_id)
+  );
+
+  const triggerTotal = triggerItems.reduce((sum, item) => {
+    const price = item.price || item.unit_price || 0;
+    const quantity = item.quantity || 0;
+    return sum + (price * quantity);
+  }, 0);
+
+  // Check if trigger amount is met
+  if (triggerTotal < minTriggerAmount) {
+    return {
+      eligible: false,
+      discount: 0,
+      message: `Spend ৳${minTriggerAmount} in trigger categories to unlock discount on reward categories`,
+      remainingAmount: minTriggerAmount - triggerTotal,
+      triggerTotal,
+    };
+  }
+
+  // Calculate reward category total
+  const rewardItems = cartItems.filter(item => 
+    rewardCategories.includes(item.categoryId || item.category_id)
+  );
+
+  if (rewardItems.length === 0) {
+    return {
+      eligible: true,
+      discount: 0,
+      message: "Trigger amount met! Add products from reward categories to get discount",
+      triggerMet: true,
+      rewardTotal: 0,
+    };
+  }
+
+  const rewardTotal = rewardItems.reduce((sum, item) => {
+    const price = item.price || item.unit_price || 0;
+    const quantity = item.quantity || 0;
+    return sum + (price * quantity);
+  }, 0);
+
+  // Calculate discount on reward categories
+  let discount = 0;
+  if (discountPercentage !== undefined) {
+    discount = (rewardTotal * discountPercentage) / 100;
+  } else if (discountAmount !== undefined) {
+    discount = discountAmount;
+  }
+
+  // Apply maximum discount cap
+  if (maxDiscountAmount && discount > maxDiscountAmount) {
+    discount = maxDiscountAmount;
+  }
+
+  return {
+    eligible: true,
+    discount,
+    message: `Cross-Category Discount: ${discountPercentage || discountAmount}${discountPercentage ? '%' : '৳'} off reward categories!`,
+    details: {
+      triggerTotal,
+      rewardTotal,
+      discountApplied: discount,
+      triggerCategories,
+      rewardCategories,
+    },
+  };
+}
+
+/**
+ * Calculate FIRST_ORDER offer
+ * @param {Array} cartItems - Array of cart items
+ * @param {Object} offerConfig - Offer configuration
+ * @param {Array} selectedProducts - Array of product IDs
+ * @param {Boolean} isFirstOrder - Whether this is distributor's first order
+ * @returns {Object} Calculation result
+ */
+function calculateFirstOrder(cartItems, offerConfig, selectedProducts = [], isFirstOrder = false) {
+  const { discountPercentage, discountAmount, minOrderValue, maxDiscountAmount } = offerConfig;
+
+  // Check if this is actually a first order
+  if (!isFirstOrder) {
+    return {
+      eligible: false,
+      discount: 0,
+      message: "This offer is only valid for first-time orders",
+    };
+  }
+
+  // Filter cart items for selected products (or all if none specified)
+  const eligibleItems = selectedProducts.length > 0
+    ? cartItems.filter(item => selectedProducts.includes(item.productId || item.product_id))
+    : cartItems;
+
+  if (eligibleItems.length === 0) {
+    return {
+      eligible: false,
+      discount: 0,
+      message: "No eligible products in cart for first order discount",
+    };
+  }
+
+  // Calculate total for eligible items
+  const eligibleTotal = eligibleItems.reduce((sum, item) => {
+    const price = item.price || item.unit_price || 0;
+    const quantity = item.quantity || 0;
+    return sum + (price * quantity);
+  }, 0);
+
+  // Check minimum order value
+  if (minOrderValue && eligibleTotal < minOrderValue) {
+    return {
+      eligible: false,
+      discount: 0,
+      message: `Minimum order value of ৳${minOrderValue} required for first order discount. Current: ৳${eligibleTotal.toFixed(2)}`,
+      remainingAmount: minOrderValue - eligibleTotal,
+    };
+  }
+
+  // Calculate discount
+  let discount = 0;
+  if (discountPercentage !== undefined) {
+    discount = (eligibleTotal * discountPercentage) / 100;
+  } else if (discountAmount !== undefined) {
+    discount = discountAmount;
+  }
+
+  // Apply maximum discount cap
+  if (maxDiscountAmount && discount > maxDiscountAmount) {
+    discount = maxDiscountAmount;
+  }
+
+  return {
+    eligible: true,
+    discount,
+    message: `Welcome! First Order Discount: ${discountPercentage || discountAmount}${discountPercentage ? '%' : '৳'} off! You save ৳${discount.toFixed(2)}`,
+    details: {
+      eligibleAmount: eligibleTotal,
+      isFirstOrder: true,
+      discountApplied: discount,
+    },
+  };
+}
+
+/**
  * Main function to calculate offer discount based on offer type
  * @param {Object} offer - The offer object with type and config
  * @param {Array} cartItems - Array of cart items
@@ -624,6 +1193,27 @@ function calculateOfferDiscount(offer, cartItems, productPrices = {}) {
     case "BOGO_DIFFERENT_SKU":
       return calculateBOGODifferentSKU(cartItems, config, productPrices);
 
+    case "SKU_DISCOUNT_AMOUNT":
+      return calculateSkuDiscountAmount(cartItems, config, productPrices);
+
+    case "CASHBACK":
+      return calculateCashback(cartItems, config, selectedProducts);
+
+    case "FLASH_SALE":
+      return calculateFlashSale(cartItems, config, selectedProducts);
+
+    case "LOYALTY_POINTS":
+      return calculateLoyaltyPoints(cartItems, config, selectedProducts);
+
+    case "VOLUME_DISCOUNT":
+      return calculateVolumeDiscount(cartItems, config, selectedProducts);
+
+    case "CROSS_CATEGORY":
+      return calculateCrossCategory(cartItems, config);
+
+    case "FIRST_ORDER":
+      return calculateFirstOrder(cartItems, config, selectedProducts);
+
     default:
       return {
         eligible: false,
@@ -641,5 +1231,13 @@ module.exports = {
   calculateFreeProduct,
   calculateBundleOffer,
   calculateBOGO,
+  calculateBOGODifferentSKU,
+  calculateSkuDiscountAmount,
+  calculateCashback,
+  calculateFlashSale,
+  calculateLoyaltyPoints,
+  calculateVolumeDiscount,
+  calculateCrossCategory,
+  calculateFirstOrder,
   calculateOfferDiscount,
 };

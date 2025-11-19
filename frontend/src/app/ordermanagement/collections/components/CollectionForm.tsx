@@ -19,6 +19,7 @@ import {
   CircularProgress,
   InputAdornment,
   IconButton,
+  Checkbox,
 } from "@mui/material";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
@@ -73,6 +74,8 @@ export default function CollectionForm({
   const [existingImage, setExistingImage] = useState<any>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [imageViewerOpen, setImageViewerOpen] = useState(false);
+  const [isAcPayeeCheck, setIsAcPayeeCheck] = useState(false);
+  const [checkNumber, setCheckNumber] = useState("");
 
   useEffect(() => {
     if (open) {
@@ -87,8 +90,6 @@ export default function CollectionForm({
           deposit_date: collection.deposit_date?.split("T")[0] || new Date().toISOString().split("T")[0],
           do_no: collection.do_no || "",
           note: collection.note || "",
-          bank_id: collection.bank_id?._id || collection.bank_id,
-          cheque_number: collection.cheque_number || "",
           cash_method: collection.cash_method || "",
           // Extract _id from populated bank objects
           company_bank: collection.company_bank?._id || collection.company_bank || "",
@@ -98,6 +99,9 @@ export default function CollectionForm({
         });
         // Set existing image
         setExistingImage(collection.image || null);
+        // Set A/C Payee Check states
+        setIsAcPayeeCheck(!!collection.check_number);
+        setCheckNumber(collection.check_number || "");
       } else {
         // Create mode: reset form
         setFormData({
@@ -109,6 +113,8 @@ export default function CollectionForm({
           note: "",
         });
         setExistingImage(null);
+        setIsAcPayeeCheck(false);
+        setCheckNumber("");
       }
       setSelectedFile(null);
       setErrors({});
@@ -145,6 +151,13 @@ export default function CollectionForm({
       depositor_branch: undefined,
       cash_method: undefined,
     }));
+    
+    // Clear A/C Payee Check states when switching to Cash
+    if (method === "Cash") {
+      setIsAcPayeeCheck(false);
+      setCheckNumber("");
+    }
+    
     setErrors({});
   };
 
@@ -199,6 +212,12 @@ export default function CollectionForm({
 
     // Payment method specific validations
     if (formData.payment_method === "Bank") {
+      // A/C Payee Check validation (only for Bank payments)
+      if (isAcPayeeCheck && !checkNumber.trim()) {
+        newErrors.check_number = "Check number is required for A/C Payee checks";
+      }
+      
+      // Bank field validations
       if (!formData.company_bank) {
         newErrors.company_bank = "Company bank is required";
       }
@@ -252,6 +271,12 @@ export default function CollectionForm({
           }
         }
       });
+
+      // Add A/C Payee Check data
+      if (isAcPayeeCheck && checkNumber.trim()) {
+        submitData.append("check_number", checkNumber.trim());
+        submitData.append("is_ac_payee_check", "true");
+      }
 
       // Add file if selected
       if (selectedFile) {
@@ -413,37 +438,117 @@ export default function CollectionForm({
               Common Details
             </Typography>
             <Stack spacing={2} sx={{ mt: 2 }}>
-              <TextField
-                label="Depositor Mobile *"
-                value={formData.depositor_mobile}
-                onChange={(e) => handleChange("depositor_mobile", e.target.value)}
-                error={!!errors.depositor_mobile}
-                helperText={errors.depositor_mobile}
-                placeholder="01712345678"
-                fullWidth
-              />
+              {/* Depositor Mobile and A/C Payee Check (Bank only) */}
+              {formData.payment_method === "Bank" ? (
+                <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', sm: 'row' } }}>
+                  <Box sx={{ flex: { xs: 1, sm: '0 0 65%' } }}>
+                    <TextField
+                      label="Depositor Mobile *"
+                      value={formData.depositor_mobile}
+                      onChange={(e) => handleChange("depositor_mobile", e.target.value)}
+                      error={!!errors.depositor_mobile}
+                      helperText={errors.depositor_mobile}
+                      placeholder="01712345678"
+                      fullWidth
+                    />
+                  </Box>
+                  <Box sx={{ flex: { xs: 1, sm: '0 0 calc(35% - 16px)' }, display: 'flex', alignItems: 'center' }}>
+                    <FormControlLabel
+                      control={
+                        <Checkbox
+                          checked={isAcPayeeCheck}
+                          onChange={(e) => {
+                            setIsAcPayeeCheck(e.target.checked);
+                            if (!e.target.checked) {
+                              setCheckNumber("");
+                              setErrors((prev) => ({ ...prev, check_number: "" }));
+                            }
+                          }}
+                        />
+                      }
+                      label="A/C Payee Check"
+                    />
+                  </Box>
+                </Box>
+              ) : (
+                <TextField
+                  label="Depositor Mobile *"
+                  value={formData.depositor_mobile}
+                  onChange={(e) => handleChange("depositor_mobile", e.target.value)}
+                  error={!!errors.depositor_mobile}
+                  helperText={errors.depositor_mobile}
+                  placeholder="01712345678"
+                  fullWidth
+                />
+              )}
 
-              <TextField
-                label="Deposit Amount (BDT) *"
-                type="number"
-                value={formData.deposit_amount === "" || formData.deposit_amount === 0 ? "" : formData.deposit_amount}
-                onChange={(e) => {
-                  const inputValue = e.target.value;
-                  if (inputValue === "" || inputValue === null) {
-                    handleChange("deposit_amount", "");
-                  } else {
-                    const numValue = parseFloat(inputValue);
-                    handleChange("deposit_amount", isNaN(numValue) ? "" : numValue);
-                  }
-                }}
-                error={!!errors.deposit_amount}
-                helperText={errors.deposit_amount}
-                InputProps={{
-                  startAdornment: <InputAdornment position="start">৳</InputAdornment>,
-                }}
-                inputProps={{ min: 0, step: 0.01 }}
-                fullWidth
-              />
+              {/* Deposit Amount and Check Number (Check Number for Bank only) */}
+              {formData.payment_method === "Bank" ? (
+                <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', sm: 'row' } }}>
+                  <Box sx={{ flex: 1 }}>
+                    <TextField
+                      label="Deposit Amount (BDT) *"
+                      type="number"
+                      value={formData.deposit_amount === "" || formData.deposit_amount === 0 ? "" : formData.deposit_amount}
+                      onChange={(e) => {
+                        const inputValue = e.target.value;
+                        if (inputValue === "" || inputValue === null) {
+                          handleChange("deposit_amount", "");
+                        } else {
+                          const numValue = parseFloat(inputValue);
+                          handleChange("deposit_amount", isNaN(numValue) ? "" : numValue);
+                        }
+                      }}
+                      error={!!errors.deposit_amount}
+                      helperText={errors.deposit_amount}
+                      InputProps={{
+                        startAdornment: <InputAdornment position="start">৳</InputAdornment>,
+                      }}
+                      inputProps={{ min: 0, step: 0.01 }}
+                      fullWidth
+                    />
+                  </Box>
+                  <Box sx={{ flex: 1 }}>
+                    <TextField
+                      label={`Check Number${isAcPayeeCheck ? ' *' : ''}`}
+                      value={checkNumber}
+                      onChange={(e) => {
+                        setCheckNumber(e.target.value);
+                        if (errors.check_number) {
+                          setErrors((prev) => ({ ...prev, check_number: "" }));
+                        }
+                      }}
+                      disabled={!isAcPayeeCheck}
+                      error={!!errors.check_number}
+                      helperText={errors.check_number || (isAcPayeeCheck ? "Required for A/C Payee checks" : "Enable A/C Payee Check to enter")}
+                      placeholder="123456"
+                      fullWidth
+                    />
+                  </Box>
+                </Box>
+              ) : (
+                <TextField
+                  label="Deposit Amount (BDT) *"
+                  type="number"
+                  value={formData.deposit_amount === "" || formData.deposit_amount === 0 ? "" : formData.deposit_amount}
+                  onChange={(e) => {
+                    const inputValue = e.target.value;
+                    if (inputValue === "" || inputValue === null) {
+                      handleChange("deposit_amount", "");
+                    } else {
+                      const numValue = parseFloat(inputValue);
+                      handleChange("deposit_amount", isNaN(numValue) ? "" : numValue);
+                    }
+                  }}
+                  error={!!errors.deposit_amount}
+                  helperText={errors.deposit_amount}
+                  InputProps={{
+                    startAdornment: <InputAdornment position="start">৳</InputAdornment>,
+                  }}
+                  inputProps={{ min: 0, step: 0.01 }}
+                  fullWidth
+                />
+              )}
 
               <LocalizationProvider dateAdapter={AdapterDateFns}>
                 <DatePicker

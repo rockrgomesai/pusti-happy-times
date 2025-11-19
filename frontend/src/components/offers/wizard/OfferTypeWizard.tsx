@@ -82,6 +82,14 @@ interface WizardState {
     buyQuantity?: number; // For BOGO
     getQuantity?: number; // For BOGO
     
+    // SKU Discount Amount
+    skuDiscounts?: Array<{
+      productId: string;
+      discountAmount: number;
+      startDate: string;
+      endDate: string;
+    }>;
+    
     // BOGO Different SKU
     qualifierProducts?: Array<{
       productId: string;

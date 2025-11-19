@@ -90,6 +90,12 @@ interface Screen4Props {
       bundlePrice?: number;
       buyQuantity?: number;
       getQuantity?: number;
+      skuDiscounts?: Array<{
+        productId: string;
+        discountAmount: number;
+        startDate: string;
+        endDate: string;
+      }>;
       qualifierProducts?: Array<{
         productId: string;
         minQuantity: number;
@@ -115,6 +121,17 @@ interface Screen4Props {
       pointsValue?: number;
       stockLimit?: number;
       orderLimit?: number;
+      // VOLUME_DISCOUNT
+      volumeTiers?: Array<{
+        minQuantity: number;
+        discountPercentage?: number;
+        discountAmount?: number;
+        maxDiscount?: number;
+      }>;
+      // CROSS_CATEGORY
+      minTriggerAmount?: number;
+      triggerCategories?: string[];
+      rewardCategories?: string[];
     };
   };
   onChange: (data: Partial<Screen4Props['data']>) => void;
@@ -207,6 +224,27 @@ export default function Screen4OfferConfiguration({ data, onChange, errors }: Sc
     if (!rewards.some(r => r.productId === productId)) {
       updateConfig({
         rewardProducts: [...rewards, { productId, freeQuantity: 1 }]
+      });
+      setExpandedCategory(false);
+    }
+  };
+
+  // SKU_DISCOUNT_AMOUNT handler
+  const handleAddSkuDiscount = (productId: string) => {
+    const skuDiscounts = data.offerConfig.skuDiscounts || [];
+    if (!skuDiscounts.some(sd => sd.productId === productId)) {
+      const today = new Date().toISOString().split('T')[0];
+      const nextMonth = new Date();
+      nextMonth.setMonth(nextMonth.getMonth() + 1);
+      const endDate = nextMonth.toISOString().split('T')[0];
+      
+      updateConfig({
+        skuDiscounts: [...skuDiscounts, { 
+          productId, 
+          discountAmount: 0,
+          startDate: today,
+          endDate: endDate
+        }]
       });
       setExpandedCategory(false);
     }
@@ -436,6 +474,7 @@ export default function Screen4OfferConfiguration({ data, onChange, errors }: Sc
                         const isReward = data.offerConfig.rewardProducts?.some(r => r.productId === product._id);
                         const isBuyProduct = data.offerConfig.buyProducts?.some(bp => bp.productId === product._id);
                         const isGetProduct = data.offerConfig.getProducts?.some(gp => gp.productId === product._id);
+                        const isSkuDiscount = data.offerConfig.skuDiscounts?.some(sd => sd.productId === product._id);
                         
                         return (
                           <ListItem 
@@ -476,6 +515,17 @@ export default function Screen4OfferConfiguration({ data, onChange, errors }: Sc
                                     {isGetProduct ? '✓ Get' : 'Get'}
                                   </Button>
                                 </Stack>
+                              ) : data.selectedOfferType === 'SKU_DISCOUNT_AMOUNT' ? (
+                                <Button
+                                  size="small"
+                                  variant={isSkuDiscount ? "contained" : "outlined"}
+                                  color={isSkuDiscount ? "success" : "primary"}
+                                  onClick={() => handleAddSkuDiscount(product._id)}
+                                  disabled={isSkuDiscount}
+                                  sx={{ fontSize: '0.7rem', minWidth: 100 }}
+                                >
+                                  {isSkuDiscount ? '✓ Added' : 'Add SKU'}
+                                </Button>
                               ) : data.selectedOfferType === 'BOGO' ? (
                                 <Button
                                   size="small"
@@ -513,7 +563,7 @@ export default function Screen4OfferConfiguration({ data, onChange, errors }: Sc
                               ) : null
                             }
                           >
-                            {!['BUNDLE_OFFER', 'FREE_PRODUCT', 'BOGO', 'BOGO_DIFFERENT_SKU'].includes(data.selectedOfferType || '') && (
+                            {!['BUNDLE_OFFER', 'FREE_PRODUCT', 'SKU_DISCOUNT_AMOUNT', 'BOGO', 'BOGO_DIFFERENT_SKU'].includes(data.selectedOfferType || '') && (
                               <ListItemButton onClick={() => handleProductToggle(product._id)} dense>
                                 <ListItemIcon sx={{ minWidth: 36 }}>
                                   <Checkbox
@@ -531,7 +581,7 @@ export default function Screen4OfferConfiguration({ data, onChange, errors }: Sc
                                 />
                               </ListItemButton>
                             )}
-                            {['BUNDLE_OFFER', 'FREE_PRODUCT', 'BOGO', 'BOGO_DIFFERENT_SKU'].includes(data.selectedOfferType || '') && (
+                            {['BUNDLE_OFFER', 'FREE_PRODUCT', 'SKU_DISCOUNT_AMOUNT', 'BOGO', 'BOGO_DIFFERENT_SKU'].includes(data.selectedOfferType || '') && (
                               <Box sx={{ py: 1, px: 2, width: '100%' }}>
                                 <ListItemText
                                   primary={product.sku}
@@ -1267,6 +1317,129 @@ export default function Screen4OfferConfiguration({ data, onChange, errors }: Sc
           </Stack>
         );
 
+      case 'SKU_DISCOUNT_AMOUNT':
+        return (
+          <Stack spacing={3}>
+            <Paper sx={{ p: 2 }}>
+              <Typography variant="subtitle2" fontWeight={600} mb={2}>
+                SKU-Specific Discount Configuration
+              </Typography>
+              <Typography variant="body2" color="text.secondary" mb={2}>
+                Configure individual discounts for each SKU with custom date ranges. Each SKU can have different discount amounts and validity periods.
+              </Typography>
+              
+              <Stack spacing={2} mb={2}>
+                {(data.offerConfig.skuDiscounts || []).map((skuDiscount, index) => {
+                  const product = productGroups
+                    .flatMap(g => g.products)
+                    .find(p => p._id === skuDiscount.productId);
+                  
+                  return (
+                    <Paper key={index} sx={{ p: 2, bgcolor: 'background.default' }}>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                        <Typography variant="caption" fontWeight={600}>
+                          SKU {index + 1}
+                        </Typography>
+                        <IconButton
+                          size="small"
+                          onClick={() => {
+                            const updated = [...(data.offerConfig.skuDiscounts || [])];
+                            updated.splice(index, 1);
+                            updateConfig({ skuDiscounts: updated });
+                          }}
+                          color="error"
+                        >
+                          <DeleteIcon fontSize="small" />
+                        </IconButton>
+                      </Box>
+                      
+                      {product && (
+                        <Box sx={{ mb: 2 }}>
+                          <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                            {product.sku} - {product.bangla_name || product.name}
+                          </Typography>
+                          <Box sx={{ display: 'flex', gap: 1, mt: 0.5 }}>
+                            <Chip 
+                              label={`৳${product.db_price || product.trade_price || 0}`} 
+                              size="small"
+                            />
+                            {product.product_type && (
+                              <Chip 
+                                label={product.product_type}
+                                size="small"
+                                color={product.product_type === 'PROCURED' ? 'secondary' : 'default'}
+                              />
+                            )}
+                          </Box>
+                        </Box>
+                      )}
+                      
+                      <Stack spacing={2}>
+                        <TextField
+                          size="small"
+                          type="number"
+                          label="Discount Amount (৳ per unit) *"
+                          value={skuDiscount.discountAmount}
+                          onChange={(e) => {
+                            const updated = [...(data.offerConfig.skuDiscounts || [])];
+                            updated[index].discountAmount = parseFloat(e.target.value) || 0;
+                            updateConfig({ skuDiscounts: updated });
+                          }}
+                          InputProps={{
+                            startAdornment: <InputAdornment position="start">৳</InputAdornment>,
+                          }}
+                          inputProps={{ min: 0, step: 0.01 }}
+                          helperText="Fixed amount off per unit (e.g., ৳2 off per unit)"
+                          fullWidth
+                        />
+                        
+                        <TextField
+                          size="small"
+                          type="date"
+                          label="Start Date *"
+                          value={skuDiscount.startDate ? skuDiscount.startDate.split('T')[0] : ''}
+                          onChange={(e) => {
+                            const updated = [...(data.offerConfig.skuDiscounts || [])];
+                            updated[index].startDate = e.target.value;
+                            updateConfig({ skuDiscounts: updated });
+                          }}
+                          InputLabelProps={{ shrink: true }}
+                          helperText="When this SKU discount becomes active"
+                          fullWidth
+                        />
+                        
+                        <TextField
+                          size="small"
+                          type="date"
+                          label="End Date *"
+                          value={skuDiscount.endDate ? skuDiscount.endDate.split('T')[0] : ''}
+                          onChange={(e) => {
+                            const updated = [...(data.offerConfig.skuDiscounts || [])];
+                            updated[index].endDate = e.target.value;
+                            updateConfig({ skuDiscounts: updated });
+                          }}
+                          InputLabelProps={{ shrink: true }}
+                          helperText="When this SKU discount expires"
+                          fullWidth
+                        />
+                      </Stack>
+                    </Paper>
+                  );
+                })}
+              </Stack>
+
+              <Button
+                startIcon={<AddIcon />}
+                onClick={() => setExpandedCategory(productGroups[0]?.category._id || false)}
+                variant="outlined"
+                fullWidth
+              >
+                Add SKU Discount
+              </Button>
+            </Paper>
+          </Stack>
+        );
+
       case 'BOGO':
         return (
           <Stack spacing={3}>
@@ -1657,6 +1830,373 @@ export default function Screen4OfferConfiguration({ data, onChange, errors }: Sc
             </Paper>
 
             {renderProductSelection()}
+          </Stack>
+        );
+
+      case 'VOLUME_DISCOUNT':
+        return (
+          <Stack spacing={3}>
+            {renderProductSelection()}
+            <Paper sx={{ p: 2 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                <Typography variant="subtitle2" fontWeight={600}>
+                  Volume Discount Tiers *
+                </Typography>
+                <Button
+                  size="small"
+                  startIcon={<AddIcon />}
+                  onClick={() => {
+                    const currentTiers = data.offerConfig.volumeTiers || [];
+                    updateConfig({
+                      volumeTiers: [...currentTiers, { minQuantity: 0, discountPercentage: 0 }]
+                    });
+                  }}
+                  variant="outlined"
+                >
+                  Add Tier
+                </Button>
+              </Box>
+
+              <Typography variant="body2" color="text.secondary" mb={2}>
+                Create quantity-based tiers. Higher quantities unlock better discounts.
+              </Typography>
+
+              {(!data.offerConfig.volumeTiers || data.offerConfig.volumeTiers.length === 0) ? (
+                <Alert severity="info">
+                  Click "Add Tier" to create volume discount tiers based on total quantity purchased.
+                </Alert>
+              ) : (
+                <Stack spacing={2}>
+                  {data.offerConfig.volumeTiers.map((tier: any, index: number) => (
+                    <Paper key={index} sx={{ p: 2, bgcolor: 'background.default' }}>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                        <Typography variant="caption" fontWeight={600}>
+                          Tier {index + 1}
+                        </Typography>
+                        <IconButton
+                          size="small"
+                          onClick={() => {
+                            const updated = [...(data.offerConfig.volumeTiers || [])];
+                            updated.splice(index, 1);
+                            updateConfig({ volumeTiers: updated });
+                          }}
+                          color="error"
+                        >
+                          <DeleteIcon fontSize="small" />
+                        </IconButton>
+                      </Box>
+                      <Stack spacing={2}>
+                        <TextField
+                          size="small"
+                          type="number"
+                          label="Minimum Quantity *"
+                          value={tier.minQuantity}
+                          onChange={(e) => {
+                            const updated = [...(data.offerConfig.volumeTiers || [])];
+                            updated[index].minQuantity = parseInt(e.target.value) || 0;
+                            updateConfig({ volumeTiers: updated });
+                          }}
+                          inputProps={{ min: 0, step: 1 }}
+                          helperText="Minimum units to qualify for this tier"
+                          fullWidth
+                        />
+                        
+                        <FormControl component="fieldset">
+                          <RadioGroup
+                            value={tier.discountPercentage !== undefined ? 'percentage' : 'amount'}
+                            onChange={(e) => {
+                              const updated = [...(data.offerConfig.volumeTiers || [])];
+                              if (e.target.value === 'percentage') {
+                                updated[index] = { ...tier, discountPercentage: 0, discountAmount: undefined };
+                              } else {
+                                updated[index] = { ...tier, discountAmount: 0, discountPercentage: undefined };
+                              }
+                              updateConfig({ volumeTiers: updated });
+                            }}
+                          >
+                            <FormControlLabel value="percentage" control={<Radio />} label="Percentage Discount" />
+                            <FormControlLabel value="amount" control={<Radio />} label="Fixed Amount Discount" />
+                          </RadioGroup>
+                        </FormControl>
+
+                        {tier.discountPercentage !== undefined ? (
+                          <TextField
+                            size="small"
+                            type="number"
+                            label="Discount Percentage *"
+                            value={tier.discountPercentage}
+                            onChange={(e) => {
+                              const updated = [...(data.offerConfig.volumeTiers || [])];
+                              updated[index].discountPercentage = parseFloat(e.target.value) || 0;
+                              updateConfig({ volumeTiers: updated });
+                            }}
+                            InputProps={{
+                              endAdornment: <InputAdornment position="end">%</InputAdornment>,
+                            }}
+                            inputProps={{ min: 0, max: 100, step: 0.01 }}
+                            fullWidth
+                          />
+                        ) : (
+                          <TextField
+                            size="small"
+                            type="number"
+                            label="Discount Amount *"
+                            value={tier.discountAmount ?? ''}
+                            onChange={(e) => {
+                              const updated = [...(data.offerConfig.volumeTiers || [])];
+                              updated[index].discountAmount = parseFloat(e.target.value) || 0;
+                              updateConfig({ volumeTiers: updated });
+                            }}
+                            InputProps={{
+                              startAdornment: <InputAdornment position="start">৳</InputAdornment>,
+                            }}
+                            inputProps={{ min: 0, step: 0.01 }}
+                            fullWidth
+                          />
+                        )}
+
+                        <TextField
+                          size="small"
+                          type="number"
+                          label="Maximum Discount (Optional)"
+                          value={tier.maxDiscount ?? ''}
+                          onChange={(e) => {
+                            const updated = [...(data.offerConfig.volumeTiers || [])];
+                            updated[index].maxDiscount = e.target.value ? parseFloat(e.target.value) : undefined;
+                            updateConfig({ volumeTiers: updated });
+                          }}
+                          InputProps={{
+                            startAdornment: <InputAdornment position="start">৳</InputAdornment>,
+                          }}
+                          inputProps={{ min: 0, step: 0.01 }}
+                          helperText="Cap the maximum discount for this tier"
+                          fullWidth
+                        />
+                      </Stack>
+                    </Paper>
+                  ))}
+                </Stack>
+              )}
+
+              <FormControlLabel
+                sx={{ mt: 2 }}
+                control={
+                  <Checkbox
+                    checked={data.offerConfig.applyToAllProducts || false}
+                    onChange={(e) => updateConfig({ applyToAllProducts: e.target.checked })}
+                  />
+                }
+                label="Apply volume discount to all products (ignore product selection above)"
+              />
+            </Paper>
+          </Stack>
+        );
+
+      case 'CROSS_CATEGORY':
+        return (
+          <Stack spacing={3}>
+            <Paper sx={{ p: 2 }}>
+              <Typography variant="subtitle2" fontWeight={600} mb={2}>
+                Trigger Categories *
+              </Typography>
+              <Typography variant="body2" color="text.secondary" mb={2}>
+                Customer must purchase from these categories to unlock the offer
+              </Typography>
+              
+              <TextField
+                fullWidth
+                type="number"
+                label="Minimum Trigger Amount *"
+                value={data.offerConfig.minTriggerAmount ?? ''}
+                onChange={(e) => updateConfig({ minTriggerAmount: parseFloat(e.target.value) || 0 })}
+                InputProps={{
+                  startAdornment: <InputAdornment position="start">৳</InputAdornment>,
+                }}
+                inputProps={{ min: 0, step: 0.01 }}
+                helperText="Minimum purchase amount from trigger categories"
+                error={!!errors?.minTriggerAmount}
+              />
+
+              <Alert severity="info" sx={{ mt: 2 }}>
+                <Typography variant="body2">
+                  <strong>Note:</strong> You'll need to select trigger categories from the category tree below.
+                  Mark categories that customers must buy from to unlock discounts on reward categories.
+                </Typography>
+              </Alert>
+            </Paper>
+
+            <Paper sx={{ p: 2 }}>
+              <Typography variant="subtitle2" fontWeight={600} mb={2}>
+                Reward Categories *
+              </Typography>
+              <Typography variant="body2" color="text.secondary" mb={2}>
+                Discount will be applied to products from these categories
+              </Typography>
+
+              <FormControl component="fieldset" sx={{ mb: 2 }}>
+                <RadioGroup
+                  value={data.offerConfig.discountPercentage !== undefined ? 'percentage' : 'amount'}
+                  onChange={(e) => {
+                    if (e.target.value === 'percentage') {
+                      updateConfig({ discountPercentage: 0, discountAmount: undefined });
+                    } else {
+                      updateConfig({ discountAmount: 0, discountPercentage: undefined });
+                    }
+                  }}
+                >
+                  <FormControlLabel value="percentage" control={<Radio />} label="Percentage Discount on Reward Categories" />
+                  <FormControlLabel value="amount" control={<Radio />} label="Fixed Amount Discount" />
+                </RadioGroup>
+              </FormControl>
+
+              {data.offerConfig.discountPercentage !== undefined ? (
+                <TextField
+                  fullWidth
+                  type="number"
+                  label="Discount Percentage *"
+                  value={data.offerConfig.discountPercentage}
+                  onChange={(e) => updateConfig({ discountPercentage: parseFloat(e.target.value) || 0 })}
+                  InputProps={{
+                    endAdornment: <InputAdornment position="end">%</InputAdornment>,
+                  }}
+                  inputProps={{ min: 0, max: 100, step: 0.01 }}
+                  error={!!errors?.discountPercentage}
+                />
+              ) : (
+                <TextField
+                  fullWidth
+                  type="number"
+                  label="Discount Amount *"
+                  value={data.offerConfig.discountAmount ?? ''}
+                  onChange={(e) => updateConfig({ discountAmount: parseFloat(e.target.value) || 0 })}
+                  InputProps={{
+                    startAdornment: <InputAdornment position="start">৳</InputAdornment>,
+                  }}
+                  inputProps={{ min: 0, step: 0.01 }}
+                  error={!!errors?.discountAmount}
+                />
+              )}
+
+              <TextField
+                sx={{ mt: 2 }}
+                fullWidth
+                type="number"
+                label="Maximum Discount Amount (Optional)"
+                value={data.offerConfig.maxDiscountAmount ?? ''}
+                onChange={(e) => updateConfig({ maxDiscountAmount: e.target.value ? parseFloat(e.target.value) : undefined })}
+                InputProps={{
+                  startAdornment: <InputAdornment position="start">৳</InputAdornment>,
+                }}
+                inputProps={{ min: 0, step: 0.01 }}
+                helperText="Cap the maximum discount amount"
+              />
+
+              <Alert severity="info" sx={{ mt: 2 }}>
+                <Typography variant="body2">
+                  <strong>Example:</strong> Buy ৳500 from Biscuits (trigger), get 10% off on Beverages (reward)
+                </Typography>
+              </Alert>
+            </Paper>
+
+            <Alert severity="warning">
+              <Typography variant="body2">
+                <strong>Important:</strong> Cross-category offers require category selection. 
+                You'll need to mark trigger and reward categories separately in the implementation.
+              </Typography>
+            </Alert>
+          </Stack>
+        );
+
+      case 'FIRST_ORDER':
+        return (
+          <Stack spacing={3}>
+            {renderProductSelection()}
+            <Paper sx={{ p: 2 }}>
+              <Typography variant="subtitle2" fontWeight={600} mb={2}>
+                First Order Discount Configuration
+              </Typography>
+              <Typography variant="body2" color="text.secondary" mb={2}>
+                Special welcome discount for distributors placing their first order
+              </Typography>
+              
+              <Stack spacing={2}>
+                <FormControl component="fieldset">
+                  <RadioGroup
+                    value={data.offerConfig.discountPercentage !== undefined ? 'percentage' : 'amount'}
+                    onChange={(e) => {
+                      if (e.target.value === 'percentage') {
+                        updateConfig({ discountPercentage: 0, discountAmount: undefined });
+                      } else {
+                        updateConfig({ discountAmount: 0, discountPercentage: undefined });
+                      }
+                    }}
+                  >
+                    <FormControlLabel value="percentage" control={<Radio />} label="Percentage Discount" />
+                    <FormControlLabel value="amount" control={<Radio />} label="Fixed Amount Discount" />
+                  </RadioGroup>
+                </FormControl>
+
+                {data.offerConfig.discountPercentage !== undefined ? (
+                  <TextField
+                    fullWidth
+                    type="number"
+                    label="Discount Percentage *"
+                    value={data.offerConfig.discountPercentage}
+                    onChange={(e) => updateConfig({ discountPercentage: parseFloat(e.target.value) || 0 })}
+                    InputProps={{
+                      endAdornment: <InputAdornment position="end">%</InputAdornment>,
+                    }}
+                    inputProps={{ min: 0, max: 100, step: 0.01 }}
+                    error={!!errors?.discountPercentage}
+                  />
+                ) : (
+                  <TextField
+                    fullWidth
+                    type="number"
+                    label="Discount Amount *"
+                    value={data.offerConfig.discountAmount ?? ''}
+                    onChange={(e) => updateConfig({ discountAmount: parseFloat(e.target.value) || 0 })}
+                    InputProps={{
+                      startAdornment: <InputAdornment position="start">৳</InputAdornment>,
+                    }}
+                    inputProps={{ min: 0, step: 0.01 }}
+                    error={!!errors?.discountAmount}
+                  />
+                )}
+
+                <TextField
+                  fullWidth
+                  type="number"
+                  label="Minimum Order Value"
+                  value={data.offerConfig.minOrderValue ?? ''}
+                  onChange={(e) => updateConfig({ minOrderValue: e.target.value ? parseFloat(e.target.value) : undefined })}
+                  InputProps={{
+                    startAdornment: <InputAdornment position="start">৳</InputAdornment>,
+                  }}
+                  inputProps={{ min: 0, step: 0.01 }}
+                  helperText="Optional: Minimum order value to qualify for first order discount"
+                />
+
+                <TextField
+                  fullWidth
+                  type="number"
+                  label="Maximum Discount Amount"
+                  value={data.offerConfig.maxDiscountAmount ?? ''}
+                  onChange={(e) => updateConfig({ maxDiscountAmount: e.target.value ? parseFloat(e.target.value) : undefined })}
+                  InputProps={{
+                    startAdornment: <InputAdornment position="start">৳</InputAdornment>,
+                  }}
+                  inputProps={{ min: 0, step: 0.01 }}
+                  helperText="Optional: Cap the maximum discount amount"
+                />
+              </Stack>
+
+              <Alert severity="success" sx={{ mt: 2 }}>
+                <Typography variant="body2">
+                  <strong>Welcome Offer!</strong> This discount will only apply to distributors who haven't placed any orders before.
+                </Typography>
+              </Alert>
+            </Paper>
           </Stack>
         );
 

@@ -387,29 +387,10 @@ const Screen2TerritoryDistributor = forwardRef<Screen2Handle, Screen2Props>(({
         }
       }
 
-      // Always cascade to distributors if we have db_points selected
-      if (updates.selectedDbPoints && updates.selectedDbPoints.length > 0) {
-        const distributorsData = await distributorsApi.getEligible(
-          updates.selectedDbPoints,
-          productSegments
-        );
-        
-        if (data.dbPointsIncludeMode === 'include') {
-          updates.selectedDistributors = distributorsData.map(d => d._id);
-        } else {
-          // In exclude mode, we need all distributors except these
-          // This would require fetching all distributors first (expensive)
-          // For now, we'll just select these and let user adjust if needed
-          updates.selectedDistributors = distributorsData.map(d => d._id);
-        }
-      } else if (cascadeFrom === 'db_points' && parentIds.length > 0) {
-        // If user only selected db_points, cascade to distributors
-        const distributorsData = await distributorsApi.getEligible(
-          parentIds,
-          productSegments
-        );
-        updates.selectedDistributors = distributorsData.map(d => d._id);
-      }
+      // NEW BEHAVIOR: Do NOT auto-cascade to distributors
+      // Distributors will be populated in the dropdown but NOT auto-selected
+      // This allows users to manually select specific distributors if needed
+      // If no distributors are selected, the offer applies to ALL distributors under selected db_points
 
       // Apply all updates at once
       if (Object.keys(updates).length > 0) {
@@ -647,6 +628,13 @@ const Screen2TerritoryDistributor = forwardRef<Screen2Handle, Screen2Props>(({
           sx={{ cursor: 'pointer' }}
         />
       </Stack>
+
+      {/* Info Alert */}
+      {distributors.length > 0 && data.selectedDistributors.length === 0 && (
+        <Alert severity="info" sx={{ mb: 2 }}>
+          No distributors selected. Offer will apply to <strong>ALL {distributors.length} eligible distributors</strong> under the selected DB Points.
+        </Alert>
+      )}
 
       {/* Mode Alert */}
       {data.selectedDistributors.length > 0 && (

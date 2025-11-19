@@ -5,6 +5,7 @@ const OFFER_TYPES = [
   "FLAT_DISCOUNT_AMT",
   "DISCOUNT_SLAB_PCT",
   "DISCOUNT_SLAB_AMT",
+  "SKU_DISCOUNT_AMOUNT",
   "FREE_PRODUCT",
   "BUNDLE_OFFER",
   "BOGO",
@@ -92,6 +93,17 @@ const rewardProductSchema = new mongoose.Schema(
   { _id: false }
 );
 
+// Schema for SKU_DISCOUNT_AMOUNT - per-SKU discount with individual date ranges
+const skuDiscountSchema = new mongoose.Schema(
+  {
+    productId: { type: mongoose.Schema.Types.ObjectId, ref: "Product", required: true },
+    discountAmount: { type: Number, required: true, min: 0 }, // Fixed amount off per unit (BDT)
+    startDate: { type: Date, required: true }, // When this SKU discount becomes active
+    endDate: { type: Date, required: true }, // When this SKU discount expires
+  },
+  { _id: false }
+);
+
 const offerSchema = new mongoose.Schema(
   {
     name: { type: String, required: true, trim: true, index: true },
@@ -125,6 +137,7 @@ const offerSchema = new mongoose.Schema(
       bundlePrice: { type: Number, min: 0 }, // Fixed bundle price for BUNDLE_OFFER
       buyQuantity: { type: Number, min: 1, default: 1 }, // For BOGO: buy this many
       getQuantity: { type: Number, min: 1, default: 1 }, // For BOGO: get this many
+      skuDiscounts: [skuDiscountSchema], // For SKU_DISCOUNT_AMOUNT: per-SKU discount with date ranges
       cashbackPercentage: { type: Number, min: 0, max: 100 },
       cashbackAmount: { type: Number, min: 0 },
       maxCashback: { type: Number, min: 0 },

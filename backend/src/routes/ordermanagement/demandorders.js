@@ -277,7 +277,7 @@ router.get(
       }
 
       const products = await Product.find(query)
-        .select("_id sku mrp category_id brand_id ctn_pcs depot_ids wt_pcs unit")
+        .select("_id sku mrp category_id brand_id ctn_pcs depot_ids wt_pcs unit product_type")
         .populate({
           path: "category_id",
           select: "name parent_id product_segment",

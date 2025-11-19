@@ -72,6 +72,7 @@ import {
   Send,
 } from "@mui/icons-material";
 import api from "@/lib/api";
+import CollectionForm from "../collections/components/CollectionForm";
 
 // Types
 interface Category {
@@ -92,6 +93,8 @@ interface Product {
   distributor_depot_qty: number;
   product_depots_qty: number;
   pending_qty: number;
+  product_type: string;
+  ctn_pcs: number;
   category?: {
     _id: string;
     name: string;
@@ -236,6 +239,16 @@ const DemandOrdersPage = () => {
   // Product browser dialog (for adding to cart from within cart view)
   const [productBrowserOpen, setProductBrowserOpen] = useState(false);
   const [browserSearchTerm, setBrowserSearchTerm] = useState("");
+  
+  // Offer browser dialog (for adding new offers to cart)
+  const [offerBrowserOpen, setOfferBrowserOpen] = useState(false);
+
+  // Track draft order being edited (to delete only when submitting new order)
+  const [editingDraftId, setEditingDraftId] = useState<string | null>(null);
+  
+  // Payment dialog state
+  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
+  const [paymentDONumber, setPaymentDONumber] = useState<string>("");
 
   // Offer details dialog
   const [selectedOffer, setSelectedOffer] = useState<Offer | null>(null);
@@ -722,6 +735,7 @@ const DemandOrdersPage = () => {
   const clearCart = () => {
     setCart([]);
     setValidationResults([]);
+    setEditingDraftId(null); // Clear draft ID when cart is cleared
   };
 
   // Calculate totals with offer-group discounts
@@ -741,6 +755,76 @@ const DemandOrdersPage = () => {
 
     return { total, itemCount, totalSavings, originalTotal };
   }, [cart, groupedCartItems]);
+
+  // Calculate cart summary for MANUFACTURED products, gifts, and discounts
+  const cartSummary = useMemo(() => {
+    // Map to aggregate quantities per SKU
+    const manufacturedMap = new Map<string, { sku: string; name: string; quantity: number; pcsPerContainer: number; totalPcs: number }>();
+    const giftMap = new Map<string, { sku: string; name: string; quantity: number }>();
+    const discountBreakdown: Array<{ offerName: string; discountAmount: number }> = [];
+
+    // Process each cart item
+    cart.forEach((item) => {
+      // Find the product in the products array to get product_type and ctn_pcs
+      const product = products.find(p => p._id === item.source_id);
+      
+      if (product) {
+        // Check if it's a MANUFACTURED product
+        if (product.product_type === 'MANUFACTURED') {
+          const existing = manufacturedMap.get(item.sku);
+          const pcsPerContainer = product.ctn_pcs || 0;
+          const itemTotalPcs = item.quantity * pcsPerContainer;
+          
+          if (existing) {
+            existing.quantity += item.quantity;
+            existing.totalPcs += itemTotalPcs;
+          } else {
+            manufacturedMap.set(item.sku, {
+              sku: item.sku,
+              name: item.name,
+              quantity: item.quantity,
+              pcsPerContainer,
+              totalPcs: itemTotalPcs,
+            });
+          }
+        }
+        
+        // Check if it's a gift (discount_amount equals original price or item from FREE_PRODUCT offer)
+        if (item.discount_amount && item.discount_amount >= item.original_subtotal!) {
+          const existing = giftMap.get(item.sku);
+          if (existing) {
+            existing.quantity += item.quantity;
+          } else {
+            giftMap.set(item.sku, {
+              sku: item.sku,
+              name: item.name,
+              quantity: item.quantity,
+            });
+          }
+        }
+      }
+    });
+
+    // Calculate discount breakdown by offer group
+    Object.values(groupedCartItems).forEach(({ offer, items }) => {
+      const groupCalc = calculateOfferGroupDiscount(items, offer || undefined);
+      if (groupCalc.discountAmount > 0) {
+        discountBreakdown.push({
+          offerName: offer?.name || 'Regular Discount',
+          discountAmount: groupCalc.discountAmount,
+        });
+      }
+    });
+
+    const totalDiscount = discountBreakdown.reduce((sum, d) => sum + d.discountAmount, 0);
+
+    return {
+      manufacturedProducts: Array.from(manufacturedMap.values()),
+      gifts: Array.from(giftMap.values()),
+      discountBreakdown,
+      totalDiscount,
+    };
+  }, [cart, products, groupedCartItems]);
 
   // Validate cart
   const validateCart = async () => {
@@ -813,6 +897,17 @@ const DemandOrdersPage = () => {
       );
 
       const orderId = createResponse.data.data._id;
+
+      // Delete the old draft if we were editing one
+      if (editingDraftId) {
+        try {
+          await api.delete(`/ordermanagement/demandorders/${editingDraftId}`);
+        } catch (deleteErr) {
+          console.error("Failed to delete old draft:", deleteErr);
+          // Continue anyway - new draft was created
+        }
+        setEditingDraftId(null);
+      }
 
       setSuccess(`Draft order saved successfully! You can now add payment details.`);
       clearCart();
@@ -892,15 +987,13 @@ const DemandOrdersPage = () => {
       }));
 
       setCart(cartItems);
+      setEditingDraftId(orderId); // Store draft ID for later deletion
       setMainTab(0); // Switch to catalog tab
       setCatalogTab(1); // Switch to Offers tab to see available offers
       setCartDrawerOpen(true);
       setSuccess("Draft loaded! Browse Offers tab to add more items to offer groups, or Products tab for regular items.");
 
-      // Delete the draft since we're editing it
-      await api.delete(
-        `/ordermanagement/demandorders/${orderId}`
-      );
+      // Don't delete the draft yet - only delete when submitting the updated order
     } catch (err: any) {
       setError(err.response?.data?.message || "Failed to load draft order");
     }
@@ -950,6 +1043,14 @@ const DemandOrdersPage = () => {
       <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
         <Typography variant="h6">Shopping Cart ({cartTotals.itemCount})</Typography>
         <Box sx={{ display: "flex", gap: 1 }}>
+          <Button
+            size="small"
+            variant="outlined"
+            startIcon={<LocalOffer />}
+            onClick={() => setOfferBrowserOpen(true)}
+          >
+            Add Offer
+          </Button>
           <Button
             size="small"
             variant="outlined"
@@ -1043,8 +1144,8 @@ const DemandOrdersPage = () => {
                     </Alert>
                   )}
 
-                  {/* Edit offer button */}
-                  {isOfferGroup && offer && (
+                  {/* Edit offer button or Add item button for regular items */}
+                  {isOfferGroup && offer ? (
                     <Box sx={{ mb: 2, display: 'flex', justifyContent: 'flex-end' }}>
                       <Button
                         size="small"
@@ -1053,6 +1154,18 @@ const DemandOrdersPage = () => {
                         onClick={() => openOfferDetails(offer)}
                       >
                         Edit Offer Items
+                      </Button>
+                    </Box>
+                  ) : (
+                    <Box sx={{ mb: 2, display: 'flex', justifyContent: 'flex-end' }}>
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        color="primary"
+                        startIcon={<AddShoppingCart />}
+                        onClick={() => setProductBrowserOpen(true)}
+                      >
+                        Add Item
                       </Button>
                     </Box>
                   )}
@@ -1193,6 +1306,129 @@ const DemandOrdersPage = () => {
               {cartTotals.itemCount} items
             </Typography>
           </Box>
+
+          {/* Cart Summary Section */}
+          {(cartSummary.manufacturedProducts.length > 0 || cartSummary.gifts.length > 0 || cartSummary.discountBreakdown.length > 0) && (
+            <Box sx={{ mt: 3, p: 2, bgcolor: "background.paper", border: '1px solid', borderColor: 'divider', borderRadius: 1 }}>
+              <Typography variant="subtitle1" fontWeight="bold" sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Receipt fontSize="small" />
+                Order Summary
+              </Typography>
+
+              {/* MANUFACTURED Products */}
+              {cartSummary.manufacturedProducts.length > 0 && (
+                <>
+                  <Typography variant="subtitle2" fontWeight="bold" color="primary" sx={{ mb: 1 }}>
+                    Products
+                  </Typography>
+                  <List dense sx={{ mb: 2 }}>
+                    {cartSummary.manufacturedProducts.map((product) => (
+                      <ListItem key={product.sku} sx={{ py: 0.5, px: 0 }}>
+                        <ListItemText
+                          primary={
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <Typography variant="body2" fontWeight="medium">
+                                {product.sku}
+                              </Typography>
+                              <Chip 
+                                label={`${product.quantity} cartons`} 
+                                size="small" 
+                                color="default"
+                                sx={{ ml: 1 }}
+                              />
+                            </Box>
+                          }
+                          secondary={
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 0.5 }}>
+                              <Typography variant="caption" color="text.secondary" component="span">
+                                {product.name}
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary" fontWeight="medium" component="span">
+                                {product.totalPcs.toLocaleString()} pcs ({product.pcsPerContainer} per carton)
+                              </Typography>
+                            </Box>
+                          }
+                          secondaryTypographyProps={{ component: 'div' }}
+                        />
+                      </ListItem>
+                    ))}
+                  </List>
+                </>
+              )}
+
+              {/* Gift Products */}
+              {cartSummary.gifts.length > 0 && (
+                <>
+                  <Typography variant="subtitle2" fontWeight="bold" color="success.main" sx={{ mb: 1 }}>
+                    🎁 Free Gifts
+                  </Typography>
+                  <List dense sx={{ mb: 2 }}>
+                    {cartSummary.gifts.map((gift) => (
+                      <ListItem key={gift.sku} sx={{ py: 0.5, px: 0 }}>
+                        <ListItemText
+                          primary={
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <Typography variant="body2" fontWeight="medium" color="success.main">
+                                {gift.sku}
+                              </Typography>
+                              <Chip 
+                                label={`${gift.quantity} qty`} 
+                                size="small" 
+                                color="success"
+                                sx={{ ml: 1 }}
+                              />
+                            </Box>
+                          }
+                          secondary={
+                            <Typography variant="caption" color="text.secondary">
+                              {gift.name}
+                            </Typography>
+                          }
+                        />
+                      </ListItem>
+                    ))}
+                  </List>
+                </>
+              )}
+
+              {/* Discount Breakdown */}
+              {cartSummary.discountBreakdown.length > 0 && (
+                <>
+                  <Typography variant="subtitle2" fontWeight="bold" color="warning.main" sx={{ mb: 1 }}>
+                    💰 Discounts Applied
+                  </Typography>
+                  <List dense sx={{ mb: 1 }}>
+                    {cartSummary.discountBreakdown.map((discount, index) => (
+                      <ListItem key={index} sx={{ py: 0.5, px: 0 }}>
+                        <ListItemText
+                          primary={
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <Typography variant="body2">
+                                {discount.offerName}
+                              </Typography>
+                              <Typography variant="body2" fontWeight="bold" color="success.main">
+                                -৳{discount.discountAmount.toFixed(2)}
+                              </Typography>
+                            </Box>
+                          }
+                        />
+                      </ListItem>
+                    ))}
+                  </List>
+                  {cartSummary.discountBreakdown.length > 1 && (
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', pt: 1, borderTop: '1px dashed', borderColor: 'divider' }}>
+                      <Typography variant="body2" fontWeight="bold">
+                        Total Discount:
+                      </Typography>
+                      <Typography variant="body2" fontWeight="bold" color="success.main">
+                        -৳{cartSummary.totalDiscount.toFixed(2)}
+                      </Typography>
+                    </Box>
+                  )}
+                </>
+              )}
+            </Box>
+          )}
 
           <Box sx={{ mt: 2, display: "flex", gap: 1, flexDirection: "column" }}>
             <Button
@@ -1512,7 +1748,7 @@ const DemandOrdersPage = () => {
             fullWidth
             startIcon={<Add />}
             onClick={() => openOfferDetails(offer)}
-            disabled={!offer.active || offer.status !== 'Active'}
+            disabled={offer.status === 'Expired' || offer.status === 'Completed' || !offer.active}
           >
             View Details
           </Button>
@@ -1644,7 +1880,14 @@ const DemandOrdersPage = () => {
 
           {/* Products tab - Simple Accordion View */}
           {catalogTab === 0 && !loading && (
-            <>
+            <Box
+              sx={{
+                maxHeight: isMobile ? 'calc(100vh - 380px)' : 'calc(100vh - 320px)',
+                overflowY: 'auto',
+                overflowX: 'hidden',
+                pr: 1
+              }}
+            >
               {productGroups.length === 0 ? (
                 <Alert severity="info">No products found</Alert>
               ) : (
@@ -1658,24 +1901,33 @@ const DemandOrdersPage = () => {
                   ))}
                 </Box>
               )}
-            </>
+            </Box>
           )}
 
           {/* Offers tab */}
           {catalogTab === 1 && !loading && (
-            <Grid2 container spacing={2}>
-              {filteredOffers.length === 0 ? (
-                <Grid2 size={{ xs: 12 }}>
-                  <Alert severity="info">No offers found</Alert>
-                </Grid2>
-              ) : (
-                filteredOffers.map((offer) => (
-                  <Grid2 size={{ xs: 12, sm: 6, md: 4, lg: 3 }} key={offer._id}>
-                    <OfferCard offer={offer} />
+            <Box
+              sx={{
+                maxHeight: isMobile ? 'calc(100vh - 380px)' : 'calc(100vh - 320px)',
+                overflowY: 'auto',
+                overflowX: 'hidden',
+                pr: 1
+              }}
+            >
+              <Grid2 container spacing={2}>
+                {filteredOffers.length === 0 ? (
+                  <Grid2 size={{ xs: 12 }}>
+                    <Alert severity="info">No offers found</Alert>
                   </Grid2>
-                ))
-              )}
-            </Grid2>
+                ) : (
+                  filteredOffers.map((offer) => (
+                    <Grid2 size={{ xs: 12, sm: 6, md: 4, lg: 3 }} key={offer._id}>
+                      <OfferCard offer={offer} />
+                    </Grid2>
+                  ))
+                )}
+              </Grid2>
+            </Box>
           )}
         </>
       )}
@@ -1735,7 +1987,7 @@ const DemandOrdersPage = () => {
                 ) : (
                   orders.map((order) => (
                     <TableRow key={order._id} hover>
-                      <TableCell>{order.order_number || "Draft"}</TableCell>
+                      <TableCell>{order.order_number}</TableCell>
                       <TableCell>
                         <Chip
                           label={order.status.toUpperCase()}
@@ -2311,7 +2563,7 @@ const DemandOrdersPage = () => {
       <Dialog 
         open={productBrowserOpen} 
         onClose={() => setProductBrowserOpen(false)} 
-        maxWidth="md" 
+        maxWidth="lg" 
         fullWidth
         fullScreen={isMobile}
       >
@@ -2340,89 +2592,162 @@ const DemandOrdersPage = () => {
               <CircularProgress />
             </Box>
           ) : (
-            <List>
-              {products
-                .filter(product => {
+            <>
+              {productGroups
+                .filter(group => {
                   if (!browserSearchTerm) return true;
                   const search = browserSearchTerm.toLowerCase();
-                  return (
+                  return group.products.some(product =>
                     product.sku.toLowerCase().includes(search) ||
                     product.short_description.toLowerCase().includes(search)
                   );
                 })
-                .map((product) => {
-                  const isInCart = cart.some(item => item.source_id === product._id);
-                  
-                  return (
-                    <ListItem
-                      key={product._id}
-                      sx={{
-                        border: '1px solid',
-                        borderColor: 'divider',
-                        borderRadius: 1,
-                        mb: 1,
-                        bgcolor: isInCart ? 'action.hover' : 'background.paper'
-                      }}
-                    >
-                      <ListItemText
-                        primary={
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <Typography variant="subtitle1" fontWeight="bold">
-                              {product.sku}
-                            </Typography>
-                            {isInCart && (
-                              <Chip label="In Cart" size="small" color="primary" />
-                            )}
-                          </Box>
-                        }
-                        secondary={
-                          <Box>
-                            <Typography variant="body2" color="text.secondary">
-                              {product.short_description}
-                            </Typography>
-                            <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
-                              <Chip 
-                                label={`৳${product.mrp.toFixed(2)}`} 
-                                size="small" 
-                                color="primary"
-                              />
-                              <Chip 
-                                label={`${product.available_quantity} cartons`} 
-                                size="small"
-                                color={product.available_quantity > 0 ? 'success' : 'error'}
-                              />
-                            </Box>
-                          </Box>
-                        }
-                      />
-                      <ListItemSecondaryAction>
-                        <Button
-                          variant="outlined"
-                          size="small"
-                          disabled={product.available_quantity === 0}
-                          onClick={() => {
-                            setProductBrowserOpen(false);
-                            handleProductClick(product);
-                          }}
-                          startIcon={<AddShoppingCart />}
-                        >
-                          {isInCart ? 'Add More' : 'Add'}
-                        </Button>
-                      </ListItemSecondaryAction>
-                    </ListItem>
-                  );
-                })}
-              {products.filter(product => {
-                if (!browserSearchTerm) return true;
-                const search = browserSearchTerm.toLowerCase();
-                return (
-                  product.sku.toLowerCase().includes(search) ||
-                  product.short_description.toLowerCase().includes(search)
-                );
-              }).length === 0 && (
+                .length === 0 ? (
                 <Alert severity="info">No products found</Alert>
+              ) : (
+                <Box>
+                  {productGroups
+                    .filter(group => {
+                      if (!browserSearchTerm) return true;
+                      const search = browserSearchTerm.toLowerCase();
+                      return group.products.some(product =>
+                        product.sku.toLowerCase().includes(search) ||
+                        product.short_description.toLowerCase().includes(search)
+                      );
+                    })
+                    .map((group, idx) => {
+                      // Filter products within the group based on search
+                      const filteredProducts = browserSearchTerm
+                        ? group.products.filter(product => {
+                            const search = browserSearchTerm.toLowerCase();
+                            return (
+                              product.sku.toLowerCase().includes(search) ||
+                              product.short_description.toLowerCase().includes(search)
+                            );
+                          })
+                        : group.products;
+
+                      const inCartCount = filteredProducts.filter(p => 
+                        cart.some(item => item.source_id === p._id)
+                      ).length;
+
+                      return (
+                        <Accordion
+                          key={`browser-group-${idx}`}
+                          defaultExpanded={browserSearchTerm.length > 0}
+                          sx={{ mb: 2 }}
+                        >
+                          <AccordionSummary expandIcon={<ExpandMore />}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1 }}>
+                              <Typography variant="h6">
+                                {group.subcategoryName 
+                                  ? `${group.categoryName} > ${group.subcategoryName}`
+                                  : group.categoryName}
+                              </Typography>
+                              <Chip
+                                label={group.segment}
+                                size="small"
+                                color={group.segment === 'BIS' ? 'warning' : 'info'}
+                                variant="outlined"
+                              />
+                              <Chip
+                                label={`${filteredProducts.length} products`}
+                                size="small"
+                                color="default"
+                              />
+                              {inCartCount > 0 && (
+                                <Chip
+                                  label={`${inCartCount} in cart`}
+                                  size="small"
+                                  color="success"
+                                />
+                              )}
+                            </Box>
+                          </AccordionSummary>
+                          <AccordionDetails>
+                            <TableContainer>
+                              <Table size="small">
+                                <TableHead>
+                                  <TableRow>
+                                    <TableCell>SKU</TableCell>
+                                    <TableCell>Description</TableCell>
+                                    <TableCell align="right">MRP</TableCell>
+                                    <TableCell align="right">Available</TableCell>
+                                    <TableCell>Brand</TableCell>
+                                    <TableCell align="center">Action</TableCell>
+                                  </TableRow>
+                                </TableHead>
+                                <TableBody>
+                                  {filteredProducts.map((product) => {
+                                    const inCart = cart.find(item => item.source_id === product._id);
+                                    const offerInfo = getProductOfferInfo(product._id);
+                                    
+                                    return (
+                                      <TableRow 
+                                        key={product._id}
+                                        hover
+                                        sx={{ 
+                                          cursor: 'pointer',
+                                          backgroundColor: inCart ? 'action.selected' : 'inherit'
+                                        }}
+                                      >
+                                        <TableCell>
+                                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                            {product.sku}
+                                            {offerInfo && (
+                                              <Chip
+                                                icon={<LocalOffer sx={{ fontSize: 14 }} />}
+                                                label={`${offerInfo.bestDiscount}% OFF`}
+                                                size="small"
+                                                sx={{
+                                                  bgcolor: '#f3e5f5',
+                                                  color: '#6a1b9a',
+                                                  fontWeight: 'bold',
+                                                  fontSize: '0.7rem',
+                                                  height: 20,
+                                                  '& .MuiChip-icon': { color: '#7b1fa2', fontSize: 14 }
+                                                }}
+                                              />
+                                            )}
+                                          </Box>
+                                        </TableCell>
+                                        <TableCell>{product.short_description}</TableCell>
+                                        <TableCell align="right">৳{product.mrp.toFixed(2)}</TableCell>
+                                        <TableCell align="right">
+                                          <Chip
+                                            label={product.available_quantity}
+                                            size="small"
+                                            color={product.available_quantity > 0 ? 'success' : 'error'}
+                                          />
+                                        </TableCell>
+                                        <TableCell>{product.brand?.name || '-'}</TableCell>
+                                        <TableCell align="center">
+                                          <Button
+                                            size="small"
+                                            variant="outlined"
+                                            startIcon={inCart ? <Add /> : <AddShoppingCart />}
+                                            onClick={() => {
+                                              setProductBrowserOpen(false);
+                                              handleProductClick(product);
+                                            }}
+                                            disabled={product.available_quantity === 0}
+                                          >
+                                            {inCart ? 'Add More' : 'Add'}
+                                          </Button>
+                                        </TableCell>
+                                      </TableRow>
+                                    );
+                                  })}
+                                </TableBody>
+                              </Table>
+                            </TableContainer>
+                          </AccordionDetails>
+                        </Accordion>
+                      );
+                    })}
+                </Box>
               )}
-            </List>
+            </>
           )}
         </DialogContent>
         <DialogActions>
@@ -2482,7 +2807,7 @@ const DemandOrdersPage = () => {
                     Order Number
                   </Typography>
                   <Typography variant="body1" fontWeight="bold">
-                    {selectedOrder.order_number || "Draft"}
+                    {selectedOrder.order_number}
                   </Typography>
                 </Grid2>
                 <Grid2 size={{ xs: 12, sm: 6 }}>
@@ -2628,8 +2953,8 @@ const DemandOrdersPage = () => {
                 color="primary"
                 startIcon={<AttachMoney />}
                 onClick={() => {
-                  // TODO: Open payment upload dialog
-                  console.log("Add payment for order:", selectedOrder._id);
+                  setPaymentDONumber(selectedOrder.order_number);
+                  setPaymentDialogOpen(true);
                 }}
               >
                 Add Payment
@@ -2641,7 +2966,7 @@ const DemandOrdersPage = () => {
                 onClick={async () => {
                   try {
                     await api.post(`/ordermanagement/demandorders/${selectedOrder._id}/submit`);
-                    setSuccess(`Order ${selectedOrder.order_number || selectedOrder._id} submitted for approval!`);
+                    setSuccess(`Order ${selectedOrder.order_number} submitted for approval!`);
                     setOrderDetailsOpen(false);
                     loadOrders();
                   } catch (err: any) {
@@ -2656,6 +2981,153 @@ const DemandOrdersPage = () => {
           <Button onClick={() => setOrderDetailsOpen(false)}>Close</Button>
         </DialogActions>
       </Dialog>
+
+      {/* Offer Browser Dialog (for adding new offers to cart) */}
+      <Dialog 
+        open={offerBrowserOpen} 
+        onClose={() => setOfferBrowserOpen(false)} 
+        maxWidth="lg" 
+        fullWidth
+        fullScreen={isMobile}
+      >
+        <DialogTitle>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography variant="h6">Browse Offers</Typography>
+            <IconButton onClick={() => setOfferBrowserOpen(false)}>
+              <Close />
+            </IconButton>
+          </Box>
+        </DialogTitle>
+        <DialogContent dividers>
+          <TextField
+            fullWidth
+            placeholder="Search offers..."
+            value={browserSearchTerm}
+            onChange={(e) => setBrowserSearchTerm(e.target.value)}
+            sx={{ mb: 2 }}
+            InputProps={{
+              startAdornment: <Search sx={{ mr: 1, color: 'text.secondary' }} />
+            }}
+          />
+
+          {loading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+              <CircularProgress />
+            </Box>
+          ) : (
+            <Grid2 container spacing={2}>
+              {offers
+                .filter(offer => {
+                  if (!browserSearchTerm) return true;
+                  const search = browserSearchTerm.toLowerCase();
+                  return offer.name.toLowerCase().includes(search);
+                })
+                .length === 0 ? (
+                <Grid2 size={{ xs: 12 }}>
+                  <Alert severity="info">No offers found</Alert>
+                </Grid2>
+              ) : (
+                offers
+                  .filter(offer => {
+                    if (!browserSearchTerm) return true;
+                    const search = browserSearchTerm.toLowerCase();
+                    return offer.name.toLowerCase().includes(search);
+                  })
+                  .map((offer) => {
+                    // Check if offer already exists in cart
+                    const offerInCart = cart.some(item => item.offer_id === offer._id);
+                    
+                    return (
+                      <Grid2 size={{ xs: 12, sm: 6, md: 4 }} key={offer._id}>
+                        <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                          <CardContent sx={{ flex: 1 }}>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', mb: 1 }}>
+                              <Typography variant="h6" component="div" fontWeight="bold">
+                                {offer.name}
+                              </Typography>
+                              <Chip
+                                label={offer.status}
+                                size="small"
+                                color={
+                                  offer.status === 'Active' ? 'success' :
+                                  offer.status === 'Draft' ? 'warning' :
+                                  offer.status === 'Paused' ? 'default' : 'error'
+                                }
+                              />
+                            </Box>
+                            
+                            {offerInCart && (
+                              <Chip 
+                                label="In Cart" 
+                                size="small" 
+                                color="primary" 
+                                sx={{ mb: 1 }}
+                              />
+                            )}
+                            
+                            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                              {offer.offer_type === 'percentage' 
+                                ? `${offer.config?.discountPercentage || 0}% discount`
+                                : offer.offer_type === 'bogo'
+                                ? `Buy ${offer.config?.buyQuantity || 0} Get ${offer.config?.getQuantity || 0} Free`
+                                : 'Special offer'}
+                            </Typography>
+
+                            <Box sx={{ mb: 1 }}>
+                              <Typography variant="caption" color="text.secondary">
+                                Valid: {new Date(offer.start_date).toLocaleDateString()} - {new Date(offer.end_date).toLocaleDateString()}
+                              </Typography>
+                            </Box>
+
+                            {offer.config?.minOrderValue && (
+                              <Typography variant="caption" color="text.secondary" display="block">
+                                Min. Order: ৳{offer.config.minOrderValue.toFixed(2)}
+                              </Typography>
+                            )}
+                          </CardContent>
+                          <CardActions>
+                            <Button
+                              fullWidth
+                              variant={offerInCart ? "outlined" : "contained"}
+                              onClick={() => {
+                                setOfferBrowserOpen(false);
+                                openOfferDetails(offer);
+                              }}
+                              disabled={offer.status === 'Expired' || offer.status === 'Completed' || !offer.active}
+                              startIcon={offerInCart ? <Visibility /> : <AddShoppingCart />}
+                            >
+                              {offerInCart ? 'View/Edit' : 'Add to Cart'}
+                            </Button>
+                          </CardActions>
+                        </Card>
+                      </Grid2>
+                    );
+                  })
+              )}
+            </Grid2>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOfferBrowserOpen(false)}>
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Collection/Payment Form Dialog */}
+      <CollectionForm
+        open={paymentDialogOpen}
+        onClose={() => {
+          setPaymentDialogOpen(false);
+          setPaymentDONumber("");
+        }}
+        onSuccess={() => {
+          setPaymentDialogOpen(false);
+          setPaymentDONumber("");
+          setSuccess("Payment added successfully!");
+        }}
+        defaultDONumber={paymentDONumber}
+      />
     </Container>
   );
 };

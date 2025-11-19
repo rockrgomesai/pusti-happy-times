@@ -35,6 +35,43 @@ import {
   ViewList,
   Inventory2 as BoxIcon,
   Label as TagIcon,
+  ShoppingCart,
+  Category as CategoryIcon,
+  Sell,
+  AccountBalance,
+  PeopleAlt,
+  WorkOutline,
+  Map,
+  Store,
+  Description,
+  ListAlt,
+  Receipt,
+  Payment,
+  Assignment,
+  Inventory2,
+  LocalShippingOutlined,
+  FactoryOutlined,
+  HomeWork,
+  AssignmentTurnedIn,
+  ShoppingBasket,
+  CardGiftcard,
+  PointOfSale,
+  RequestQuote,
+  MonetizationOn,
+  AttachMoney,
+  AccountBalanceWallet,
+  CreditCard,
+  ShoppingBag,
+  AddShoppingCart,
+  Security,
+  Shield,
+  VerifiedUser,
+  MenuBook,
+  LibraryBooks,
+  Storefront,
+  Domain,
+  LocalAtm,
+  AccountCircle,
 } from '@mui/icons-material';
 import { useRouter, usePathname } from 'next/navigation';
 import { apiClient } from '@/lib/api';
@@ -76,38 +113,100 @@ interface MenuApiResponse {
   data?: RawMenuItem[] | null;
 }
 
-// Icon mapping for database icons - extend this as needed
+// Icon mapping for database icons - carefully selected for uniqueness and relevance
 const iconMap: Record<string, typeof Dashboard> = {
   // Frontend mock icons
   dashboard: Dashboard,
   people: People,
   business: Business,
   settings: Settings,
+  
   // Database icons (FontAwesome names mapped to Material-UI)
-  FaRectangleList: Dashboard,
-  FaCrown: AdminPanelSettings,
-  FaUsers: People,
-  FaUser: Person,
-  FaKey: VpnKey,
-  FaLock: Lock,
-  FaDatabase: Storage,
-  FaTag: TagIcon,
-  FaTags: LocalOffer,
-  FaOffers: LocalOffer,
-  FaBrowseOffers: ViewList, // Browse/List offers icon
-  FaDemandOrders: ReceiptLong,
-  FaDO: ReceiptLong,
-  FaBox: Inventory,
-  FaBoxOpen: BoxIcon,
-  FaUserTag: BookmarkBorder, // User tagging/roles icon
-  FaLayerGroup: Layers,
-  FaTruck: LocalShipping, // Transport/shipping icon
-  FaFactory: FactoryIcon,
-  FaPeople: People, // HR/People management icon
-  FaUserTie: AdminPanelSettings, // Designations/Titles icon
-  FaIdBadge: BadgeIcon,
-  FaAddressCard: BadgeIcon,
-  FaWarehouse: WarehouseIcon,
+  // Main Navigation
+  FaRectangleList: Dashboard, // Dashboard - Main overview icon
+  FaCrown: AdminPanelSettings, // Admin/SuperAdmin - Crown represents authority
+  
+  // User & Security Management
+  FaUsers: PeopleAlt, // Users (plural) - Group of people
+  FaUser: Person, // Single user
+  FaKey: VpnKey, // Permissions - Key icon
+  FaLock: Lock, // Security/Locks
+  FaUserTag: BadgeIcon, // User roles/tagging - Badge with user
+  FaUserTie: WorkOutline, // Designations - Business professional with tie
+  FaIdBadge: BadgeIcon, // ID Badge
+  FaAddressCard: BadgeIcon, // Contact card
+  FaShieldAlt: Security, // Permissions/Security - Shield icon
+  FaUserShield: VerifiedUser, // Verified user with shield
+  
+  // Master Data & Database
+  FaDatabase: Storage, // Master data - Database icon
+  
+  // Product Management
+  FaBox: Inventory2, // Products - Box/Package icon
+  FaBoxOpen: BoxIcon, // Open box variant
+  FaTag: TagIcon, // Single tag - Brand/Label
+  FaTags: CategoryIcon, // Multiple tags - Categories
+  
+  // Offers & Promotions
+  FaOffers: CardGiftcard, // Offers (CRUD) - Gift card represents offers/promotions
+  FaBrowseOffers: Sell, // Browse Offers - Selling/discount tag
+  
+  // Order Management (Parent)
+  FaShoppingCart: ShoppingBag, // Order Management parent - Shopping bag icon (UNIQUE)
+  
+  // Demand Orders & Related
+  FaDemandOrders: AddShoppingCart, // Demand Orders - Add to cart icon (UNIQUE)
+  FaFileInvoice: ReceiptLong, // Invoice/Document - Receipt document
+  FaDO: ReceiptLong, // DO - Receipt/Order document
+  
+  // Inventory & Warehousing
+  FaWarehouse: WarehouseIcon, // Warehouse/Depot - Building with storage
+  FaLayerGroup: Layers, // Inventory layers/stock levels
+  
+  // Logistics & Transport
+  FaTruck: LocalShipping, // Transport - Delivery truck
+  
+  // Manufacturing & Production
+  FaFactory: FactoryOutlined, // Factory - Industrial building
+  
+  // HR & People Management
+  FaPeople: PeopleAlt, // HR/People management - Multiple people icon
+  
+  // Finance (Parent)
+  FaMoneyBillWave: MonetizationOn, // Finance parent - Money with waves (UNIQUE)
+  
+  // Finance Operations
+  FaMoneyBill: AttachMoney, // Payments - Dollar sign
+  FaCoins: PointOfSale, // Collections - Point of sale
+  FaBook: MenuBook, // Customer Ledger - Book/Ledger icon (UNIQUE)
+  FaUniversity: AccountBalance, // Banks - Building with columns (UNIQUE)
+  FaCreditCard: CreditCard, // Payment methods - Credit card (UNIQUE)
+  FaWallet: AccountBalanceWallet, // Wallet - Balance wallet
+  FaDollarSign: LocalAtm, // ATM/Dollar operations
+  Payment: Payment, // Generic payment icon
+  
+  // Sales & Territories
+  FaMapMarkedAlt: Map, // Territories - Map with markers
+  
+  // Distributors & Stores
+  FaStore: Storefront, // Distributors - Store front with awning (UNIQUE)
+  FaShop: Store, // Shop/Business location - Simple store
+  FaBuilding: Domain, // Building/Organization
+  
+  // Documents & Reports
+  FaFileAlt: Description, // Documents/Files
+  FaListAlt: ListAlt, // Lists/Reports
+  FaReceipt: Receipt, // Receipts
+  FaClipboard: Assignment, // Assignments/Tasks
+  FaClipboardCheck: AssignmentTurnedIn, // Completed tasks
+  FaBookOpen: LibraryBooks, // Open book/Library
+  
+  // Inventory Operations
+  FaBoxes: Inventory, // Multiple boxes - Inventory
+  FaDolly: ShoppingBasket, // Requisitions - Shopping basket/cart
+  
+  // Additional Specific Icons
+  FaUserCircle: AccountCircle, // User profile circle
 };
 
 // Transform database menu structure to frontend structure
