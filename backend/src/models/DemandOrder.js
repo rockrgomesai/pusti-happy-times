@@ -98,6 +98,56 @@ const demandOrderSchema = new mongoose.Schema(
       trim: true,
       maxlength: 500,
     },
+    // Approval workflow
+    current_approver_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      index: true,
+    },
+    current_approver_role: {
+      type: String,
+      index: true,
+    },
+    approval_history: [
+      {
+        action: {
+          type: String,
+          enum: ["submit", "forward", "modify", "approve", "reject", "cancel"],
+          required: true,
+        },
+        performed_by: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "User",
+          required: true,
+        },
+        performed_by_role: {
+          type: String,
+          required: true,
+        },
+        from_status: {
+          type: String,
+        },
+        to_status: {
+          type: String,
+        },
+        comments: {
+          type: String,
+          trim: true,
+          maxlength: 500,
+        },
+        changes: [
+          {
+            field: String,
+            old_value: mongoose.Schema.Types.Mixed,
+            new_value: mongoose.Schema.Types.Mixed,
+          },
+        ],
+        timestamp: {
+          type: Date,
+          default: Date.now,
+        },
+      },
+    ],
     // Timestamps for workflow
     submitted_at: {
       type: Date,
@@ -149,9 +199,7 @@ demandOrderSchema.pre("save", async function (next) {
     try {
       // Get distributor's ERP ID
       const Distributor = mongoose.model("Distributor");
-      const distributor = await Distributor.findById(this.distributor_id)
-        .select("erp_id")
-        .lean();
+      const distributor = await Distributor.findById(this.distributor_id).select("erp_id").lean();
 
       if (!distributor || !distributor.erp_id) {
         return next(new Error("Distributor ERP ID is required to generate order number"));
@@ -159,16 +207,16 @@ demandOrderSchema.pre("save", async function (next) {
 
       const currentYear = new Date().getFullYear();
       const erpId = distributor.erp_id;
-      
+
       // Generate order number: DO-YYYY-ERPID-NNNNN
       // Example: DO-2025-12345-00001
       const prefix = `DO-${currentYear}-${erpId}`;
 
       // Find the last order number for this year and distributor
       const lastOrder = await this.constructor
-        .findOne({ 
+        .findOne({
           order_number: new RegExp(`^${prefix}-`),
-          distributor_id: this.distributor_id 
+          distributor_id: this.distributor_id,
         })
         .sort({ order_number: -1 })
         .select("order_number")

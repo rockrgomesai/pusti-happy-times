@@ -88,6 +88,7 @@ interface Product {
   sku: string;
   short_description: string;
   mrp: number;
+  db_price: number;
   unit_per_case: number;
   available_quantity: number;
   distributor_depot_qty: number;
@@ -227,6 +228,17 @@ const DemandOrdersPage = () => {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [totalOrders, setTotalOrders] = useState(0);
+  
+  // Financial summary state
+  const [financialSummary, setFinancialSummary] = useState<{
+    orderTotal: number;
+    availableBalance: number;
+    remainingAmount: number;
+    unapprovedPayments: number;
+    dueAmount: number;
+    payments: any[];
+  } | null>(null);
+  const [loadingFinancial, setLoadingFinancial] = useState(false);
 
   // Filters
   const [segmentFilter, setSegmentFilter] = useState<string>("all");
@@ -249,6 +261,12 @@ const DemandOrdersPage = () => {
   // Payment dialog state
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
   const [paymentDONumber, setPaymentDONumber] = useState<string>("");
+  const [editingPayment, setEditingPayment] = useState<any>(null);
+  
+  // Delete payment confirmation
+  const [deletePaymentId, setDeletePaymentId] = useState<string | null>(null);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deletingPayment, setDeletingPayment] = useState(false);
 
   // Offer details dialog
   const [selectedOffer, setSelectedOffer] = useState<Offer | null>(null);
@@ -521,7 +539,8 @@ const DemandOrdersPage = () => {
     Object.entries(offerSelections).forEach(([productId, quantity]) => {
       const product = offerProducts.find(p => p._id === productId);
       if (product && quantity > 0) {
-        const originalSubtotal = product.mrp * quantity;
+        const price = product.db_price || product.mrp || 0;
+        const originalSubtotal = price * quantity;
         const { discountAmount, discountPercentage } = calculateOfferDiscount(originalSubtotal, quantity, selectedOffer);
         const subtotal = originalSubtotal - discountAmount;
 
@@ -530,7 +549,7 @@ const DemandOrdersPage = () => {
           source_id: product._id,
           sku: product.sku,
           quantity: quantity,
-          unit_price: product.mrp,
+          unit_price: price,
           subtotal: subtotal,
           name: product.short_description,
           available_quantity: product.available_quantity,
@@ -678,7 +697,8 @@ const DemandOrdersPage = () => {
       }
       
       const product = item as Product;
-      const originalSubtotal = product.mrp * quantity;
+      const price = product.db_price || product.mrp || 0;
+      const originalSubtotal = price * quantity;
       
       // Apply offer discount if present
       const { discountAmount, discountPercentage } = calculateOfferDiscount(originalSubtotal, quantity, offer);
@@ -690,7 +710,7 @@ const DemandOrdersPage = () => {
         source_id: product._id,
         sku: product.sku,
         quantity: quantity,
-        unit_price: product.mrp,
+        unit_price: price,
         subtotal: subtotal,
         name: product.short_description,
         available_quantity: product.available_quantity,
@@ -923,6 +943,52 @@ const DemandOrdersPage = () => {
     }
   };
 
+  // Fetch financial summary for an order
+  const fetchFinancialSummary = async (orderId: string) => {
+    try {
+      setLoadingFinancial(true);
+      const response = await api.get(
+        `/ordermanagement/demandorders/${orderId}/financial-summary`
+      );
+      setFinancialSummary(response.data.data);
+    } catch (err: any) {
+      console.error("Failed to load financial summary:", err);
+      // Set default values on error
+      setFinancialSummary({
+        orderTotal: 0,
+        availableBalance: 0,
+        remainingAmount: 0,
+        unapprovedPayments: 0,
+        dueAmount: 0,
+        payments: [],
+      });
+    } finally {
+      setLoadingFinancial(false);
+    }
+  };
+
+  // Delete payment handler
+  const handleDeletePayment = async () => {
+    if (!deletePaymentId) return;
+    
+    try {
+      setDeletingPayment(true);
+      await api.delete(`/ordermanagement/collections/${deletePaymentId}`);
+      setSuccess("Payment deleted successfully!");
+      setDeleteConfirmOpen(false);
+      setDeletePaymentId(null);
+      
+      // Refresh financial summary
+      if (selectedOrder?._id) {
+        fetchFinancialSummary(selectedOrder._id);
+      }
+    } catch (err: any) {
+      setError(err.response?.data?.message || "Failed to delete payment");
+    } finally {
+      setDeletingPayment(false);
+    }
+  };
+
   // View order details
   const viewOrderDetails = async (orderId: string) => {
     try {
@@ -931,6 +997,9 @@ const DemandOrdersPage = () => {
       );
       setSelectedOrder(response.data.data);
       setOrderDetailsOpen(true);
+      
+      // Fetch financial summary
+      await fetchFinancialSummary(orderId);
     } catch (err: any) {
       setError(err.response?.data?.message || "Failed to load order details");
     }
@@ -1511,7 +1580,7 @@ const DemandOrdersPage = () => {
                 <TableRow>
                   <TableCell>SKU</TableCell>
                   <TableCell>Description</TableCell>
-                  <TableCell align="right">MRP</TableCell>
+                  <TableCell align="right">DB Price</TableCell>
                   <TableCell align="right">Unit/Case</TableCell>
                   <TableCell align="right">Available</TableCell>
                   <TableCell>Brand</TableCell>
@@ -1554,7 +1623,7 @@ const DemandOrdersPage = () => {
                         </Box>
                       </TableCell>
                       <TableCell>{product.short_description}</TableCell>
-                      <TableCell align="right">৳{product.mrp.toFixed(2)}</TableCell>
+                      <TableCell align="right">৳{(product.db_price || product.mrp || 0).toFixed(2)}</TableCell>
                       <TableCell align="right">{product.unit_per_case}</TableCell>
                       <TableCell align="right">
                         <Chip
@@ -1637,7 +1706,7 @@ const DemandOrdersPage = () => {
 
           <Box sx={{ mb: 1 }}>
             <Typography variant="body2">
-              <strong>MRP:</strong> ৳{product.mrp.toFixed(2)}
+              <strong>DB Price:</strong> ৳{(product.db_price || product.mrp || 0).toFixed(2)}
             </Typography>
             <Typography variant="body2">
               <strong>Unit/Case:</strong> {product.unit_per_case}
@@ -2093,7 +2162,7 @@ const DemandOrdersPage = () => {
                 
                 <Box sx={{ display: 'flex', gap: 2, mt: 2, flexWrap: 'wrap' }}>
                   <Chip 
-                    label={`MRP: ৳${selectedProductForDialog.mrp.toFixed(2)}`} 
+                    label={`DB Price: ৳${(selectedProductForDialog.db_price || selectedProductForDialog.mrp || 0).toFixed(2)}`} 
                     color="primary" 
                   />
                   <Chip 
@@ -2135,10 +2204,11 @@ const DemandOrdersPage = () => {
                 </Box>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                   <Typography>Unit Price:</Typography>
-                  <Typography>৳{selectedProductForDialog.mrp.toFixed(2)}</Typography>
+                  <Typography>৳{(selectedProductForDialog.db_price || selectedProductForDialog.mrp || 0).toFixed(2)}</Typography>
                 </Box>
                 {selectedOffer && (() => {
-                  const originalSubtotal = selectedProductForDialog.mrp * dialogQuantity;
+                  const dialogPrice = selectedProductForDialog.db_price || selectedProductForDialog.mrp || 0;
+                  const originalSubtotal = dialogPrice * dialogQuantity;
                   
                   // Calculate current cart total for this offer group
                   const cartItemsForThisOffer = cart.filter(item => item.offer_id === selectedOffer._id);
@@ -2216,7 +2286,8 @@ const DemandOrdersPage = () => {
                   <Typography variant="h6">Total:</Typography>
                   <Typography variant="h6" sx={{ color: selectedOffer ? '#00838f' : 'primary.main', fontWeight: 'bold' }}>
                     ৳{(() => {
-                      const originalSubtotal = selectedProductForDialog.mrp * dialogQuantity;
+                      const dialogPrice = selectedProductForDialog.db_price || selectedProductForDialog.mrp || 0;
+                      const originalSubtotal = dialogPrice * dialogQuantity;
                       if (selectedOffer) {
                         const { discountAmount } = calculateOfferDiscount(originalSubtotal, dialogQuantity, selectedOffer);
                         return (originalSubtotal - discountAmount).toFixed(2);
@@ -2394,7 +2465,7 @@ const DemandOrdersPage = () => {
                             </Typography>
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 1 }}>
                               <Typography variant="body2" fontWeight="bold">
-                                ৳{product.mrp.toFixed(2)}
+                                ৳{(product.db_price || product.mrp || 0).toFixed(2)}
                               </Typography>
                               <Typography variant="caption" color="text.secondary">
                                 {product.available_quantity} available
@@ -2473,7 +2544,8 @@ const DemandOrdersPage = () => {
               const product = offerProducts.find(p => p._id === productId);
               if (product) {
                 totalQty += qty;
-                subtotal += product.mrp * qty;
+                const price = product.db_price || product.mrp || 0;
+                subtotal += price * qty;
               }
             });
 
@@ -2482,12 +2554,13 @@ const DemandOrdersPage = () => {
                 .map(([productId, qty]) => {
                   const product = offerProducts.find(p => p._id === productId);
                   if (!product) return null;
+                  const price = product.db_price || product.mrp || 0;
                   return {
                     source: "product" as const,
                     source_id: productId,
                     sku: product.sku,
                     quantity: qty,
-                    unit_price: product.mrp,
+                    unit_price: price,
                     subtotal: 0, // Will be calculated
                     name: product.short_description,
                     available_quantity: product.available_quantity,
@@ -2671,7 +2744,7 @@ const DemandOrdersPage = () => {
                                   <TableRow>
                                     <TableCell>SKU</TableCell>
                                     <TableCell>Description</TableCell>
-                                    <TableCell align="right">MRP</TableCell>
+                                    <TableCell align="right">DB Price</TableCell>
                                     <TableCell align="right">Available</TableCell>
                                     <TableCell>Brand</TableCell>
                                     <TableCell align="center">Action</TableCell>
@@ -2712,7 +2785,7 @@ const DemandOrdersPage = () => {
                                           </Box>
                                         </TableCell>
                                         <TableCell>{product.short_description}</TableCell>
-                                        <TableCell align="right">৳{product.mrp.toFixed(2)}</TableCell>
+                                        <TableCell align="right">৳{(product.db_price || product.mrp || 0).toFixed(2)}</TableCell>
                                         <TableCell align="right">
                                           <Chip
                                             label={product.available_quantity}
@@ -2766,7 +2839,7 @@ const DemandOrdersPage = () => {
             {cartTotals.total.toFixed(2)}.
           </Typography>
           <Alert severity="info">
-            The order will be saved as a draft. You can edit it, add payment receipts, and then submit for approval.
+            The order will be saved as a draft. You can edit it, add payment receipts, and then submit to your Area Manager (ASM) for approval.
           </Alert>
         </DialogContent>
         <DialogActions>
@@ -2928,20 +3001,148 @@ const DemandOrdersPage = () => {
 
               <Divider sx={{ my: 2 }} />
 
-              {/* Total */}
-              <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
-                <Box sx={{ minWidth: 200 }}>
-                  <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
-                    <Typography variant="body1">Items:</Typography>
-                    <Typography variant="body1">{selectedOrder.item_count}</Typography>
-                  </Box>
-                  <Divider />
-                  <Box sx={{ display: "flex", justifyContent: "space-between", mt: 1 }}>
-                    <Typography variant="h6">Total:</Typography>
-                    <Typography variant="h6">৳{selectedOrder.total_amount.toFixed(2)}</Typography>
+              {/* Financial Summary */}
+              <Typography variant="h6" sx={{ mb: 2 }}>
+                Financial Summary
+              </Typography>
+              
+              {loadingFinancial ? (
+                <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}>
+                  <CircularProgress size={30} />
+                </Box>
+              ) : financialSummary ? (
+                <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
+                  <Box sx={{ minWidth: 300 }}>
+                    {/* Order Total */}
+                    <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1.5 }}>
+                      <Typography variant="body1" fontWeight={600}>Order Total:</Typography>
+                      <Typography variant="body1" fontWeight={600}>
+                        ৳{financialSummary.orderTotal.toFixed(2)}
+                      </Typography>
+                    </Box>
+                    <Divider sx={{ my: 1.5 }} />
+                    
+                    {/* Available Balance */}
+                    <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
+                      <Typography variant="body2" color="text.secondary">Available Balance:</Typography>
+                      <Typography variant="body2" color={financialSummary.availableBalance >= 0 ? "success.main" : "error.main"}>
+                        ৳{financialSummary.availableBalance.toFixed(2)}
+                      </Typography>
+                    </Box>
+                    
+                    {/* Remaining Amount */}
+                    <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
+                      <Typography variant="body2" color="text.secondary">Remaining Amount:</Typography>
+                      <Typography variant="body2">
+                        ৳{financialSummary.remainingAmount.toFixed(2)}
+                      </Typography>
+                    </Box>
+                    
+                    {/* Unapproved Payments */}
+                    <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
+                      <Typography variant="body2" color="text.secondary">Unapproved Payments:</Typography>
+                      <Typography variant="body2" color="warning.main">
+                        ৳{financialSummary.unapprovedPayments.toFixed(2)}
+                      </Typography>
+                    </Box>
+                    
+                    <Divider sx={{ my: 1.5 }} />
+                    
+                    {/* Due Amount */}
+                    <Box sx={{ display: "flex", justifyContent: "space-between", mt: 1 }}>
+                      <Typography variant="h6" color="primary">Due Amount:</Typography>
+                      <Typography variant="h6" color="primary">
+                        ৳{financialSummary.dueAmount.toFixed(2)}
+                      </Typography>
+                    </Box>
                   </Box>
                 </Box>
-              </Box>
+              ) : null}
+
+              {/* Payments List */}
+              {financialSummary && financialSummary.payments.length > 0 && (
+                <>
+                  <Divider sx={{ my: 3 }} />
+                  <Typography variant="h6" sx={{ mb: 2 }}>
+                    Payments ({financialSummary.payments.length})
+                  </Typography>
+                  <TableContainer>
+                    <Table size="small">
+                      <TableHead>
+                        <TableRow>
+                          <TableCell><strong>Transaction ID</strong></TableCell>
+                          <TableCell><strong>Date</strong></TableCell>
+                          <TableCell><strong>Method</strong></TableCell>
+                          <TableCell align="right"><strong>Amount</strong></TableCell>
+                          <TableCell><strong>Status</strong></TableCell>
+                          <TableCell align="center"><strong>Actions</strong></TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {financialSummary.payments.map((payment) => (
+                          <TableRow key={payment._id}>
+                            <TableCell>
+                              <Typography variant="body2">{payment.transaction_id}</Typography>
+                            </TableCell>
+                            <TableCell>
+                              {new Date(payment.deposit_date).toLocaleDateString()}
+                            </TableCell>
+                            <TableCell>
+                              <Chip 
+                                label={payment.payment_method} 
+                                size="small"
+                                color={payment.payment_method === 'Bank' ? 'primary' : 'default'}
+                              />
+                            </TableCell>
+                            <TableCell align="right">
+                              ৳{payment.deposit_amount?.toFixed(2) || '0.00'}
+                            </TableCell>
+                            <TableCell>
+                              <Chip 
+                                label={payment.approval_status.replace(/_/g, ' ')} 
+                                size="small"
+                                color={
+                                  payment.approval_status === 'approved' ? 'success' :
+                                  payment.approval_status === 'cancelled' ? 'error' :
+                                  'warning'
+                                }
+                              />
+                            </TableCell>
+                            <TableCell align="center">
+                              <Tooltip title="Edit Payment">
+                                <IconButton
+                                  size="small"
+                                  color="primary"
+                                  onClick={() => {
+                                    setEditingPayment(payment);
+                                    setPaymentDialogOpen(true);
+                                  }}
+                                  disabled={payment.approval_status === 'approved' || payment.approval_status === 'cancelled'}
+                                >
+                                  <Edit fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                              <Tooltip title="Delete Payment">
+                                <IconButton
+                                  size="small"
+                                  color="error"
+                                  onClick={() => {
+                                    setDeletePaymentId(payment._id);
+                                    setDeleteConfirmOpen(true);
+                                  }}
+                                  disabled={payment.approval_status === 'approved' || payment.approval_status === 'cancelled'}
+                                >
+                                  <Delete fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                </>
+              )}
             </>
           )}
         </DialogContent>
@@ -2966,7 +3167,7 @@ const DemandOrdersPage = () => {
                 onClick={async () => {
                   try {
                     await api.post(`/ordermanagement/demandorders/${selectedOrder._id}/submit`);
-                    setSuccess(`Order ${selectedOrder.order_number} submitted for approval!`);
+                    setSuccess(`Order ${selectedOrder.order_number} submitted to Area Manager!`);
                     setOrderDetailsOpen(false);
                     loadOrders();
                   } catch (err: any) {
@@ -2974,7 +3175,7 @@ const DemandOrdersPage = () => {
                   }
                 }}
               >
-                Submit for Approval
+                Submit to ASM
               </Button>
             </>
           )}
@@ -3120,14 +3321,53 @@ const DemandOrdersPage = () => {
         onClose={() => {
           setPaymentDialogOpen(false);
           setPaymentDONumber("");
+          setEditingPayment(null);
         }}
         onSuccess={() => {
           setPaymentDialogOpen(false);
           setPaymentDONumber("");
-          setSuccess("Payment added successfully!");
+          setEditingPayment(null);
+          setSuccess(editingPayment ? "Payment updated successfully!" : "Payment added successfully!");
+          // Refresh financial summary if viewing an order
+          if (selectedOrder?._id) {
+            fetchFinancialSummary(selectedOrder._id);
+          }
         }}
         defaultDONumber={paymentDONumber}
+        collection={editingPayment}
       />
+
+      {/* Delete Payment Confirmation Dialog */}
+      <Dialog
+        open={deleteConfirmOpen}
+        onClose={() => !deletingPayment && setDeleteConfirmOpen(false)}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle>Confirm Delete</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Are you sure you want to delete this payment? This action cannot be undone.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button 
+            onClick={() => setDeleteConfirmOpen(false)} 
+            disabled={deletingPayment}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleDeletePayment}
+            color="error"
+            variant="contained"
+            disabled={deletingPayment}
+            startIcon={deletingPayment ? <CircularProgress size={16} /> : <Delete />}
+          >
+            {deletingPayment ? "Deleting..." : "Delete"}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 };

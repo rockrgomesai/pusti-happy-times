@@ -681,9 +681,10 @@ function calculateCashback(cartItems, offerConfig, selectedProducts = []) {
   const { cashbackPercentage, cashbackAmount, maxCashback, minOrderValue } = offerConfig;
 
   // Filter cart items for selected products (or all if none specified)
-  const eligibleItems = selectedProducts.length > 0
-    ? cartItems.filter(item => selectedProducts.includes(item.productId || item.product_id))
-    : cartItems;
+  const eligibleItems =
+    selectedProducts.length > 0
+      ? cartItems.filter((item) => selectedProducts.includes(item.productId || item.product_id))
+      : cartItems;
 
   if (eligibleItems.length === 0) {
     return {
@@ -698,7 +699,7 @@ function calculateCashback(cartItems, offerConfig, selectedProducts = []) {
   const eligibleTotal = eligibleItems.reduce((sum, item) => {
     const price = item.price || item.unit_price || 0;
     const quantity = item.quantity || 0;
-    return sum + (price * quantity);
+    return sum + price * quantity;
   }, 0);
 
   // Check minimum order value
@@ -747,7 +748,8 @@ function calculateCashback(cartItems, offerConfig, selectedProducts = []) {
  * @returns {Object} Calculation result
  */
 function calculateFlashSale(cartItems, offerConfig, selectedProducts = [], offerUsage = {}) {
-  const { discountPercentage, stockLimit, orderLimit, minOrderValue, maxDiscountAmount } = offerConfig;
+  const { discountPercentage, stockLimit, orderLimit, minOrderValue, maxDiscountAmount } =
+    offerConfig;
   const { totalOrders = 0, totalQuantitySold = 0 } = offerUsage;
 
   // Check stock limit
@@ -771,9 +773,10 @@ function calculateFlashSale(cartItems, offerConfig, selectedProducts = [], offer
   }
 
   // Filter cart items for selected products (or all if none specified)
-  const eligibleItems = selectedProducts.length > 0
-    ? cartItems.filter(item => selectedProducts.includes(item.productId || item.product_id))
-    : cartItems;
+  const eligibleItems =
+    selectedProducts.length > 0
+      ? cartItems.filter((item) => selectedProducts.includes(item.productId || item.product_id))
+      : cartItems;
 
   if (eligibleItems.length === 0) {
     return {
@@ -787,7 +790,7 @@ function calculateFlashSale(cartItems, offerConfig, selectedProducts = [], offer
   const eligibleTotal = eligibleItems.reduce((sum, item) => {
     const price = item.price || item.unit_price || 0;
     const quantity = item.quantity || 0;
-    return sum + (price * quantity);
+    return sum + price * quantity;
   }, 0);
 
   // Check minimum order value
@@ -841,9 +844,10 @@ function calculateLoyaltyPoints(cartItems, offerConfig, selectedProducts = []) {
   }
 
   // Filter cart items for selected products (or all if none specified)
-  const eligibleItems = selectedProducts.length > 0
-    ? cartItems.filter(item => selectedProducts.includes(item.productId || item.product_id))
-    : cartItems;
+  const eligibleItems =
+    selectedProducts.length > 0
+      ? cartItems.filter((item) => selectedProducts.includes(item.productId || item.product_id))
+      : cartItems;
 
   if (eligibleItems.length === 0) {
     return {
@@ -859,7 +863,7 @@ function calculateLoyaltyPoints(cartItems, offerConfig, selectedProducts = []) {
   const eligibleTotal = eligibleItems.reduce((sum, item) => {
     const price = item.price || item.unit_price || 0;
     const quantity = item.quantity || 0;
-    return sum + (price * quantity);
+    return sum + price * quantity;
   }, 0);
 
   // Check minimum order value
@@ -911,9 +915,10 @@ function calculateVolumeDiscount(cartItems, offerConfig, selectedProducts = []) 
   }
 
   // Filter cart items for selected products (or all if applyToAllProducts is true)
-  const eligibleItems = applyToAllProducts || selectedProducts.length === 0
-    ? cartItems
-    : cartItems.filter(item => selectedProducts.includes(item.productId || item.product_id));
+  const eligibleItems =
+    applyToAllProducts || selectedProducts.length === 0
+      ? cartItems
+      : cartItems.filter((item) => selectedProducts.includes(item.productId || item.product_id));
 
   if (eligibleItems.length === 0) {
     return {
@@ -928,7 +933,7 @@ function calculateVolumeDiscount(cartItems, offerConfig, selectedProducts = []) 
 
   // Find applicable tier (highest tier where minQuantity is met)
   const sortedTiers = [...volumeTiers].sort((a, b) => b.minQuantity - a.minQuantity);
-  const applicableTier = sortedTiers.find(tier => totalQuantity >= tier.minQuantity);
+  const applicableTier = sortedTiers.find((tier) => totalQuantity >= tier.minQuantity);
 
   if (!applicableTier) {
     const lowestTier = [...volumeTiers].sort((a, b) => a.minQuantity - b.minQuantity)[0];
@@ -945,7 +950,7 @@ function calculateVolumeDiscount(cartItems, offerConfig, selectedProducts = []) 
   const eligibleTotal = eligibleItems.reduce((sum, item) => {
     const price = item.price || item.unit_price || 0;
     const quantity = item.quantity || 0;
-    return sum + (price * quantity);
+    return sum + price * quantity;
   }, 0);
 
   let discount = 0;
@@ -961,20 +966,22 @@ function calculateVolumeDiscount(cartItems, offerConfig, selectedProducts = []) 
   }
 
   // Find next tier for upsell message
-  const nextTier = sortedTiers.reverse().find(tier => tier.minQuantity > totalQuantity);
+  const nextTier = sortedTiers.reverse().find((tier) => tier.minQuantity > totalQuantity);
 
   return {
     eligible: true,
     discount,
-    message: `Volume Discount: ${totalQuantity} units qualify for ${applicableTier.discountPercentage || applicableTier.discountAmount}${applicableTier.discountPercentage ? '%' : '৳'} off!`,
+    message: `Volume Discount: ${totalQuantity} units qualify for ${applicableTier.discountPercentage || applicableTier.discountAmount}${applicableTier.discountPercentage ? "%" : "৳"} off!`,
     details: {
       totalQuantity,
       currentTier: applicableTier,
-      nextTier: nextTier ? {
-        minQuantity: nextTier.minQuantity,
-        discount: nextTier.discountPercentage || nextTier.discountAmount,
-        remaining: nextTier.minQuantity - totalQuantity,
-      } : null,
+      nextTier: nextTier
+        ? {
+            minQuantity: nextTier.minQuantity,
+            discount: nextTier.discountPercentage || nextTier.discountAmount,
+            remaining: nextTier.minQuantity - totalQuantity,
+          }
+        : null,
       eligibleAmount: eligibleTotal,
     },
   };
@@ -987,16 +994,21 @@ function calculateVolumeDiscount(cartItems, offerConfig, selectedProducts = []) 
  * @returns {Object} Calculation result
  */
 function calculateCrossCategory(cartItems, offerConfig) {
-  const { 
-    triggerCategories, 
-    rewardCategories, 
-    minTriggerAmount, 
-    discountPercentage, 
+  const {
+    triggerCategories,
+    rewardCategories,
+    minTriggerAmount,
+    discountPercentage,
     discountAmount,
-    maxDiscountAmount 
+    maxDiscountAmount,
   } = offerConfig;
 
-  if (!triggerCategories || triggerCategories.length === 0 || !rewardCategories || rewardCategories.length === 0) {
+  if (
+    !triggerCategories ||
+    triggerCategories.length === 0 ||
+    !rewardCategories ||
+    rewardCategories.length === 0
+  ) {
     return {
       eligible: false,
       discount: 0,
@@ -1005,14 +1017,14 @@ function calculateCrossCategory(cartItems, offerConfig) {
   }
 
   // Calculate trigger category total
-  const triggerItems = cartItems.filter(item => 
+  const triggerItems = cartItems.filter((item) =>
     triggerCategories.includes(item.categoryId || item.category_id)
   );
 
   const triggerTotal = triggerItems.reduce((sum, item) => {
     const price = item.price || item.unit_price || 0;
     const quantity = item.quantity || 0;
-    return sum + (price * quantity);
+    return sum + price * quantity;
   }, 0);
 
   // Check if trigger amount is met
@@ -1027,7 +1039,7 @@ function calculateCrossCategory(cartItems, offerConfig) {
   }
 
   // Calculate reward category total
-  const rewardItems = cartItems.filter(item => 
+  const rewardItems = cartItems.filter((item) =>
     rewardCategories.includes(item.categoryId || item.category_id)
   );
 
@@ -1044,7 +1056,7 @@ function calculateCrossCategory(cartItems, offerConfig) {
   const rewardTotal = rewardItems.reduce((sum, item) => {
     const price = item.price || item.unit_price || 0;
     const quantity = item.quantity || 0;
-    return sum + (price * quantity);
+    return sum + price * quantity;
   }, 0);
 
   // Calculate discount on reward categories
@@ -1063,7 +1075,7 @@ function calculateCrossCategory(cartItems, offerConfig) {
   return {
     eligible: true,
     discount,
-    message: `Cross-Category Discount: ${discountPercentage || discountAmount}${discountPercentage ? '%' : '৳'} off reward categories!`,
+    message: `Cross-Category Discount: ${discountPercentage || discountAmount}${discountPercentage ? "%" : "৳"} off reward categories!`,
     details: {
       triggerTotal,
       rewardTotal,
@@ -1095,9 +1107,10 @@ function calculateFirstOrder(cartItems, offerConfig, selectedProducts = [], isFi
   }
 
   // Filter cart items for selected products (or all if none specified)
-  const eligibleItems = selectedProducts.length > 0
-    ? cartItems.filter(item => selectedProducts.includes(item.productId || item.product_id))
-    : cartItems;
+  const eligibleItems =
+    selectedProducts.length > 0
+      ? cartItems.filter((item) => selectedProducts.includes(item.productId || item.product_id))
+      : cartItems;
 
   if (eligibleItems.length === 0) {
     return {
@@ -1111,7 +1124,7 @@ function calculateFirstOrder(cartItems, offerConfig, selectedProducts = [], isFi
   const eligibleTotal = eligibleItems.reduce((sum, item) => {
     const price = item.price || item.unit_price || 0;
     const quantity = item.quantity || 0;
-    return sum + (price * quantity);
+    return sum + price * quantity;
   }, 0);
 
   // Check minimum order value
@@ -1140,7 +1153,7 @@ function calculateFirstOrder(cartItems, offerConfig, selectedProducts = [], isFi
   return {
     eligible: true,
     discount,
-    message: `Welcome! First Order Discount: ${discountPercentage || discountAmount}${discountPercentage ? '%' : '৳'} off! You save ৳${discount.toFixed(2)}`,
+    message: `Welcome! First Order Discount: ${discountPercentage || discountAmount}${discountPercentage ? "%" : "৳"} off! You save ৳${discount.toFixed(2)}`,
     details: {
       eligibleAmount: eligibleTotal,
       isFirstOrder: true,
