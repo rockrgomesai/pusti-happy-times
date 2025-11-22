@@ -303,7 +303,7 @@ const fetchDistributors = async (): Promise<Distributor[]> => {
     const rawData = Array.isArray(response.data?.data) ? response.data.data : [];
 
     return rawData
-      .map((entry) => {
+      .map((entry: unknown) => {
         if (!entry || typeof entry !== 'object') return null;
         const record = entry as Record<string, unknown>;
         const id = extractId(record._id);

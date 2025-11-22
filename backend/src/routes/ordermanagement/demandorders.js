@@ -593,10 +593,11 @@ router.get(
     try {
       const userId = req.user.id;
 
-      // Find all orders where current_approver_id = logged-in user and status = submitted
+      // Find all orders where current_approver_id = logged-in user
+      // Status filtering is removed to show all pending orders for this approver
       const orders = await DemandOrder.find({
         current_approver_id: userId,
-        status: "submitted",
+        status: { $nin: ["draft", "approved", "cancelled", "rejected"] },
       })
         .populate({
           path: "distributor_id",
@@ -1284,6 +1285,7 @@ router.post(
       // Update order: forward to RSM
       order.current_approver_id = matchingRSM._id;
       order.current_approver_role = "RSM";
+      order.status = "forwarded_to_rsm";
 
       // Add to approval history
       order.approval_history.push({
@@ -1292,7 +1294,7 @@ router.post(
         performed_by_name: userName,
         performed_by_role: "ASM",
         from_status: "submitted",
-        to_status: "submitted",
+        to_status: "forwarded_to_rsm",
         comments: `Forwarded to RSM for approval`,
         timestamp: new Date(),
       });
@@ -1309,6 +1311,459 @@ router.post(
       res.status(500).json({
         success: false,
         message: "Failed to forward order to RSM",
+        error: error.message,
+      });
+    }
+  }
+);
+
+/**
+ * POST /ordermanagement/demandorders/:id/forward-to-sales-admin
+ * Forward a demand order from RSM to Sales Admin for approval
+ * Also sends a view-only notification to ZSM
+ */
+router.post(
+  "/:id/forward-to-sales-admin",
+  authenticate,
+  requireApiPermission("demandorder:update"),
+  async (req, res) => {
+    try {
+      const orderId = req.params.id;
+      const userId = req.user.id;
+      const userName = req.user.name || "Unknown User";
+
+      // Find the demand order
+      const order = await DemandOrder.findById(orderId).populate("distributor_id").lean();
+
+      if (!order) {
+        return res.status(404).json({
+          success: false,
+          message: "Demand order not found",
+        });
+      }
+
+      // Get distributor details to find region
+      const Distributor = require("../../models/Distributor");
+      const distributor = await Distributor.findById(order.distributor_id._id)
+        .populate("db_point_id")
+        .lean();
+
+      // Find Region from ancestors (optional for ZSM notification)
+      let region = null;
+      if (distributor?.db_point_id?.ancestors) {
+        region = distributor.db_point_id.ancestors.find((anc) => anc.type === "Region");
+      }
+
+      // Find Sales Admin role
+      const Role = require("../../models/Role");
+      const User = require("../../models/User");
+
+      const salesAdminRole = await Role.findOne({ role: "Sales Admin" });
+
+      if (!salesAdminRole) {
+        return res.status(500).json({
+          success: false,
+          message: "Sales Admin role not found in system",
+        });
+      }
+
+      // Find Sales Admin user (assuming first one for now, can be refined)
+      const salesAdminUser = await User.findOne({ role_id: salesAdminRole._id }).lean();
+
+      if (!salesAdminUser) {
+        return res.status(404).json({
+          success: false,
+          message: "Sales Admin user account not found",
+        });
+      }
+
+      // Update order: forward to Sales Admin
+      const updatedOrder = await DemandOrder.findByIdAndUpdate(
+        orderId,
+        {
+          current_approver_id: salesAdminUser._id,
+          current_approver_role: "Sales Admin",
+          status: "forwarded_to_sales_admin",
+          $push: {
+            approval_history: {
+              action: "forward",
+              performed_by: userId,
+              performed_by_name: userName,
+              performed_by_role: "RSM",
+              from_status: order.status,
+              to_status: "forwarded_to_sales_admin",
+              comments: "Forwarded to Sales Admin for approval",
+              timestamp: new Date(),
+            },
+          },
+        },
+        { new: true }
+      );
+
+      // Silent notification to ZSM (add to approval history as notification)
+      // Only attempt if region exists (ZSM is a territorial user)
+      if (region) {
+        const zsmRole = await Role.findOne({ role: "ZSM" });
+        if (zsmRole) {
+          const zsmUsers = await User.find({ role_id: zsmRole._id }).populate("employee_id").lean();
+          const matchingZSM = zsmUsers.find((user) => {
+            const territories = user.employee_id?.territory_assignments;
+            if (!Array.isArray(territories)) return false;
+            return territories.some((t) => t.region_id?.toString() === region._id.toString());
+          });
+
+          if (matchingZSM) {
+            await DemandOrder.findByIdAndUpdate(orderId, {
+              $push: {
+                approval_history: {
+                  action: "forward",
+                  performed_by: userId,
+                  performed_by_name: userName,
+                  performed_by_role: "RSM",
+                  from_status: order.status,
+                  to_status: "notified_zsm",
+                  comments: "View-only notification sent to ZSM",
+                  timestamp: new Date(),
+                },
+              },
+            });
+          }
+        }
+      }
+
+      res.json({
+        success: true,
+        message: `Order ${order.order_number} forwarded to Sales Admin successfully (ZSM notified)`,
+        data: updatedOrder,
+      });
+    } catch (error) {
+      console.error("Error forwarding order to Sales Admin:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to forward order to Sales Admin",
+        error: error.message,
+      });
+    }
+  }
+);
+
+/**
+ * POST /ordermanagement/demandorders/:id/forward-to-order-management
+ * Forward order from Sales Admin to Order Management
+ * Requires: demandorder:update permission
+ */
+router.post(
+  "/:id/forward-to-order-management",
+  authenticate,
+  requireApiPermission("demandorder:update"),
+  async (req, res) => {
+    try {
+      const orderId = req.params.id;
+      const userId = req.user.id;
+      const userName = req.user.name || "Unknown User";
+
+      const order = await DemandOrder.findById(orderId).lean();
+      if (!order) {
+        return res.status(404).json({
+          success: false,
+          message: "Demand order not found",
+        });
+      }
+
+      const Role = require("../../models/Role");
+      const User = require("../../models/User");
+
+      const omRole = await Role.findOne({ role: "Order Management" });
+      if (!omRole) {
+        return res.status(500).json({
+          success: false,
+          message: "Order Management role not found in system",
+        });
+      }
+
+      const omUser = await User.findOne({ role_id: omRole._id }).lean();
+      if (!omUser) {
+        return res.status(404).json({
+          success: false,
+          message: "Order Management user account not found",
+        });
+      }
+
+      const updatedOrder = await DemandOrder.findByIdAndUpdate(
+        orderId,
+        {
+          current_approver_id: omUser._id,
+          current_approver_role: "Order Management",
+          status: "forwarded_to_order_management",
+          $push: {
+            approval_history: {
+              action: "forward",
+              performed_by: userId,
+              performed_by_name: userName,
+              performed_by_role: "Sales Admin",
+              from_status: order.status,
+              to_status: "forwarded_to_order_management",
+              comments: "Forwarded to Order Management for approval",
+              timestamp: new Date(),
+            },
+          },
+        },
+        { new: true }
+      );
+
+      res.json({
+        success: true,
+        message: `Order ${order.order_number} forwarded to Order Management successfully`,
+        data: updatedOrder,
+      });
+    } catch (error) {
+      console.error("Error forwarding order to Order Management:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to forward order to Order Management",
+        error: error.message,
+      });
+    }
+  }
+);
+
+/**
+ * POST /ordermanagement/demandorders/:id/forward-to-finance
+ * Forward order from Order Management to Finance
+ * Requires: demandorder:update permission
+ */
+router.post(
+  "/:id/forward-to-finance",
+  authenticate,
+  requireApiPermission("demandorder:update"),
+  async (req, res) => {
+    try {
+      const orderId = req.params.id;
+      const userId = req.user.id;
+      const userName = req.user.name || "Unknown User";
+
+      const order = await DemandOrder.findById(orderId).lean();
+      if (!order) {
+        return res.status(404).json({
+          success: false,
+          message: "Demand order not found",
+        });
+      }
+
+      const Role = require("../../models/Role");
+      const User = require("../../models/User");
+
+      const financeRole = await Role.findOne({ role: "Finance" });
+      if (!financeRole) {
+        return res.status(500).json({
+          success: false,
+          message: "Finance role not found in system",
+        });
+      }
+
+      const financeUser = await User.findOne({ role_id: financeRole._id }).lean();
+      if (!financeUser) {
+        return res.status(404).json({
+          success: false,
+          message: "Finance user account not found",
+        });
+      }
+
+      const updatedOrder = await DemandOrder.findByIdAndUpdate(
+        orderId,
+        {
+          current_approver_id: financeUser._id,
+          current_approver_role: "Finance",
+          status: "forwarded_to_finance",
+          $push: {
+            approval_history: {
+              action: "forward",
+              performed_by: userId,
+              performed_by_name: userName,
+              performed_by_role: "Order Management",
+              from_status: order.status,
+              to_status: "forwarded_to_finance",
+              comments: "Forwarded to Finance for approval",
+              timestamp: new Date(),
+            },
+          },
+        },
+        { new: true }
+      );
+
+      res.json({
+        success: true,
+        message: `Order ${order.order_number} forwarded to Finance successfully`,
+        data: updatedOrder,
+      });
+    } catch (error) {
+      console.error("Error forwarding order to Finance:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to forward order to Finance",
+        error: error.message,
+      });
+    }
+  }
+);
+
+/**
+ * POST /ordermanagement/demandorders/:id/forward-to-distribution
+ * Forward order from Finance to Distribution
+ * Requires: demandorder:update permission
+ */
+router.post(
+  "/:id/forward-to-distribution",
+  authenticate,
+  requireApiPermission("demandorder:update"),
+  async (req, res) => {
+    try {
+      const orderId = req.params.id;
+      const userId = req.user.id;
+      const userName = req.user.name || "Unknown User";
+
+      const order = await DemandOrder.findById(orderId).lean();
+      if (!order) {
+        return res.status(404).json({
+          success: false,
+          message: "Demand order not found",
+        });
+      }
+
+      const Role = require("../../models/Role");
+      const User = require("../../models/User");
+
+      const distributionRole = await Role.findOne({ role: "Distribution" });
+      if (!distributionRole) {
+        return res.status(500).json({
+          success: false,
+          message: "Distribution role not found in system",
+        });
+      }
+
+      const distributionUser = await User.findOne({ role_id: distributionRole._id }).lean();
+      if (!distributionUser) {
+        return res.status(404).json({
+          success: false,
+          message: "Distribution user account not found",
+        });
+      }
+
+      const updatedOrder = await DemandOrder.findByIdAndUpdate(
+        orderId,
+        {
+          current_approver_id: distributionUser._id,
+          current_approver_role: "Distribution",
+          status: "forwarded_to_distribution",
+          $push: {
+            approval_history: {
+              action: "forward",
+              performed_by: userId,
+              performed_by_name: userName,
+              performed_by_role: "Finance",
+              from_status: order.status,
+              to_status: "forwarded_to_distribution",
+              comments: "Forwarded to Distribution for approval",
+              timestamp: new Date(),
+            },
+          },
+        },
+        { new: true }
+      );
+
+      res.json({
+        success: true,
+        message: `Order ${order.order_number} forwarded to Distribution successfully`,
+        data: updatedOrder,
+      });
+    } catch (error) {
+      console.error("Error forwarding order to Distribution:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to forward order to Distribution",
+        error: error.message,
+      });
+    }
+  }
+);
+
+/**
+ * POST /ordermanagement/demandorders/:id/return-to-sales-admin
+ * Return order from Order Management, Finance, or Distribution back to Sales Admin
+ * Requires: demandorder:update permission
+ */
+router.post(
+  "/:id/return-to-sales-admin",
+  authenticate,
+  requireApiPermission("demandorder:update"),
+  async (req, res) => {
+    try {
+      const orderId = req.params.id;
+      const userId = req.user.id;
+      const userName = req.user.name || "Unknown User";
+
+      const order = await DemandOrder.findById(orderId).lean();
+      if (!order) {
+        return res.status(404).json({
+          success: false,
+          message: "Demand order not found",
+        });
+      }
+
+      // Get the current user's role to track who returned it
+      const currentUserRole = req.user.role_id?.role || req.user.role_id?.name || "Unknown";
+
+      const Role = require("../../models/Role");
+      const User = require("../../models/User");
+
+      const salesAdminRole = await Role.findOne({ role: "Sales Admin" });
+      if (!salesAdminRole) {
+        return res.status(500).json({
+          success: false,
+          message: "Sales Admin role not found in system",
+        });
+      }
+
+      const salesAdminUser = await User.findOne({ role_id: salesAdminRole._id }).lean();
+      if (!salesAdminUser) {
+        return res.status(404).json({
+          success: false,
+          message: "Sales Admin user account not found",
+        });
+      }
+
+      const updatedOrder = await DemandOrder.findByIdAndUpdate(
+        orderId,
+        {
+          current_approver_id: salesAdminUser._id,
+          current_approver_role: "Sales Admin",
+          status: "forwarded_to_sales_admin",
+          $push: {
+            approval_history: {
+              action: "return",
+              performed_by: userId,
+              performed_by_name: userName,
+              performed_by_role: currentUserRole,
+              from_status: order.status,
+              to_status: "forwarded_to_sales_admin",
+              comments: `Returned to Sales Admin from ${currentUserRole} for review`,
+              timestamp: new Date(),
+            },
+          },
+        },
+        { new: true }
+      );
+
+      res.json({
+        success: true,
+        message: `Order ${order.order_number} returned to Sales Admin successfully`,
+        data: updatedOrder,
+      });
+    } catch (error) {
+      console.error("Error returning order to Sales Admin:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to return order to Sales Admin",
         error: error.message,
       });
     }

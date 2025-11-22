@@ -192,6 +192,7 @@ const ApproveOrdersPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [currentUserRole, setCurrentUserRole] = useState<string | null>(null);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   
@@ -254,7 +255,18 @@ const ApproveOrdersPage = () => {
 
   useEffect(() => {
     fetchOrders();
+    fetchCurrentUserRole();
   }, []);
+
+  const fetchCurrentUserRole = async () => {
+    try {
+      const response = await api.get("/auth/me");
+      const roleName = response.data.data.role_id?.role || null;
+      setCurrentUserRole(roleName);
+    } catch (err: any) {
+      console.error("Failed to fetch user role:", err);
+    }
+  };
 
   // Clear success message after 5 seconds
   useEffect(() => {
@@ -615,11 +627,44 @@ const ApproveOrdersPage = () => {
   };
 
   const handleForwardToRSM = async (orderId: string) => {
-    if (!confirm("Forward this order to RSM for approval?")) return;
+    // Use order's current_approver_role as fallback if currentUserRole hasn't loaded yet
+    const role = currentUserRole || selectedOrder?.current_approver_role;
+    
+    // Determine target role and confirmation message
+    let targetRole = "next approver";
+    if (role === "ASM") targetRole = "RSM";
+    else if (role === "RSM") targetRole = "Sales Admin";
+    else if (role === "ZSM") targetRole = "NSM";
+    else if (role === "Sales Admin") targetRole = "Order Management";
+    else if (role === "Order Management") targetRole = "Finance";
+    else if (role === "Finance") targetRole = "Distribution";
+    
+    if (!confirm(`Forward this order to ${targetRole} for approval?`)) return;
     
     try {
-      await api.post(`/ordermanagement/demandorders/${orderId}/forward-to-rsm`);
-      setSuccess("Order forwarded to RSM successfully!");
+      // Forward to appropriate endpoint based on role
+      if (role === "ASM") {
+        await api.post(`/ordermanagement/demandorders/${orderId}/forward-to-rsm`);
+        setSuccess("Order forwarded to RSM successfully!");
+      } else if (role === "RSM") {
+        await api.post(`/ordermanagement/demandorders/${orderId}/forward-to-sales-admin`);
+        setSuccess("Order forwarded to Sales Admin successfully! (ZSM notified)");
+      } else if (role === "ZSM") {
+        await api.post(`/ordermanagement/demandorders/${orderId}/forward-to-nsm`);
+        setSuccess("Order forwarded to NSM successfully!");
+      } else if (role === "Sales Admin") {
+        await api.post(`/ordermanagement/demandorders/${orderId}/forward-to-order-management`);
+        setSuccess("Order forwarded to Order Management successfully!");
+      } else if (role === "Order Management") {
+        await api.post(`/ordermanagement/demandorders/${orderId}/forward-to-finance`);
+        setSuccess("Order forwarded to Finance successfully!");
+      } else if (role === "Finance") {
+        await api.post(`/ordermanagement/demandorders/${orderId}/forward-to-distribution`);
+        setSuccess("Order forwarded to Distribution successfully!");
+      } else {
+        await api.post(`/ordermanagement/demandorders/${orderId}/forward-to-rsm`);
+        setSuccess("Order forwarded successfully!");
+      }
       fetchOrders();
     } catch (err: any) {
       setError(err.response?.data?.message || "Failed to forward order");
@@ -2089,7 +2134,7 @@ const ApproveOrdersPage = () => {
               </Typography>
               {selectedOrder.approval_history && selectedOrder.approval_history.length > 0 ? (
                 <Timeline position="right">
-                  {selectedOrder.approval_history.map((history: any, index: number) => (
+                  {[...selectedOrder.approval_history].reverse().map((history: any, index: number) => (
                     <TimelineItem key={index}>
                       <TimelineOppositeContent color="text.secondary" sx={{ flex: 0.3 }}>
                         <Typography variant="caption">
@@ -2103,6 +2148,8 @@ const ApproveOrdersPage = () => {
                               ? "primary"
                               : history.action === "forward"
                               ? "info"
+                              : history.action === "return"
+                              ? "warning"
                               : history.action === "modify"
                               ? "warning"
                               : history.action === "approve"
@@ -2112,14 +2159,36 @@ const ApproveOrdersPage = () => {
                               : "grey"
                           }
                         />
-                        {index < selectedOrder.approval_history.length - 1 && <TimelineConnector />}
+                        {index < [...selectedOrder.approval_history].reverse().length - 1 && <TimelineConnector />}
                       </TimelineSeparator>
                       <TimelineContent>
                         <Typography variant="subtitle2" fontWeight="bold">
                           {history.action === "submit"
                             ? "Order Submitted"
                             : history.action === "forward"
-                            ? "Forwarded to " + history.to_status?.toUpperCase()
+                            ? (() => {
+                                // Check if comments contain the actual target role
+                                if (history.comments?.includes("Order Management")) return "Forwarded to Order Management";
+                                if (history.comments?.includes("Finance")) return "Forwarded to Finance";
+                                if (history.comments?.includes("Distribution")) return "Forwarded to Distribution";
+                                if (history.comments?.includes("Sales Admin")) return "Forwarded to Sales Admin";
+                                if (history.comments?.includes("RSM")) return "Forwarded to RSM";
+                                if (history.comments?.includes("ZSM")) return "Forwarded to ZSM";
+                                if (history.comments?.includes("NSM")) return "Forwarded to NSM";
+                                
+                                // Otherwise use to_status
+                                if (history.to_status === "forwarded_to_order_management") return "Forwarded to Order Management";
+                                if (history.to_status === "forwarded_to_finance") return "Forwarded to Finance";
+                                if (history.to_status === "forwarded_to_distribution") return "Forwarded to Distribution";
+                                if (history.to_status === "forwarded_to_sales_admin") return "Forwarded to Sales Admin";
+                                if (history.to_status === "forwarded_to_rsm") return "Forwarded to RSM";
+                                if (history.to_status === "forwarded_to_zsm") return "Forwarded to ZSM";
+                                if (history.to_status === "forwarded_to_nsm") return "Forwarded to NSM";
+                                
+                                return "Order Forwarded";
+                              })()
+                            : history.action === "return"
+                            ? "Returned to Sales Admin"
                             : history.action === "modify"
                             ? "Order Modified"
                             : history.action === "approve"
@@ -2167,18 +2236,73 @@ const ApproveOrdersPage = () => {
           >
             Close
           </Button>
-          <Button
-            onClick={() => {
-              setViewOrderDialog(false);
-              handleForwardToRSM(selectedOrder?._id || "");
-            }}
-            variant="contained"
-            color="success"
-            startIcon={<Send />}
-            disabled={selectedOrder?.status !== "submitted"}
-          >
-            Forward to RSM
-          </Button>
+          {/* Return to Sales Admin Button (for Order Management, Finance, Distribution) */}
+          {(() => {
+            const role = currentUserRole || selectedOrder?.current_approver_role;
+            if (role === "Order Management" || role === "Finance" || role === "Distribution") {
+              return (
+                <Button
+                  onClick={async () => {
+                    if (!confirm("Return this order to Sales Admin for review?")) return;
+                    try {
+                      await api.post(`/ordermanagement/demandorders/${selectedOrder?._id}/return-to-sales-admin`);
+                      setSuccess("Order returned to Sales Admin successfully!");
+                      setViewOrderDialog(false);
+                      fetchOrders();
+                    } catch (err: any) {
+                      setError(err.response?.data?.message || "Failed to return order to Sales Admin");
+                    }
+                  }}
+                  variant="outlined"
+                  color="warning"
+                  startIcon={<Send />}
+                  disabled={
+                    selectedOrder?.status === "approved" ||
+                    selectedOrder?.status === "cancelled"
+                  }
+                >
+                  Return to Sales Admin
+                </Button>
+              );
+            }
+            return null;
+          })()}
+          
+          {/* Forward Button (not shown for Distribution) */}
+          {(() => {
+            const role = currentUserRole || selectedOrder?.current_approver_role;
+            if (role === "Distribution") return null;
+            
+            return (
+              <Button
+                onClick={() => {
+                  setViewOrderDialog(false);
+                  handleForwardToRSM(selectedOrder?._id || "");
+                }}
+                variant="contained"
+                color="success"
+                startIcon={<Send />}
+                disabled={
+                  selectedOrder?.status !== "submitted" && 
+                  selectedOrder?.status !== "forwarded_to_rsm" && 
+                  selectedOrder?.status !== "forwarded_to_sales_admin" &&
+                  selectedOrder?.status !== "forwarded_to_order_management" &&
+                  selectedOrder?.status !== "forwarded_to_finance"
+                }
+              >
+                {(() => {
+                  if (role === "ASM") return "Forward to RSM";
+                  if (role === "RSM") return "Forward to Sales Admin";
+                  if (role === "ZSM") return "Forward to NSM";
+                  if (role === "Sales Admin") return "Forward to Order Management";
+                  if (role === "Order Management") return "Forward to Finance";
+                  if (role === "Finance") return "Forward to Distribution";
+                  return "Forward";
+                })()}
+              </Button>
+            );
+          })()}
+          
           <Button
             onClick={() => {
               setViewOrderDialog(false);

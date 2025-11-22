@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from '@/theme/ThemeProvider';
 import { AuthProvider } from '@/contexts/AuthContext';
@@ -7,15 +7,12 @@ import { SocketProvider } from '@/contexts/SocketContext';
 import { ClientLayout } from '@/components/layout/ClientLayout';
 import { Toaster } from 'react-hot-toast';
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const inter = Inter({
   subsets: ["latin"],
+  variable: "--font-inter",
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
   title: "Pusti Happy Times",
@@ -37,7 +34,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${inter.variable} antialiased`}
         suppressHydrationWarning={true}
       >
         <ThemeProvider>

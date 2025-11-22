@@ -1,0 +1,3 @@
+@echo off
+echo Starting Pusti Happy Times Frontend...
+npm run start
