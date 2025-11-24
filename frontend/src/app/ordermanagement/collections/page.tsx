@@ -49,12 +49,14 @@ import {
   ViewList as ViewListIcon,
   ViewModule as ViewModuleIcon,
   Edit as EditIcon,
+  CheckCircle as CheckCircleIcon,
 } from "@mui/icons-material";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { format } from "date-fns";
 import collectionsApi, { Collection } from "@/services/collectionsApi";
+import api from "@/lib/api";
 import CollectionForm from "./components/CollectionForm";
 import CollectionFiltersDialog, {
   CollectionFilters,
@@ -85,6 +87,7 @@ export default function PaymentsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [viewMode, setViewMode] = useState<"cards" | "list">("list");
   const [activeTab, setActiveTab] = useState<"myQueue" | "all">("myQueue");
+  const [currentUserRole, setCurrentUserRole] = useState<string | null>(null);
   const { socket, isConnected } = useSocket();
 
   // Dialogs
@@ -152,6 +155,20 @@ export default function PaymentsPage() {
       setLoading(false);
     }
   }, [page, rowsPerPage, filters, activeTab, user]);
+
+  // Fetch current user role
+  useEffect(() => {
+    const fetchCurrentUserRole = async () => {
+      try {
+        const response = await api.get("/auth/me");
+        const roleName = response.data.data.user?.role?.role || null;
+        setCurrentUserRole(roleName);
+      } catch (error) {
+        console.error("Failed to fetch user role:", error);
+      }
+    };
+    fetchCurrentUserRole();
+  }, []);
 
   useEffect(() => {
     loadCollections();
@@ -433,12 +450,6 @@ export default function PaymentsPage() {
         align: "center",
         alwaysVisible: true,
         renderCell: (collection) => {
-          // Check if user can edit (Area Manager and above, not approved/cancelled)
-          const canEdit = user?.role?.role && 
-            ["ASM", "RSM", "ZSM", "Sales Admin", "Order Management", "Finance"].includes(user.role.role) &&
-            collection.approval_status !== "approved" && 
-            collection.approval_status !== "cancelled";
-
           return (
             <Box sx={{ display: "flex", justifyContent: "center", gap: 1 }}>
               <Tooltip title="View Details">
@@ -450,7 +461,35 @@ export default function PaymentsPage() {
                   <VisibilityIcon fontSize="small" />
                 </IconButton>
               </Tooltip>
-              {canEdit && (
+              
+              {currentUserRole === "Finance" && collection.status === "forwarded_to_finance" && (
+                <Tooltip title="Approve Payment (Final)">
+                  <IconButton
+                    size="small"
+                    color="success"
+                    onClick={async () => {
+                      if (!confirm(`Approve payment of ৳${collection.deposit_amount?.toLocaleString()} from ${collection.bank || 'Bank'}?\n\nTransaction ID: ${collection.transaction_id}\nDeposit Date: ${new Date(collection.deposit_date).toLocaleDateString()}\n\nThis will create a credit entry in the distributor's ledger.\n\nNote: Finance is the final approver for all payments.`)) {
+                        return;
+                      }
+                      
+                      try {
+                        await collectionsApi.approve(collection._id, "Approved by Finance");
+                        toast.success("Payment approved successfully! Credit entry created in distributor ledger.");
+                        loadCollections();
+                      } catch (error: any) {
+                        toast.error(error.response?.data?.message || "Failed to approve payment");
+                      }
+                    }}
+                  >
+                    <CheckCircleIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+              )}
+              
+              {user?.role?.role && 
+                ["ASM", "RSM", "ZSM", "Sales Admin", "Order Management", "Finance"].includes(user.role.role) &&
+                collection.approval_status !== "approved" && 
+                collection.approval_status !== "cancelled" && (
                 <Tooltip title="Edit">
                   <IconButton
                     size="small"
@@ -487,7 +526,7 @@ export default function PaymentsPage() {
         },
       },
     ],
-    [formatDate, handleViewImage, handleViewDetails]
+    [formatDate, handleViewImage, handleViewDetails, loadCollections, user?.role?.role, currentUserRole]
   );
 
   const selectableColumnIds = useMemo(

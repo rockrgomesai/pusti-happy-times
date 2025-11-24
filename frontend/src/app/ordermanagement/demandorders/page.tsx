@@ -71,6 +71,15 @@ import {
   AttachMoney,
   Send,
 } from "@mui/icons-material";
+import {
+  Timeline,
+  TimelineItem,
+  TimelineSeparator,
+  TimelineConnector,
+  TimelineContent,
+  TimelineDot,
+  TimelineOppositeContent,
+} from "@mui/lab";
 import api from "@/lib/api";
 import CollectionForm from "../collections/components/CollectionForm";
 
@@ -534,33 +543,50 @@ const DemandOrdersPage = () => {
     // Remove all existing items for this offer from cart
     const cartWithoutThisOffer = cart.filter(item => item.offer_id !== selectedOffer._id);
 
-    // Add new selections
+    // Add new selections (calculate group discount and distribute)
     const newItems: CartItem[] = [];
+    let groupOriginalTotal = 0;
+    
+    // First pass: create items with original prices
     Object.entries(offerSelections).forEach(([productId, quantity]) => {
       const product = offerProducts.find(p => p._id === productId);
       if (product && quantity > 0) {
         const price = product.db_price || product.mrp || 0;
         const originalSubtotal = price * quantity;
-        const { discountAmount, discountPercentage } = calculateOfferDiscount(originalSubtotal, quantity, selectedOffer);
-        const subtotal = originalSubtotal - discountAmount;
-
+        groupOriginalTotal += originalSubtotal;
+        
         newItems.push({
           source: "product",
           source_id: product._id,
           sku: product.sku,
           quantity: quantity,
           unit_price: price,
-          subtotal: subtotal,
+          subtotal: originalSubtotal, // Will be updated after group calculation
           name: product.short_description,
           available_quantity: product.available_quantity,
           offer_id: selectedOffer._id,
           offer_name: selectedOffer.name,
-          discount_percentage: discountPercentage,
-          discount_amount: discountAmount,
+          offer_type: selectedOffer.config?.type || 'DISCOUNT',
+          discount_percentage: 0, // Will be updated
+          discount_amount: 0, // Will be updated
           original_subtotal: originalSubtotal,
         });
       }
     });
+
+    // Calculate group-level discount
+    const groupDiscount = calculateOfferGroupDiscount(newItems, selectedOffer);
+    
+    // Second pass: distribute group discount proportionally across items
+    if (groupDiscount.discountAmount > 0 && groupOriginalTotal > 0) {
+      newItems.forEach(item => {
+        const itemProportion = item.original_subtotal / groupOriginalTotal;
+        const itemDiscount = groupDiscount.discountAmount * itemProportion;
+        item.discount_amount = itemDiscount;
+        item.subtotal = item.original_subtotal - itemDiscount;
+        item.discount_percentage = (itemDiscount / item.original_subtotal) * 100;
+      });
+    }
 
     setCart([...cartWithoutThisOffer, ...newItems]);
     closeOfferDialog();
@@ -717,6 +743,7 @@ const DemandOrdersPage = () => {
         ...(offer && {
           offer_id: offer._id,
           offer_name: offer.name,
+          offer_type: offer.config?.type || 'DISCOUNT',
           discount_percentage: discountPercentage,
           discount_amount: discountAmount,
           original_subtotal: originalSubtotal,
@@ -901,12 +928,13 @@ const DemandOrdersPage = () => {
             sku: item.sku,
             quantity: item.quantity,
             unit_price: item.unit_price,
-            subtotal: item.unit_price * item.quantity, // Required by model
-            // Include offer details if this item is from an offer
-            ...(item.offer_id && {
+            subtotal: item.subtotal || (item.unit_price * item.quantity), // Use existing subtotal or calculate
+            // Include offer details if this item has discount/offer info
+            ...((item.offer_id || item.offer_name || item.discount_amount || item.original_subtotal) && {
               offer_details: {
                 offer_id: item.offer_id,
                 offer_name: item.offer_name,
+                offer_type: item.offer_type,
                 discount_percentage: item.discount_percentage,
                 discount_amount: item.discount_amount,
                 original_subtotal: item.original_subtotal,
@@ -3017,7 +3045,7 @@ const DemandOrdersPage = () => {
                     <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1.5 }}>
                       <Typography variant="body1" fontWeight={600}>Order Total:</Typography>
                       <Typography variant="body1" fontWeight={600}>
-                        ৳{financialSummary.orderTotal.toFixed(2)}
+                        ৳{(financialSummary?.orderTotal || 0).toFixed(2)}
                       </Typography>
                     </Box>
                     <Divider sx={{ my: 1.5 }} />
@@ -3025,24 +3053,23 @@ const DemandOrdersPage = () => {
                     {/* Available Balance */}
                     <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
                       <Typography variant="body2" color="text.secondary">Available Balance:</Typography>
-                      <Typography variant="body2" color={financialSummary.availableBalance >= 0 ? "success.main" : "error.main"}>
-                        ৳{financialSummary.availableBalance.toFixed(2)}
-                      </Typography>
-                    </Box>
-                    
-                    {/* Remaining Amount */}
-                    <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
-                      <Typography variant="body2" color="text.secondary">Remaining Amount:</Typography>
-                      <Typography variant="body2">
-                        ৳{financialSummary.remainingAmount.toFixed(2)}
-                      </Typography>
-                    </Box>
-                    
-                    {/* Unapproved Payments */}
+                      <Typography variant="body2" color={(financialSummary?.availableBalance || 0) >= 0 ? "success.main" : "error.main"}>
+                        ৳{(financialSummary?.availableBalance || 0).toFixed(2)}
+                  </Typography>
+                </Box>
+                
+                {/* Remaining Amount */}
+                <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
+                  <Typography variant="body2" color="text.secondary">Remaining Amount:</Typography>
+                  <Typography variant="body2">
+                    ৳{(financialSummary?.remainingAmount || 0).toFixed(2)}
+                  </Typography>
+                </Box>
+                                    {/* Unapproved Payments */}
                     <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
                       <Typography variant="body2" color="text.secondary">Unapproved Payments:</Typography>
                       <Typography variant="body2" color="warning.main">
-                        ৳{financialSummary.unapprovedPayments.toFixed(2)}
+                        ৳{(financialSummary?.unapprovedPayments || 0).toFixed(2)}
                       </Typography>
                     </Box>
                     
@@ -3052,7 +3079,7 @@ const DemandOrdersPage = () => {
                     <Box sx={{ display: "flex", justifyContent: "space-between", mt: 1 }}>
                       <Typography variant="h6" color="primary">Due Amount:</Typography>
                       <Typography variant="h6" color="primary">
-                        ৳{financialSummary.dueAmount.toFixed(2)}
+                        ৳{(financialSummary?.dueAmount || 0).toFixed(2)}
                       </Typography>
                     </Box>
                   </Box>
@@ -3099,11 +3126,11 @@ const DemandOrdersPage = () => {
                             </TableCell>
                             <TableCell>
                               <Chip 
-                                label={payment.approval_status.replace(/_/g, ' ')} 
+                                label={(payment.status || 'pending').replace(/_/g, ' ')} 
                                 size="small"
                                 color={
-                                  payment.approval_status === 'approved' ? 'success' :
-                                  payment.approval_status === 'cancelled' ? 'error' :
+                                  payment.status === 'approved' ? 'success' :
+                                  payment.status === 'cancelled' ? 'error' :
                                   'warning'
                                 }
                               />
@@ -3141,6 +3168,235 @@ const DemandOrdersPage = () => {
                       </TableBody>
                     </Table>
                   </TableContainer>
+                </>
+              )}
+
+              {/* Discount and Free Products Summary */}
+              {selectedOrder && selectedOrder.items && (
+                <>
+                  <Divider sx={{ my: 3 }} />
+                  <Typography variant="h6" sx={{ mb: 2 }}>
+                    Offers Summary
+                  </Typography>
+                  {(() => {
+                    console.log('🚨🚨🚨 ORDER DETAILS OFFERS SUMMARY RENDERING 🚨🚨🚨');
+                    console.log('🔍 RAW ORDER ITEMS:', selectedOrder.items);
+                    console.log('🔍 Number of items:', selectedOrder.items.length);
+                    selectedOrder.items.forEach((item, idx) => {
+                      console.log(`Item ${idx}:`, {
+                        sku: item.sku,
+                        quantity: item.quantity,
+                        unit_price: item.unit_price,
+                        subtotal: item.subtotal,
+                        has_offer_details: !!item.offer_details,
+                        offer_id: item.offer_details?.offer_id,
+                        offer_name: item.offer_details?.offer_name,
+                        discount_amount: item.offer_details?.discount_amount,
+                        original_subtotal: item.offer_details?.original_subtotal,
+                        calculated_discount: item.offer_details?.original_subtotal 
+                          ? (item.offer_details.original_subtotal - item.subtotal)
+                          : 0,
+                      });
+                    });
+                    // Reconstruct cart items with offer details (same as editDraftOrder)
+                    const cartItems: CartItem[] = selectedOrder.items.map((item) => ({
+                      source: item.source,
+                      source_id: item.source_id,
+                      sku: item.sku,
+                      quantity: item.quantity,
+                      unit_price: item.unit_price,
+                      subtotal: item.subtotal,
+                      name: item.sku,
+                      available_quantity: 0,
+                      // Include offer details if ANY offer field exists
+                      ...(item.offer_details && (item.offer_details.offer_id || item.offer_details.offer_name) && {
+                        offer_id: item.offer_details.offer_id,
+                        offer_name: item.offer_details.offer_name,
+                        offer_type: item.offer_details.offer_type,
+                        discount_percentage: item.offer_details.discount_percentage,
+                        discount_amount: item.offer_details.discount_amount,
+                        original_subtotal: item.offer_details.original_subtotal,
+                      }),
+                    }));
+
+                    // Group cart items by offer_id or offer_name (same logic as sidebar)
+                    const groups: Record<string, { offer: any; items: CartItem[] }> = {};
+                    cartItems.forEach((item) => {
+                      const key = item.offer_id?.toString() || item.offer_name || 'no-offer';
+                      if (!groups[key]) {
+                        groups[key] = {
+                          offer: (item.offer_id || item.offer_name) ? { _id: item.offer_id, name: item.offer_name, config: { type: item.offer_type } } : null,
+                          items: [],
+                        };
+                      }
+                      groups[key].items.push(item);
+                    });
+
+                    // Calculate discount from saved subtotals
+                    const discountBreakdown: Array<{ offerName: string; discountAmount: number; items: CartItem[] }> = [];
+                    Object.values(groups).forEach(({ offer, items }) => {
+                      let groupOriginal = 0;
+                      let groupActual = 0;
+                      items.forEach(item => {
+                        groupOriginal += (item.original_subtotal || item.unit_price * item.quantity);
+                        groupActual += item.subtotal;
+                      });
+                      const discountAmount = groupOriginal - groupActual;
+                      if (discountAmount > 0) {
+                        discountBreakdown.push({
+                          offerName: offer?.name || 'Regular Discount',
+                          discountAmount: discountAmount,
+                          items: items,
+                        });
+                      }
+                    });
+
+                    const totalDiscount = discountBreakdown.reduce((sum, d) => sum + d.discountAmount, 0);
+                    const offers = discountBreakdown.map(d => ({
+                      offerName: d.offerName,
+                      offerType: 'DISCOUNT',
+                      items: d.items,
+                      totalDiscount: d.discountAmount,
+                      totalFreeValue: 0,
+                    }));
+                    const totalFreeValue = 0;
+                    const discountOffers = offers;
+                    const freeProductOffers: any[] = [];
+
+                    if (offers.length === 0) {
+                      return (
+                        <Alert severity="info">No offers applied to this order</Alert>
+                      );
+                    }
+
+                    return (
+                      <Box>
+                        {/* Summary Cards */}
+                        <Grid2 container spacing={2} sx={{ mb: 2 }}>
+                          <Grid2 size={{ xs: 12, sm: 6 }}>
+                            <Paper sx={{ p: 2, bgcolor: 'success.50', border: '1px solid', borderColor: 'success.200' }}>
+                              <Typography variant="caption" color="text.secondary">Total Discount</Typography>
+                              <Typography variant="h6" color="success.dark">৳{totalDiscount.toFixed(2)}</Typography>
+                              <Typography variant="caption">{discountOffers.length} discount offer(s)</Typography>
+                            </Paper>
+                          </Grid2>
+                          <Grid2 size={{ xs: 12, sm: 6 }}>
+                            <Paper sx={{ p: 2, bgcolor: 'secondary.50', border: '1px solid', borderColor: 'secondary.200' }}>
+                              <Typography variant="caption" color="text.secondary">Free Products Value</Typography>
+                              <Typography variant="h6" color="secondary.dark">৳{totalFreeValue.toFixed(2)}</Typography>
+                              <Typography variant="caption">{freeProductOffers.length} free product offer(s)</Typography>
+                            </Paper>
+                          </Grid2>
+                        </Grid2>
+
+                        {/* Offers Breakdown */}
+                        <Typography variant="subtitle2" fontWeight="bold" sx={{ mb: 1 }}>
+                          Offers Applied
+                        </Typography>
+                        <List dense>
+                          {offers.map((offer, idx) => (
+                            <ListItem key={idx} sx={{ py: 1, px: 0, alignItems: 'flex-start', borderBottom: '1px solid', borderColor: 'divider' }}>
+                              <ListItemText
+                                primary={
+                                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                      <Typography variant="body2" fontWeight="medium">
+                                        {offer.offerName}
+                                      </Typography>
+                                      <Chip label={offer.offerType} size="small" color="primary" />
+                                    </Box>
+                                    <Typography variant="body2" fontWeight="bold" color={offer.totalDiscount > 0 ? 'success.dark' : 'secondary.dark'}>
+                                      {offer.totalDiscount > 0 && `-৳${offer.totalDiscount.toFixed(2)}`}
+                                      {offer.totalFreeValue > 0 && `৳${offer.totalFreeValue.toFixed(2)} free`}
+                                    </Typography>
+                                  </Box>
+                                }
+                                secondary={
+                                  <Box>
+                                    <Typography variant="caption" color="text.secondary" display="block">
+                                      {offer.items.length} item(s) in this offer
+                                    </Typography>
+                                    <Box sx={{ mt: 1 }}>
+                                      {offer.items.map((item, itemIdx) => {
+                                        const originalSubtotal = (item as any).original_subtotal || item.offer_details?.original_subtotal || item.unit_price * item.quantity;
+                                        const actualSubtotal = item.subtotal || 0;
+                                        const itemDiscount = originalSubtotal - actualSubtotal;
+                                        return (
+                                          <Box key={itemIdx} sx={{ display: 'flex', justifyContent: 'space-between', py: 0.25 }}>
+                                            <Typography variant="caption" color="text.secondary">
+                                              {item.sku} × {item.quantity}
+                                            </Typography>
+                                            <Typography variant="caption" color="text.secondary">
+                                              {actualSubtotal === 0 || item.offer_details?.is_free_in_bundle ? 'Free' : itemDiscount > 0 ? `-৳${itemDiscount.toFixed(2)}` : ''}
+                                            </Typography>
+                                          </Box>
+                                        );
+                                      })}
+                                    </Box>
+                                  </Box>
+                                }
+                                secondaryTypographyProps={{ component: 'div' }}
+                              />
+                            </ListItem>
+                          ))}
+                        </List>
+                      </Box>
+                    );
+                  })()}
+                </>
+              )}
+
+              {/* Approval History */}
+              {selectedOrder && selectedOrder.approval_history && selectedOrder.approval_history.length > 0 && (
+                <>
+                  <Divider sx={{ my: 3 }} />
+                  <Typography variant="subtitle1" gutterBottom fontWeight="bold">
+                    Order History
+                  </Typography>
+                  <Timeline position="right">
+                    {[...selectedOrder.approval_history].reverse().map((history, index) => (
+                      <TimelineItem key={index}>
+                        <TimelineOppositeContent color="text.secondary" sx={{ flex: 0.3 }}>
+                          <Typography variant="caption">
+                            {new Date(history.timestamp).toLocaleString()}
+                          </Typography>
+                        </TimelineOppositeContent>
+                        <TimelineSeparator>
+                          <TimelineDot
+                            color={
+                              history.action === "submit" || history.action === "submitted"
+                                ? "primary"
+                                : history.action === "forward" || history.action === "forwarded"
+                                ? "info"
+                                : history.action === "return"
+                                ? "warning"
+                                : history.action === "modify" || history.action === "schedule"
+                                ? "warning"
+                                : history.action === "approve" || history.action === "approved"
+                                ? "success"
+                                : history.action === "reject" || history.action === "rejected" || history.action === "cancel"
+                                ? "error"
+                                : "grey"
+                            }
+                          />
+                          {index < [...selectedOrder.approval_history].reverse().length - 1 && <TimelineConnector />}
+                        </TimelineSeparator>
+                        <TimelineContent>
+                          <Typography variant="subtitle2" fontWeight="bold">
+                            {history.action.replace(/_/g, ' ').toUpperCase()}
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            By: {history.performed_by_name || 'N/A'} ({history.performed_by_role || 'N/A'})
+                          </Typography>
+                          {history.comments && (
+                            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                              Note: {history.comments}
+                            </Typography>
+                          )}
+                        </TimelineContent>
+                      </TimelineItem>
+                    ))}
+                  </Timeline>
                 </>
               )}
             </>

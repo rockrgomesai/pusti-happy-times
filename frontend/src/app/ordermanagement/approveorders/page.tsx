@@ -40,6 +40,7 @@ import {
   Drawer,
   List,
   ListItem,
+  ListItemText,
 } from "@mui/material";
 import {
   Visibility,
@@ -59,6 +60,7 @@ import {
   ExpandMore,
   AddShoppingCart,
   Receipt,
+  CheckCircle,
 } from "@mui/icons-material";
 import {
   Timeline,
@@ -238,6 +240,11 @@ const ApproveOrdersPage = () => {
   const [editReasonDialog, setEditReasonDialog] = useState(false);
   const [editReason, setEditReason] = useState("");
 
+  // Approve DO dialog for Finance
+  const [approveDialogOpen, setApproveDialogOpen] = useState(false);
+  const [unapprovedPayments, setUnapprovedPayments] = useState<any[]>([]);
+  const [approveComments, setApproveComments] = useState("");
+
   // Fetch orders pending approval
   const fetchOrders = async () => {
     try {
@@ -261,8 +268,9 @@ const ApproveOrdersPage = () => {
   const fetchCurrentUserRole = async () => {
     try {
       const response = await api.get("/auth/me");
-      const roleName = response.data.data.role_id?.role || null;
+      const roleName = response.data.data.user?.role?.role || null;
       setCurrentUserRole(roleName);
+      console.log("Current user role:", roleName);
     } catch (err: any) {
       console.error("Failed to fetch user role:", err);
     }
@@ -587,34 +595,50 @@ const ApproveOrdersPage = () => {
     // Remove all existing items for this offer from cart
     const cartWithoutThisOffer = cart.filter(item => item.offer_id !== selectedOffer._id);
 
-    // Add new selections
+    // Add new selections (calculate group discount and distribute)
     const newItems: CartItem[] = [];
+    let groupOriginalTotal = 0;
+    
+    // First pass: create items with original prices
     Object.entries(offerSelections).forEach(([productId, quantity]) => {
       const product = offerProducts.find(p => p._id === productId);
       if (product && quantity > 0) {
         const price = product.db_price || product.mrp || 0;
         const originalSubtotal = price * quantity;
-        const discountPercentage = selectedOffer.config?.discountPercentage || 0;
-        const discountAmount = selectedOffer.config?.discountAmount || (originalSubtotal * discountPercentage / 100);
-        const subtotal = originalSubtotal - discountAmount;
-
+        groupOriginalTotal += originalSubtotal;
+        
         newItems.push({
           source: "product",
           source_id: product._id,
           sku: product.sku,
           quantity: quantity,
           unit_price: price,
-          subtotal: subtotal,
+          subtotal: originalSubtotal, // Will be updated after group calculation
           name: product.short_description,
           available_quantity: product.available_quantity,
           offer_id: selectedOffer._id,
           offer_name: selectedOffer.name,
-          discount_percentage: discountPercentage,
-          discount_amount: discountAmount,
+          offer_type: selectedOffer.config?.type || 'DISCOUNT',
+          discount_percentage: 0, // Will be updated
+          discount_amount: 0, // Will be updated
           original_subtotal: originalSubtotal,
         });
       }
     });
+
+    // Calculate group-level discount
+    const groupDiscount = calculateOfferGroupDiscount(newItems, selectedOffer);
+    
+    // Second pass: distribute group discount proportionally across items
+    if (groupDiscount.discountAmount > 0 && groupOriginalTotal > 0) {
+      newItems.forEach(item => {
+        const itemProportion = item.original_subtotal / groupOriginalTotal;
+        const itemDiscount = groupDiscount.discountAmount * itemProportion;
+        item.discount_amount = itemDiscount;
+        item.subtotal = item.original_subtotal - itemDiscount;
+        item.discount_percentage = (itemDiscount / item.original_subtotal) * 100;
+      });
+    }
 
     setCart([...cartWithoutThisOffer, ...newItems]);
     closeOfferDialog();
@@ -688,6 +712,33 @@ const ApproveOrdersPage = () => {
       fetchOrders();
     } catch (err: any) {
       setError(err.response?.data?.message || "Failed to cancel order");
+    }
+  };
+
+  // Handle approve DO (Finance only)
+  const handleApproveDO = async (forceApprove: boolean = false) => {
+    if (!selectedOrder) return;
+
+    try {
+      const response = await api.post(`/ordermanagement/demandorders/${selectedOrder._id}/approve`, {
+        comments: approveComments,
+        force_approve: forceApprove,
+      });
+
+      setSuccess(`Order ${selectedOrder.order_number} approved and forwarded to Distribution successfully!`);
+      setApproveDialogOpen(false);
+      setViewOrderDialog(false);
+      setApproveComments("");
+      setUnapprovedPayments([]);
+      fetchOrders();
+    } catch (err: any) {
+      if (err.response?.data?.require_confirmation) {
+        // Show confirmation dialog with unapproved payments
+        setUnapprovedPayments(err.response.data.unapproved_payments || []);
+        setApproveDialogOpen(true);
+      } else {
+        setError(err.response?.data?.message || "Failed to approve order");
+      }
     }
   };
 
@@ -873,15 +924,17 @@ const ApproveOrdersPage = () => {
                           <Edit />
                         </IconButton>
                       </Tooltip>
-                      <Tooltip title="Forward to RSM">
-                        <IconButton
-                          size="small"
-                          color="success"
-                          onClick={() => handleForwardToRSM(order._id)}
-                        >
-                          <Send />
-                        </IconButton>
-                      </Tooltip>
+                      {currentUserRole === "ASM" && (
+                        <Tooltip title="Forward to RSM">
+                          <IconButton
+                            size="small"
+                            color="success"
+                            onClick={() => handleForwardToRSM(order._id)}
+                          >
+                            <Send />
+                          </IconButton>
+                        </Tooltip>
+                      )}
                       <Tooltip title="Cancel Order">
                         <IconButton
                           size="small"
@@ -2065,7 +2118,39 @@ const ApproveOrdersPage = () => {
                             />
                           </TableCell>
                           <TableCell align="center">
-                            <Tooltip title="Edit Payment">
+                            {/* Approve Payment Button (Finance only) - DO-attached payments can be approved by Finance */}
+                            {currentUserRole === "Finance" && 
+                             payment.status !== "approved" && 
+                             payment.status !== "cancelled" && (
+                              <Tooltip title="Approve Payment">
+                                <IconButton
+                                  size="small"
+                                  color="success"
+                                  onClick={async () => {
+                                    if (!confirm(`Approve payment of ৳${payment.amount?.toLocaleString()} from ${payment.company_bank?.name || payment.depositor_bank?.name || 'Bank'}?\n\nTransaction ID: ${payment.transaction_id}\nDeposit Date: ${new Date(payment.payment_date).toLocaleDateString()}\n\nThis will create a credit entry in the distributor's ledger.`)) {
+                                      return;
+                                    }
+                                    
+                                    // Clear any previous errors
+                                    setError(null);
+                                    
+                                    try {
+                                      await api.post(`/ordermanagement/collections/${payment._id}/approve`, {
+                                        comments: "Approved by Finance",
+                                      });
+                                      setSuccess("Payment approved successfully! Credit entry created in distributor ledger.");
+                                      if (selectedOrder?._id) {
+                                        fetchFinancialSummary(selectedOrder._id);
+                                      }
+                                    } catch (err: any) {
+                                      setError(err.response?.data?.message || "Failed to approve payment");
+                                    }
+                                  }}
+                                >
+                                  <CheckCircle fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                            )}                            <Tooltip title="Edit Payment">
                               <span>
                                 <IconButton
                                   size="small"
@@ -2126,6 +2211,180 @@ const ApproveOrdersPage = () => {
                 <Alert severity="info">No payments recorded for this order yet.</Alert>
               )}
 
+              {/* Discount and Free Products Summary */}
+              {selectedOrder && selectedOrder.items && (() => {
+                console.log('🚨🚨🚨 ORDER DETAILS OFFERS SUMMARY RENDERING 🚨🚨🚨');
+                console.log('🔍 RAW ORDER ITEMS:', selectedOrder.items);
+                console.log('🔍 Number of items:', selectedOrder.items.length);
+                selectedOrder.items.forEach((item, idx) => {
+                  console.log(`Item ${idx}:`, {
+                    sku: item.sku,
+                    has_offer_details: !!item.offer_details,
+                    offer_id: item.offer_details?.offer_id,
+                    offer_name: item.offer_details?.offer_name,
+                    discount_amount: item.offer_details?.discount_amount,
+                    original_subtotal: item.offer_details?.original_subtotal,
+                  });
+                });
+                // Reconstruct cart items with offer details (same as editDraftOrder)
+                const cartItems: any[] = selectedOrder.items.map((item) => ({
+                  source: item.source,
+                  source_id: item.source_id,
+                  sku: item.sku,
+                  quantity: item.quantity,
+                  unit_price: item.unit_price,
+                  subtotal: item.subtotal,
+                  name: item.sku,
+                  available_quantity: 0,
+                  // Include offer details if ANY offer field exists
+                  ...(item.offer_details && (item.offer_details.offer_id || item.offer_details.offer_name) && {
+                    offer_id: item.offer_details.offer_id,
+                    offer_name: item.offer_details.offer_name,
+                    offer_type: item.offer_details.offer_type,
+                    discount_percentage: item.offer_details.discount_percentage,
+                    discount_amount: item.offer_details.discount_amount,
+                    original_subtotal: item.offer_details.original_subtotal,
+                  }),
+                }));
+
+                // Group cart items by offer_id or offer_name (same logic as sidebar)
+                const groups: Record<string, { offer: any; items: any[] }> = {};
+                cartItems.forEach((item) => {
+                  const key = item.offer_id?.toString() || item.offer_name || 'no-offer';
+                  if (!groups[key]) {
+                    groups[key] = {
+                      offer: (item.offer_id || item.offer_name) ? { _id: item.offer_id, name: item.offer_name, config: { type: item.offer_type } } : null,
+                      items: [],
+                    };
+                  }
+                  groups[key].items.push(item);
+                });
+                console.log('🔍 DEBUG Groups:', groups);
+                console.log('🔍 DEBUG Cart Items:', cartItems);
+
+                // Calculate discount from saved subtotals
+                const discountBreakdown: Array<{ offerName: string; discountAmount: number; items: any[] }> = [];
+                Object.values(groups).forEach(({ offer, items }) => {
+                  let groupOriginal = 0;
+                  let groupActual = 0;
+                  items.forEach(item => {
+                    groupOriginal += (item.original_subtotal || item.unit_price * item.quantity);
+                    groupActual += item.subtotal;
+                  });
+                  const discountAmount = groupOriginal - groupActual;
+                  console.log(`🔍 Group "${offer?.name || 'no-offer'}": original=${groupOriginal}, actual=${groupActual}, discount=${discountAmount}`);
+                  if (discountAmount > 0) {
+                    discountBreakdown.push({
+                      offerName: offer?.name || 'Regular Discount',
+                      discountAmount: discountAmount,
+                      items: items,
+                    });
+                  }
+                });
+                console.log('🔍 DEBUG Discount Breakdown:', discountBreakdown);
+
+                const totalDiscount = discountBreakdown.reduce((sum, d) => sum + d.discountAmount, 0);
+                const offers = discountBreakdown.map(d => ({
+                  offerName: d.offerName,
+                  offerType: 'DISCOUNT',
+                  items: d.items,
+                  totalDiscount: d.discountAmount,
+                  totalFreeValue: 0,
+                }));
+                const totalFreeValue = 0;
+                const discountOffers = offers;
+                const freeProductOffers: any[] = [];
+
+                if (offers.length === 0) {
+                  return null;
+                }
+
+                return (
+                  <>
+                    <Divider sx={{ my: 3 }} />
+                    <Typography variant="h6" sx={{ mb: 2 }}>
+                      Offers Summary
+                    </Typography>
+                    <Box>
+                      {/* Summary Cards */}
+                      <Grid2 container spacing={2} sx={{ mb: 2 }}>
+                        <Grid2 size={{ xs: 12, sm: 6 }}>
+                          <Paper sx={{ p: 2, bgcolor: 'success.50', border: '1px solid', borderColor: 'success.200' }}>
+                            <Typography variant="caption" color="text.secondary">Total Discount</Typography>
+                            <Typography variant="h6" color="success.dark">৳{totalDiscount.toFixed(2)}</Typography>
+                            <Typography variant="caption">{discountOffers.length} discount offer(s)</Typography>
+                          </Paper>
+                        </Grid2>
+                        <Grid2 size={{ xs: 12, sm: 6 }}>
+                          <Paper sx={{ p: 2, bgcolor: 'secondary.50', border: '1px solid', borderColor: 'secondary.200' }}>
+                            <Typography variant="caption" color="text.secondary">Free Products Value</Typography>
+                            <Typography variant="h6" color="secondary.dark">৳{totalFreeValue.toFixed(2)}</Typography>
+                            <Typography variant="caption">{freeProductOffers.length} free product offer(s)</Typography>
+                          </Paper>
+                        </Grid2>
+                      </Grid2>
+
+                      {/* Offers Breakdown */}
+                      <Typography variant="subtitle2" fontWeight="bold" sx={{ mb: 1 }}>
+                        Offers Applied
+                      </Typography>
+                      <List dense>
+                        {offers.map((offer, idx) => (
+                          <ListItem key={idx} sx={{ py: 1, px: 0, alignItems: 'flex-start', borderBottom: '1px solid', borderColor: 'divider' }}>
+                            <ListItemText
+                              primary={
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
+                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                    <Typography variant="body2" fontWeight="medium">
+                                      {offer.offerName}
+                                    </Typography>
+                                    <Chip label={offer.offerType} size="small" color="primary" />
+                                  </Box>
+                                  <Typography variant="body2" fontWeight="bold" color={offer.totalDiscount > 0 ? 'success.dark' : 'secondary.dark'}>
+                                    {offer.totalDiscount > 0 && `-৳${offer.totalDiscount.toFixed(2)}`}
+                                    {offer.totalFreeValue > 0 && `৳${offer.totalFreeValue.toFixed(2)} free`}
+                                  </Typography>
+                                </Box>
+                              }
+                              secondary={
+                                <Box>
+                                  <Typography variant="caption" color="text.secondary" display="block">
+                                    {offer.items.length} item(s) in this offer
+                                  </Typography>
+                                  <Box sx={{ mt: 1 }}>
+                                    {offer.items.map((item, itemIdx) => (
+                                      <Box key={itemIdx} sx={{ display: 'flex', justifyContent: 'space-between', py: 0.25 }}>
+                                        <Typography variant="caption" color="text.secondary">
+                                          {item.sku} × {item.quantity}
+                                        </Typography>
+                                        <Typography variant="caption" color="text.secondary">
+                                          {(() => {
+                                            const originalSubtotal = (item as any).original_subtotal || item.offer_details?.original_subtotal || item.unit_price * item.quantity;
+                                            const actualSubtotal = item.subtotal || 0;
+                                            const itemDiscount = originalSubtotal - actualSubtotal;
+                                            if (actualSubtotal === 0 || item.offer_details?.is_free_in_bundle) {
+                                              return 'Free';
+                                            } else if (itemDiscount > 0) {
+                                              return `-৳${itemDiscount.toFixed(2)}`;
+                                            }
+                                            return '';
+                                          })()}
+                                        </Typography>
+                                      </Box>
+                                    ))}
+                                  </Box>
+                                </Box>
+                              }
+                              secondaryTypographyProps={{ component: 'div' }}
+                            />
+                          </ListItem>
+                        ))}
+                      </List>
+                    </Box>
+                  </>
+                );
+              })()}
+
               <Divider sx={{ my: 3 }} />
 
               {/* Order History Timeline */}
@@ -2144,17 +2403,17 @@ const ApproveOrdersPage = () => {
                       <TimelineSeparator>
                         <TimelineDot
                           color={
-                            history.action === "submit"
+                            history.action === "submit" || history.action === "submitted"
                               ? "primary"
-                              : history.action === "forward"
+                              : history.action === "forward" || history.action === "forwarded"
                               ? "info"
                               : history.action === "return"
                               ? "warning"
-                              : history.action === "modify"
+                              : history.action === "modify" || history.action === "schedule"
                               ? "warning"
-                              : history.action === "approve"
+                              : history.action === "approve" || history.action === "approved"
                               ? "success"
-                              : history.action === "reject" || history.action === "cancel"
+                              : history.action === "reject" || history.action === "rejected" || history.action === "cancel"
                               ? "error"
                               : "grey"
                           }
@@ -2163,61 +2422,15 @@ const ApproveOrdersPage = () => {
                       </TimelineSeparator>
                       <TimelineContent>
                         <Typography variant="subtitle2" fontWeight="bold">
-                          {history.action === "submit"
-                            ? "Order Submitted"
-                            : history.action === "forward"
-                            ? (() => {
-                                // Check if comments contain the actual target role
-                                if (history.comments?.includes("Order Management")) return "Forwarded to Order Management";
-                                if (history.comments?.includes("Finance")) return "Forwarded to Finance";
-                                if (history.comments?.includes("Distribution")) return "Forwarded to Distribution";
-                                if (history.comments?.includes("Sales Admin")) return "Forwarded to Sales Admin";
-                                if (history.comments?.includes("RSM")) return "Forwarded to RSM";
-                                if (history.comments?.includes("ZSM")) return "Forwarded to ZSM";
-                                if (history.comments?.includes("NSM")) return "Forwarded to NSM";
-                                
-                                // Otherwise use to_status
-                                if (history.to_status === "forwarded_to_order_management") return "Forwarded to Order Management";
-                                if (history.to_status === "forwarded_to_finance") return "Forwarded to Finance";
-                                if (history.to_status === "forwarded_to_distribution") return "Forwarded to Distribution";
-                                if (history.to_status === "forwarded_to_sales_admin") return "Forwarded to Sales Admin";
-                                if (history.to_status === "forwarded_to_rsm") return "Forwarded to RSM";
-                                if (history.to_status === "forwarded_to_zsm") return "Forwarded to ZSM";
-                                if (history.to_status === "forwarded_to_nsm") return "Forwarded to NSM";
-                                
-                                return "Order Forwarded";
-                              })()
-                            : history.action === "return"
-                            ? "Returned to Sales Admin"
-                            : history.action === "modify"
-                            ? "Order Modified"
-                            : history.action === "approve"
-                            ? "Order Approved"
-                            : history.action === "reject"
-                            ? "Order Rejected"
-                            : history.action === "cancel"
-                            ? "Order Cancelled"
-                            : history.action}
+                          {history.action.replace(/_/g, ' ').toUpperCase()}
                         </Typography>
                         <Typography variant="body2" color="text.secondary">
-                          By: {history.performed_by_role}
+                          By: {history.performed_by_name || 'N/A'} ({history.performed_by_role || 'N/A'})
                         </Typography>
                         {history.comments && (
                           <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
                             Note: {history.comments}
                           </Typography>
-                        )}
-                        {history.action === "modify" && history.changes && history.changes.length > 0 && (
-                          <Box sx={{ mt: 1, p: 1, bgcolor: "action.hover", borderRadius: 1 }}>
-                            <Typography variant="caption" fontWeight="bold">
-                              Changes:
-                            </Typography>
-                            {history.changes.map((change: any, idx: number) => (
-                              <Typography key={idx} variant="caption" display="block">
-                                • {change.field}: {JSON.stringify(change.old_value)} → {JSON.stringify(change.new_value)}
-                              </Typography>
-                            ))}
-                          </Box>
                         )}
                       </TimelineContent>
                     </TimelineItem>
@@ -2268,10 +2481,11 @@ const ApproveOrdersPage = () => {
             return null;
           })()}
           
-          {/* Forward Button (not shown for Distribution) */}
+          {/* Forward Button (not shown for Distribution or Finance) */}
           {(() => {
             const role = currentUserRole || selectedOrder?.current_approver_role;
-            if (role === "Distribution") return null;
+            // Hide for Distribution and Finance roles
+            if (role === "Distribution" || role === "Finance") return null;
             
             return (
               <Button
@@ -2296,9 +2510,26 @@ const ApproveOrdersPage = () => {
                   if (role === "ZSM") return "Forward to NSM";
                   if (role === "Sales Admin") return "Forward to Order Management";
                   if (role === "Order Management") return "Forward to Finance";
-                  if (role === "Finance") return "Forward to Distribution";
                   return "Forward";
                 })()}
+              </Button>
+            );
+          })()}
+
+          {/* Approve DO Button (Finance only) */}
+          {(() => {
+            const role = currentUserRole || selectedOrder?.current_approver_role;
+            if (role !== "Finance") return null;
+            
+            return (
+              <Button
+                onClick={() => handleApproveDO(false)}
+                variant="contained"
+                color="success"
+                startIcon={<Send />}
+                disabled={selectedOrder?.status !== "forwarded_to_finance"}
+              >
+                Approve DO
               </Button>
             );
           })()}
@@ -2346,6 +2577,97 @@ const ApproveOrdersPage = () => {
             disabled={!cancelReason.trim()}
           >
             Confirm Cancellation
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Approve DO Confirmation Dialog (Finance only) */}
+      <Dialog
+        open={approveDialogOpen}
+        onClose={() => {
+          setApproveDialogOpen(false);
+          setUnapprovedPayments([]);
+          setApproveComments("");
+        }}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>
+          <Box display="flex" alignItems="center" gap={1}>
+            <Typography variant="h6" color="warning.main">
+              ⚠️ Approve Order: {selectedOrder?.order_number}
+            </Typography>
+          </Box>
+        </DialogTitle>
+        <DialogContent>
+          <Alert severity="warning" sx={{ mb: 3 }}>
+            <Typography variant="subtitle2" fontWeight="bold" gutterBottom>
+              Unapproved Payments Detected
+            </Typography>
+            <Typography variant="body2">
+              This DO has {unapprovedPayments.length} attached payment(s) that are not yet approved.
+              Do you want to approve this DO without approving all payments?
+            </Typography>
+          </Alert>
+
+          <Typography variant="subtitle2" fontWeight="bold" gutterBottom>
+            Unapproved Payments:
+          </Typography>
+          <TableContainer component={Paper} variant="outlined" sx={{ mb: 3 }}>
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell>Transaction ID</TableCell>
+                  <TableCell align="right">Amount</TableCell>
+                  <TableCell>Status</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {unapprovedPayments.map((payment) => (
+                  <TableRow key={payment.transaction_id}>
+                    <TableCell>{payment.transaction_id}</TableCell>
+                    <TableCell align="right">৳{payment.amount?.toFixed(2)}</TableCell>
+                    <TableCell>
+                      <Chip
+                        label={payment.status.replace(/_/g, " ")}
+                        size="small"
+                        color="warning"
+                      />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+
+          <TextField
+            margin="dense"
+            label="Comments (Optional)"
+            fullWidth
+            multiline
+            rows={3}
+            value={approveComments}
+            onChange={(e) => setApproveComments(e.target.value)}
+            placeholder="Add any comments about this approval..."
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => {
+              setApproveDialogOpen(false);
+              setUnapprovedPayments([]);
+              setApproveComments("");
+            }}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={() => handleApproveDO(true)}
+            color="success"
+            variant="contained"
+            startIcon={<Send />}
+          >
+            Approve Anyway
           </Button>
         </DialogActions>
       </Dialog>

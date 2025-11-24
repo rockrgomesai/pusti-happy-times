@@ -48,10 +48,143 @@ const demandOrderItemSchema = new mongoose.Schema({
     offer_id: mongoose.Schema.Types.ObjectId,
     offer_name: String,
     offer_code: String,
+    offer_type: String, // BOGO, BUNDLE_OFFER, FLAT_DISCOUNT_PCT, etc.
     discount_percentage: Number,
     discount_amount: Number,
     original_subtotal: Number,
+    // Bundle-specific details
+    is_bundle_item: Boolean,
+    bundle_id: String, // Group items belonging to same bundle
+    qty_per_bundle: Number, // How many units of this SKU per bundle
+    is_free_in_bundle: Boolean, // Is this a free item in the bundle?
   },
+
+  // Distribution scheduling fields - Progressive Tracking
+  // For bundle offers: track bundles; for simple offers: track quantities
+  is_bundle_offer: {
+    type: Boolean,
+    default: false,
+  },
+
+  // Bundle-based tracking (for BOGO, BUNDLE_OFFER, etc.)
+  bundle_definition: {
+    bundle_size: Number, // Total items per bundle
+    items: [
+      {
+        sku: String,
+        qty_per_bundle: Number,
+        is_free: Boolean,
+        unit_price: Number,
+      },
+    ],
+  },
+
+  order_bundles: {
+    type: Number,
+    default: 0,
+    min: [0, "Order bundles cannot be negative"],
+  },
+  scheduled_bundles: {
+    type: Number,
+    default: 0,
+    min: [0, "Scheduled bundles cannot be negative"],
+  },
+  unscheduled_bundles: {
+    type: Number,
+    default: function () {
+      return this.order_bundles || 0;
+    },
+  },
+
+  // Quantity-based tracking (for simple discount offers, tiered discounts)
+  scheduled_qty: {
+    type: Number,
+    default: 0,
+    min: [0, "Scheduled quantity cannot be negative"],
+  },
+  unscheduled_qty: {
+    type: Number,
+    default: function () {
+      return this.quantity || 0;
+    },
+  },
+
+  // Pricing locked at order time (for tiered discounts)
+  discount_locked: {
+    type: Boolean,
+    default: true,
+  },
+  original_price: Number,
+  discount_applied_percent: Number,
+  discount_applied_amount: Number,
+
+  // Threshold-based offer tracking (free gift on purchase)
+  threshold_met: Boolean,
+  threshold_amount: Number,
+
+  // Offer breaking tracking
+  is_offer_broken: {
+    type: Boolean,
+    default: false,
+  },
+  break_info: {
+    broken_at: Date,
+    broken_by: mongoose.Schema.Types.ObjectId,
+    reason: String,
+    price_adjustment_required: Boolean,
+    original_price: Number,
+    adjusted_price: Number,
+  },
+
+  // Progressive scheduling records
+  schedules: [
+    {
+      schedule_id: {
+        type: String,
+        default: () => new mongoose.Types.ObjectId().toString(),
+      },
+      // For bundle offers: user inputs bundles, qty is auto-calculated
+      deliver_bundles: Number,
+      deliver_qty: {
+        type: Number,
+        required: true,
+        min: [1, "Deliver quantity must be at least 1"],
+      },
+      // For multi-product bundles: breakdown per SKU
+      deliver_qty_breakdown: {
+        type: Map,
+        of: Number, // { "P1": 20, "P2": 30, "Umb": 10 }
+      },
+      facility_id: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Facility",
+        required: true,
+      },
+      facility_name: String, // Snapshot for display
+      facility_type: String, // "Factory" or "Depot"
+
+      // Pricing snapshot at scheduling time
+      subtotal: Number,
+      discount_applied: Number,
+      final_amount: Number,
+
+      scheduled_at: {
+        type: Date,
+        default: Date.now,
+      },
+      scheduled_by: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+      scheduled_by_name: String, // Snapshot
+
+      notes: {
+        type: String,
+        trim: true,
+        maxlength: 500,
+      },
+    },
+  ],
 });
 
 const demandOrderSchema = new mongoose.Schema(
@@ -70,7 +203,16 @@ const demandOrderSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["draft", "submitted", "approved", "rejected", "cancelled"],
+      enum: [
+        "draft",
+        "submitted",
+        "approved",
+        "rejected",
+        "cancelled",
+        "forwarded_to_distribution",
+        "scheduling_in_progress",
+        "scheduling_completed",
+      ],
       default: "draft",
       required: true,
       index: true,
@@ -112,7 +254,7 @@ const demandOrderSchema = new mongoose.Schema(
       {
         action: {
           type: String,
-          enum: ["submit", "forward", "modify", "approve", "reject", "cancel"],
+          enum: ["submit", "forward", "modify", "approve", "reject", "cancel", "schedule"],
           required: true,
         },
         performed_by: {

@@ -150,7 +150,7 @@ const distributorSchema = new Schema(
     },
     delivery_depot_id: {
       type: Schema.Types.ObjectId,
-      ref: "Depot",
+      ref: "Facility",
       default: null,
     },
     proprietor: {
@@ -304,8 +304,9 @@ distributorSchema.pre("validate", async function preValidate(next) {
 
 distributorSchema.pre("save", function preSave(next) {
   if (Array.isArray(this.skus_exclude)) {
-    this.skus_exclude = this.skus_exclude.filter((id, index, array) =>
-      array.findIndex((candidate) => candidate.toString() === id.toString()) === index
+    this.skus_exclude = this.skus_exclude.filter(
+      (id, index, array) =>
+        array.findIndex((candidate) => candidate.toString() === id.toString()) === index
     );
   }
   next();
@@ -320,8 +321,9 @@ distributorSchema.pre("findOneAndUpdate", async function preFindOneAndUpdate(nex
       const normalized = Array.isArray(modifications.skus_exclude)
         ? modifications.skus_exclude
         : [modifications.skus_exclude];
-      const deduped = normalized.filter((candidate, index, source) =>
-        source.findIndex((entry) => entry.toString() === candidate.toString()) === index
+      const deduped = normalized.filter(
+        (candidate, index, source) =>
+          source.findIndex((entry) => entry.toString() === candidate.toString()) === index
       );
       modifications.skus_exclude = deduped;
     }
@@ -330,8 +332,7 @@ distributorSchema.pre("findOneAndUpdate", async function preFindOneAndUpdate(nex
       modifications.product_segment = [...new Set(modifications.product_segment)];
     }
 
-    const dbPointId =
-      modifications.db_point_id || (update.$set && update.$set.db_point_id);
+    const dbPointId = modifications.db_point_id || (update.$set && update.$set.db_point_id);
 
     if (dbPointId) {
       const Territory = mongoose.model("Territory");

@@ -42,6 +42,8 @@ const inventoryRequisitionsRoutes = require("./inventory/requisitions");
 const customerLedgerRoutes = require("./finance/customerledger");
 const demandOrdersRoutes = require("./ordermanagement/demandorders");
 const collectionsRoutes = require("./ordermanagement/collections");
+const distributionRoutes = require("./ordermanagement/distribution");
+const approveSchedulesRoutes = require("./ordermanagement/approveschedules");
 
 const router = express.Router();
 
@@ -365,6 +367,22 @@ router.use("/ordermanagement/demandorders", demandOrdersRoutes);
  * @access  Private (Distributor role only)
  */
 router.use("/ordermanagement/collections", collectionsRoutes);
+
+/**
+ * Distribution Routes
+ * @route   /api/ordermanagement/distribution
+ * @desc    Delivery scheduling for approved demand orders
+ * @access  Private (Distribution role only)
+ */
+router.use("/ordermanagement/distribution", distributionRoutes);
+
+/**
+ * Approve Schedules Routes
+ * @route   /api/ordermanagement/approveschedules
+ * @desc    Finance approval of scheduled orders
+ * @access  Private (Finance role only)
+ */
+router.use("/ordermanagement/approveschedules", approveSchedulesRoutes);
 
 /**
  * API Route Documentation Helper

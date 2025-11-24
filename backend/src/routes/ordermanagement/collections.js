@@ -820,10 +820,16 @@ router.post(
         });
       }
 
-      if (collection.approval_status !== "forwarded_to_finance") {
+      // Finance can approve payments in two scenarios:
+      // 1. Independent payments: Must be "forwarded_to_finance" (reached through approval chain)
+      // 2. DO-attached payments: Can be "pending" or "forwarded_to_finance" (Finance approves when DO reaches them)
+      // Finance is the FINAL approver for both types (Distribution only handles DO fulfillment, not payment approval)
+      const validStatusesForApproval = ["pending", "forwarded_to_finance"];
+
+      if (!validStatusesForApproval.includes(collection.approval_status)) {
         return res.status(400).json({
           success: false,
-          message: "Collection must be forwarded to Finance before approval",
+          message: `Cannot approve payment with status: ${collection.approval_status}. Only pending or forwarded_to_finance payments can be approved.`,
         });
       }
 
@@ -853,13 +859,13 @@ router.post(
       const CustomerLedger = require("../../models/CustomerLedger");
       const ledgerEntry = await CustomerLedger.create({
         distributor_id: collection.distributor_id._id,
-        particulars: `Payment ${collection.payment_method} - ${collection.transaction_id}${collection.do_no ? ` (DO: ${collection.do_no})` : ""}`,
+        particulars: `Receipt #${collection.transaction_id}`,
         transaction_date: collection.deposit_date,
-        voucher_type: "COL",
+        voucher_type: "Rec",
         voucher_no: collection.transaction_id,
         debit: 0,
         credit: parseFloat(collection.deposit_amount.toString()),
-        note: collection.note || "",
+        note: "",
         created_by: user._id,
       });
 

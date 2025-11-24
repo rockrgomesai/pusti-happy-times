@@ -702,21 +702,22 @@ router.get(
       res.json({
         success: true,
         data: {
-          order_total: parseFloat(orderTotal.toFixed(2)),
-          available_balance: parseFloat(availableBalance.toFixed(2)),
-          remaining_amount: parseFloat(remainingAmount.toFixed(2)),
-          unapproved_payments: parseFloat(unapprovedPayments.toFixed(2)),
-          due_amount: parseFloat(dueAmount.toFixed(2)),
+          orderTotal: parseFloat(orderTotal.toFixed(2)),
+          availableBalance: parseFloat(availableBalance.toFixed(2)),
+          remainingAmount: parseFloat(remainingAmount.toFixed(2)),
+          unapprovedPayments: parseFloat(unapprovedPayments.toFixed(2)),
+          dueAmount: parseFloat(dueAmount.toFixed(2)),
           payments: payments.map((p) => ({
             _id: p._id,
             transaction_id: p.transaction_id,
-            payment_date: p.deposit_date,
+            deposit_date: p.deposit_date,
             payment_method: p.payment_method,
-            amount:
+            deposit_amount:
               p.deposit_amount instanceof Object
                 ? parseFloat(p.deposit_amount.toString())
                 : p.deposit_amount,
             status: p.approval_status,
+            approval_status: p.approval_status,
             depositor_bank: p.depositor_bank,
             company_bank: p.company_bank,
             created_by: p.created_by,
@@ -1285,7 +1286,7 @@ router.post(
       // Update order: forward to RSM
       order.current_approver_id = matchingRSM._id;
       order.current_approver_role = "RSM";
-      order.status = "forwarded_to_rsm";
+      // Status remains 'submitted' during approval chain
 
       // Add to approval history
       order.approval_history.push({
@@ -1294,7 +1295,7 @@ router.post(
         performed_by_name: userName,
         performed_by_role: "ASM",
         from_status: "submitted",
-        to_status: "forwarded_to_rsm",
+        to_status: "submitted",
         comments: `Forwarded to RSM for approval`,
         timestamp: new Date(),
       });
@@ -1383,7 +1384,7 @@ router.post(
         {
           current_approver_id: salesAdminUser._id,
           current_approver_role: "Sales Admin",
-          status: "forwarded_to_sales_admin",
+          // Status remains 'submitted' during approval chain
           $push: {
             approval_history: {
               action: "forward",
@@ -1391,7 +1392,7 @@ router.post(
               performed_by_name: userName,
               performed_by_role: "RSM",
               from_status: order.status,
-              to_status: "forwarded_to_sales_admin",
+              to_status: "submitted",
               comments: "Forwarded to Sales Admin for approval",
               timestamp: new Date(),
             },
@@ -1494,7 +1495,7 @@ router.post(
         {
           current_approver_id: omUser._id,
           current_approver_role: "Order Management",
-          status: "forwarded_to_order_management",
+          // Status remains 'submitted' during approval chain
           $push: {
             approval_history: {
               action: "forward",
@@ -1502,7 +1503,7 @@ router.post(
               performed_by_name: userName,
               performed_by_role: "Sales Admin",
               from_status: order.status,
-              to_status: "forwarded_to_order_management",
+              to_status: "submitted",
               comments: "Forwarded to Order Management for approval",
               timestamp: new Date(),
             },
@@ -1574,7 +1575,7 @@ router.post(
         {
           current_approver_id: financeUser._id,
           current_approver_role: "Finance",
-          status: "forwarded_to_finance",
+          // Status remains 'submitted' during approval chain
           $push: {
             approval_history: {
               action: "forward",
@@ -1582,7 +1583,7 @@ router.post(
               performed_by_name: userName,
               performed_by_role: "Order Management",
               from_status: order.status,
-              to_status: "forwarded_to_finance",
+              to_status: "submitted",
               comments: "Forwarded to Finance for approval",
               timestamp: new Date(),
             },
@@ -1764,6 +1765,157 @@ router.post(
       res.status(500).json({
         success: false,
         message: "Failed to return order to Sales Admin",
+        error: error.message,
+      });
+    }
+  }
+);
+
+/**
+ * POST /ordermanagement/demandorders/:id/approve
+ * Approve a demand order (Finance only)
+ * Checks for unapproved payments and auto-forwards to Distribution
+ * Requires: demandorder:approve permission
+ */
+router.post(
+  "/:id/approve",
+  authenticate,
+  requireApiPermission("demandorder:approve"),
+  async (req, res) => {
+    try {
+      const orderId = req.params.id;
+      const userId = req.user.id;
+      const userName = req.user.name || "Unknown User";
+      const { comments, force_approve } = req.body;
+
+      // Only Finance can approve
+      const Role = require("../../models/Role");
+      let userRole = null;
+      if (req.user.role_id) {
+        if (typeof req.user.role_id === "object" && req.user.role_id.role) {
+          userRole = req.user.role_id;
+        } else {
+          userRole = await Role.findById(req.user.role_id).lean();
+        }
+      }
+
+      if (!userRole || userRole.role !== "Finance") {
+        return res.status(403).json({
+          success: false,
+          message: "Only Finance role can approve demand orders",
+        });
+      }
+
+      // Find the demand order
+      const order = await DemandOrder.findById(orderId).populate("distributor_id");
+
+      if (!order) {
+        return res.status(404).json({
+          success: false,
+          message: "Demand order not found",
+        });
+      }
+
+      // Verify order is with Finance
+      if (order.current_approver_role !== "Finance" || order.status !== "submitted") {
+        return res.status(400).json({
+          success: false,
+          message: "Order must be with Finance and in submitted status",
+        });
+      }
+
+      // Check if already approved
+      if (order.status === "approved") {
+        return res.status(400).json({
+          success: false,
+          message: "Order is already approved",
+        });
+      }
+
+      // Check for attached payments
+      const Collection = require("../../models/Collection");
+      const attachedPayments = await Collection.find({
+        do_no: order.order_number,
+      })
+        .select("transaction_id deposit_amount approval_status")
+        .lean();
+
+      // Check for unapproved payments
+      const unapprovedPayments = attachedPayments.filter(
+        (p) => p.approval_status !== "approved" && p.approval_status !== "cancelled"
+      );
+
+      // If there are unapproved payments and not force approved, return warning
+      if (unapprovedPayments.length > 0 && !force_approve) {
+        return res.status(400).json({
+          success: false,
+          message: "Unapproved payments detected",
+          require_confirmation: true,
+          unapproved_payments: unapprovedPayments.map((p) => ({
+            transaction_id: p.transaction_id,
+            amount: parseFloat(p.deposit_amount.toString()),
+            status: p.approval_status,
+          })),
+        });
+      }
+
+      // Find Distribution role and user
+      const User = require("../../models/User");
+      const distributionRole = await Role.findOne({ role: "Distribution" });
+      if (!distributionRole) {
+        return res.status(500).json({
+          success: false,
+          message: "Distribution role not found in system",
+        });
+      }
+
+      const distributionUser = await User.findOne({ role_id: distributionRole._id }).lean();
+      if (!distributionUser) {
+        return res.status(404).json({
+          success: false,
+          message: "Distribution user account not found",
+        });
+      }
+
+      // Approve order and forward to Distribution
+      const previousStatus = order.status;
+      order.status = "forwarded_to_distribution";
+      order.approved_by = userId;
+      order.approved_at = new Date();
+      order.current_approver_id = distributionUser._id;
+      order.current_approver_role = "Distribution";
+
+      // Add to approval history
+      order.approval_history.push({
+        action: "approve",
+        performed_by: userId,
+        performed_by_name: userName,
+        performed_by_role: "Finance",
+        from_status: previousStatus,
+        to_status: "forwarded_to_distribution",
+        comments:
+          comments ||
+          `DO approved by Finance and forwarded to Distribution for scheduling${
+            unapprovedPayments.length > 0
+              ? ` (${unapprovedPayments.length} payment(s) not yet approved)`
+              : ""
+          }`,
+        timestamp: new Date(),
+      });
+
+      await order.save();
+
+      res.json({
+        success: true,
+        message: `Order ${order.order_number} approved and forwarded to Distribution successfully`,
+        data: order,
+        unapproved_payment_count: unapprovedPayments.length,
+      });
+    } catch (error) {
+      console.error("Error approving demand order:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to approve demand order",
         error: error.message,
       });
     }
