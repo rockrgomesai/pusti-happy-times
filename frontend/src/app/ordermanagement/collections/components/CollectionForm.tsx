@@ -21,9 +21,7 @@ import {
   IconButton,
   Checkbox,
 } from "@mui/material";
-import { DatePicker } from "@mui/x-date-pickers/DatePicker";
-import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
-import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
+
 import { 
   AttachFile as AttachFileIcon, 
   Close as CloseIcon,
@@ -40,6 +38,7 @@ interface CollectionFormProps {
   onClose: () => void;
   onSuccess: () => void;
   defaultDONumber?: string;
+  distributorId?: string;
   collection?: any; // For edit mode
 }
 
@@ -54,6 +53,7 @@ export default function CollectionForm({
   onClose,
   onSuccess,
   defaultDONumber,
+  distributorId,
   collection,
 }: CollectionFormProps) {
   const isEditMode = !!collection;
@@ -252,6 +252,11 @@ export default function CollectionForm({
       // Create FormData for file upload
       const submitData = new FormData();
 
+      // Add distributor_id if provided (for HQ users adding payment to distributor's order)
+      if (distributorId) {
+        submitData.append("distributor_id", distributorId);
+      }
+
       // Add all form fields
       Object.keys(formData).forEach((key) => {
         const value = formData[key as keyof CollectionFormData];
@@ -285,7 +290,7 @@ export default function CollectionForm({
 
       // Log all FormData entries
       console.log("FormData entries being sent:");
-      for (let pair of submitData.entries()) {
+      for (const pair of submitData.entries()) {
         console.log(pair[0] + ': ' + pair[1]);
       }
 
@@ -550,23 +555,17 @@ export default function CollectionForm({
                 />
               )}
 
-              <LocalizationProvider dateAdapter={AdapterDateFns}>
-                <DatePicker
-                  label="Deposit Date *"
-                  value={formData.deposit_date ? new Date(formData.deposit_date) : null}
-                  onChange={(date) =>
-                    handleChange("deposit_date", date?.toISOString().split("T")[0] || "")
-                  }
-                  maxDate={new Date()}
-                  slotProps={{
-                    textField: {
-                      fullWidth: true,
-                      error: !!errors.deposit_date,
-                      helperText: errors.deposit_date,
-                    },
-                  }}
-                />
-              </LocalizationProvider>
+              <TextField
+                type="date"
+                label="Deposit Date *"
+                value={formData.deposit_date}
+                onChange={(e) => handleChange("deposit_date", e.target.value)}
+                inputProps={{ max: new Date().toISOString().split('T')[0] }}
+                error={!!errors.deposit_date}
+                helperText={errors.deposit_date || "Format: DD/MM/YYYY"}
+                InputLabelProps={{ shrink: true }}
+                fullWidth
+              />
 
               <TextField
                 label="Demand Order Number (Optional)"

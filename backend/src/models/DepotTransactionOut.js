@@ -202,6 +202,7 @@ const depotTransactionOutSchema = new Schema(
     },
   },
   {
+    collection: "depot_transactions_out",
     timestamps: { createdAt: "created_at", updatedAt: "updated_at" },
     toJSON: { getters: true, virtuals: true },
     toObject: { getters: true, virtuals: true },

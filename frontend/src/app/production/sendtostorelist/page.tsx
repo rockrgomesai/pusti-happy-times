@@ -99,8 +99,8 @@ export default function SendToStoreListPage() {
       return;
     }
 
-    if (user.role.role !== 'Inventory Factory') {
-      toast.error('Access denied. Inventory Factory role required.');
+    if (user.role.role !== 'Production' && user.role.role !== 'Inventory Factory') {
+      toast.error('Access denied. Production or Inventory Factory role required.');
       router.push('/dashboard');
       return;
     }

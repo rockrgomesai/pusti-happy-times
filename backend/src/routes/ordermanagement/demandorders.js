@@ -169,6 +169,133 @@ async function validateCartQuantities(distributorId, cartItems) {
 }
 
 /**
+ * GET /ordermanagement/demandorders/approved-rejected
+ * Get approved or rejected orders for Finance role
+ * Query params: status (approved/rejected), from_date, to_date, page, limit
+ */
+router.get(
+  "/approved-rejected",
+  authenticate,
+  requireApiPermission("demandorder:read"),
+  async (req, res) => {
+    try {
+      const { status, from_date, to_date, page = 1, limit = 20 } = req.query;
+
+      // Build base query for approved or rejected orders
+      const query = {
+        status: { $in: ["approved", "rejected"] },
+      };
+
+      // Filter by specific status if provided
+      if (status && ["approved", "rejected"].includes(status.toLowerCase())) {
+        query.status = status.toLowerCase();
+      }
+
+      // Date range filter on approval_history
+      if (from_date || to_date) {
+        query["approval_history"] = {
+          $elemMatch: {
+            action: { $in: ["approve", "reject"] },
+          },
+        };
+
+        if (from_date) {
+          query["approval_history.$elemMatch"].timestamp = {
+            $gte: new Date(from_date),
+          };
+        }
+
+        if (to_date) {
+          const endDate = new Date(to_date);
+          endDate.setHours(23, 59, 59, 999);
+          query["approval_history.$elemMatch"].timestamp = {
+            ...query["approval_history.$elemMatch"].timestamp,
+            $lte: endDate,
+          };
+        }
+      }
+
+      // Pagination
+      const skip = (parseInt(page) - 1) * parseInt(limit);
+      const limitNum = parseInt(limit);
+
+      // Fetch orders
+      const orders = await DemandOrder.find(query)
+        .populate("distributor_id", "name code territory_id")
+        .populate({
+          path: "distributor_id",
+          populate: {
+            path: "territory_id",
+            select: "name",
+          },
+        })
+        .sort({ order_date: -1 })
+        .skip(skip)
+        .limit(limitNum)
+        .lean();
+
+      // Count total for pagination
+      const total = await DemandOrder.countDocuments(query);
+
+      // Extract approval/rejection info from approval_history
+      const ordersWithApprovalInfo = orders.map((order) => {
+        // Find the most recent approve or reject action
+        const approvalEntry = [...order.approval_history]
+          .reverse()
+          .find((entry) => entry.action === "approve" || entry.action === "reject");
+
+        return {
+          order_number: order.order_number,
+          order_date: order.order_date,
+          status: order.status,
+          distributor_name: order.distributor_id?.name || "N/A",
+          distributor_code: order.distributor_id?.code || "N/A",
+          territory_name: order.distributor_id?.territory_id?.name || "N/A",
+          total_amount: order.total_amount,
+          item_count: order.item_count,
+          approval_info: approvalEntry
+            ? {
+                action: approvalEntry.action,
+                timestamp: approvalEntry.timestamp,
+                performed_by_role: approvalEntry.performed_by_role,
+                comments: approvalEntry.comments,
+              }
+            : null,
+          items: order.items.map((item) => ({
+            sku: item.sku,
+            product_name: item.product_name,
+            source_type: item.source_type,
+            unit_price: item.unit_price,
+            quantity: item.quantity,
+            subtotal: item.subtotal,
+            discount_applied: item.discount_applied,
+            final_amount: item.final_amount,
+          })),
+        };
+      });
+
+      res.json({
+        success: true,
+        data: ordersWithApprovalInfo,
+        pagination: {
+          total,
+          page: parseInt(page),
+          limit: limitNum,
+          totalPages: Math.ceil(total / limitNum),
+        },
+      });
+    } catch (error) {
+      console.error("Error fetching approved/rejected orders:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to fetch approved/rejected orders",
+        error: error.message,
+      });
+    }
+  }
+);
+
+/**
  * GET /ordermanagement/demandorders/catalog/category-hierarchy
  * Get category hierarchy filtered by distributor segments
  */
@@ -611,6 +738,29 @@ router.get(
         .sort({ submitted_at: -1, created_at: -1 })
         .lean();
 
+      // Fix missing performed_by_name in approval history for all orders
+      const User = require("../../models/User");
+      const Distributor = require("../../models/Distributor");
+      for (let order of orders) {
+        if (order.approval_history) {
+          for (let entry of order.approval_history) {
+            if (!entry.performed_by_name && entry.performed_by) {
+              const historyUser = await User.findById(entry.performed_by).select("username").lean();
+              if (historyUser) {
+                entry.performed_by_name = historyUser.username;
+              } else if (entry.performed_by_role === "Distributor") {
+                const dist = await Distributor.findById(order.distributor_id._id)
+                  .select("name")
+                  .lean();
+                entry.performed_by_name = dist?.name || "Distributor";
+              } else {
+                entry.performed_by_name = entry.performed_by_role || "Unknown";
+              }
+            }
+          }
+        }
+      }
+
       res.json({
         success: true,
         data: orders,
@@ -668,9 +818,18 @@ router.get(
         distributor_id: order.distributor_id._id,
       }).lean();
 
+      console.log("📊 Financial Summary Debug:");
+      console.log("  Distributor ID:", order.distributor_id._id);
+      console.log("  Ledger Entries Found:", ledgerEntries.length);
+      console.log("  Ledger Entries:", JSON.stringify(ledgerEntries, null, 2));
+
       const totalDebit = ledgerEntries.reduce((sum, entry) => sum + (entry.debit || 0), 0);
       const totalCredit = ledgerEntries.reduce((sum, entry) => sum + (entry.credit || 0), 0);
       const availableBalance = totalDebit - totalCredit;
+
+      console.log("  Total Debit:", totalDebit);
+      console.log("  Total Credit:", totalCredit);
+      console.log("  Available Balance:", availableBalance);
 
       // Get all payments (collections) linked to this DO
       const payments = await Collection.find({
@@ -693,10 +852,10 @@ router.get(
         }, 0);
 
       // Calculate totals
-      // Remaining Amount = Total - Available Balance
+      // Remaining Amount = Total + Available Balance (balance is negative for credit, so this reduces the amount)
       // Due Amount = Remaining Amount - Unapproved Payments
       const orderTotal = order.total_amount || 0;
-      const remainingAmount = orderTotal - availableBalance;
+      const remainingAmount = orderTotal + availableBalance;
       const dueAmount = remainingAmount - unapprovedPayments;
 
       res.json({
@@ -753,10 +912,13 @@ router.get("/:id", authenticate, requireApiPermission("demandorder:read"), async
     const { user } = req;
     const distributorId = getDistributorId(user);
 
-    const order = await DemandOrder.findOne({
-      _id: req.params.id,
-      distributor_id: distributorId,
-    })
+    // Build query - HQ users (without distributor_id) can view any order
+    const query = { _id: req.params.id };
+    if (distributorId) {
+      query.distributor_id = distributorId;
+    }
+
+    const order = await DemandOrder.findOne(query)
       .populate("distributor_id", "name")
       .populate("created_by", "username")
       .populate("approved_by", "username")
@@ -768,6 +930,25 @@ router.get("/:id", authenticate, requireApiPermission("demandorder:read"), async
         success: false,
         message: "Demand order not found",
       });
+    }
+
+    // Fix missing performed_by_name in approval history
+    if (order.approval_history) {
+      const User = require("../../models/User");
+      const Distributor = require("../../models/Distributor");
+      for (let entry of order.approval_history) {
+        if (!entry.performed_by_name && entry.performed_by) {
+          const historyUser = await User.findById(entry.performed_by).select("username").lean();
+          if (historyUser) {
+            entry.performed_by_name = historyUser.username;
+          } else if (entry.performed_by_role === "Distributor") {
+            const dist = await Distributor.findById(order.distributor_id._id).select("name").lean();
+            entry.performed_by_name = dist?.name || "Distributor";
+          } else {
+            entry.performed_by_name = entry.performed_by_role || "Unknown";
+          }
+        }
+      }
     }
 
     res.json({
@@ -1111,15 +1292,28 @@ router.post(
       order.updated_by = user._id;
 
       // Add to approval history
+      console.log("🔍 Submit - User Info:", {
+        userId: user._id,
+        username: user.username,
+        distributorName: distributor.name,
+        finalName: user.username || distributor.name || "Distributor",
+      });
+
       order.approval_history.push({
         action: "submit",
         performed_by: user._id,
+        performed_by_name: user.username || distributor.name || "Distributor",
         performed_by_role: "Distributor",
         from_status: "draft",
         to_status: "submitted",
         comments: "Submitted for approval",
         timestamp: new Date(),
       });
+
+      console.log(
+        "🔍 Approval history entry added:",
+        order.approval_history[order.approval_history.length - 1]
+      );
 
       await order.save();
 
@@ -1199,7 +1393,7 @@ router.post(
     try {
       const orderId = req.params.id;
       const userId = req.user.id;
-      const userName = req.user.name || "Unknown User";
+      const userName = req.user.username || "Unknown User";
 
       // Find the demand order
       const order = await DemandOrder.findById(orderId).populate("distributor_id");
@@ -1292,7 +1486,7 @@ router.post(
       order.approval_history.push({
         action: "forward",
         performed_by: userId,
-        performed_by_name: userName,
+        performed_by_name: userName || req.user.username || req.user.name || "ASM",
         performed_by_role: "ASM",
         from_status: "submitted",
         to_status: "submitted",
@@ -1331,7 +1525,7 @@ router.post(
     try {
       const orderId = req.params.id;
       const userId = req.user.id;
-      const userName = req.user.name || "Unknown User";
+      const userName = req.user.username || "Unknown User";
 
       // Find the demand order
       const order = await DemandOrder.findById(orderId).populate("distributor_id").lean();
@@ -1461,7 +1655,7 @@ router.post(
     try {
       const orderId = req.params.id;
       const userId = req.user.id;
-      const userName = req.user.name || "Unknown User";
+      const userName = req.user.username || "Unknown User";
 
       const order = await DemandOrder.findById(orderId).lean();
       if (!order) {
@@ -1541,7 +1735,7 @@ router.post(
     try {
       const orderId = req.params.id;
       const userId = req.user.id;
-      const userName = req.user.name || "Unknown User";
+      const userName = req.user.username || "Unknown User";
 
       const order = await DemandOrder.findById(orderId).lean();
       if (!order) {
@@ -1621,7 +1815,7 @@ router.post(
     try {
       const orderId = req.params.id;
       const userId = req.user.id;
-      const userName = req.user.name || "Unknown User";
+      const userName = req.user.username || "Unknown User";
 
       const order = await DemandOrder.findById(orderId).lean();
       if (!order) {
@@ -1701,7 +1895,7 @@ router.post(
     try {
       const orderId = req.params.id;
       const userId = req.user.id;
-      const userName = req.user.name || "Unknown User";
+      const userName = req.user.username || "Unknown User";
 
       const order = await DemandOrder.findById(orderId).lean();
       if (!order) {
@@ -1785,7 +1979,7 @@ router.post(
     try {
       const orderId = req.params.id;
       const userId = req.user.id;
-      const userName = req.user.name || "Unknown User";
+      const userName = req.user.username || "Unknown User";
       const { comments, force_approve } = req.body;
 
       // Only Finance can approve
@@ -1877,7 +2071,110 @@ router.post(
         });
       }
 
-      // Approve order and forward to Distribution
+      // Step 1: Create credit entry for discounts and free products
+      const CustomerLedger = require("../../models/CustomerLedger");
+
+      // Calculate discounts grouped by offer
+      const discountsByOffer = {};
+      let totalDiscounts = 0;
+      const freeProducts = [];
+      let totalFreeProductsValue = 0;
+
+      for (const item of order.items) {
+        if (item.offer_details) {
+          // Track discounts by offer
+          if (item.offer_details.discount_amount > 0) {
+            const offerName = item.offer_details.offer_name || "Unnamed Offer";
+            if (!discountsByOffer[offerName]) {
+              discountsByOffer[offerName] = 0;
+            }
+            discountsByOffer[offerName] += item.offer_details.discount_amount;
+            totalDiscounts += item.offer_details.discount_amount;
+          }
+
+          // Track free products
+          if (item.offer_details.is_free_product && item.offer_details.free_products) {
+            for (const freeProduct of item.offer_details.free_products) {
+              const dbPrice = freeProduct.db_price || 0;
+              const freeValue = freeProduct.quantity * dbPrice;
+              freeProducts.push({
+                sku: freeProduct.sku,
+                quantity: freeProduct.quantity,
+                db_price: dbPrice,
+                value: freeValue,
+              });
+              totalFreeProductsValue += freeValue;
+            }
+          }
+        }
+      }
+
+      // Build particulars text
+      let particulars = "Advanced Discounts & Free goods\n";
+
+      // Add discount breakdown
+      if (Object.keys(discountsByOffer).length > 0) {
+        particulars += "Discounts: ";
+        const discountLines = Object.entries(discountsByOffer).map(
+          ([offer, amount]) => `${offer}: ${amount.toFixed(2)}`
+        );
+        particulars += discountLines.join(", ") + "\n";
+      }
+
+      // Add free products
+      if (freeProducts.length > 0) {
+        for (const fp of freeProducts) {
+          particulars += `Free Product: ${fp.sku} qty: ${fp.quantity} @ ${fp.db_price.toFixed(2)}\n`;
+        }
+      }
+
+      // Create credit entry
+      const totalCredit = totalDiscounts + totalFreeProductsValue;
+      if (totalCredit > 0) {
+        const creditEntry = new CustomerLedger({
+          distributor_id: order.distributor_id._id,
+          particulars: particulars.trim(),
+          transaction_date: new Date(),
+          voucher_type: "Discounts & Free items",
+          voucher_no: order.order_number,
+          debit: 0,
+          credit: totalCredit,
+          note: "",
+        });
+        await creditEntry.save();
+      }
+
+      // Step 2: Initialize scheduling record
+      const Scheduling = require("../../models/Scheduling");
+
+      // Get distributor's default depot
+      const defaultDepotId = order.distributor_id.delivery_depot_id;
+
+      // Prepare items for scheduling
+      const schedulingItems = order.items.map((item) => ({
+        item_id: item._id,
+        sku: item.sku,
+        product_name: item.product_name,
+        dp_price: item.unit_price,
+        order_qty: item.quantity,
+        scheduled_qty: 0,
+        unscheduled_qty: item.quantity,
+      }));
+
+      const scheduling = new Scheduling({
+        order_id: order._id,
+        order_number: order.order_number,
+        distributor_id: order.distributor_id._id,
+        depot_id: defaultDepotId,
+        items: schedulingItems,
+        scheduling_details: [],
+        scheduling_status: [],
+        current_status: "Finance-to-approve",
+        created_by: userId,
+      });
+      await scheduling.save();
+
+      // Step 3: Approve order and forward to Distribution
       const previousStatus = order.status;
       order.status = "forwarded_to_distribution";
       order.approved_by = userId;
@@ -1935,7 +2232,7 @@ router.post(
     try {
       const orderId = req.params.id;
       const userId = req.user.id;
-      const userName = req.user.name || "Unknown User";
+      const userName = req.user.username || "Unknown User";
       const { reason } = req.body;
 
       if (!reason || !reason.trim()) {

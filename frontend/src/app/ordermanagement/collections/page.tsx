@@ -51,10 +51,9 @@ import {
   Edit as EditIcon,
   CheckCircle as CheckCircleIcon,
 } from "@mui/icons-material";
-import { DatePicker } from "@mui/x-date-pickers/DatePicker";
-import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
-import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
+
 import { format } from "date-fns";
+import { formatDateForDisplay } from "@/lib/dateUtils";
 import collectionsApi, { Collection } from "@/services/collectionsApi";
 import api from "@/lib/api";
 import CollectionForm from "./components/CollectionForm";
@@ -332,11 +331,7 @@ export default function PaymentsPage() {
 
   const formatDate = useCallback((dateString: string) => {
     if (!dateString) return "-";
-    return new Date(dateString).toLocaleDateString("en-BD", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
+    return formatDateForDisplay(dateString);
   }, []);
 
   // Column definitions
@@ -468,7 +463,7 @@ export default function PaymentsPage() {
                     size="small"
                     color="success"
                     onClick={async () => {
-                      if (!confirm(`Approve payment of ৳${collection.deposit_amount?.toLocaleString()} from ${collection.bank || 'Bank'}?\n\nTransaction ID: ${collection.transaction_id}\nDeposit Date: ${new Date(collection.deposit_date).toLocaleDateString()}\n\nThis will create a credit entry in the distributor's ledger.\n\nNote: Finance is the final approver for all payments.`)) {
+                      if (!confirm(`Approve payment of ৳${collection.deposit_amount?.toLocaleString()} from ${collection.bank || 'Bank'}?\n\nTransaction ID: ${collection.transaction_id}\nDeposit Date: ${formatDateForDisplay(collection.deposit_date)}\n\nThis will create a credit entry in the distributor's ledger.\n\nNote: Finance is the final approver for all payments.`)) {
                         return;
                       }
                       

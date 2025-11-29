@@ -154,10 +154,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
         // Determine redirect path based on user type
         const redirectPath = determineRedirectPath(userData);
         
-        // Use setTimeout to ensure state updates have been processed
-        setTimeout(() => {
-          router.push(redirectPath);
-        }, 100);
+        // Force a full page reload to clear all stale state
+        // This prevents issues with cached role data when switching users
+        window.location.href = redirectPath;
       } else {
         throw new Error(response.message || 'Login failed');
       }
@@ -186,8 +185,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setUser(null);
       tokenManager.clearTokens();
       toast.success('Logged out successfully');
-      router.push('/login');
       setIsLoading(false);
+      // Force full page reload to clear all state
+      window.location.href = '/login';
     }
   };
 

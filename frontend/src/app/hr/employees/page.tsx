@@ -1629,7 +1629,7 @@ export default function EmployeesPage() {
                       fullWidth
                       InputLabelProps={{ shrink: true }}
                       error={Boolean(errors.date_birth)}
-                      helperText={errors.date_birth?.message}
+                      helperText={errors.date_birth?.message || "Format: DD/MM/YYYY"}
                       disabled={isSubmitting}
                     />
                   )}

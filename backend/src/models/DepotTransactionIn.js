@@ -28,17 +28,17 @@ const depotTransactionInSchema = new Schema(
     // Batch tracking
     batch_no: {
       type: String,
-      required: [true, "Batch number is required"],
+      required: false,
       trim: true,
       index: true,
     },
     production_date: {
       type: Date,
-      required: [true, "Production date is required"],
+      required: false,
     },
     expiry_date: {
       type: Date,
-      required: [true, "Expiry date is required"],
+      required: false,
       index: true,
     },
 
@@ -47,6 +47,7 @@ const depotTransactionInSchema = new Schema(
       type: String,
       enum: [
         "from_production", // From factory production
+        "from_offer_send", // From Sales Admin offer send
         "transfer_in", // From another depot
         "return_in", // Returns from distributors/customers
         "adjustment_in", // Positive adjustments
@@ -69,6 +70,7 @@ const depotTransactionInSchema = new Schema(
       type: String,
       enum: [
         "ProductionSendToStore",
+        "OfferReceive",
         "DepotTransferOut",
         "DistributorReturn",
         "StockAdjustment",
@@ -183,6 +185,7 @@ const depotTransactionInSchema = new Schema(
     },
   },
   {
+    collection: "depot_transactions_in",
     timestamps: { createdAt: "created_at", updatedAt: "updated_at" },
     toJSON: { getters: true, virtuals: true },
     toObject: { getters: true, virtuals: true },

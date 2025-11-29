@@ -255,13 +255,6 @@ router.post(
     try {
       const { user } = req;
 
-      if (!user.distributor_id) {
-        return res.status(403).json({
-          success: false,
-          message: "User is not associated with a distributor",
-        });
-      }
-
       const {
         payment_method,
         company_bank,
@@ -274,7 +267,37 @@ router.post(
         deposit_date,
         do_no,
         note,
+        distributor_id: providedDistributorId,
       } = req.body;
+
+      // Determine distributor_id intelligently:
+      // 1. If do_no provided, get distributor_id from the demand order (primary method for HQ users)
+      // 2. Use provided distributor_id if explicitly passed
+      // 3. Fall back to user's distributor_id (for field users)
+      let distributorId = null;
+
+      if (do_no) {
+        const demandOrder = await DemandOrder.findOne({ order_number: do_no }).select(
+          "distributor_id"
+        );
+        if (demandOrder) {
+          distributorId = demandOrder.distributor_id;
+        } else {
+          return res.status(400).json({
+            success: false,
+            message: "Invalid demand order number",
+          });
+        }
+      } else if (providedDistributorId) {
+        distributorId = providedDistributorId;
+      } else if (user.distributor_id) {
+        distributorId = user.distributor_id;
+      } else {
+        return res.status(400).json({
+          success: false,
+          message: "Unable to determine distributor. Please provide a DO number.",
+        });
+      }
 
       console.log("Received collection data:", {
         payment_method,
@@ -282,6 +305,7 @@ router.post(
         deposit_amount_type: typeof deposit_amount,
         depositor_mobile,
         deposit_date,
+        distributorId,
       });
 
       // Validate required fields
@@ -309,11 +333,11 @@ router.post(
         });
       }
 
-      // If do_no provided, verify it exists and belongs to this distributor
+      // If do_no provided, verify it exists and belongs to the distributor
       if (do_no) {
         const demandOrder = await DemandOrder.findOne({
           order_number: do_no,
-          distributor_id: user.distributor_id,
+          distributor_id: distributorId,
         });
 
         if (!demandOrder) {
@@ -326,7 +350,7 @@ router.post(
 
       // Prepare collection data
       const collectionData = {
-        distributor_id: user.distributor_id,
+        distributor_id: distributorId,
         payment_method,
         depositor_mobile,
         deposit_amount: amount,

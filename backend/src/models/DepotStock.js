@@ -37,6 +37,7 @@ const depotStockSchema = new Schema(
     },
   },
   {
+    collection: "depot_stocks",
     timestamps: { createdAt: "created_at", updatedAt: "updated_at" },
     toJSON: { getters: true, virtuals: true },
     toObject: { getters: true, virtuals: true },

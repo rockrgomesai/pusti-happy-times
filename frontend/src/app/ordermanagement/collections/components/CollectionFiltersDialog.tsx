@@ -13,9 +13,7 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
-import { DatePicker } from "@mui/x-date-pickers/DatePicker";
-import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
-import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
+
 
 export interface CollectionFilters {
   approval_status?: string;
@@ -118,22 +116,26 @@ export default function CollectionFiltersDialog({
             <Typography variant="subtitle2" gutterBottom>
               Date Range
             </Typography>
-            <LocalizationProvider dateAdapter={AdapterDateFns}>
-              <Stack direction="row" spacing={2}>
-                <DatePicker
-                  label="From Date"
-                  value={localFilters.date_from}
-                  onChange={(date) => handleChange("date_from", date)}
-                  slotProps={{ textField: { fullWidth: true } }}
-                />
-                <DatePicker
-                  label="To Date"
-                  value={localFilters.date_to}
-                  onChange={(date) => handleChange("date_to", date)}
-                  slotProps={{ textField: { fullWidth: true } }}
-                />
-              </Stack>
-            </LocalizationProvider>
+            <Stack direction="row" spacing={2}>
+              <TextField
+                type="date"
+                label="From Date"
+                value={localFilters.date_from ? new Date(localFilters.date_from).toISOString().split('T')[0] : ''}
+                onChange={(e) => handleChange("date_from", e.target.value ? new Date(e.target.value) : null)}
+                InputLabelProps={{ shrink: true }}
+                helperText="Format: DD/MM/YYYY"
+                fullWidth
+              />
+              <TextField
+                type="date"
+                label="To Date"
+                value={localFilters.date_to ? new Date(localFilters.date_to).toISOString().split('T')[0] : ''}
+                onChange={(e) => handleChange("date_to", e.target.value ? new Date(e.target.value) : null)}
+                InputLabelProps={{ shrink: true }}
+                helperText="Format: DD/MM/YYYY"
+                fullWidth
+              />
+            </Stack>
           </Box>
 
           {/* Amount Range */}

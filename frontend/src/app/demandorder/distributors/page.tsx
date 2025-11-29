@@ -67,7 +67,7 @@ import { formatDateForExport } from '@/lib/exportUtils';
 import { calculateTableMinWidth } from '@/lib/tableUtils';
 
 const ORDER_UNITS = ['CTN', 'PCS', 'BAG', 'LTR', 'KG', 'GM'] as const;
-const PRODUCT_SEGMENTS = ['BIS', 'EXCLUSIVE', 'GENERAL', 'PREMIUM', 'WHOLESALE'] as const;
+const PRODUCT_SEGMENTS = ['BIS', 'BEV'] as const;
 const DISTRIBUTOR_TYPES = ['General Distributor', 'Exclusive Distributor', 'Super Distributor'] as const;
 const BINARY_CHOICES = ['Yes', 'No'] as const;
 

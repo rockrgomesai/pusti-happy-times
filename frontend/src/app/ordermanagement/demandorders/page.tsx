@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import React, { useState, useEffect, useMemo, useCallback } from "react";
+import { formatDateForDisplay } from "@/lib/dateUtils";
 import {
   Container,
   Box,
@@ -1827,7 +1828,7 @@ const DemandOrdersPage = () => {
             {/* Validity */}
             {offer.end_date && (
               <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.5 }}>
-                Valid till: {new Date(offer.end_date).toLocaleDateString()}
+                Valid till: {formatDateForDisplay(offer.end_date)}
               </Typography>
             )}
           </Box>
@@ -3112,7 +3113,7 @@ const DemandOrdersPage = () => {
                               <Typography variant="body2">{payment.transaction_id}</Typography>
                             </TableCell>
                             <TableCell>
-                              {new Date(payment.deposit_date).toLocaleDateString()}
+                              {formatDateForDisplay(payment.deposit_date)}
                             </TableCell>
                             <TableCell>
                               <Chip 
@@ -3532,7 +3533,7 @@ const DemandOrdersPage = () => {
 
                             <Box sx={{ mb: 1 }}>
                               <Typography variant="caption" color="text.secondary">
-                                Valid: {new Date(offer.start_date).toLocaleDateString()} - {new Date(offer.end_date).toLocaleDateString()}
+                                Valid: {formatDateForDisplay(offer.start_date)} - {formatDateForDisplay(offer.end_date)}
                               </Typography>
                             </Box>
 

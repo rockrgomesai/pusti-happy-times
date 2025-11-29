@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { formatDateForDisplay } from "@/lib/dateUtils";
 import {
   Container,
   Box,
@@ -893,7 +894,7 @@ const ApproveOrdersPage = () => {
                     <TableCell>
                       <Typography variant="caption">
                         {order.submitted_at
-                          ? new Date(order.submitted_at).toLocaleDateString()
+                          ? formatDateForDisplay(order.submitted_at)
                           : "N/A"}
                       </Typography>
                     </TableCell>
@@ -1192,7 +1193,7 @@ const ApproveOrdersPage = () => {
                               {/* Validity */}
                               {offer.end_date && (
                                 <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.5 }}>
-                                  Valid till: {new Date(offer.end_date).toLocaleDateString()}
+                                  Valid till: {formatDateForDisplay(offer.end_date)}
                                 </Typography>
                               )}
                             </Box>
@@ -1586,10 +1587,10 @@ const ApproveOrdersPage = () => {
                 {/* Validity */}
                 <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
                   <Typography variant="body2" color="text.secondary">
-                    Valid from: {new Date(selectedOffer.start_date).toLocaleDateString()}
+                    Valid from: {formatDateForDisplay(selectedOffer.start_date)}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Valid till: {new Date(selectedOffer.end_date).toLocaleDateString()}
+                    Valid till: {formatDateForDisplay(selectedOffer.end_date)}
                   </Typography>
                 </Box>
 
@@ -1977,7 +1978,7 @@ const ApproveOrdersPage = () => {
                         Order Total:
                       </Typography>
                       <Typography variant="body1" fontWeight="bold">
-                        ৳{(financialSummary.order_total || 0).toFixed(2)}
+                        ৳{(financialSummary.orderTotal || 0).toFixed(2)}
                       </Typography>
                     </Box>
                     <Divider />
@@ -1991,7 +1992,7 @@ const ApproveOrdersPage = () => {
                         Available Balance:
                       </Typography>
                       <Typography variant="body1" fontWeight="bold" color="success.main">
-                        ৳{(financialSummary.available_balance || 0).toFixed(2)}
+                        ৳{(financialSummary.availableBalance || 0).toFixed(2)}
                       </Typography>
                     </Box>
                     <Box
@@ -2007,12 +2008,12 @@ const ApproveOrdersPage = () => {
                         variant="body1"
                         fontWeight="bold"
                         color={
-                          (financialSummary.remaining_amount || 0) > 0
+                          (financialSummary.remainingAmount || 0) > 0
                             ? "error.main"
                             : "text.primary"
                         }
                       >
-                        ৳{(financialSummary.remaining_amount || 0).toFixed(2)}
+                        ৳{(financialSummary.remainingAmount || 0).toFixed(2)}
                       </Typography>
                     </Box>
                     <Divider />
@@ -2026,7 +2027,7 @@ const ApproveOrdersPage = () => {
                         Unapproved Payments:
                       </Typography>
                       <Typography variant="body1">
-                        ৳{(financialSummary.unapproved_payments || 0).toFixed(2)}
+                        ৳{(financialSummary.unapprovedPayments || 0).toFixed(2)}
                       </Typography>
                     </Box>
                     <Box
@@ -2042,12 +2043,12 @@ const ApproveOrdersPage = () => {
                         variant="body1"
                         fontWeight="bold"
                         color={
-                          (financialSummary.due_amount || 0) > 0
+                          (financialSummary.dueAmount || 0) > 0
                             ? "error.main"
                             : "success.main"
                         }
                       >
-                        ৳{(financialSummary.due_amount || 0).toFixed(2)}
+                        ৳{(financialSummary.dueAmount || 0).toFixed(2)}
                       </Typography>
                     </Box>
                   </Box>
@@ -2092,7 +2093,7 @@ const ApproveOrdersPage = () => {
                         <TableRow key={payment._id}>
                           <TableCell>{payment.transaction_id}</TableCell>
                           <TableCell>
-                            {payment.payment_date ? new Date(payment.payment_date).toLocaleDateString() : 'N/A'}
+                            {(payment.payment_date || payment.deposit_date) ? formatDateForDisplay(payment.payment_date || payment.deposit_date) : 'N/A'}
                           </TableCell>
                           <TableCell>
                             <Chip
@@ -2102,7 +2103,7 @@ const ApproveOrdersPage = () => {
                             />
                           </TableCell>
                           <TableCell align="right">
-                            ৳{payment.amount.toFixed(2)}
+                            ৳{(payment.amount || payment.deposit_amount || 0).toFixed(2)}
                           </TableCell>
                           <TableCell>
                             <Chip
@@ -2127,7 +2128,11 @@ const ApproveOrdersPage = () => {
                                   size="small"
                                   color="success"
                                   onClick={async () => {
-                                    if (!confirm(`Approve payment of ৳${payment.amount?.toLocaleString()} from ${payment.company_bank?.name || payment.depositor_bank?.name || 'Bank'}?\n\nTransaction ID: ${payment.transaction_id}\nDeposit Date: ${new Date(payment.payment_date).toLocaleDateString()}\n\nThis will create a credit entry in the distributor's ledger.`)) {
+                                    const paymentSource = payment.payment_method === 'Cash' 
+                                      ? payment.cash_method || 'Cash'
+                                      : (payment.company_bank?.name || payment.depositor_bank?.name || 'Bank');
+                                    const depositDate = payment.payment_date || payment.deposit_date;
+                                    if (!confirm(`Approve payment of ৳${payment.amount?.toLocaleString()} from ${paymentSource}?\n\nTransaction ID: ${payment.transaction_id}\nDeposit Date: ${depositDate ? formatDateForDisplay(depositDate) : 'N/A'}\n\nThis will create a credit entry in the distributor's ledger.`)) {
                                       return;
                                     }
                                     
@@ -2527,7 +2532,11 @@ const ApproveOrdersPage = () => {
                 variant="contained"
                 color="success"
                 startIcon={<Send />}
-                disabled={selectedOrder?.status !== "forwarded_to_finance"}
+                disabled={
+                  selectedOrder?.current_approver_role !== "Finance" || 
+                  selectedOrder?.status === "approved" || 
+                  selectedOrder?.status === "cancelled"
+                }
               >
                 Approve DO
               </Button>
@@ -2689,6 +2698,7 @@ const ApproveOrdersPage = () => {
           }
         }}
         defaultDONumber={selectedOrder?.order_number || ""}
+        distributorId={typeof selectedOrder?.distributor_id === 'object' ? selectedOrder?.distributor_id?._id : selectedOrder?.distributor_id}
         collection={editingPayment}
       />
 

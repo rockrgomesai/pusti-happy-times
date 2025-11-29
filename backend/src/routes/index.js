@@ -42,8 +42,9 @@ const inventoryRequisitionsRoutes = require("./inventory/requisitions");
 const customerLedgerRoutes = require("./finance/customerledger");
 const demandOrdersRoutes = require("./ordermanagement/demandorders");
 const collectionsRoutes = require("./ordermanagement/collections");
-const distributionRoutes = require("./ordermanagement/distribution");
-const approveSchedulesRoutes = require("./ordermanagement/approveschedules");
+const schedulingsRoutes = require("./ordermanagement/schedulings");
+const offerSendItemsRoutes = require("./offers/sendItems");
+const offerReceiveItemsRoutes = require("./offers/receiveItems");
 
 const router = express.Router();
 
@@ -369,20 +370,28 @@ router.use("/ordermanagement/demandorders", demandOrdersRoutes);
 router.use("/ordermanagement/collections", collectionsRoutes);
 
 /**
- * Distribution Routes
- * @route   /api/ordermanagement/distribution
- * @desc    Delivery scheduling for approved demand orders
- * @access  Private (Distribution role only)
+ * Schedulings Routes
+ * @route   /api/ordermanagement/schedulings
+ * @desc    Distribution scheduling and Finance approval for approved demand orders
+ * @access  Private (Distribution and Finance roles)
  */
-router.use("/ordermanagement/distribution", distributionRoutes);
+router.use("/ordermanagement/schedulings", schedulingsRoutes);
 
 /**
- * Approve Schedules Routes
- * @route   /api/ordermanagement/approveschedules
- * @desc    Finance approval of scheduled orders
- * @access  Private (Finance role only)
+ * Offer Products Routes (Sales Admin & Inventory)
+ * @route   /api/offers/send-items
+ * @desc    Send PROCURED (offer) products from Sales Admin to depots
+ * @access  Private (Sales Admin role)
  */
-router.use("/ordermanagement/approveschedules", approveSchedulesRoutes);
+router.use("/offers/send-items", offerSendItemsRoutes);
+
+/**
+ * Offer Products Receive Routes (Inventory)
+ * @route   /api/offers/receive-items
+ * @desc    Receive PROCURED (offer) products at depot level
+ * @access  Private (Inventory role)
+ */
+router.use("/offers/receive-items", offerReceiveItemsRoutes);
 
 /**
  * API Route Documentation Helper

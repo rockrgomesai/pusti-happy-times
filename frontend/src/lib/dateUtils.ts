@@ -2,7 +2,7 @@
  * Date utility functions for Bangladeshi format display and ISO storage
  */
 
-// Format date for display in Bangladeshi format (dd/MM/yy)
+// Format date for display in Bangladeshi format (dd/MM/yyyy)
 export const formatDateForDisplay = (date: string | Date): string => {
   if (!date) return '';
   
@@ -11,12 +11,12 @@ export const formatDateForDisplay = (date: string | Date): string => {
   
   const day = dateObj.getDate().toString().padStart(2, '0');
   const month = (dateObj.getMonth() + 1).toString().padStart(2, '0');
-  const year = dateObj.getFullYear().toString().slice(-2);
+  const year = dateObj.getFullYear();
   
   return `${day}/${month}/${year}`;
 };
 
-// Format date and time for display
+// Format date and time for display in Bangladeshi format (dd/MM/yyyy HH:mm)
 export const formatDateTimeForDisplay = (date: string | Date): string => {
   if (!date) return '';
   
@@ -25,7 +25,7 @@ export const formatDateTimeForDisplay = (date: string | Date): string => {
   
   const day = dateObj.getDate().toString().padStart(2, '0');
   const month = (dateObj.getMonth() + 1).toString().padStart(2, '0');
-  const year = dateObj.getFullYear().toString().slice(-2);
+  const year = dateObj.getFullYear();
   const hours = dateObj.getHours().toString().padStart(2, '0');
   const minutes = dateObj.getMinutes().toString().padStart(2, '0');
   
