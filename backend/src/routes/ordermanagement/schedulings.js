@@ -1,4 +1,5 @@
 const express = require("express");
+const mongoose = require("mongoose");
 const router = express.Router();
 const Scheduling = require("../../models/Scheduling");
 const DemandOrder = require("../../models/DemandOrder");
@@ -27,18 +28,22 @@ router.get("/", authenticate, requireApiPermission("scheduling:read"), async (re
     }
 
     console.log("📦 Schedulings GET - User Role:", userRole);
+    console.log("📦 User object:", JSON.stringify(req.user, null, 2));
 
     // Build query based on user role
     const query = {};
 
     if (userRole === "Distribution") {
-      // Distribution only sees schedulings that need scheduling (not yet submitted to Finance)
-      query.current_status = { $nin: ["Finance-to-approve", "Approved", "Rejected"] };
-      console.log("📦 Distribution query:", query);
+      // Distribution sees all schedulings except rejected ones
+      // They need to see partially approved schedulings with remaining unscheduled items
+      query.current_status = { $ne: "Rejected" };
+      console.log("📦 Distribution query:", JSON.stringify(query));
     } else if (userRole === "Finance") {
       // Finance sees schedulings ready for approval
       query.current_status = "Finance-to-approve";
-      console.log("📦 Finance query:", query);
+      console.log("💰 Finance query:", JSON.stringify(query));
+    } else {
+      console.log("⚠️ Unknown role or no role detected");
     }
 
     if (status) {
@@ -50,8 +55,16 @@ router.get("/", authenticate, requireApiPermission("scheduling:read"), async (re
       .populate("distributor_id", "name erp_id delivery_depot_id")
       .populate("depot_id", "name")
       .populate("order_id", "order_number created_at")
+      .populate("scheduling_details.depot_id", "name code")
       .sort({ "order_id.created_at": -1, order_number: 1 })
       .lean();
+
+    console.log(`📊 Found ${schedulings.length} schedulings matching query`);
+    schedulings.forEach((s) => {
+      console.log(
+        `  - ${s.order_number}: status=${s.current_status}, items=${s.items.length}, details=${s.scheduling_details?.length || 0}`
+      );
+    });
 
     // Group by depot, then by distributor
     const groupedData = {};
@@ -88,15 +101,32 @@ router.get("/", authenticate, requireApiPermission("scheduling:read"), async (re
         };
       }
 
-      // Filter items to only show those with unscheduled quantity > 0 for Distribution role
+      // Filter items based on user role
       let itemsToShow = scheduling.items;
       if (userRole === "Distribution") {
+        // Distribution only sees items with unscheduled quantity
         itemsToShow = scheduling.items.filter((item) => item.unscheduled_qty > 0);
-      }
 
-      // Skip if no items to show after filtering
-      if (itemsToShow.length === 0) {
-        continue;
+        // Skip if no items to show after filtering
+        if (itemsToShow.length === 0) {
+          continue;
+        }
+      } else if (userRole === "Finance") {
+        // Finance needs to see orders with pending scheduling details to approve
+        const hasPendingSchedulingDetails =
+          scheduling.scheduling_details &&
+          scheduling.scheduling_details.some(
+            (detail) => !detail.approval_status || detail.approval_status === "Pending"
+          );
+
+        // Skip if no pending scheduling details
+        if (!hasPendingSchedulingDetails) {
+          console.log(`  ⏭️ Skipping ${scheduling.order_number} - no pending scheduling details`);
+          continue;
+        }
+
+        // Finance sees all items (for context)
+        itemsToShow = scheduling.items;
       }
 
       // Expand items for the order
@@ -107,6 +137,7 @@ router.get("/", authenticate, requireApiPermission("scheduling:read"), async (re
         order_date: scheduling.order_id.created_at,
         items: itemsToShow,
         current_status: scheduling.current_status,
+        scheduling_details: scheduling.scheduling_details || [],
       };
 
       groupedData[depotId].distributors[distributorId].orders.push(orderData);
@@ -407,14 +438,14 @@ router.get(
           current_status: scheduling.current_status,
           status_date: statusEntry?.date,
           status_comments: statusEntry?.comments,
-          items: scheduling.items.map((item) => ({
+          items: (scheduling.items || []).map((item) => ({
             item_id: item.item_id,
             sku: item.sku,
             dp_price: item.dp_price,
             order_qty: item.order_qty,
             scheduled_qty: item.scheduled_qty,
             unscheduled_qty: item.unscheduled_qty,
-            scheduling_details: item.scheduling_details.map((detail) => ({
+            scheduling_details: (item.scheduling_details || []).map((detail) => ({
               scheduled_by: detail.scheduled_by,
               scheduled_at: detail.scheduled_at,
               delivery_qty: detail.delivery_qty,
@@ -566,11 +597,15 @@ router.post(
           });
         }
 
+        console.log(
+          `📦 Validating item ${item.sku}: delivery_qty=${delivery_qty}, unscheduled_qty=${item.unscheduled_qty}, scheduled_qty=${item.scheduled_qty}`
+        );
+
         // Validate delivery_qty does not exceed unscheduled_qty
         if (delivery_qty > item.unscheduled_qty) {
           return res.status(400).json({
             success: false,
-            message: `Delivery quantity ${delivery_qty} exceeds unscheduled quantity ${item.unscheduled_qty} for item ${item.sku}`,
+            message: `Delivery quantity ${delivery_qty} exceeds unscheduled quantity ${item.unscheduled_qty} for item ${item.sku}. Already scheduled: ${item.scheduled_qty}, Order qty: ${item.order_qty}`,
           });
         }
 
@@ -661,6 +696,174 @@ router.post(
       res.status(500).json({
         success: false,
         message: "Failed to save scheduling",
+        error: error.message,
+      });
+    }
+  }
+);
+
+/**
+ * POST /ordermanagement/schedulings/:id/approve-batch
+ * Finance approves selected scheduling details (partial approval)
+ * Requires: scheduling:approve permission
+ */
+router.post(
+  "/:id/approve-batch",
+  authenticate,
+  requireApiPermission("scheduling:approve"),
+  async (req, res) => {
+    try {
+      const schedulingId = req.params.id;
+      const { approvals, comments } = req.body;
+      const userId = req.user.id;
+      const userName = req.user.username || "Unknown User";
+
+      // approvals is array of { scheduling_detail_id, approved_qty, original_qty }
+      if (!approvals || !Array.isArray(approvals) || approvals.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: "approvals array is required",
+        });
+      }
+
+      // Only Finance can approve
+      const Role = require("../../models/Role");
+      let userRole = null;
+      if (req.user.role_id) {
+        if (typeof req.user.role_id === "object" && req.user.role_id.role) {
+          userRole = req.user.role_id;
+        } else {
+          userRole = await Role.findById(req.user.role_id).lean();
+        }
+      }
+
+      if (!userRole || userRole.role !== "Finance") {
+        return res.status(403).json({
+          success: false,
+          message: "Only Finance role can approve schedulings",
+        });
+      }
+
+      const scheduling = await Scheduling.findById(schedulingId);
+      if (!scheduling) {
+        return res.status(404).json({
+          success: false,
+          message: "Scheduling not found",
+        });
+      }
+
+      // Process approvals with partial quantities
+      let approvedCount = 0;
+      let totalApprovedQty = 0;
+      let totalRejectedQty = 0;
+
+      approvals.forEach((approval) => {
+        const detail = scheduling.scheduling_details.find(
+          (d) => d._id.toString() === approval.scheduling_detail_id
+        );
+
+        if (detail) {
+          const approvedQty = approval.approved_qty;
+          const rejectedQty = approval.original_qty - approvedQty;
+
+          // Update the detail with approved quantity
+          detail.delivery_qty = approvedQty;
+          detail.approval_status = "Approved";
+          detail.approved_by = userId;
+          detail.approved_at = new Date();
+
+          totalApprovedQty += approvedQty;
+          totalRejectedQty += rejectedQty;
+          approvedCount++;
+
+          // If Finance approved less than scheduled, create a rejected detail for the difference
+          if (rejectedQty > 0) {
+            const rejectedDetail = {
+              ...detail.toObject(),
+              _id: new mongoose.Types.ObjectId(),
+              delivery_qty: rejectedQty,
+              approval_status: "Rejected",
+              approved_by: userId,
+              approved_at: new Date(),
+              scheduled_at: detail.scheduled_at,
+            };
+            scheduling.scheduling_details.push(rejectedDetail);
+
+            // Update the item's quantities - reduce scheduled_qty and increase unscheduled_qty
+            const item = scheduling.items.find(
+              (i) => i.item_id.toString() === detail.item_id.toString()
+            );
+            if (item) {
+              item.scheduled_qty -= rejectedQty;
+              item.unscheduled_qty += rejectedQty;
+            }
+          }
+        }
+      });
+
+      if (approvedCount === 0) {
+        return res.status(400).json({
+          success: false,
+          message: "No matching scheduling details found",
+        });
+      }
+
+      // Check if all scheduling details are now approved
+      const allApproved = scheduling.scheduling_details.every(
+        (detail) => detail.approval_status === "Approved"
+      );
+
+      if (allApproved) {
+        scheduling.current_status = "Approved";
+      }
+
+      scheduling.scheduling_status.push({
+        status: allApproved ? "Approved" : "Partially Approved",
+        date: new Date(),
+        performed_by: userId,
+        comments: comments || `Batch approval: ${approvedCount} items approved`,
+      });
+
+      await scheduling.save();
+
+      // Update DO status if fully approved
+      if (allApproved) {
+        const order = await DemandOrder.findById(scheduling.order_id);
+        if (order) {
+          const validStatuses = ["scheduling_completed", "scheduling_in_progress"];
+          if (validStatuses.includes(order.status)) {
+            order.status = "approved";
+            order.approval_history.push({
+              action: "approve",
+              performed_by: userId,
+              performed_by_name: userName,
+              performed_by_role: "Finance",
+              from_status: order.status,
+              to_status: "approved",
+              comments: comments || "All scheduling items approved by Finance",
+              timestamp: new Date(),
+            });
+            await order.save();
+          }
+        }
+      }
+
+      res.json({
+        success: true,
+        message: `${approvedCount} item(s) approved successfully (${totalApprovedQty} total qty approved${totalRejectedQty > 0 ? `, ${totalRejectedQty} qty rejected` : ""})`,
+        data: {
+          approved_count: approvedCount,
+          total_approved_qty: totalApprovedQty,
+          total_rejected_qty: totalRejectedQty,
+          all_approved: allApproved,
+          current_status: scheduling.current_status,
+        },
+      });
+    } catch (error) {
+      console.error("Error in batch approval:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to approve selected items",
         error: error.message,
       });
     }

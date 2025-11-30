@@ -39,6 +39,7 @@ const productionSendToStoreRoutes = require("./production/sendToStore");
 const inventoryFactoryToStoreRoutes = require("./inventory/factoryToStore");
 const inventoryLocalStockRoutes = require("./inventory/localStock");
 const inventoryRequisitionsRoutes = require("./inventory/requisitions");
+const depotTransfersRoutes = require("./inventory/depot-transfers");
 const customerLedgerRoutes = require("./finance/customerledger");
 const demandOrdersRoutes = require("./ordermanagement/demandorders");
 const collectionsRoutes = require("./ordermanagement/collections");
@@ -344,6 +345,7 @@ router.use("/production/send-to-store", productionSendToStoreRoutes);
 router.use("/inventory/factory-to-store", inventoryFactoryToStoreRoutes);
 router.use("/inventory/local-stock", inventoryLocalStockRoutes);
 router.use("/inventory/requisitions", inventoryRequisitionsRoutes);
+router.use("/inventory/depot-transfers", depotTransfersRoutes);
 
 /**
  * Finance Routes

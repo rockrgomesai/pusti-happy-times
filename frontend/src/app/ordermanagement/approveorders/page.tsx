@@ -191,6 +191,16 @@ interface Order {
 }
 
 const ApproveOrdersPage = () => {
+  // Helper function to extract numeric value from Decimal128 or regular number
+  const getNumericValue = (value: any): number | string => {
+    if (value === null || value === undefined) return "";
+    if (typeof value === 'object' && value.$numberDecimal) {
+      return parseFloat(value.$numberDecimal) || "";
+    }
+    if (typeof value === 'number') return value;
+    return parseFloat(value) || "";
+  };
+
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -2132,7 +2142,7 @@ const ApproveOrdersPage = () => {
                                       ? payment.cash_method || 'Cash'
                                       : (payment.company_bank?.name || payment.depositor_bank?.name || 'Bank');
                                     const depositDate = payment.payment_date || payment.deposit_date;
-                                    if (!confirm(`Approve payment of ৳${payment.amount?.toLocaleString()} from ${paymentSource}?\n\nTransaction ID: ${payment.transaction_id}\nDeposit Date: ${depositDate ? formatDateForDisplay(depositDate) : 'N/A'}\n\nThis will create a credit entry in the distributor's ledger.`)) {
+                                    if (!confirm(`Approve payment of ৳${payment.deposit_amount?.toLocaleString()} from ${paymentSource}?\n\nTransaction ID: ${payment.transaction_id}\nDeposit Date: ${depositDate ? formatDateForDisplay(depositDate) : 'N/A'}\n\nThis will create a credit entry in the distributor's ledger.`)) {
                                       return;
                                     }
                                     
@@ -2164,10 +2174,10 @@ const ApproveOrdersPage = () => {
                                     // Transform payment data to match CollectionForm's expected format
                                     const transformedPayment = {
                                       ...payment,
-                                      deposit_amount: payment.amount,
-                                      deposit_date: payment.payment_date,
+                                      deposit_date: payment.deposit_date,
                                       do_no: payment.do_no || selectedOrder?.order_number,
                                       // Ensure all fields are properly mapped
+                                      payment_method: payment.payment_method,
                                       cash_method: payment.cash_method,
                                       depositor_mobile: payment.depositor_mobile,
                                       depositor_branch: payment.depositor_branch,

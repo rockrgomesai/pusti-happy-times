@@ -39,12 +39,30 @@ const schedulingDetailSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
   },
+  approval_status: {
+    type: String,
+    enum: ["Pending", "Approved", "Rejected"],
+    default: "Pending",
+  },
+  approved_by: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+  },
+  approved_at: {
+    type: Date,
+  },
 });
 
 const schedulingStatusSchema = new mongoose.Schema({
   status: {
     type: String,
-    enum: ["Finance-to-approve", "Approved", "Rejected"],
+    enum: [
+      "Pending-scheduling",
+      "Finance-to-approve",
+      "Partially Approved",
+      "Approved",
+      "Rejected",
+    ],
     required: true,
   },
   date: {
@@ -115,8 +133,14 @@ const schedulingSchema = new mongoose.Schema(
     scheduling_status: [schedulingStatusSchema],
     current_status: {
       type: String,
-      enum: ["Finance-to-approve", "Approved", "Rejected"],
-      default: "Finance-to-approve",
+      enum: [
+        "Pending-scheduling",
+        "Finance-to-approve",
+        "Partially Approved",
+        "Approved",
+        "Rejected",
+      ],
+      default: "Pending-scheduling",
     },
     created_by: {
       type: mongoose.Schema.Types.ObjectId,

@@ -254,7 +254,17 @@ const demandOrderSchema = new mongoose.Schema(
       {
         action: {
           type: String,
-          enum: ["submit", "forward", "modify", "approve", "reject", "cancel", "schedule"],
+          enum: [
+            "submit",
+            "forward",
+            "modify",
+            "approve",
+            "reject",
+            "cancel",
+            "schedule",
+            "partial_scheduling",
+            "scheduling_completed",
+          ],
           required: true,
         },
         performed_by: {

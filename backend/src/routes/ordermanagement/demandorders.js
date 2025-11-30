@@ -2001,12 +2001,22 @@ router.post(
       }
 
       // Find the demand order
-      const order = await DemandOrder.findById(orderId).populate("distributor_id");
+      const order = await DemandOrder.findById(orderId)
+        .populate("distributor_id")
+        .populate("distributor_id.delivery_depot_id", "name");
 
       if (!order) {
         return res.status(404).json({
           success: false,
           message: "Demand order not found",
+        });
+      }
+
+      // Check if distributor has a delivery depot assigned
+      if (!order.distributor_id.delivery_depot_id) {
+        return res.status(400).json({
+          success: false,
+          message: `Cannot approve order: Distributor ${order.distributor_id.name} does not have a delivery depot assigned. Please assign a depot to the distributor first.`,
         });
       }
 
@@ -2169,7 +2179,7 @@ router.post(
         items: schedulingItems,
         scheduling_details: [],
         scheduling_status: [],
-        current_status: "Finance-to-approve",
+        current_status: "Pending-scheduling",
         created_by: userId,
       });
       await scheduling.save();

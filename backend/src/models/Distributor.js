@@ -151,7 +151,7 @@ const distributorSchema = new Schema(
     delivery_depot_id: {
       type: Schema.Types.ObjectId,
       ref: "Facility",
-      default: null,
+      required: [true, "Delivery depot is required"],
     },
     proprietor: {
       type: String,

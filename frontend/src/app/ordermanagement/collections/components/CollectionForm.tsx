@@ -57,6 +57,17 @@ export default function CollectionForm({
   collection,
 }: CollectionFormProps) {
   const isEditMode = !!collection;
+  
+  // Helper function to extract numeric value from Decimal128 or regular number
+  const getNumericValue = (value: any): number | string => {
+    if (value === null || value === undefined) return "";
+    if (typeof value === 'object' && value.$numberDecimal) {
+      return parseFloat(value.$numberDecimal) || "";
+    }
+    if (typeof value === 'number') return value;
+    return parseFloat(value) || "";
+  };
+  
   const [loading, setLoading] = useState(false);
   const [banks, setBanks] = useState<Bank[]>([]);
   const [loadingBanks, setLoadingBanks] = useState(true);
