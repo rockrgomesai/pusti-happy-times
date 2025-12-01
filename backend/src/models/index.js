@@ -38,6 +38,12 @@ const DepotStock = require("./DepotStock");
 const DepotTransactionIn = require("./DepotTransactionIn");
 const DepotTransactionOut = require("./DepotTransactionOut");
 
+// Import distribution models
+const LoadSheet = require("./LoadSheet");
+const DeliveryChalans = require("./DeliveryChalans");
+const DeliveryInvoices = require("./DeliveryInvoices");
+const DistributorStock = require("./DistributorStock");
+
 // Import legacy inventory models (for backward compatibility)
 const FactoryStoreInventory = require("./FactoryStoreInventory");
 const FactoryStoreInventoryTransaction = require("./FactoryStoreInventoryTransaction");
@@ -72,6 +78,11 @@ const models = {
   DepotStock,
   DepotTransactionIn,
   DepotTransactionOut,
+
+  // Distribution models
+  LoadSheet,
+  DeliveryChalans,
+  DeliveryInvoices,
 
   // Legacy inventory models (deprecated, use depot models instead)
   FactoryStoreInventory,
@@ -216,6 +227,11 @@ module.exports = {
   DepotTransactionIn,
   DepotTransactionOut,
 
+  // Distribution models
+  LoadSheet,
+  DeliveryChalans,
+  DeliveryInvoices,
+
   // Legacy inventory models (deprecated, use depot models instead)
   FactoryStoreInventory,
   FactoryStoreInventoryTransaction,
@@ -228,6 +244,7 @@ module.exports = {
   RoleSidebarMenuItem,
   RoleApiPermission,
   RolePagePermission,
+  DistributorStock,
 
   // Utilities
   models,

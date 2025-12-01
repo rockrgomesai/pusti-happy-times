@@ -46,6 +46,8 @@ const collectionsRoutes = require("./ordermanagement/collections");
 const schedulingsRoutes = require("./ordermanagement/schedulings");
 const offerSendItemsRoutes = require("./offers/sendItems");
 const offerReceiveItemsRoutes = require("./offers/receiveItems");
+const distributionRoutes = require("./distribution");
+const distributorRoutes = require("./distributor");
 
 const router = express.Router();
 
@@ -394,6 +396,22 @@ router.use("/offers/send-items", offerSendItemsRoutes);
  * @access  Private (Inventory role)
  */
 router.use("/offers/receive-items", offerReceiveItemsRoutes);
+
+/**
+ * Distribution Routes (Load Sheets, Chalans, Invoices)
+ * @route   /api/distribution/*
+ * @desc    Distribution module operations (Load Sheets, Delivery Chalans, Invoices)
+ * @access  Private (Inventory Depot role)
+ */
+router.use("/distribution", distributionRoutes);
+
+/**
+ * Distributor Routes (Receive Chalans, View Stock)
+ * @route   /api/distributor/*
+ * @desc    Distributor operations (Receive goods from depot, manage stock)
+ * @access  Private (Distributor role)
+ */
+router.use("/distributor", distributorRoutes);
 
 /**
  * API Route Documentation Helper
