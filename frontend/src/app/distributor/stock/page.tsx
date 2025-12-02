@@ -34,7 +34,7 @@ import {
   TrendingDown,
   CheckCircle,
 } from "@mui/icons-material";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/contexts/AuthContext";
 import axiosInstance from "@/lib/api";
 import { format } from "date-fns";
 
