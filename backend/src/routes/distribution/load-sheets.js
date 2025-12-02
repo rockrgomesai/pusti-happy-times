@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
 const models = require('../../models');
-const { verifyToken, checkPermission } = require('../../middleware/auth');
+const { authenticate, requireApiPermission } = require('../../middleware/auth');
 const {
   startTransactionSession,
   addSessionToQuery,
@@ -35,7 +35,7 @@ const formatInvoiceParticulars = (items, doNumber, doDate, invoiceNumber, discou
 };
 
 // GET /api/distribution/load-sheets/approved-dos - Get approved DOs for Load Sheet creation
-router.get('/load-sheets/approved-dos', verifyToken, checkPermission('load-sheet:create'), async (req, res) => {
+router.get('/load-sheets/approved-dos', authenticate, requireApiPermission('load-sheet:create'), async (req, res) => {
   try {
     const { facility_id: depot_id } = req.userContext;
 
@@ -158,7 +158,7 @@ router.get('/load-sheets/approved-dos', verifyToken, checkPermission('load-sheet
 });
 
 // POST /api/distribution/load-sheets/validate-stock - Validate stock for selected items
-router.post('/load-sheets/validate-stock', verifyToken, checkPermission('load-sheet:create'), async (req, res) => {
+router.post('/load-sheets/validate-stock', authenticate, requireApiPermission('load-sheet:create'), async (req, res) => {
   try {
     const { facility_id: depot_id } = req.userContext;
     const { items } = req.body; // Array of { sku, delivery_qty }
@@ -246,7 +246,7 @@ router.post('/load-sheets/validate-stock', verifyToken, checkPermission('load-sh
 });
 
 // POST /api/distribution/load-sheets/create - Create new Load Sheet
-router.post('/load-sheets/create', verifyToken, checkPermission('load-sheet:create'), async (req, res) => {
+router.post('/load-sheets/create', authenticate, requireApiPermission('load-sheet:create'), async (req, res) => {
   try {
     const { facility_id: depot_id, user_id } = req.userContext;
     const { delivery_date, vehicle_info, distributors, notes, status = 'Draft' } = req.body;
@@ -341,7 +341,7 @@ router.post('/load-sheets/create', verifyToken, checkPermission('load-sheet:crea
 });
 
 // GET /api/distribution/load-sheets/list - Get Load Sheets list with filters
-router.get('/load-sheets/list', verifyToken, checkPermission('load-sheet:read'), async (req, res) => {
+router.get('/load-sheets/list', authenticate, requireApiPermission('load-sheet:read'), async (req, res) => {
   try {
     const { facility_id: depot_id } = req.userContext;
     const {
@@ -419,7 +419,7 @@ router.get('/load-sheets/list', verifyToken, checkPermission('load-sheet:read'),
 });
 
 // GET /api/distribution/load-sheets/:id - Get Load Sheet details
-router.get('/load-sheets/:id', verifyToken, checkPermission('load-sheet:read'), async (req, res) => {
+router.get('/load-sheets/:id', authenticate, requireApiPermission('load-sheet:read'), async (req, res) => {
   try {
     const { id } = req.params;
     const { facility_id: depot_id } = req.userContext;
@@ -454,7 +454,7 @@ router.get('/load-sheets/:id', verifyToken, checkPermission('load-sheet:read'), 
 });
 
 // PATCH /api/distribution/load-sheets/:id - Update Load Sheet (Draft only)
-router.patch('/load-sheets/:id', verifyToken, checkPermission('load-sheet:edit'), async (req, res) => {
+router.patch('/load-sheets/:id', authenticate, requireApiPermission('load-sheet:edit'), async (req, res) => {
   try {
     const { id } = req.params;
     const { facility_id: depot_id } = req.userContext;
@@ -497,7 +497,7 @@ router.patch('/load-sheets/:id', verifyToken, checkPermission('load-sheet:edit')
 });
 
 // POST /api/distribution/load-sheets/:id/convert - Convert Load Sheet to Chalans & Invoices
-router.post('/load-sheets/:id/convert', verifyToken, checkPermission('load-sheet:convert'), async (req, res) => {
+router.post('/load-sheets/:id/convert', authenticate, requireApiPermission('load-sheet:convert'), async (req, res) => {
   let session;
   let useTransaction;
   
@@ -764,7 +764,7 @@ router.post('/load-sheets/:id/convert', verifyToken, checkPermission('load-sheet
 });
 
 // DELETE /api/distribution/load-sheets/:id - Delete Load Sheet (Draft only)
-router.delete('/load-sheets/:id', verifyToken, checkPermission('load-sheet:delete'), async (req, res) => {
+router.delete('/load-sheets/:id', authenticate, requireApiPermission('load-sheet:delete'), async (req, res) => {
   try {
     const { id } = req.params;
     const { facility_id: depot_id } = req.userContext;

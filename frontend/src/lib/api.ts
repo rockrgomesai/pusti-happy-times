@@ -2,21 +2,22 @@ import axios, { AxiosResponse, AxiosError } from 'axios';
 import Cookies from 'js-cookie';
 
 // API base configuration
-const RAW_API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-const API_VERSION_PATH = '/api/v1';
+// In production, API calls go through Next.js API routes (/api/...)
+// In development, calls go directly to backend (http://localhost:5000/api/v1)
+const isDevelopment = process.env.NODE_ENV === 'development';
+const RAW_API_URL = isDevelopment 
+  ? (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1')
+  : '/api/api/v1'; // Proxy through Next.js: /api/[...path] -> backend /api/v1
 
 const trimTrailingSlash = (url: string) => url.replace(/\/+$/, '');
 
 const sanitizedRawUrl = trimTrailingSlash(RAW_API_URL);
-const hasVersionSuffix = sanitizedRawUrl.endsWith(API_VERSION_PATH);
 
-export const API_ORIGIN_URL = hasVersionSuffix
-  ? trimTrailingSlash(sanitizedRawUrl.slice(0, -API_VERSION_PATH.length) || sanitizedRawUrl)
-  : sanitizedRawUrl;
+export const API_ORIGIN_URL = isDevelopment
+  ? sanitizedRawUrl.replace(/\/api\/v1$/, '') || sanitizedRawUrl
+  : '';
 
-export const API_BASE_URL = hasVersionSuffix
-  ? sanitizedRawUrl
-  : `${sanitizedRawUrl}${API_VERSION_PATH}`;
+export const API_BASE_URL = sanitizedRawUrl;
 
 // Simple API online/offline status broadcaster
 type ApiStatusListener = (online: boolean) => void;

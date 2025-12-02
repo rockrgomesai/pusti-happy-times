@@ -47,7 +47,7 @@ const schedulingsRoutes = require("./ordermanagement/schedulings");
 const offerSendItemsRoutes = require("./offers/sendItems");
 const offerReceiveItemsRoutes = require("./offers/receiveItems");
 const distributionRoutes = require("./distribution");
-const distributorRoutes = require("./distributor");
+const distributorPortalRoutes = require("./distributor");
 
 const router = express.Router();
 
@@ -411,7 +411,7 @@ router.use("/distribution", distributionRoutes);
  * @desc    Distributor operations (Receive goods from depot, manage stock)
  * @access  Private (Distributor role)
  */
-router.use("/distributor", distributorRoutes);
+router.use("/distributor", distributorPortalRoutes);
 
 /**
  * API Route Documentation Helper

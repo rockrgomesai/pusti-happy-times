@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
 const models = require('../../models');
-const { verifyToken, checkPermission } = require('../../middleware/auth');
+const { authenticate, requireApiPermission } = require('../../middleware/auth');
 const {
   startTransactionSession,
   addSessionToQuery,
@@ -14,7 +14,7 @@ const {
 } = require('../../utils/transactionHelper');
 
 // GET /api/distribution/chalans/list - Get Chalans list with filters
-router.get('/chalans/list', verifyToken, checkPermission('chalan:read'), async (req, res) => {
+router.get('/chalans/list', authenticate, requireApiPermission('chalan:read'), async (req, res) => {
   try {
     const { facility_id: depot_id } = req.userContext;
     const {
@@ -98,7 +98,7 @@ router.get('/chalans/list', verifyToken, checkPermission('chalan:read'), async (
 });
 
 // GET /api/distribution/chalans/:id - Get Chalan details
-router.get('/chalans/:id', verifyToken, checkPermission('chalan:read'), async (req, res) => {
+router.get('/chalans/:id', authenticate, requireApiPermission('chalan:read'), async (req, res) => {
   try {
     const { id } = req.params;
     const { facility_id: depot_id } = req.userContext;
@@ -139,7 +139,7 @@ router.get('/chalans/:id', verifyToken, checkPermission('chalan:read'), async (r
 });
 
 // PATCH /api/distribution/chalans/:id/status - Update Chalan status
-router.patch('/chalans/:id/status', verifyToken, checkPermission('chalan:edit'), async (req, res) => {
+router.patch('/chalans/:id/status', authenticate, requireApiPermission('chalan:edit'), async (req, res) => {
   try {
     const { id } = req.params;
     const { facility_id: depot_id, user_id } = req.userContext;
@@ -187,7 +187,7 @@ router.patch('/chalans/:id/status', verifyToken, checkPermission('chalan:edit'),
 });
 
 // DELETE /api/distribution/chalans/:id - Cancel Chalan (Pending only, rollback inventory)
-router.delete('/chalans/:id', verifyToken, checkPermission('chalan:delete'), async (req, res) => {
+router.delete('/chalans/:id', authenticate, requireApiPermission('chalan:delete'), async (req, res) => {
   let session;
   let useTransaction;
   

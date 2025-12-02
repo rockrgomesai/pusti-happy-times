@@ -2,10 +2,10 @@ const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
 const models = require('../../models');
-const { verifyToken, checkPermission } = require('../../middleware/auth');
+const { authenticate, requireApiPermission } = require('../../middleware/auth');
 
 // GET /api/distribution/invoices/list - Get Invoices list with filters
-router.get('/invoices/list', verifyToken, checkPermission('invoice:read'), async (req, res) => {
+router.get('/invoices/list', authenticate, requireApiPermission('invoice:read'), async (req, res) => {
   try {
     const { facility_id: depot_id } = req.userContext;
     const {
@@ -153,7 +153,7 @@ router.get('/invoices/list', verifyToken, checkPermission('invoice:read'), async
 });
 
 // GET /api/distribution/invoices/:id - Get Invoice details
-router.get('/invoices/:id', verifyToken, checkPermission('invoice:read'), async (req, res) => {
+router.get('/invoices/:id', authenticate, requireApiPermission('invoice:read'), async (req, res) => {
   try {
     const { id } = req.params;
     const { facility_id: depot_id } = req.userContext;
@@ -188,7 +188,7 @@ router.get('/invoices/:id', verifyToken, checkPermission('invoice:read'), async 
 });
 
 // PATCH /api/distribution/invoices/:id/status - Update Invoice payment status
-router.patch('/invoices/:id/status', verifyToken, checkPermission('invoice:edit'), async (req, res) => {
+router.patch('/invoices/:id/status', authenticate, requireApiPermission('invoice:edit'), async (req, res) => {
   try {
     const { id } = req.params;
     const { facility_id: depot_id, user_id } = req.userContext;

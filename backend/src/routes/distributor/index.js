@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
 const models = require('../../models');
-const { verifyToken, checkPermission } = require('../../middleware/auth');
+const { authenticate, requireApiPermission } = require('../../middleware/auth');
 const {
   startTransactionSession,
   addSessionToQuery,
@@ -14,7 +14,7 @@ const {
 } = require('../../utils/transactionHelper');
 
 // GET /api/distributor/chalans/receive-list - Get Chalans ready to receive
-router.get('/chalans/receive-list', verifyToken, checkPermission('distributor-chalan:read'), async (req, res) => {
+router.get('/chalans/receive-list', authenticate, requireApiPermission('distributor-chalan:read'), async (req, res) => {
   try {
     const { user_id } = req.userContext;
     const { page = 1, limit = 10, search, date_from, date_to } = req.query;
@@ -86,7 +86,7 @@ router.get('/chalans/receive-list', verifyToken, checkPermission('distributor-ch
 });
 
 // GET /api/distributor/chalans/:id/receive-details - Get Chalan details for receiving
-router.get('/chalans/:id/receive-details', verifyToken, checkPermission('distributor-chalan:read'), async (req, res) => {
+router.get('/chalans/:id/receive-details', authenticate, requireApiPermission('distributor-chalan:read'), async (req, res) => {
   try {
     const { user_id } = req.userContext;
     const { id } = req.params;
@@ -136,7 +136,7 @@ router.get('/chalans/:id/receive-details', verifyToken, checkPermission('distrib
 });
 
 // POST /api/distributor/chalans/:id/receive - Receive Chalan
-router.post('/chalans/:id/receive', verifyToken, checkPermission('distributor-chalan:receive'), async (req, res) => {
+router.post('/chalans/:id/receive', authenticate, requireApiPermission('distributor-chalan:receive'), async (req, res) => {
   let session;
   let useTransaction;
 
@@ -287,7 +287,7 @@ router.post('/chalans/:id/receive', verifyToken, checkPermission('distributor-ch
 });
 
 // GET /api/distributor/stock - Get distributor stock
-router.get('/stock', verifyToken, checkPermission('distributor-stock:read'), async (req, res) => {
+router.get('/stock', authenticate, requireApiPermission('distributor-stock:read'), async (req, res) => {
   try {
     const { user_id } = req.userContext;
     const { page = 1, limit = 20, search, low_stock_only } = req.query;
@@ -367,7 +367,7 @@ router.get('/stock', verifyToken, checkPermission('distributor-stock:read'), asy
 });
 
 // GET /api/distributor/chalans/received-history - Get received chalans history
-router.get('/chalans/received-history', verifyToken, checkPermission('distributor-chalan:read'), async (req, res) => {
+router.get('/chalans/received-history', authenticate, requireApiPermission('distributor-chalan:read'), async (req, res) => {
   try {
     const { user_id } = req.userContext;
     const { page = 1, limit = 10, date_from, date_to } = req.query;
