@@ -35,7 +35,7 @@ import {
   CheckCircle,
 } from "@mui/icons-material";
 import { useAuth } from "@/context/AuthContext";
-import axiosInstance from "@/lib/axios";
+import axiosInstance from "@/lib/api";
 import { format } from "date-fns";
 
 interface StockItem {

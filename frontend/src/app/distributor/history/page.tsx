@@ -36,8 +36,8 @@ import {
   Warning,
   Inventory,
 } from "@mui/icons-material";
-import { useAuth } from "@/context/AuthContext";
-import axiosInstance from "@/lib/axios";
+import { useAuth } from '@/contexts/AuthContext';
+import axiosInstance from "@/lib/api";
 import { format } from "date-fns";
 
 interface ReceivedItemDetail {
