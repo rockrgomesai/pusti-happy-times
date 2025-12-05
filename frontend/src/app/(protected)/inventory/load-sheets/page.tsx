@@ -30,11 +30,12 @@ import {
   LocalShipping as TruckIcon,
   CheckCircle as CheckIcon,
   HourglassEmpty as PendingIcon,
-  Edit as EditIcon
+  Edit as EditIcon,
+  Delete as DeleteIcon
 } from '@mui/icons-material';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import axios from 'axios';
+import { apiClient } from '@/lib/api';
 
 interface LoadSheet {
   _id: string;
@@ -74,6 +75,28 @@ export default function LoadSheetsListPage() {
     loadLoadSheets();
   }, [page, rowsPerPage, status, searchTerm, dateFrom, dateTo]);
 
+  const handleDelete = async (id: string, loadSheetNumber: string, status: string) => {
+    if (status === 'Converted') {
+      alert('Cannot delete load sheet that has been converted to Chalans');
+      return;
+    }
+
+    if (!confirm(`Are you sure you want to delete Load Sheet ${loadSheetNumber}?`)) {
+      return;
+    }
+
+    try {
+      const response: any = await apiClient.delete(`/inventory/load-sheets/${id}`);
+      if (response.success) {
+        alert('Load Sheet deleted successfully');
+        loadLoadSheets();
+      }
+    } catch (error: any) {
+      console.error('Error deleting load sheet:', error);
+      alert(error.response?.data?.message || 'Failed to delete load sheet');
+    }
+  };
+
   const loadLoadSheets = async () => {
     try {
       setLoading(true);
@@ -88,17 +111,11 @@ export default function LoadSheetsListPage() {
       if (dateFrom) params.date_from = dateFrom;
       if (dateTo) params.date_to = dateTo;
 
-      const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL}/distribution/load-sheets/list`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-          params
-        }
-      );
+      const response: any = await apiClient.get('/inventory/load-sheets/list', { params });
 
-      if (response.data.success) {
-        setLoadSheets(response.data.data.load_sheets);
-        setTotalCount(response.data.data.pagination.total);
+      if (response.success) {
+        setLoadSheets(response.data.load_sheets);
+        setTotalCount(response.data.pagination.total);
       }
     } catch (error: any) {
       console.error('Error loading load sheets:', error);
@@ -154,16 +171,9 @@ export default function LoadSheetsListPage() {
             Load Sheets
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Manage delivery load sheets and track status
+            View and manage delivery load sheets
           </Typography>
         </Box>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => router.push('/distribution/load-sheets/create')}
-        >
-          Create Load Sheet
-        </Button>
       </Box>
 
       {/* Filters */}
@@ -245,16 +255,9 @@ export default function LoadSheetsListPage() {
             <Typography variant="h6" color="text.secondary" gutterBottom>
               No Load Sheets Found
             </Typography>
-            <Typography variant="body2" color="text.secondary" mb={3}>
-              Create your first load sheet to start tracking deliveries
+            <Typography variant="body2" color="text.secondary">
+              Load sheets will appear here once they are created from Depot Deliveries
             </Typography>
-            <Button
-              variant="contained"
-              startIcon={<AddIcon />}
-              onClick={() => router.push('/distribution/load-sheets/create')}
-            >
-              Create Load Sheet
-            </Button>
           </Box>
         ) : (
           <>
@@ -264,11 +267,6 @@ export default function LoadSheetsListPage() {
                   <TableRow>
                     <TableCell>Load Sheet No</TableCell>
                     <TableCell>Delivery Date</TableCell>
-                    <TableCell>Vehicle</TableCell>
-                    <TableCell>Driver</TableCell>
-                    <TableCell align="center">Distributors</TableCell>
-                    <TableCell align="center">Items</TableCell>
-                    <TableCell align="center">Total Qty</TableCell>
                     <TableCell>Status</TableCell>
                     <TableCell>Created By</TableCell>
                     <TableCell>Created At</TableCell>
@@ -286,17 +284,6 @@ export default function LoadSheetsListPage() {
                       <TableCell>
                         {new Date(sheet.delivery_date).toLocaleDateString()}
                       </TableCell>
-                      <TableCell>{sheet.vehicle_info.vehicle_no}</TableCell>
-                      <TableCell>{sheet.vehicle_info.driver_name}</TableCell>
-                      <TableCell align="center">
-                        <Chip label={sheet.distributors_count} size="small" color="primary" />
-                      </TableCell>
-                      <TableCell align="center">
-                        <Chip label={sheet.total_items} size="small" />
-                      </TableCell>
-                      <TableCell align="center">
-                        <strong>{sheet.total_quantity}</strong> CTN
-                      </TableCell>
                       <TableCell>
                         <Chip
                           label={sheet.status}
@@ -305,7 +292,7 @@ export default function LoadSheetsListPage() {
                           icon={getStatusIcon(sheet.status)}
                         />
                       </TableCell>
-                      <TableCell>{sheet.created_by.name}</TableCell>
+                      <TableCell>{sheet.created_by?.username || 'N/A'}</TableCell>
                       <TableCell>
                         {new Date(sheet.created_at).toLocaleDateString()}
                       </TableCell>
@@ -314,11 +301,22 @@ export default function LoadSheetsListPage() {
                           <IconButton
                             size="small"
                             color="primary"
-                            onClick={() => router.push(`/distribution/load-sheets/${sheet._id}`)}
+                            onClick={() => router.push(`/inventory/load-sheets/${sheet._id}`)}
                           >
                             <ViewIcon />
                           </IconButton>
                         </Tooltip>
+                        {sheet.status !== 'Converted' && (
+                          <Tooltip title="Delete Load Sheet">
+                            <IconButton
+                              size="small"
+                              color="error"
+                              onClick={() => handleDelete(sheet._id, sheet.load_sheet_number, sheet.status)}
+                            >
+                              <DeleteIcon />
+                            </IconButton>
+                          </Tooltip>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))}

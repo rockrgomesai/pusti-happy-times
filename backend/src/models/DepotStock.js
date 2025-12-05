@@ -35,6 +35,14 @@ const depotStockSchema = new Schema(
       default: 0,
       get: (v) => (v ? parseFloat(v.toString()) : 0),
     },
+
+    // Blocked/Reserved quantity for pending load sheets
+    blocked_qty: {
+      type: Schema.Types.Decimal128,
+      default: 0,
+      min: [0, "Blocked quantity cannot be negative"],
+      get: (v) => (v ? parseFloat(v.toString()) : 0),
+    },
   },
   {
     collection: "depot_stocks",
@@ -59,6 +67,11 @@ depotStockSchema.virtual("qty_pcs").get(function () {
     return parseFloat(this.qty_ctn) * this.product_id.ctn_pcs;
   }
   return 0;
+});
+
+// Virtual for available quantity (total - blocked)
+depotStockSchema.virtual("available_qty").get(function () {
+  return parseFloat(this.qty_ctn) - parseFloat(this.blocked_qty);
 });
 
 // Static method to get current stock for a product at a depot

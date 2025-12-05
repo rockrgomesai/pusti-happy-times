@@ -1,13 +1,13 @@
 /**
  * Script to add API permissions for Distributor role
- * 
+ *
  * This script creates permissions for:
  * - Receiving chalans from depot
  * - Viewing distributor stock
  * - Viewing received chalan history
- * 
+ *
  * IMPORTANT: Uses roles.role field (NOT roles.name)
- * 
+ *
  * Usage: node add-distributor-permissions.js
  */
 
@@ -67,7 +67,7 @@ const main = async () => {
     const createdPermissions = [];
     for (const perm of permissions) {
       let apiPermission = await ApiPermission.findOne({ api_permissions: perm.api_permissions });
-      
+
       if (!apiPermission) {
         apiPermission = await ApiPermission.create({
           api_permissions: perm.api_permissions,
@@ -76,13 +76,13 @@ const main = async () => {
       } else {
         console.log(`  Permission already exists: ${perm.api_permissions}`);
       }
-      
+
       createdPermissions.push(apiPermission);
     }
 
     // Assign permissions to Distributor role
     console.log("\n--- Assigning Permissions to Distributor Role ---\n");
-    
+
     for (const permission of createdPermissions) {
       const existing = await RoleApiPermission.findOne({
         role_id: distributorRole._id,
@@ -107,7 +107,7 @@ const main = async () => {
     });
     console.log(`✓ Distributor role has ${totalPermissions} active permissions`);
     console.log("\nPermissions for Distributor role:");
-    
+
     const rolePermissions = await RoleApiPermission.find({
       role_id: distributorRole._id,
     }).populate("api_permission_id");

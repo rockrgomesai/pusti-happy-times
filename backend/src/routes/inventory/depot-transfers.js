@@ -191,13 +191,13 @@ router.get("/list", authenticate, requireApiPermission("depot-transfer:read"), a
 
     if (status) {
       // Handle comma-separated status values
-      if (status.includes(',')) {
-        query.status = { $in: status.split(',').map(s => s.trim()) };
+      if (status.includes(",")) {
+        query.status = { $in: status.split(",").map((s) => s.trim()) };
       } else {
         query.status = status;
       }
     }
-    
+
     console.log("🔍 Depot transfers query:", { direction, userDepotId, status, query });
 
     // Date range filter

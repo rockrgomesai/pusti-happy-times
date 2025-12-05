@@ -177,6 +177,7 @@ router.get(
   async (req, res) => {
     try {
       const userId = req.user.id;
+      const userRole = req.user.role?.role_name;
       const {
         filter, // 'full' or 'partial'
         from_date,
@@ -185,10 +186,42 @@ router.get(
         limit = 20,
       } = req.query;
 
-      // Build query
-      const query = {
-        "scheduling_details.scheduled_by": userId,
-      };
+      // Build query based on role
+      let query = {};
+
+      // For Inventory Depot role, show schedulings for their depot
+      if (userRole === "Inventory Depot") {
+        // Get user's employee record to find their depot
+        const user = await User.findById(userId)
+          .populate({
+            path: "employee_id",
+            select: "facility_id",
+            populate: {
+              path: "facility_id",
+              select: "_id name type",
+            },
+          })
+          .lean();
+
+        if (user?.employee_id?.facility_id?._id) {
+          query.depot_id = user.employee_id.facility_id._id;
+          console.log(
+            `📦 Inventory Depot user - filtering by depot: ${user.employee_id.facility_id.name}`
+          );
+        } else {
+          console.log(`⚠️ Inventory Depot user has no facility assigned`);
+          return res.status(200).json({
+            success: true,
+            data: [],
+            pagination: { page: 1, limit: 20, total: 0, totalPages: 0 },
+          });
+        }
+      } else {
+        // For other roles, show schedulings they created
+        query = {
+          "scheduling_details.scheduled_by": userId,
+        };
+      }
 
       // Date range filter
       if (from_date || to_date) {
@@ -215,14 +248,19 @@ router.get(
 
       console.log(`📦 Found ${schedulings.length} schedulings for user ${userId}`);
 
-      // Process each scheduling to extract only user's scheduling_details
+      // Process each scheduling to extract scheduling_details
       const processedSchedulings = [];
 
       for (const scheduling of schedulings) {
-        // Filter scheduling_details for current user
-        const userSchedulingDetails = scheduling.scheduling_details.filter(
-          (detail) => detail.scheduled_by.toString() === userId
-        );
+        // For Inventory Depot, show all scheduling details for their depot
+        // For other roles, filter by scheduled_by user
+        let userSchedulingDetails = scheduling.scheduling_details;
+
+        if (userRole !== "Inventory Depot") {
+          userSchedulingDetails = scheduling.scheduling_details.filter(
+            (detail) => detail.scheduled_by.toString() === userId
+          );
+        }
 
         // Apply date filter to scheduling_details if needed
         let filteredDetails = userSchedulingDetails;

@@ -40,9 +40,7 @@ const menuItemValidation = [
     .isLength({ min: 1, max: 200 })
     .withMessage("Href must be between 1 and 200 characters"),
 
-  body("m_order")
-    .isInt({ min: 0 })
-    .withMessage("Order must be a non-negative integer"),
+  body("m_order").isInt({ min: 0 }).withMessage("Order must be a non-negative integer"),
 
   body("icon")
     .optional()
@@ -63,9 +61,7 @@ const menuItemValidation = [
 ];
 
 // ID parameter validation
-const idValidation = [
-  param("id").isMongoId().withMessage("Invalid menu item ID format"),
-];
+const idValidation = [param("id").isMongoId().withMessage("Invalid menu item ID format")];
 
 /**
  * Helper Functions
@@ -95,9 +91,9 @@ const buildMenuHierarchy = (menuItems) => {
 
   // Create a map of all items
   menuItems.forEach((item) => {
-  const base = typeof item.toObject === 'function' ? item.toObject() : item; // support lean objects
+    const base = typeof item.toObject === "function" ? item.toObject() : item; // support lean objects
     if (!base || !base._id) {
-      console.warn('[user-menu] Skipping item without _id during map build:', base);
+      console.warn("[user-menu] Skipping item without _id during map build:", base);
       return;
     }
     menuMap.set(base._id.toString(), { ...base, children: [] });
@@ -106,13 +102,13 @@ const buildMenuHierarchy = (menuItems) => {
   // Build hierarchy
   menuItems.forEach((item) => {
     if (!item || !item._id) {
-      console.warn('[user-menu] Skipping hierarchy item without _id:', item);
+      console.warn("[user-menu] Skipping hierarchy item without _id:", item);
       return;
     }
     const key = item._id.toString();
     const menuItem = menuMap.get(key);
     if (!menuItem) {
-      console.warn('[user-menu] Item missing in map (possibly skipped earlier):', key);
+      console.warn("[user-menu] Item missing in map (possibly skipped earlier):", key);
       return;
     }
 
@@ -156,45 +152,39 @@ const buildMenuHierarchy = (menuItems) => {
  * @desc    Get all sidebar menu items
  * @access  Private - requires read:menu permission
  */
-router.get(
-  "/",
-  authenticate,
-  requireApiPermission("read:menu"),
-  async (req, res) => {
-    try {
-      const { hierarchical = "false", sort = "m_order" } = req.query;
+router.get("/", authenticate, requireApiPermission("read:menu"), async (req, res) => {
+  try {
+    const { hierarchical = "false", sort = "m_order" } = req.query;
 
-      // Get all menu items
-      const menuItems = await SidebarMenuItem.find({})
-        .populate("parent_id", "label")
-        .sort({ [sort]: 1 });
+    // Get all menu items
+    const menuItems = await SidebarMenuItem.find({})
+      .populate("parent_id", "label")
+      .sort({ [sort]: 1 });
 
-      let responseData;
+    let responseData;
 
-      if (hierarchical === "true") {
-        // Return hierarchical structure
-        responseData = buildMenuHierarchy(menuItems);
-      } else {
-        // Return flat list
-        responseData = menuItems;
-      }
-
-      res.json({
-        success: true,
-        data: responseData,
-        total: menuItems.length,
-      });
-    } catch (error) {
-      console.error("Error fetching menu items:", error);
-      res.status(500).json({
-        success: false,
-        message: "Error fetching menu items",
-        error:
-          process.env.NODE_ENV === "development" ? error.message : undefined,
-      });
+    if (hierarchical === "true") {
+      // Return hierarchical structure
+      responseData = buildMenuHierarchy(menuItems);
+    } else {
+      // Return flat list
+      responseData = menuItems;
     }
+
+    res.json({
+      success: true,
+      data: responseData,
+      total: menuItems.length,
+    });
+  } catch (error) {
+    console.error("Error fetching menu items:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching menu items",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
   }
-);
+});
 
 /**
  * @route   GET /api/menu-items/user-menu
@@ -221,20 +211,25 @@ router.get("/user-menu", authenticate, async (req, res) => {
       .populate({
         path: "sidebar_menu_item_id",
         populate: {
-          path: "parentMenuItem",
-          select: "title",
+          path: "parent_id",
+          select: "label",
         },
       })
       .lean();
 
     // Extract populated menu item documents, filter out any null (dangling assignments)
-    const menuItems = roleMenuItems
-      .map((item) => item.sidebar_menu_item_id)
-      .filter(Boolean);
+    const menuItems = roleMenuItems.map((item) => item.sidebar_menu_item_id).filter(Boolean);
 
-    console.log('[user-menu] role:', userRoleId.toString(), 'assignments:', roleMenuItems.length, 'resolved items:', menuItems.length);
+    console.log(
+      "[user-menu] role:",
+      userRoleId.toString(),
+      "assignments:",
+      roleMenuItems.length,
+      "resolved items:",
+      menuItems.length
+    );
     if (menuItems.length) {
-      console.log('[user-menu] sample item keys:', Object.keys(menuItems[0]));
+      console.log("[user-menu] sample item keys:", Object.keys(menuItems[0]));
     }
 
     if (menuItems.length === 0) {
@@ -246,11 +241,11 @@ router.get("/user-menu", authenticate, async (req, res) => {
     try {
       safeHierarchy = buildMenuHierarchy(menuItems);
     } catch (hierErr) {
-      console.error('[user-menu] Hierarchy build failed:', hierErr);
+      console.error("[user-menu] Hierarchy build failed:", hierErr);
       return res.status(500).json({
         success: false,
-        message: 'Failed to build menu hierarchy',
-        code: 'HIERARCHY_ERROR'
+        message: "Failed to build menu hierarchy",
+        code: "HIERARCHY_ERROR",
       });
     }
 
@@ -281,10 +276,7 @@ router.get(
   handleValidationErrors,
   async (req, res) => {
     try {
-      const menuItem = await SidebarMenuItem.findById(req.params.id).populate(
-        "parent_id",
-        "label"
-      );
+      const menuItem = await SidebarMenuItem.findById(req.params.id).populate("parent_id", "label");
 
       if (!menuItem) {
         return res.status(404).json({
@@ -310,8 +302,7 @@ router.get(
       res.status(500).json({
         success: false,
         message: "Error fetching menu item",
-        error:
-          process.env.NODE_ENV === "development" ? error.message : undefined,
+        error: process.env.NODE_ENV === "development" ? error.message : undefined,
       });
     }
   }
@@ -387,8 +378,7 @@ router.post(
       res.status(500).json({
         success: false,
         message: "Error creating menu item",
-        error:
-          process.env.NODE_ENV === "development" ? error.message : undefined,
+        error: process.env.NODE_ENV === "development" ? error.message : undefined,
       });
     }
   }
@@ -499,8 +489,7 @@ router.put(
       res.status(500).json({
         success: false,
         message: "Error updating menu item",
-        error:
-          process.env.NODE_ENV === "development" ? error.message : undefined,
+        error: process.env.NODE_ENV === "development" ? error.message : undefined,
       });
     }
   }
@@ -556,8 +545,7 @@ router.delete(
       res.status(500).json({
         success: false,
         message: "Error deleting menu item",
-        error:
-          process.env.NODE_ENV === "development" ? error.message : undefined,
+        error: process.env.NODE_ENV === "development" ? error.message : undefined,
       });
     }
   }
@@ -578,10 +566,7 @@ router.post(
     .custom((value) => {
       if (
         !value.every(
-          (item) =>
-            typeof item === "object" &&
-            item.id &&
-            typeof item.order === "number"
+          (item) => typeof item === "object" && item.id && typeof item.order === "number"
         )
       ) {
         throw new Error("Each item must have id and order properties");
@@ -595,11 +580,7 @@ router.post(
 
       // Update order for each item
       const updatePromises = items.map((item) =>
-        SidebarMenuItem.findByIdAndUpdate(
-          item.id,
-          { m_order: item.order },
-          { new: true }
-        )
+        SidebarMenuItem.findByIdAndUpdate(item.id, { m_order: item.order }, { new: true })
       );
 
       await Promise.all(updatePromises);
@@ -613,8 +594,7 @@ router.post(
       res.status(500).json({
         success: false,
         message: "Error reordering menu items",
-        error:
-          process.env.NODE_ENV === "development" ? error.message : undefined,
+        error: process.env.NODE_ENV === "development" ? error.message : undefined,
       });
     }
   }

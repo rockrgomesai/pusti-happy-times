@@ -468,7 +468,7 @@ export default function InvoiceDetailPage() {
                     label={invoice.load_sheet_id.load_sheet_number}
                     size="small"
                     clickable
-                    onClick={() => router.push(`/distribution/load-sheets/${invoice.load_sheet_id._id}`)}
+                    onClick={() => router.push(`/inventory/load-sheets/${invoice.load_sheet_id._id}`)}
                   />
                 </Grid>
               </Grid>

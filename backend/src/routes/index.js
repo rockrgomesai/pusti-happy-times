@@ -40,8 +40,12 @@ const inventoryFactoryToStoreRoutes = require("./inventory/factoryToStore");
 const inventoryLocalStockRoutes = require("./inventory/localStock");
 const inventoryRequisitionsRoutes = require("./inventory/requisitions");
 const depotTransfersRoutes = require("./inventory/depot-transfers");
+const depotDeliveriesRoutes = require("./inventory/depot-deliveries");
+const loadSheetsRoutes = require("./inventory/load-sheets");
+const deliveryChalansRoutes = require("./inventory/delivery-chalans");
 const customerLedgerRoutes = require("./finance/customerledger");
 const demandOrdersRoutes = require("./ordermanagement/demandorders");
+const doListRoutes = require("./ordermanagement/do-list");
 const collectionsRoutes = require("./ordermanagement/collections");
 const schedulingsRoutes = require("./ordermanagement/schedulings");
 const offerSendItemsRoutes = require("./offers/sendItems");
@@ -348,6 +352,9 @@ router.use("/inventory/factory-to-store", inventoryFactoryToStoreRoutes);
 router.use("/inventory/local-stock", inventoryLocalStockRoutes);
 router.use("/inventory/requisitions", inventoryRequisitionsRoutes);
 router.use("/inventory/depot-transfers", depotTransfersRoutes);
+router.use("/inventory/depot-deliveries", depotDeliveriesRoutes);
+router.use("/inventory/load-sheets", loadSheetsRoutes);
+router.use("/inventory/delivery-chalans", deliveryChalansRoutes);
 
 /**
  * Finance Routes
@@ -364,6 +371,14 @@ router.use("/finance/customerledger", customerLedgerRoutes);
  * @access  Private (Distributor role only)
  */
 router.use("/ordermanagement/demandorders", demandOrdersRoutes);
+
+/**
+ * DO List Routes
+ * @route   /api/demandorders/*
+ * @desc    DO List viewing with territory scoping and search
+ * @access  Private (ASM, RSM, HQ roles)
+ */
+router.use("/demandorders", doListRoutes);
 
 /**
  * Collections Routes

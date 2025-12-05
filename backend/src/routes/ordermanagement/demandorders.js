@@ -919,7 +919,14 @@ router.get("/:id", authenticate, requireApiPermission("demandorder:read"), async
     }
 
     const order = await DemandOrder.findOne(query)
-      .populate("distributor_id", "name")
+      .populate("distributor_id", "name erp_id db_point_id")
+      .populate({
+        path: "distributor_id",
+        populate: {
+          path: "db_point_id",
+          select: "name territory_level",
+        },
+      })
       .populate("created_by", "username")
       .populate("approved_by", "username")
       .populate("rejected_by", "username")
@@ -930,6 +937,28 @@ router.get("/:id", authenticate, requireApiPermission("demandorder:read"), async
         success: false,
         message: "Demand order not found",
       });
+    }
+
+    // Manually populate product details for items
+    if (order.items && order.items.length > 0) {
+      const Product = require("../../models/Product");
+      const Offer = require("../../models/Offer");
+
+      for (let item of order.items) {
+        if (item.source === "product" && item.source_id) {
+          const product = await Product.findById(item.source_id)
+            .select("name sku erp_id unit")
+            .lean();
+          if (product) {
+            item.product_id = product;
+          }
+        } else if (item.source === "offer" && item.source_id) {
+          const offer = await Offer.findById(item.source_id).select("name code").lean();
+          if (offer) {
+            item.offer_id = offer;
+          }
+        }
+      }
     }
 
     // Fix missing performed_by_name in approval history

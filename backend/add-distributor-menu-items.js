@@ -1,13 +1,13 @@
 /**
  * Script to add sidebar menu items for Distributor role
- * 
+ *
  * Creates menu items for:
  * - Receive Chalans (list pending chalans)
  * - My Stock (view current stock)
  * - Received History (view received chalans)
- * 
+ *
  * IMPORTANT: Uses roles.role field (NOT roles.name)
- * 
+ *
  * Usage: node add-distributor-menu-items.js
  */
 
@@ -82,7 +82,7 @@ const main = async () => {
     const createdMenuItems = [];
     for (const item of menuItems) {
       let menuItem = await SidebarMenuItem.findOne({ path: item.href });
-      
+
       if (!menuItem) {
         // Create using the database schema (label, m_order)
         const menuDoc = {
@@ -93,7 +93,7 @@ const main = async () => {
           parent_id: item.parent_id,
           is_submenu: item.is_submenu,
         };
-        
+
         // Insert directly to bypass Mongoose validation
         const result = await SidebarMenuItem.collection.insertOne(menuDoc);
         menuItem = await SidebarMenuItem.findById(result.insertedId);
@@ -101,13 +101,13 @@ const main = async () => {
       } else {
         console.log(`  Menu item already exists: ${item.label} (${item.href})`);
       }
-      
+
       createdMenuItems.push(menuItem);
     }
 
     // Assign menu items to Distributor role
     console.log("\n--- Assigning Menu Items to Distributor Role ---\n");
-    
+
     for (const menuItem of createdMenuItems) {
       const existing = await RoleSidebarMenuItem.findOne({
         role_id: distributorRole._id,
@@ -132,7 +132,7 @@ const main = async () => {
     });
     console.log(`✓ Distributor role has ${totalMenuItems} active menu items`);
     console.log("\nMenu items for Distributor role:");
-    
+
     const roleMenuItems = await RoleSidebarMenuItem.find({
       role_id: distributorRole._id,
     })

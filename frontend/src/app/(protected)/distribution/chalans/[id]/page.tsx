@@ -382,7 +382,7 @@ export default function ChalanDetailPage() {
                     label={chalan.load_sheet_number}
                     size="small"
                     clickable
-                    onClick={() => router.push(`/distribution/load-sheets/${chalan.load_sheet_id._id}`)}
+                    onClick={() => router.push(`/inventory/load-sheets/${chalan.load_sheet_id._id}`)}
                   />
                 </Grid>
                 <Grid item xs={12}>

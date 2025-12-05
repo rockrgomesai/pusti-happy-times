@@ -22,7 +22,7 @@ const Facility = require("./Facility"); // Unified model for factories and depot
 const Employee = require("./Employee");
 const Designation = require("./Designation");
 const Transport = require("./Transport");
-const SidebarMenuItem = require("./SidebarMenuItem");
+const SidebarMenuItem = require("./SidebarMenuItem_new"); // Use schema that matches database: label, href, m_order, icon, parent_id, is_submenu
 const Category = require("./Category");
 const { ApiPermission, PagePermission } = require("./Permission");
 const Product = require("./Product");
@@ -40,8 +40,8 @@ const DepotTransactionOut = require("./DepotTransactionOut");
 
 // Import distribution models
 const LoadSheet = require("./LoadSheet");
-const DeliveryChalans = require("./DeliveryChalans");
-const DeliveryInvoices = require("./DeliveryInvoices");
+const DeliveryChalan = require("./DeliveryChalan");
+const DeliveryInvoice = require("./DeliveryInvoice");
 const DistributorStock = require("./DistributorStock");
 
 // Import legacy inventory models (for backward compatibility)
@@ -81,8 +81,8 @@ const models = {
 
   // Distribution models
   LoadSheet,
-  DeliveryChalans,
-  DeliveryInvoices,
+  DeliveryChalan,
+  DeliveryInvoice,
 
   // Legacy inventory models (deprecated, use depot models instead)
   FactoryStoreInventory,
@@ -229,8 +229,8 @@ module.exports = {
 
   // Distribution models
   LoadSheet,
-  DeliveryChalans,
-  DeliveryInvoices,
+  DeliveryChalan,
+  DeliveryInvoice,
 
   // Legacy inventory models (deprecated, use depot models instead)
   FactoryStoreInventory,

@@ -1,14 +1,7 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
 
-// Import sub-routes
-const loadSheetsRouter = require('./load-sheets');
-const chalansRouter = require('./chalans');
-const invoicesRouter = require('./invoices');
-
-// Mount sub-routes
-router.use('/', loadSheetsRouter);
-router.use('/', chalansRouter);
-router.use('/', invoicesRouter);
+// Distribution module routes
+// Note: Delivery chalans/invoices are handled by Inventory Depot module
 
 module.exports = router;

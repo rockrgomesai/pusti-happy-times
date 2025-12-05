@@ -36,9 +36,11 @@ import {
   SwapHoriz as ConvertIcon,
   Print as PrintIcon
 } from '@mui/icons-material';
-import { useRouter } from 'next/router';
+import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import axios from 'axios';
+import { apiClient } from '@/lib/api';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 interface LoadSheetDetail {
   _id: string;
@@ -86,13 +88,110 @@ interface LoadSheetDetail {
 
 export default function LoadSheetDetailPage() {
   const router = useRouter();
-  const { id } = router.query;
+  const params = useParams();
+  const id = params?.id as string;
   const { user } = useAuth();
 
   const [loadSheet, setLoadSheet] = useState<LoadSheetDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [converting, setConverting] = useState(false);
   const [showConvertDialog, setShowConvertDialog] = useState(false);
+
+  const generatePDF = () => {
+    if (!loadSheet) return;
+
+    const doc = new jsPDF('landscape');
+    const pageWidth = doc.internal.pageSize.getWidth();
+    
+    // Header
+    doc.setFontSize(16);
+    doc.setFont('helvetica', 'bold');
+    doc.text('T.K Food Products Ltd.', pageWidth / 2, 15, { align: 'center' });
+    
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text('T. K. Bhaban (2nd Floor), 13, Kawranbazar Dhaka-1215, Bangladesh', pageWidth / 2, 22, { align: 'center' });
+    
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Delivery Truck Loading', pageWidth / 2, 32, { align: 'center' });
+    
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Dhaka Central Depot', pageWidth / 2, 39, { align: 'center' });
+    
+    // Delivery date on the right
+    doc.setFontSize(10);
+    doc.text(`Delivery Date: ${new Date(loadSheet.delivery_date).toLocaleDateString('en-GB')}`, pageWidth - 15, 39, { align: 'right' });
+    
+    // Prepare table data
+    const tableData: any[] = [];
+    let serialNo = 1;
+    
+    loadSheet.distributors.forEach((dist) => {
+      dist.do_items.forEach((item) => {
+        const distributorName = dist.distributor_id?.distributor_name || dist.distributor_name || 'N/A';
+        tableData.push([
+          serialNo++,
+          item.order_number,
+          distributorName,
+          item.sku,
+          item.delivery_qty || 0,
+          (item.delivery_qty || 0) * 12 // Assuming 1 CTN = 12 PCS
+        ]);
+      });
+    });
+    
+    // Calculate totals
+    const totalCTN = tableData.reduce((sum, row) => sum + row[4], 0);
+    const totalPCS = tableData.reduce((sum, row) => sum + row[5], 0);
+    
+    // Add total row
+    tableData.push([
+      '', '', '', 'Total', totalCTN, totalPCS
+    ]);
+    
+    // Generate table
+    autoTable(doc, {
+      startY: 45,
+      head: [['No.', 'DO No', 'DB Name', 'Sku Name', 'Qty CTN', 'Qty PCS']],
+      body: tableData,
+      theme: 'grid',
+      styles: {
+        fontSize: 8,
+        cellPadding: 2,
+      },
+      headStyles: {
+        fillColor: [200, 200, 200],
+        textColor: [0, 0, 0],
+        fontStyle: 'bold',
+        fontSize: 8,
+      },
+      columnStyles: {
+        0: { cellWidth: 12, halign: 'center' },
+        1: { cellWidth: 40 },
+        2: { cellWidth: 70, cellPadding: 1.5 },
+        3: { cellWidth: 100 },
+        4: { cellWidth: 25, halign: 'right' },
+        5: { cellWidth: 25, halign: 'right' },
+      },
+      didParseCell: function(data) {
+        // Make total row bold
+        if (data.row.index === tableData.length - 1) {
+          data.cell.styles.fontStyle = 'bold';
+          data.cell.styles.fillColor = [240, 240, 240];
+        }
+      },
+    });
+    
+    // Signature line
+    const finalY = (doc as any).lastAutoTable.finalY || 150;
+    doc.line(pageWidth - 70, finalY + 40, pageWidth - 15, finalY + 40);
+    doc.text('Receiver Signature', pageWidth - 50, finalY + 45);
+    
+    // Save PDF
+    doc.save(`Load-Sheet-${loadSheet.load_sheet_number}.pdf`);
+  };
 
   useEffect(() => {
     if (id) {
@@ -103,18 +202,21 @@ export default function LoadSheetDetailPage() {
   const loadLoadSheetDetail = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
-      const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL}/distribution/load-sheets/${id}`,
-        { headers: { Authorization: `Bearer ${token}` } }
+      const response: any = await apiClient.get(
+        `/inventory/load-sheets/${id}`
       );
 
-      if (response.data.success) {
-        setLoadSheet(response.data.data);
+      console.log('📦 Load sheet response:', response);
+      
+      if (response.success) {
+        setLoadSheet(response.data);
+      } else {
+        console.error('Response not successful:', response);
+        alert(response.message || 'Failed to load load sheet');
       }
     } catch (error: any) {
       console.error('Error loading load sheet:', error);
-      alert(error.response?.data?.message || 'Failed to load load sheet');
+      alert(error.response?.data?.message || error.message || 'Failed to load load sheet');
       router.back();
     } finally {
       setLoading(false);
@@ -124,11 +226,9 @@ export default function LoadSheetDetailPage() {
   const handleConvert = async () => {
     try {
       setConverting(true);
-      const token = localStorage.getItem('token');
-      const response = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_URL}/distribution/load-sheets/${id}/convert`,
-        {},
-        { headers: { Authorization: `Bearer ${token}` } }
+      const response: any = await apiClient.post(
+        `/inventory/load-sheets/${id}/convert`,
+        {}
       );
 
       if (response.data.success) {
@@ -174,11 +274,62 @@ export default function LoadSheetDetailPage() {
   }
 
   const canConvert = loadSheet.status === 'Validated' || loadSheet.status === 'Loaded';
+  const canLock = loadSheet.status === 'Draft';
+  const canGenerateChalans = loadSheet.status === 'Locked';
+  const canGenerateInvoices = loadSheet.status === 'Chalan_Generated';
+
+  const handleLock = () => {
+    router.push(`/inventory/load-sheets/${id}/lock`);
+  };
+
+  const handleGenerateChalans = async () => {
+    if (!confirm('Generate Delivery Chalans for this Load Sheet?')) return;
+    
+    try {
+      setConverting(true);
+      const response: any = await apiClient.post(
+        `/inventory/load-sheets/${id}/generate-chalans`,
+        {}
+      );
+
+      if (response.data.success) {
+        alert(`${response.data.data.length} Chalans generated successfully!`);
+        loadLoadSheetDetail();
+      }
+    } catch (error: any) {
+      console.error('Error generating chalans:', error);
+      alert(error.response?.data?.message || 'Failed to generate chalans');
+    } finally {
+      setConverting(false);
+    }
+  };
+
+  const handleGenerateInvoices = async () => {
+    if (!confirm('Generate Delivery Invoices for this Load Sheet?')) return;
+    
+    try {
+      setConverting(true);
+      const response: any = await apiClient.post(
+        `/inventory/load-sheets/${id}/generate-invoices`,
+        {}
+      );
+
+      if (response.data.success) {
+        alert(`${response.data.data.length} Invoices generated successfully!`);
+        loadLoadSheetDetail();
+      }
+    } catch (error: any) {
+      console.error('Error generating invoices:', error);
+      alert(error.response?.data?.message || 'Failed to generate invoices');
+    } finally {
+      setConverting(false);
+    }
+  };
 
   return (
     <Container maxWidth="xl" sx={{ py: 3 }}>
       {/* Header */}
-      <Box mb={3} display="flex" alignItems="center" gap={2}>
+      <Box mb={3} display="flex" alignItems="center" gap={2} flexWrap="wrap">
         <IconButton onClick={() => router.back()} size="small">
           <ArrowBackIcon />
         </IconButton>
@@ -195,6 +346,39 @@ export default function LoadSheetDetailPage() {
           color={getStatusColor(loadSheet.status)}
           icon={loadSheet.status === 'Converted' ? <CheckIcon /> : undefined}
         />
+      </Box>
+
+      {/* Action Buttons */}
+      <Box mb={3} display="flex" gap={2} flexWrap="wrap">
+        {canLock && (
+          <Button
+            variant="contained"
+            color="warning"
+            onClick={handleLock}
+          >
+            Lock & Finalize
+          </Button>
+        )}
+        {canGenerateChalans && (
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={handleGenerateChalans}
+            disabled={converting}
+          >
+            Generate Chalans
+          </Button>
+        )}
+        {canGenerateInvoices && (
+          <Button
+            variant="contained"
+            color="secondary"
+            onClick={handleGenerateInvoices}
+            disabled={converting}
+          >
+            Generate Invoices
+          </Button>
+        )}
         {canConvert && (
           <Button
             variant="contained"
@@ -205,10 +389,17 @@ export default function LoadSheetDetailPage() {
             Convert to Chalan & Invoice
           </Button>
         )}
+        <Button
+          variant="outlined"
+          startIcon={<PrintIcon />}
+          onClick={generatePDF}
+        >
+          Download PDF
+        </Button>
       </Box>
 
       {/* Basic Info */}
-      <Grid container spacing={3} mb={3}>
+      <Grid container spacing={3} mb={3} className="no-print">
         <Grid item xs={12} md={6}>
           <Card>
             <CardContent>
@@ -372,7 +563,7 @@ export default function LoadSheetDetailPage() {
       {loadSheet.distributors.map((dist, idx) => (
         <Paper key={idx} sx={{ mb: 3, p: 2 }}>
           <Typography variant="h6" gutterBottom>
-            {dist.distributor_id.distributor_name} ({dist.distributor_id.distributor_code})
+            {dist.distributor_id?.distributor_name || dist.distributor_name || 'Unknown Distributor'} ({dist.distributor_id?.distributor_code || dist.distributor_code || 'N/A'})
           </Typography>
           <TableContainer>
             <Table size="small">
@@ -381,10 +572,7 @@ export default function LoadSheetDetailPage() {
                   <TableCell>DO Number</TableCell>
                   <TableCell>DO Date</TableCell>
                   <TableCell>SKU</TableCell>
-                  <TableCell align="right">Order Qty</TableCell>
-                  <TableCell align="right">Previously Dlvrd</TableCell>
-                  <TableCell align="right">Undelivered</TableCell>
-                  <TableCell align="right">Delivery Qty</TableCell>
+                  <TableCell align="right">Delivery Qty CTN</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -397,9 +585,6 @@ export default function LoadSheetDetailPage() {
                         {item.sku}
                       </Typography>
                     </TableCell>
-                    <TableCell align="right">{item.order_qty} {item.unit}</TableCell>
-                    <TableCell align="right">{item.previously_delivered_qty} {item.unit}</TableCell>
-                    <TableCell align="right">{item.undelivered_qty} {item.unit}</TableCell>
                     <TableCell align="right">
                       <strong>{item.delivery_qty} {item.unit}</strong>
                     </TableCell>
@@ -443,6 +628,65 @@ export default function LoadSheetDetailPage() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Print Styles */}
+      <style jsx global>{`
+        @media print {
+          /* Hide non-printable elements */
+          .no-print,
+          button,
+          .MuiIconButton-root,
+          .MuiChip-root {
+            display: none !important;
+          }
+
+          /* Reset page margins */
+          @page {
+            margin: 1cm;
+          }
+
+          /* Ensure proper printing */
+          body {
+            print-color-adjust: exact;
+            -webkit-print-color-adjust: exact;
+          }
+
+          /* Make container full width */
+          .MuiContainer-root {
+            max-width: 100% !important;
+            padding: 0 !important;
+          }
+
+          /* Avoid page breaks inside cards */
+          .MuiCard-root,
+          .MuiPaper-root,
+          .MuiTableRow-root {
+            page-break-inside: avoid;
+          }
+
+          /* Add page break before distributor sections if needed */
+          .distributor-section {
+            page-break-before: auto;
+            page-break-inside: avoid;
+          }
+
+          /* Table styling for print */
+          .MuiTable-root {
+            border-collapse: collapse;
+          }
+
+          .MuiTableCell-root {
+            border: 1px solid #000 !important;
+            padding: 8px !important;
+            font-size: 12px !important;
+          }
+
+          .MuiTableHead-root .MuiTableCell-root {
+            background-color: #f5f5f5 !important;
+            font-weight: bold !important;
+          }
+        }
+      `}</style>
     </Container>
   );
 }

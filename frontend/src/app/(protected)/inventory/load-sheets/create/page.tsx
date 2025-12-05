@@ -111,7 +111,7 @@ export default function CreateLoadSheetPage() {
       setLoading(true);
       const token = localStorage.getItem('token');
       const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL}/distribution/load-sheets/approved-dos`,
+        `${process.env.NEXT_PUBLIC_API_URL}/inventory/load-sheets/approved-dos`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -223,7 +223,7 @@ export default function CreateLoadSheetPage() {
 
       const token = localStorage.getItem('token');
       const response = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_URL}/distribution/load-sheets/validate-stock`,
+        `${process.env.NEXT_PUBLIC_API_URL}/inventory/load-sheets/validate-stock`,
         { items: selectedItems },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -322,14 +322,14 @@ export default function CreateLoadSheetPage() {
       setSubmitting(true);
       const token = localStorage.getItem('token');
       const response = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_URL}/distribution/load-sheets/create`,
+        `${process.env.NEXT_PUBLIC_API_URL}/inventory/load-sheets/create`,
         payload,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
       if (response.data.success) {
         alert('Load Sheet created successfully!');
-        router.push('/distribution/load-sheets');
+        router.push('/inventory/load-sheets');
       }
     } catch (error: any) {
       console.error('Error creating Load Sheet:', error);

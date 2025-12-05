@@ -38,7 +38,6 @@ import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { format } from "date-fns";
 import toast from "react-hot-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import Cookies from "js-cookie";
 import {
   Timeline,
   TimelineItem,
@@ -50,7 +49,7 @@ import {
 } from "@mui/lab";
 import { formatDateForDisplay } from "@/lib/dateUtils";
 import { Grid as Grid2, List, ListItem, ListItemText } from "@mui/material";
-import api from "@/lib/api";
+import { apiClient } from "@/lib/api";
 
 interface SchedulingItem {
   scheduling_id: string;
@@ -149,21 +148,7 @@ const ScheduledListPage = () => {
 
   const fetchDepots = async () => {
     try {
-      const token = Cookies.get('accessToken');
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/ordermanagement/schedulings/depots`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      
-      if (!response.ok) {
-        console.error("Depots fetch failed:", response.status, response.statusText);
-        const text = await response.text();
-        console.error("Response body:", text);
-        return;
-      }
-      
-      const result = await response.json();
+      const result = await apiClient.get('/ordermanagement/schedulings/depots');
       if (result.success) {
         setDepots(result.data);
       }
@@ -175,34 +160,17 @@ const ScheduledListPage = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const token = Cookies.get('accessToken');
-      const params = new URLSearchParams({
+      const params: any = {
         filter: filterType,
         page: page.toString(),
         limit: limit.toString(),
-      });
+      };
 
-      if (fromDate) params.append("from_date", fromDate);
-      if (toDate) params.append("to_date", toDate);
+      if (fromDate) params.from_date = fromDate;
+      if (toDate) params.to_date = toDate;
 
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/ordermanagement/schedulings/my-schedulings?${params.toString()}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      if (!response.ok) {
-        console.error("Schedulings fetch failed:", response.status, response.statusText);
-        const text = await response.text();
-        console.error("Response body:", text);
-        toast.error(`Failed to fetch data: ${response.statusText}`);
-        return;
-      }
-
-      const result = await response.json();
+      const result = await apiClient.get('/ordermanagement/schedulings/my-schedulings', params);
+      
       if (result.success) {
         setData(result.data);
         setTotalPages(result.pagination.totalPages);
@@ -273,17 +241,8 @@ const ScheduledListPage = () => {
         return;
       }
 
-      const token = Cookies.get('accessToken');
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/ordermanagement/schedulings/${schedulingId}/schedule`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ deliveries }),
-      });
-
-      const result = await response.json();
+      const result = await apiClient.post(`/ordermanagement/schedulings/${schedulingId}/schedule`, { deliveries });
+      
       if (result.success) {
         toast.success("Scheduling saved successfully");
         setNewDeliveries({});

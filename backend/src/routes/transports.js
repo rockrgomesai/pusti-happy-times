@@ -34,9 +34,7 @@ const transportValidation = [
 ];
 
 // ID parameter validation
-const idValidation = [
-  param("id").isMongoId().withMessage("Invalid transport ID format"),
-];
+const idValidation = [param("id").isMongoId().withMessage("Invalid transport ID format")];
 
 /**
  * Helper Functions
@@ -71,60 +69,54 @@ const getCurrentUserId = (req) => {
 /**
  * @route   GET /api/transports
  * @desc    Get all transports
- * @access  Private - requires transports:delete permission
+ * @access  Private - requires transports:read permission
  */
-router.get(
-  "/",
-  authenticate,
-  requireApiPermission("transports:delete"),
-  async (req, res) => {
-    try {
-      const { page = 1, limit = 10, sort = "transport" } = req.query;
+router.get("/", authenticate, requireApiPermission("transports:read"), async (req, res) => {
+  try {
+    const { page = 1, limit = 10, sort = "transport" } = req.query;
 
-      const options = {
-        page: parseInt(page),
-        limit: parseInt(limit),
-        sort: { [sort]: 1 },
-      };
+    const options = {
+      page: parseInt(page),
+      limit: parseInt(limit),
+      sort: { [sort]: 1 },
+    };
 
-      // Calculate skip value for pagination
-      const skip = (options.page - 1) * options.limit;
+    // Calculate skip value for pagination
+    const skip = (options.page - 1) * options.limit;
 
-      // Get transports with pagination
-      const transports = await Transport.find({})
-        .sort(options.sort)
-        .skip(skip)
-        .limit(options.limit)
-        .populate("created_by", "username")
-        .populate("updated_by", "username");
+    // Get transports with pagination
+    const transports = await Transport.find({})
+      .sort(options.sort)
+      .skip(skip)
+      .limit(options.limit)
+      .populate("created_by", "username")
+      .populate("updated_by", "username");
 
-      // Get total count for pagination
-      const totalCount = await Transport.countDocuments();
-      const totalPages = Math.ceil(totalCount / options.limit);
+    // Get total count for pagination
+    const totalCount = await Transport.countDocuments();
+    const totalPages = Math.ceil(totalCount / options.limit);
 
-      res.json({
-        success: true,
-        data: transports,
-        pagination: {
-          page: options.page,
-          limit: options.limit,
-          totalCount,
-          totalPages,
-          hasNextPage: options.page < totalPages,
-          hasPrevPage: options.page > 1,
-        },
-      });
-    } catch (error) {
-      console.error("Error fetching transports:", error);
-      res.status(500).json({
-        success: false,
-        message: "Error fetching transports",
-        error:
-          process.env.NODE_ENV === "development" ? error.message : undefined,
-      });
-    }
+    res.json({
+      success: true,
+      data: transports,
+      pagination: {
+        page: options.page,
+        limit: options.limit,
+        totalCount,
+        totalPages,
+        hasNextPage: options.page < totalPages,
+        hasPrevPage: options.page > 1,
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching transports:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching transports",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
   }
-);
+});
 
 /**
  * @route   GET /api/transports/:id
@@ -159,8 +151,7 @@ router.get(
       res.status(500).json({
         success: false,
         message: "Error fetching transport",
-        error:
-          process.env.NODE_ENV === "development" ? error.message : undefined,
+        error: process.env.NODE_ENV === "development" ? error.message : undefined,
       });
     }
   }
@@ -223,8 +214,7 @@ router.post(
       res.status(500).json({
         success: false,
         message: "Error creating transport",
-        error:
-          process.env.NODE_ENV === "development" ? error.message : undefined,
+        error: process.env.NODE_ENV === "development" ? error.message : undefined,
       });
     }
   }
@@ -303,8 +293,7 @@ router.put(
       res.status(500).json({
         success: false,
         message: "Error updating transport",
-        error:
-          process.env.NODE_ENV === "development" ? error.message : undefined,
+        error: process.env.NODE_ENV === "development" ? error.message : undefined,
       });
     }
   }
@@ -344,8 +333,7 @@ router.delete(
       res.status(500).json({
         success: false,
         message: "Error deleting transport",
-        error:
-          process.env.NODE_ENV === "development" ? error.message : undefined,
+        error: process.env.NODE_ENV === "development" ? error.message : undefined,
       });
     }
   }

@@ -1,12 +1,12 @@
 /**
  * MongoDB Transaction Helper
- * 
+ *
  * Handles MongoDB transactions gracefully for both replica set and standalone installations.
  * Standalone MongoDB instances don't support transactions, so this helper provides
  * a fallback mechanism.
  */
 
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
 /**
  * Start a transaction session (if available)
@@ -20,9 +20,11 @@ async function startTransactionSession() {
     session = await mongoose.startSession();
     await session.startTransaction();
     useTransaction = true;
-    console.log('✓ Using MongoDB transaction');
+    console.log("✓ Using MongoDB transaction");
   } catch (error) {
-    console.log('⚠ MongoDB transactions not available (standalone mode), proceeding without transaction');
+    console.log(
+      "⚠ MongoDB transactions not available (standalone mode), proceeding without transaction"
+    );
     session = null;
   }
 
@@ -70,7 +72,7 @@ function getUpdateOptions(session, useTransaction, additionalOptions = {}) {
 async function commitTransaction(session, useTransaction) {
   if (useTransaction && session) {
     await session.commitTransaction();
-    console.log('✓ Transaction committed successfully');
+    console.log("✓ Transaction committed successfully");
   }
 }
 
@@ -84,10 +86,10 @@ async function abortTransaction(session, useTransaction) {
     try {
       await session.abortTransaction();
       if (useTransaction) {
-        console.log('✓ Transaction aborted');
+        console.log("✓ Transaction aborted");
       }
     } catch (error) {
-      console.error('Error aborting transaction:', error.message);
+      console.error("Error aborting transaction:", error.message);
     }
   }
 }
@@ -109,5 +111,5 @@ module.exports = {
   getUpdateOptions,
   commitTransaction,
   abortTransaction,
-  endSession
+  endSession,
 };
