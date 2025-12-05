@@ -33,6 +33,7 @@ interface User {
     factory_store_id?: string; // Factory store assignment for Production employees
     
     // Distributor context
+    distributor_id?: string; // Distributor ID
     distributor_name?: string;
     db_point_id?: string;
     territorries?: any[];
@@ -40,6 +41,8 @@ interface User {
     skus_exclude?: string[];
   };
   permissions?: string[];
+  // Legacy field for backward compatibility with old pages
+  distributor_id?: string;
 }
 
 interface AuthContextType {
@@ -94,6 +97,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
           const userData = {
             ...response.data.user,
             permissions: normalizePermissions(response.data.user.permissions),
+            // Add distributor_id at root level for backward compatibility
+            distributor_id: response.data.user.context?.distributor_id,
           } as User;
           console.log('👤 Setting user:', userData);
           setUser(userData);
@@ -147,6 +152,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
         setUser({
           ...userData,
           permissions: normalizePermissions((userData as { permissions?: unknown })?.permissions),
+          // Add distributor_id at root level for backward compatibility
+          distributor_id: userData.context?.distributor_id,
         } as User);
         
         toast.success('Login successful!');

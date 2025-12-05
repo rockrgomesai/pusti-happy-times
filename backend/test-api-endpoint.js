@@ -12,7 +12,7 @@ async function testApiEndpoint() {
 
     // Get user and generate a token
     const user = await db.collection("users").findOne({ username: "inventorymanagerpapaya" });
-    
+
     if (!user) {
       console.log("❌ User not found");
       return;

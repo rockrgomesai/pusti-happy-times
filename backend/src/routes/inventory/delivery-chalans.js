@@ -38,25 +38,29 @@ router.get("/", authenticate, requireApiPermission("chalan:read"), async (req, r
     const convertDecimal = (value) => {
       if (!value) return value;
       if (value.$numberDecimal) return parseFloat(value.$numberDecimal);
-      if (typeof value === 'object' && value.constructor && value.constructor.name === 'Decimal128') {
+      if (
+        typeof value === "object" &&
+        value.constructor &&
+        value.constructor.name === "Decimal128"
+      ) {
         return parseFloat(value.toString());
       }
       return value;
     };
 
-    const processedChalans = chalans.map(chalan => ({
+    const processedChalans = chalans.map((chalan) => ({
       ...chalan,
       total_qty_ctn: convertDecimal(chalan.total_qty_ctn),
       total_qty_pcs: convertDecimal(chalan.total_qty_pcs),
-      items: chalan.items?.map(item => ({
+      items: chalan.items?.map((item) => ({
         ...item,
         qty_ctn: convertDecimal(item.qty_ctn),
         qty_pcs: convertDecimal(item.qty_pcs),
-      }))
+      })),
     }));
 
     console.log("📦 Returning", processedChalans.length, "chalans, total:", total);
-    
+
     res.json({
       success: true,
       data: processedChalans,
@@ -104,7 +108,11 @@ router.get("/:id", authenticate, requireApiPermission("chalan:read"), async (req
     const convertDecimal = (value) => {
       if (!value) return value;
       if (value.$numberDecimal) return parseFloat(value.$numberDecimal);
-      if (typeof value === 'object' && value.constructor && value.constructor.name === 'Decimal128') {
+      if (
+        typeof value === "object" &&
+        value.constructor &&
+        value.constructor.name === "Decimal128"
+      ) {
         return parseFloat(value.toString());
       }
       return value;
@@ -114,11 +122,11 @@ router.get("/:id", authenticate, requireApiPermission("chalan:read"), async (req
       ...chalan,
       total_qty_ctn: convertDecimal(chalan.total_qty_ctn),
       total_qty_pcs: convertDecimal(chalan.total_qty_pcs),
-      items: chalan.items?.map(item => ({
+      items: chalan.items?.map((item) => ({
         ...item,
         qty_ctn: convertDecimal(item.qty_ctn),
         qty_pcs: convertDecimal(item.qty_pcs),
-      }))
+      })),
     };
 
     res.json({

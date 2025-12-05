@@ -1,0 +1,2670 @@
+{
+  "api_permissions": [
+    {
+      "v": 2,
+      "key": {
+        "api_permissions": 1
+      },
+      "name": "api_permissions_1",
+      "unique": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "method": 1,
+        "endpoint": 1
+      },
+      "name": "method_1_endpoint_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "category": 1
+      },
+      "name": "category_1",
+      "background": true
+    }
+  ],
+  "sidebar_menu_items": [
+    {
+      "v": 2,
+      "key": {
+        "label": 1
+      },
+      "name": "label_1",
+      "unique": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "m_order": 1
+      },
+      "name": "m_order_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "parent_id": 1
+      },
+      "name": "parent_id_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "active": 1,
+        "parentMenuItem": 1,
+        "sortOrder": 1
+      },
+      "name": "active_1_parentMenuItem_1_sortOrder_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "level": 1,
+        "sortOrder": 1
+      },
+      "name": "level_1_sortOrder_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "path": 1,
+        "active": 1
+      },
+      "name": "path_1_active_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "visibility.showInSidebar": 1,
+        "active": 1
+      },
+      "name": "visibility.showInSidebar_1_active_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "visibility.showInMobile": 1,
+        "active": 1
+      },
+      "name": "visibility.showInMobile_1_active_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "permissions.menuPermission": 1
+      },
+      "name": "permissions.menuPermission_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "permissions.pagePermission": 1
+      },
+      "name": "permissions.pagePermission_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "visibility.restrictToRoles": 1
+      },
+      "name": "visibility.restrictToRoles_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "_fts": "text",
+        "_ftsx": 1
+      },
+      "name": "title_text_description_text_path_text",
+      "background": true,
+      "weights": {
+        "description": 1,
+        "path": 1,
+        "title": 1
+      },
+      "default_language": "english",
+      "language_override": "language",
+      "textIndexVersion": 3
+    },
+    {
+      "v": 2,
+      "key": {
+        "createdAt": -1
+      },
+      "name": "createdAt_-1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "stats.lastAccessed": -1
+      },
+      "name": "stats.lastAccessed_-1",
+      "background": true
+    }
+  ],
+  "employees": [
+    {
+      "v": 2,
+      "key": {
+        "employee_id": 1
+      },
+      "name": "employee_id_1",
+      "unique": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "designation_id": 1
+      },
+      "name": "designation_id_1"
+    },
+    {
+      "v": 2,
+      "key": {
+        "name": 1
+      },
+      "name": "name_1"
+    },
+    {
+      "v": 2,
+      "key": {
+        "date_birth": 1
+      },
+      "name": "date_birth_1"
+    },
+    {
+      "v": 2,
+      "key": {
+        "nationality": 1
+      },
+      "name": "nationality_1"
+    },
+    {
+      "v": 2,
+      "key": {
+        "national_id": 1
+      },
+      "name": "national_id_1"
+    },
+    {
+      "v": 2,
+      "key": {
+        "passport_number": 1
+      },
+      "name": "passport_number_1"
+    },
+    {
+      "v": 2,
+      "key": {
+        "mobile_personal": 1
+      },
+      "name": "mobile_personal_1"
+    },
+    {
+      "v": 2,
+      "key": {
+        "highest_degree": 1
+      },
+      "name": "highest_degree_1"
+    },
+    {
+      "v": 2,
+      "key": {
+        "active": 1
+      },
+      "name": "active_1"
+    },
+    {
+      "v": 2,
+      "key": {
+        "employee_type": 1
+      },
+      "name": "employee_type_1"
+    },
+    {
+      "v": 2,
+      "key": {
+        "facility_id": 1
+      },
+      "name": "facility_id_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "factory_store_id": 1
+      },
+      "name": "factory_store_id_1",
+      "background": true
+    }
+  ],
+  "users": [
+    {
+      "v": 2,
+      "key": {
+        "username": 1
+      },
+      "name": "username_1",
+      "unique": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "email": 1
+      },
+      "name": "email_1",
+      "unique": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "user_type": 1
+      },
+      "name": "user_type_1"
+    },
+    {
+      "v": 2,
+      "key": {
+        "employee_id": 1
+      },
+      "name": "employee_id_1"
+    },
+    {
+      "v": 2,
+      "key": {
+        "distributor_id": 1
+      },
+      "name": "distributor_id_1"
+    },
+    {
+      "v": 2,
+      "key": {
+        "active": 1
+      },
+      "name": "active_1"
+    }
+  ],
+  "customerledgers": [
+    {
+      "v": 2,
+      "key": {
+        "distributor_id": 1
+      },
+      "name": "distributor_id_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "transaction_date": 1
+      },
+      "name": "transaction_date_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "voucher_type": 1
+      },
+      "name": "voucher_type_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "voucher_no": 1
+      },
+      "name": "voucher_no_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "distributor_id": 1,
+        "transaction_date": -1
+      },
+      "name": "distributor_id_1_transaction_date_-1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "distributor_id": 1,
+        "voucher_no": 1
+      },
+      "name": "distributor_id_1_voucher_no_1",
+      "background": true
+    }
+  ],
+  "transports": [
+    {
+      "v": 2,
+      "key": {
+        "transport": 1
+      },
+      "name": "transport_1",
+      "background": true,
+      "unique": true
+    }
+  ],
+  "production_send_to_store": [
+    {
+      "v": 2,
+      "key": {
+        "ref": 1
+      },
+      "name": "ref_1",
+      "background": true,
+      "unique": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "user_id": 1
+      },
+      "name": "user_id_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "facility_id": 1
+      },
+      "name": "facility_id_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "facility_store_id": 1
+      },
+      "name": "facility_store_id_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "details.product_id": 1
+      },
+      "name": "details.product_id_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "details.production_date": 1
+      },
+      "name": "details.production_date_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "details.batch_no": 1
+      },
+      "name": "details.batch_no_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "status": 1
+      },
+      "name": "status_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "details.batch_no": 1,
+        "details.product_id": 1
+      },
+      "name": "details.batch_no_1_details.product_id_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "created_at": -1
+      },
+      "name": "created_at_-1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "facility_id": 1,
+        "created_at": -1
+      },
+      "name": "facility_id_1_created_at_-1",
+      "background": true
+    }
+  ],
+  "factorystoreinventories": [
+    {
+      "v": 2,
+      "key": {
+        "facility_store_id": 1
+      },
+      "name": "facility_store_id_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "product_id": 1
+      },
+      "name": "product_id_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "batch_no": 1
+      },
+      "name": "batch_no_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "expiry_date": 1
+      },
+      "name": "expiry_date_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "source_shipment_ref": 1
+      },
+      "name": "source_shipment_ref_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "status": 1
+      },
+      "name": "status_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "facility_store_id": 1,
+        "product_id": 1,
+        "batch_no": 1
+      },
+      "name": "facility_store_id_1_product_id_1_batch_no_1",
+      "background": true,
+      "unique": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "facility_store_id": 1,
+        "status": 1
+      },
+      "name": "facility_store_id_1_status_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "product_id": 1,
+        "facility_store_id": 1,
+        "status": 1
+      },
+      "name": "product_id_1_facility_store_id_1_status_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "expiry_date": 1,
+        "status": 1
+      },
+      "name": "expiry_date_1_status_1",
+      "background": true
+    }
+  ],
+  "loadsheets": [
+    {
+      "v": 2,
+      "key": {
+        "load_sheet_number": 1
+      },
+      "name": "load_sheet_number_1",
+      "background": true,
+      "unique": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "status": 1
+      },
+      "name": "status_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "depot_id": 1
+      },
+      "name": "depot_id_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "delivery_date": 1
+      },
+      "name": "delivery_date_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "distributors.distributor_id": 1
+      },
+      "name": "distributors.distributor_id_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "distributors.do_items.sku": 1
+      },
+      "name": "distributors.do_items.sku_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "status": 1,
+        "created_at": -1
+      },
+      "name": "status_1_created_at_-1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "depot_id": 1,
+        "status": 1
+      },
+      "name": "depot_id_1_status_1",
+      "background": true
+    }
+  ],
+  "role_pg_permissions": [
+    {
+      "v": 2,
+      "key": {
+        "role_id": 1
+      },
+      "name": "role_id_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "pg_permission_id": 1
+      },
+      "name": "pg_permission_id_1",
+      "background": true
+    }
+  ],
+  "bd_banks": [
+    {
+      "v": 2,
+      "key": {
+        "name": 1
+      },
+      "name": "name_1",
+      "background": true,
+      "unique": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "bank_code": 1
+      },
+      "name": "bank_code_1",
+      "background": true,
+      "sparse": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "swift_code": 1
+      },
+      "name": "swift_code_1",
+      "background": true,
+      "sparse": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "routing_number": 1
+      },
+      "name": "routing_number_1",
+      "background": true,
+      "sparse": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "active": 1
+      },
+      "name": "active_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "_fts": "text",
+        "_ftsx": 1
+      },
+      "name": "name_text",
+      "background": true,
+      "weights": {
+        "name": 1
+      },
+      "default_language": "english",
+      "language_override": "language",
+      "textIndexVersion": 3
+    }
+  ],
+  "offer_receives": [
+    {
+      "v": 2,
+      "key": {
+        "ref_no": 1
+      },
+      "name": "ref_no_1",
+      "background": true,
+      "unique": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "offer_send_id": 1
+      },
+      "name": "offer_send_id_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "offer_send_ref_no": 1
+      },
+      "name": "offer_send_ref_no_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "depot_id": 1
+      },
+      "name": "depot_id_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "receive_date": 1
+      },
+      "name": "receive_date_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "products.product_id": 1
+      },
+      "name": "products.product_id_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "status": 1
+      },
+      "name": "status_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "received_by": 1
+      },
+      "name": "received_by_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "stock_updated": 1
+      },
+      "name": "stock_updated_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "is_deleted": 1
+      },
+      "name": "is_deleted_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "depot_id": 1,
+        "receive_date": -1
+      },
+      "name": "depot_id_1_receive_date_-1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "offer_send_id": 1,
+        "depot_id": 1
+      },
+      "name": "offer_send_id_1_depot_id_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "received_by": 1,
+        "receive_date": -1
+      },
+      "name": "received_by_1_receive_date_-1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "stock_updated": 1,
+        "status": 1
+      },
+      "name": "stock_updated_1_status_1",
+      "background": true
+    }
+  ],
+  "inventory_manufactured_requisitions": [
+    {
+      "v": 2,
+      "key": {
+        "requisition_no": 1
+      },
+      "name": "requisition_no_1",
+      "background": true,
+      "unique": true
+    }
+  ],
+  "designations": [
+    {
+      "v": 2,
+      "key": {
+        "name": 1
+      },
+      "name": "name_1",
+      "background": true,
+      "unique": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "active": 1
+      },
+      "name": "active_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "active": 1,
+        "name": 1
+      },
+      "name": "active_1_name_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "createdBy": 1
+      },
+      "name": "createdBy_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "updatedBy": 1
+      },
+      "name": "updatedBy_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "createdAt": -1
+      },
+      "name": "createdAt_-1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "updatedAt": -1
+      },
+      "name": "updatedAt_-1",
+      "background": true
+    }
+  ],
+  "role_api_permissions": [
+    {
+      "v": 2,
+      "key": {
+        "role_id": 1
+      },
+      "name": "role_id_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "api_permission_id": 1
+      },
+      "name": "api_permission_id_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "role_id": 1,
+        "api_permission_id": 1
+      },
+      "name": "role_id_1_api_permission_id_1",
+      "background": true,
+      "unique": true
+    }
+  ],
+  "offer_sends": [
+    {
+      "v": 2,
+      "key": {
+        "ref_no": 1
+      },
+      "name": "ref_no_1",
+      "background": true,
+      "unique": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "depot_ids": 1
+      },
+      "name": "depot_ids_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "send_date": 1
+      },
+      "name": "send_date_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "products.product_id": 1
+      },
+      "name": "products.product_id_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "products.batch_no": 1
+      },
+      "name": "products.batch_no_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "products.production_date": 1
+      },
+      "name": "products.production_date_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "status": 1
+      },
+      "name": "status_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "created_by": 1
+      },
+      "name": "created_by_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "is_deleted": 1
+      },
+      "name": "is_deleted_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "depot_ids": 1,
+        "status": 1,
+        "send_date": -1
+      },
+      "name": "depot_ids_1_status_1_send_date_-1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "created_by": 1,
+        "send_date": -1
+      },
+      "name": "created_by_1_send_date_-1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "depot_status.depot_id": 1,
+        "depot_status.status": 1
+      },
+      "name": "depot_status.depot_id_1_depot_status.status_1",
+      "background": true
+    }
+  ],
+  "distributors": [
+    {
+      "v": 2,
+      "key": {
+        "name": 1
+      },
+      "name": "name_1",
+      "background": true,
+      "unique": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "db_point_id": 1
+      },
+      "name": "db_point_id_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "erp_id": 1
+      },
+      "name": "erp_id_1",
+      "background": true,
+      "unique": true,
+      "sparse": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "mobile": 1
+      },
+      "name": "mobile_1",
+      "background": true,
+      "sparse": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "active": 1
+      },
+      "name": "active_1",
+      "background": true
+    }
+  ],
+  "distributorstocks": [
+    {
+      "v": 2,
+      "key": {
+        "distributor_id": 1
+      },
+      "name": "distributor_id_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "sku": 1
+      },
+      "name": "sku_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "distributor_id": 1,
+        "sku": 1
+      },
+      "name": "distributor_id_1_sku_1",
+      "background": true,
+      "unique": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "distributor_id": 1,
+        "qty": -1
+      },
+      "name": "distributor_id_1_qty_-1",
+      "background": true
+    }
+  ],
+  "brands": [
+    {
+      "v": 2,
+      "key": {
+        "brand": 1
+      },
+      "name": "brand_1",
+      "unique": true
+    }
+  ],
+  "banks": [
+    {
+      "v": 2,
+      "key": {
+        "account_no": 1
+      },
+      "name": "account_no_1",
+      "background": true,
+      "unique": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "bank_name": 1
+      },
+      "name": "bank_name_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "active": 1
+      },
+      "name": "active_1",
+      "background": true
+    }
+  ],
+  "factorystoreinventorytransactions": [
+    {
+      "v": 2,
+      "key": {
+        "facility_store_id": 1
+      },
+      "name": "facility_store_id_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "product_id": 1
+      },
+      "name": "product_id_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "batch_no": 1
+      },
+      "name": "batch_no_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "transaction_type": 1
+      },
+      "name": "transaction_type_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "reference_no": 1
+      },
+      "name": "reference_no_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "created_at": 1
+      },
+      "name": "created_at_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "facility_store_id": 1,
+        "created_at": -1
+      },
+      "name": "facility_store_id_1_created_at_-1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "product_id": 1,
+        "facility_store_id": 1,
+        "created_at": -1
+      },
+      "name": "product_id_1_facility_store_id_1_created_at_-1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "batch_no": 1,
+        "facility_store_id": 1
+      },
+      "name": "batch_no_1_facility_store_id_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "transaction_type": 1,
+        "created_at": -1
+      },
+      "name": "transaction_type_1_created_at_-1",
+      "background": true
+    }
+  ],
+  "deliverychalans": [
+    {
+      "v": 2,
+      "key": {
+        "load_sheet_id": 1
+      },
+      "name": "load_sheet_id_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "load_sheet_number": 1
+      },
+      "name": "load_sheet_number_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "distributor_id": 1
+      },
+      "name": "distributor_id_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "items.sku": 1
+      },
+      "name": "items.sku_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "delivery_date": 1
+      },
+      "name": "delivery_date_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "status": 1
+      },
+      "name": "status_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "depot_id": 1
+      },
+      "name": "depot_id_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "status": 1,
+        "delivery_date": -1
+      },
+      "name": "status_1_delivery_date_-1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "depot_id": 1,
+        "status": 1
+      },
+      "name": "depot_id_1_status_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "distributor_id": 1,
+        "delivery_date": -1
+      },
+      "name": "distributor_id_1_delivery_date_-1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "receipt_status": 1
+      },
+      "name": "receipt_status_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "chalan_no": 1
+      },
+      "name": "chalan_no_1",
+      "background": true,
+      "unique": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "chalan_date": 1
+      },
+      "name": "chalan_date_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "chalan_date": -1
+      },
+      "name": "chalan_date_-1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "depot_id": 1,
+        "chalan_date": -1
+      },
+      "name": "depot_id_1_chalan_date_-1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "distributor_id": 1,
+        "chalan_date": -1
+      },
+      "name": "distributor_id_1_chalan_date_-1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "status": 1,
+        "chalan_date": -1
+      },
+      "name": "status_1_chalan_date_-1",
+      "background": true
+    }
+  ],
+  "depot_stocks": [
+    {
+      "v": 2,
+      "key": {
+        "depot_id": 1
+      },
+      "name": "depot_id_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "product_id": 1
+      },
+      "name": "product_id_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "depot_id": 1,
+        "qty_ctn": 1
+      },
+      "name": "depot_id_1_qty_ctn_1",
+      "background": true
+    }
+  ],
+  "depottransfers": [
+    {
+      "v": 2,
+      "key": {
+        "transfer_number": 1
+      },
+      "name": "transfer_number_1",
+      "background": true,
+      "unique": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "from_depot_id": 1,
+        "status": 1,
+        "transfer_date": -1
+      },
+      "name": "from_depot_id_1_status_1_transfer_date_-1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "to_depot_id": 1,
+        "status": 1,
+        "transfer_date": -1
+      },
+      "name": "to_depot_id_1_status_1_transfer_date_-1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "status": 1,
+        "transfer_date": -1
+      },
+      "name": "status_1_transfer_date_-1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "sent_by": 1
+      },
+      "name": "sent_by_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "received_by": 1
+      },
+      "name": "received_by_1",
+      "background": true
+    }
+  ],
+  "notifications": [
+    {
+      "v": 2,
+      "key": {
+        "user_id": 1
+      },
+      "name": "user_id_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "type": 1
+      },
+      "name": "type_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "offer_id": 1
+      },
+      "name": "offer_id_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "order_id": 1
+      },
+      "name": "order_id_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "read": 1
+      },
+      "name": "read_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "expires_at": 1
+      },
+      "name": "expires_at_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "user_id": 1,
+        "read": 1,
+        "createdAt": -1
+      },
+      "name": "user_id_1_read_1_createdAt_-1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "user_id": 1,
+        "type": 1,
+        "read": 1
+      },
+      "name": "user_id_1_type_1_read_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "shipment_id": 1
+      },
+      "name": "shipment_id_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "transfer_id": 1
+      },
+      "name": "transfer_id_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "inventory_id": 1
+      },
+      "name": "inventory_id_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "target_role": 1
+      },
+      "name": "target_role_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "target_facility_id": 1
+      },
+      "name": "target_facility_id_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "priority": 1
+      },
+      "name": "priority_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "target_role": 1,
+        "target_facility_id": 1,
+        "read": 1
+      },
+      "name": "target_role_1_target_facility_id_1_read_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "priority": 1,
+        "read": 1,
+        "createdAt": -1
+      },
+      "name": "priority_1_read_1_createdAt_-1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "collection_id": 1
+      },
+      "name": "collection_id_1",
+      "background": true
+    }
+  ],
+  "depot_transactions_in": [
+    {
+      "v": 2,
+      "key": {
+        "depot_id": 1
+      },
+      "name": "depot_id_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "product_id": 1
+      },
+      "name": "product_id_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "batch_no": 1
+      },
+      "name": "batch_no_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "expiry_date": 1
+      },
+      "name": "expiry_date_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "transaction_type": 1
+      },
+      "name": "transaction_type_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "reference_id": 1
+      },
+      "name": "reference_id_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "reference_no": 1
+      },
+      "name": "reference_no_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "transaction_date": 1
+      },
+      "name": "transaction_date_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "status": 1
+      },
+      "name": "status_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "is_deleted": 1
+      },
+      "name": "is_deleted_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "depot_id": 1,
+        "transaction_date": -1
+      },
+      "name": "depot_id_1_transaction_date_-1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "depot_id": 1,
+        "product_id": 1,
+        "batch_no": 1
+      },
+      "name": "depot_id_1_product_id_1_batch_no_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "depot_id": 1,
+        "transaction_type": 1,
+        "status": 1
+      },
+      "name": "depot_id_1_transaction_type_1_status_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "reference_type": 1,
+        "reference_id": 1
+      },
+      "name": "reference_type_1_reference_id_1",
+      "background": true
+    }
+  ],
+  "offers": [
+    {
+      "v": 2,
+      "key": {
+        "start_date": 1
+      },
+      "name": "start_date_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "end_date": 1
+      },
+      "name": "end_date_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "active": 1
+      },
+      "name": "active_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "start_date": 1,
+        "end_date": 1
+      },
+      "name": "start_date_1_end_date_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "name": 1
+      },
+      "name": "name_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "offer_type": 1
+      },
+      "name": "offer_type_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "status": 1
+      },
+      "name": "status_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "offer_type": 1,
+        "status": 1,
+        "active": 1
+      },
+      "name": "offer_type_1_status_1_active_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "createdAt": -1
+      },
+      "name": "createdAt_-1",
+      "background": true
+    }
+  ],
+  "depot_transactions_out": [
+    {
+      "v": 2,
+      "key": {
+        "depot_id": 1
+      },
+      "name": "depot_id_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "product_id": 1
+      },
+      "name": "product_id_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "batch_no": 1
+      },
+      "name": "batch_no_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "expiry_date": 1
+      },
+      "name": "expiry_date_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "transaction_type": 1
+      },
+      "name": "transaction_type_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "reference_id": 1
+      },
+      "name": "reference_id_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "reference_no": 1
+      },
+      "name": "reference_no_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "transaction_date": 1
+      },
+      "name": "transaction_date_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "status": 1
+      },
+      "name": "status_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "is_deleted": 1
+      },
+      "name": "is_deleted_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "depot_id": 1,
+        "transaction_date": -1
+      },
+      "name": "depot_id_1_transaction_date_-1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "depot_id": 1,
+        "product_id": 1,
+        "batch_no": 1
+      },
+      "name": "depot_id_1_product_id_1_batch_no_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "depot_id": 1,
+        "transaction_type": 1,
+        "status": 1
+      },
+      "name": "depot_id_1_transaction_type_1_status_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "reference_type": 1,
+        "reference_id": 1
+      },
+      "name": "reference_type_1_reference_id_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "destination_distributor_id": 1,
+        "status": 1
+      },
+      "name": "destination_distributor_id_1_status_1",
+      "background": true
+    }
+  ],
+  "facilities": [
+    {
+      "v": 2,
+      "key": {
+        "name": 1
+      },
+      "name": "name_1",
+      "unique": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "type": 1,
+        "active": 1
+      },
+      "name": "type_1_active_1"
+    },
+    {
+      "v": 2,
+      "key": {
+        "depot_id": 1
+      },
+      "name": "depot_id_1",
+      "sparse": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "factory_id": 1
+      },
+      "name": "factory_id_1",
+      "sparse": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "type": 1
+      },
+      "name": "type_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "active": 1
+      },
+      "name": "active_1",
+      "background": true
+    }
+  ],
+  "categories": [
+    {
+      "v": 2,
+      "key": {
+        "name": 1
+      },
+      "name": "name_1",
+      "background": true,
+      "unique": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "parent_id": 1
+      },
+      "name": "parent_id_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "product_segment": 1
+      },
+      "name": "product_segment_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "active": 1
+      },
+      "name": "active_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "parent_id": 1
+      },
+      "name": "idx_category_parent_id",
+      "background": true,
+      "sparse": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "product_segment": 1,
+        "active": 1
+      },
+      "name": "idx_category_segment_active",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "created_at": -1
+      },
+      "name": "idx_category_created_at_desc",
+      "background": true
+    }
+  ],
+  "collections": [
+    {
+      "v": 2,
+      "key": {
+        "transaction_id": 1
+      },
+      "name": "transaction_id_1",
+      "background": true,
+      "unique": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "distributor_id": 1
+      },
+      "name": "distributor_id_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "do_no": 1
+      },
+      "name": "do_no_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "deposit_date": 1
+      },
+      "name": "deposit_date_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "distributor_id": 1,
+        "created_at": -1
+      },
+      "name": "distributor_id_1_created_at_-1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "payment_method": 1,
+        "deposit_date": -1
+      },
+      "name": "payment_method_1_deposit_date_-1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "approval_status": 1
+      },
+      "name": "approval_status_1",
+      "background": true
+    }
+  ],
+  "_temp": [],
+  "schedulings": [
+    {
+      "v": 2,
+      "key": {
+        "order_number": 1
+      },
+      "name": "order_number_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "distributor_id": 1
+      },
+      "name": "distributor_id_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "depot_id": 1
+      },
+      "name": "depot_id_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "depot_id": 1,
+        "distributor_id": 1
+      },
+      "name": "depot_id_1_distributor_id_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "current_status": 1
+      },
+      "name": "current_status_1",
+      "background": true
+    }
+  ],
+  "pg_permissions": [
+    {
+      "v": 2,
+      "key": {
+        "pg_permissions": 1
+      },
+      "name": "pg_permissions_1",
+      "unique": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "category": 1
+      },
+      "name": "category_1",
+      "background": true
+    }
+  ],
+  "products": [
+    {
+      "v": 2,
+      "key": {
+        "product_type": 1
+      },
+      "name": "product_type_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "brand_id": 1
+      },
+      "name": "brand_id_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "category_id": 1
+      },
+      "name": "category_id_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "sku": 1
+      },
+      "name": "sku_1",
+      "background": true,
+      "unique": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "trade_price": 1
+      },
+      "name": "trade_price_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "active": 1
+      },
+      "name": "active_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "mrp": 1
+      },
+      "name": "mrp_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "launch_date": 1
+      },
+      "name": "launch_date_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "decommission_date": 1
+      },
+      "name": "decommission_date_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "product_type": 1,
+        "active": 1
+      },
+      "name": "idx_type_active",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "brand_id": 1,
+        "category_id": 1,
+        "active": 1
+      },
+      "name": "idx_brand_category_active",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "product_type": 1,
+        "brand_id": 1
+      },
+      "name": "idx_type_brand",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "_fts": "text",
+        "_ftsx": 1
+      },
+      "name": "idx_text_search",
+      "background": true,
+      "weights": {
+        "bangla_name": 1,
+        "sku": 1
+      },
+      "default_language": "english",
+      "language_override": "language",
+      "textIndexVersion": 3
+    },
+    {
+      "v": 2,
+      "key": {
+        "depot_ids": 1
+      },
+      "name": "idx_depot_ids",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "facility_ids": 1
+      },
+      "name": "idx_facility_ids",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "erp_id": 1
+      },
+      "name": "erp_id_1",
+      "unique": true,
+      "partialFilterExpression": {
+        "erp_id": {
+          "$type": "number"
+        }
+      }
+    }
+  ],
+  "roles": [
+    {
+      "v": 2,
+      "key": {
+        "role": 1
+      },
+      "name": "role_1",
+      "unique": true
+    }
+  ],
+  "territories": [
+    {
+      "v": 2,
+      "key": {
+        "name": 1
+      },
+      "name": "name_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "code": 1
+      },
+      "name": "code_1",
+      "background": true,
+      "unique": true,
+      "sparse": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "type": 1
+      },
+      "name": "type_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "level": 1
+      },
+      "name": "level_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "parent_id": 1
+      },
+      "name": "parent_id_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "ancestors": 1
+      },
+      "name": "ancestors_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "active": 1
+      },
+      "name": "active_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "type": 1,
+        "level": 1
+      },
+      "name": "type_1_level_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "name": 1,
+        "type": 1
+      },
+      "name": "name_1_type_1",
+      "background": true,
+      "unique": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "parent_id": 1,
+        "name": 1
+      },
+      "name": "parent_id_1_name_1",
+      "background": true
+    }
+  ],
+  "role_sidebar_menu_items": [
+    {
+      "v": 2,
+      "key": {
+        "role_id": 1
+      },
+      "name": "role_id_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "sidebar_menu_item_id": 1
+      },
+      "name": "sidebar_menu_item_id_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "role_id": 1,
+        "sidebar_menu_item_id": 1
+      },
+      "name": "role_id_1_sidebar_menu_item_id_1",
+      "background": true,
+      "unique": true
+    }
+  ],
+  "demandorders": [
+    {
+      "v": 2,
+      "key": {
+        "distributor_id": 1
+      },
+      "name": "distributor_id_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "order_number": 1
+      },
+      "name": "order_number_1",
+      "background": true,
+      "unique": true,
+      "sparse": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "status": 1
+      },
+      "name": "status_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "submitted_at": 1
+      },
+      "name": "submitted_at_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "distributor_id": 1,
+        "status": 1,
+        "created_at": -1
+      },
+      "name": "distributor_id_1_status_1_created_at_-1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "status": 1,
+        "submitted_at": -1
+      },
+      "name": "status_1_submitted_at_-1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "current_approver_id": 1
+      },
+      "name": "current_approver_id_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "current_approver_role": 1
+      },
+      "name": "current_approver_role_1",
+      "background": true
+    }
+  ],
+  "deliveryinvoices": [
+    {
+      "v": 2,
+      "key": {
+        "invoice_number": 1
+      },
+      "name": "invoice_number_1",
+      "background": true,
+      "unique": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "chalan_id": 1
+      },
+      "name": "chalan_id_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "chalan_number": 1
+      },
+      "name": "chalan_number_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "load_sheet_id": 1
+      },
+      "name": "load_sheet_id_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "distributor_id": 1
+      },
+      "name": "distributor_id_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "items.sku": 1
+      },
+      "name": "items.sku_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "status": 1
+      },
+      "name": "status_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "depot_id": 1
+      },
+      "name": "depot_id_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "status": 1,
+        "created_at": -1
+      },
+      "name": "status_1_created_at_-1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "depot_id": 1,
+        "status": 1
+      },
+      "name": "depot_id_1_status_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "distributor_id": 1,
+        "status": 1
+      },
+      "name": "distributor_id_1_status_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "due_date": 1
+      },
+      "name": "due_date_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "invoice_no": 1
+      },
+      "name": "invoice_no_1",
+      "background": true,
+      "unique": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "invoice_date": 1
+      },
+      "name": "invoice_date_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "invoice_date": -1
+      },
+      "name": "invoice_date_-1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "depot_id": 1,
+        "invoice_date": -1
+      },
+      "name": "depot_id_1_invoice_date_-1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "distributor_id": 1,
+        "invoice_date": -1
+      },
+      "name": "distributor_id_1_invoice_date_-1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "status": 1,
+        "invoice_date": -1
+      },
+      "name": "status_1_invoice_date_-1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "payment_status": 1
+      },
+      "name": "payment_status_1",
+      "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "voucher_no": 1
+      },
+      "name": "voucher_no_1",
+      "background": true
+    }
+  ]
+}

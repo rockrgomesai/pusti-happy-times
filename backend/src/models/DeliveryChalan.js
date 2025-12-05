@@ -29,6 +29,30 @@ const ChalanItemSchema = new Schema(
       required: true,
       get: (v) => (v ? parseFloat(v.toString()) : 0),
     },
+    received_qty_ctn: {
+      type: Schema.Types.Decimal128,
+      default: 0,
+      get: (v) => (v ? parseFloat(v.toString()) : 0),
+    },
+    received_qty_pcs: {
+      type: Schema.Types.Decimal128,
+      default: 0,
+      get: (v) => (v ? parseFloat(v.toString()) : 0),
+    },
+    damage_qty_ctn: {
+      type: Schema.Types.Decimal128,
+      default: 0,
+      get: (v) => (v ? parseFloat(v.toString()) : 0),
+    },
+    damage_qty_pcs: {
+      type: Schema.Types.Decimal128,
+      default: 0,
+      get: (v) => (v ? parseFloat(v.toString()) : 0),
+    },
+    damage_reason: {
+      type: String,
+      default: "",
+    },
   },
   { _id: false, toJSON: { getters: true }, toObject: { getters: true } }
 );
@@ -93,7 +117,7 @@ const DeliveryChalanSchema = new Schema(
     remarks: String,
     status: {
       type: String,
-      enum: ["Generated", "Delivered", "Cancelled"],
+      enum: ["Generated", "Partially Received", "Received", "Delivered", "Cancelled"],
       default: "Generated",
       index: true,
     },
@@ -107,6 +131,12 @@ const DeliveryChalanSchema = new Schema(
       type: Schema.Types.ObjectId,
       ref: "User",
     },
+    received_at: Date,
+    received_by: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+    },
+    damage_notes: String,
   },
   {
     timestamps: { createdAt: "created_at", updatedAt: "updated_at" },

@@ -39,12 +39,13 @@ import { format } from "date-fns";
 
 interface ChalanItem {
   sku: string;
-  qty_delivered: number;
+  qty_ctn: number;
+  qty_pcs: number;
 }
 
 interface ChalanDetail {
   _id: string;
-  chalan_number: string;
+  chalan_no: string;
   load_sheet_id: {
     load_sheet_number: string;
   };
@@ -107,8 +108,8 @@ export default function ReceiveChalanPage() {
           // Initialize received items with delivered quantities
           const initialItems: ReceivedItem[] = chalanData.items.map((item: ChalanItem) => ({
             sku: item.sku,
-            delivered_qty: parseFloat(item.qty_delivered.toString()),
-            received_qty: parseFloat(item.qty_delivered.toString()),
+            delivered_qty: parseFloat(item.qty_ctn.toString()),
+            received_qty: parseFloat(item.qty_ctn.toString()),
             variance_qty: 0,
             variance_reason: "",
           }));
@@ -272,7 +273,7 @@ export default function ReceiveChalanPage() {
                 Receive Chalan
               </Typography>
               <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                {chalan.chalan_number}
+                {chalan.chalan_no}
               </Typography>
             </Box>
           </Stack>
@@ -317,14 +318,16 @@ export default function ReceiveChalanPage() {
                 {chalan.load_sheet_id.load_sheet_number}
               </Typography>
             </Grid>
-            <Grid item xs={6} sm={4} md={3}>
-              <Typography variant="body2" color="text.secondary">
-                Delivery Date
-              </Typography>
-              <Typography variant="body1" fontWeight="medium">
-                {format(new Date(chalan.delivery_date), "dd MMM yyyy")}
-              </Typography>
-            </Grid>
+            {chalan.delivery_date && (
+              <Grid item xs={6} sm={4} md={3}>
+                <Typography variant="body2" color="text.secondary">
+                  Delivery Date
+                </Typography>
+                <Typography variant="body1" fontWeight="medium">
+                  {format(new Date(chalan.delivery_date), "dd MMM yyyy")}
+                </Typography>
+              </Grid>
+            )}
             <Grid item xs={6} sm={4} md={3}>
               <Typography variant="body2" color="text.secondary">
                 From Depot

@@ -1,0 +1,866 @@
+[
+  {
+    "_id": "68be3284973bd1fbf8fa3350",
+    "role_id": "68be2864ca863b8ae7fa3350",
+    "sidebar_menu_item_id": "68be292c6326800841fa3350"
+  },
+  {
+    "_id": "68be36386175185bb8fa3350",
+    "role_id": "68be2864ca863b8ae7fa3350",
+    "sidebar_menu_item_id": "68be297464d508f0a4fa3350"
+  },
+  {
+    "_id": "68be460601ef927467fa3350",
+    "role_id": "68be2864ca863b8ae7fa3350",
+    "sidebar_menu_item_id": "68be29cc797ce968d4fa3350"
+  },
+  {
+    "_id": "68be46204a30a682f3fa3350",
+    "role_id": "68be2864ca863b8ae7fa3350",
+    "sidebar_menu_item_id": "68be29ddf5f3057028fa3350"
+  },
+  {
+    "_id": "68be46390d24caeacdfa3350",
+    "role_id": "68be2864ca863b8ae7fa3350",
+    "sidebar_menu_item_id": "68be2a2337d76ea524fa3350"
+  },
+  {
+    "_id": "68be464f52b89fc22bfa3350",
+    "role_id": "68be2864ca863b8ae7fa3350",
+    "sidebar_menu_item_id": "68be2a3f4ec3731485fa3350"
+  },
+  {
+    "_id": "68be4a6e450f494c32fa3350",
+    "role_id": "68be288375e61f983dfa3350",
+    "sidebar_menu_item_id": "68be292c6326800841fa3350"
+  },
+  {
+    "_id": "68be4a8b2ec0ec81dffa3350",
+    "role_id": "68be2896fd5c14f63ffa3350",
+    "sidebar_menu_item_id": "68be297464d508f0a4fa3350"
+  },
+  {
+    "_id": "68be4aacbd19c441dbfa3350",
+    "role_id": "68be28a0b7d6d02c85fa3350",
+    "sidebar_menu_item_id": "68be29ddf5f3057028fa3350"
+  },
+  {
+    "_id": "68be4abd5c2be4537afa3350",
+    "role_id": "68be28bb6d730e2827fa3350",
+    "sidebar_menu_item_id": "68be2a2337d76ea524fa3350"
+  },
+  {
+    "_id": "68be4ad1bde40f97c1fa3350",
+    "role_id": "68be28c86d730e2827fa3351",
+    "sidebar_menu_item_id": "68be2a3f4ec3731485fa3350"
+  },
+  {
+    "_id": "68be4af380f53b6589fa3350",
+    "role_id": "68be28e027b6b77e37fa3351",
+    "sidebar_menu_item_id": "68be292c6326800841fa3350"
+  },
+  {
+    "_id": "68be4b3dab47824caafa3350",
+    "role_id": "68be21b0a9b5a7c8c0fa3352",
+    "sidebar_menu_item_id": "68be29ddf5f3057028fa3350"
+  },
+  {
+    "_id": "68e576ca67236560aa29e742",
+    "role_id": "68be2864ca863b8ae7fa3350",
+    "sidebar_menu_item_id": "68e574cd83ef8946f2c405da"
+  },
+  {
+    "_id": "68e577e967236560aa29e744",
+    "role_id": "68be2864ca863b8ae7fa3350",
+    "sidebar_menu_item_id": "68e574cd83ef8946f2c405db"
+  },
+  {
+    "_id": "68f8341e90d7eaccb519fb5b",
+    "role_id": "68f52b4fb9fccf467eadceec",
+    "sidebar_menu_item_id": "68be292c6326800841fa3350"
+  },
+  {
+    "_id": "68f8341e90d7eaccb519fb5c",
+    "role_id": "68f52b4fb9fccf467eadceec",
+    "sidebar_menu_item_id": "68be297464d508f0a4fa3350"
+  },
+  {
+    "_id": "68f8341e90d7eaccb519fb5d",
+    "role_id": "68f52b4fb9fccf467eadceec",
+    "sidebar_menu_item_id": "68be29ddf5f3057028fa3350"
+  },
+  {
+    "_id": "68f8356b90d7eaccb519fe1e",
+    "role_id": "68f8351d90d7eaccb519fd45",
+    "sidebar_menu_item_id": "68be292c6326800841fa3350"
+  },
+  {
+    "_id": "68f8356b90d7eaccb519fe1f",
+    "role_id": "68f8351d90d7eaccb519fd45",
+    "sidebar_menu_item_id": "68be297464d508f0a4fa3350"
+  },
+  {
+    "_id": "68f8356b90d7eaccb519fe20",
+    "role_id": "68f8351d90d7eaccb519fd45",
+    "sidebar_menu_item_id": "68be29ddf5f3057028fa3350"
+  },
+  {
+    "_id": "68f8358290d7eaccb519fe71",
+    "role_id": "68f8352690d7eaccb519fd64",
+    "sidebar_menu_item_id": "68be292c6326800841fa3350"
+  },
+  {
+    "_id": "68f8358290d7eaccb519fe72",
+    "role_id": "68f8352690d7eaccb519fd64",
+    "sidebar_menu_item_id": "68be297464d508f0a4fa3350"
+  },
+  {
+    "_id": "68f8358290d7eaccb519fe73",
+    "role_id": "68f8352690d7eaccb519fd64",
+    "sidebar_menu_item_id": "68be29ddf5f3057028fa3350"
+  },
+  {
+    "_id": "68f8358c90d7eaccb519feac",
+    "role_id": "68f8353190d7eaccb519fd83",
+    "sidebar_menu_item_id": "68be292c6326800841fa3350"
+  },
+  {
+    "_id": "68f8358c90d7eaccb519fead",
+    "role_id": "68f8353190d7eaccb519fd83",
+    "sidebar_menu_item_id": "68be297464d508f0a4fa3350"
+  },
+  {
+    "_id": "68f8358c90d7eaccb519feae",
+    "role_id": "68f8353190d7eaccb519fd83",
+    "sidebar_menu_item_id": "68be29ddf5f3057028fa3350"
+  },
+  {
+    "_id": "68f8359b90d7eaccb519feff",
+    "role_id": "68f8353890d7eaccb519fda2",
+    "sidebar_menu_item_id": "68be292c6326800841fa3350"
+  },
+  {
+    "_id": "68f8359b90d7eaccb519ff00",
+    "role_id": "68f8353890d7eaccb519fda2",
+    "sidebar_menu_item_id": "68be297464d508f0a4fa3350"
+  },
+  {
+    "_id": "68f8359b90d7eaccb519ff01",
+    "role_id": "68f8353890d7eaccb519fda2",
+    "sidebar_menu_item_id": "68be29ddf5f3057028fa3350"
+  },
+  {
+    "_id": "68f8397590d7eaccb51a0117",
+    "role_id": "68f8354290d7eaccb519fdc1",
+    "sidebar_menu_item_id": "68be292c6326800841fa3350"
+  },
+  {
+    "_id": "68f8397590d7eaccb51a0118",
+    "role_id": "68f8354290d7eaccb519fdc1",
+    "sidebar_menu_item_id": "68be297464d508f0a4fa3350"
+  },
+  {
+    "_id": "68f8397590d7eaccb51a0119",
+    "role_id": "68f8354290d7eaccb519fdc1",
+    "sidebar_menu_item_id": "68be29ddf5f3057028fa3350"
+  },
+  {
+    "_id": "68f8398c90d7eaccb51a0152",
+    "role_id": "68f52abfb9fccf467eadce56",
+    "sidebar_menu_item_id": "68be292c6326800841fa3350"
+  },
+  {
+    "_id": "68f8398c90d7eaccb51a0153",
+    "role_id": "68f52abfb9fccf467eadce56",
+    "sidebar_menu_item_id": "68be297464d508f0a4fa3350"
+  },
+  {
+    "_id": "68f8398c90d7eaccb51a0154",
+    "role_id": "68f52abfb9fccf467eadce56",
+    "sidebar_menu_item_id": "68be29ddf5f3057028fa3350"
+  },
+  {
+    "_id": "68f839ab90d7eaccb51a01bd",
+    "role_id": "68c267a5a577d325bc1f58d7",
+    "sidebar_menu_item_id": "68be292c6326800841fa3350"
+  },
+  {
+    "_id": "68f839ab90d7eaccb51a01be",
+    "role_id": "68c267a5a577d325bc1f58d7",
+    "sidebar_menu_item_id": "68be297464d508f0a4fa3350"
+  },
+  {
+    "_id": "68f839ab90d7eaccb51a01bf",
+    "role_id": "68c267a5a577d325bc1f58d7",
+    "sidebar_menu_item_id": "68be29ddf5f3057028fa3350"
+  },
+  {
+    "_id": "69065bd94db55350dda4c110",
+    "role_id": "68f52a9fb9fccf467eadce3a",
+    "sidebar_menu_item_id": "68be292c6326800841fa3350"
+  },
+  {
+    "_id": "69065bd94db55350dda4c111",
+    "role_id": "68f52a9fb9fccf467eadce3a",
+    "sidebar_menu_item_id": "68be297464d508f0a4fa3350"
+  },
+  {
+    "_id": "69065bd94db55350dda4c112",
+    "role_id": "68f52a9fb9fccf467eadce3a",
+    "sidebar_menu_item_id": "68be29ddf5f3057028fa3350"
+  },
+  {
+    "_id": "69065bd94db55350dda4c113",
+    "role_id": "68f52a9fb9fccf467eadce3a",
+    "sidebar_menu_item_id": "69058d1c46f7023b663c9eaa"
+  },
+  {
+    "_id": "69065bd94db55350dda4c114",
+    "role_id": "68f52a9fb9fccf467eadce3a",
+    "sidebar_menu_item_id": "69058d1c46f7023b663c9eab"
+  },
+  {
+    "_id": "69065bd94db55350dda4c115",
+    "role_id": "68f52a9fb9fccf467eadce3a",
+    "sidebar_menu_item_id": "69065b8c3b4a37667d448493"
+  },
+  {
+    "_id": "690b3a706b5b9ca5c3edd0f4",
+    "role_id": "68f8351d90d7eaccb519fd45",
+    "sidebar_menu_item_id": "690b32c4349820613541ca28"
+  },
+  {
+    "_id": "690b3a706b5b9ca5c3edd0f9",
+    "role_id": "68f8352690d7eaccb519fd64",
+    "sidebar_menu_item_id": "690b32c4349820613541ca28"
+  },
+  {
+    "_id": "690b3a706b5b9ca5c3edd0fe",
+    "role_id": "68f8353190d7eaccb519fd83",
+    "sidebar_menu_item_id": "690b32c4349820613541ca28"
+  },
+  {
+    "_id": "690b3a706b5b9ca5c3edd108",
+    "role_id": "68c267a5a577d325bc1f58d7",
+    "sidebar_menu_item_id": "690b32c4349820613541ca28"
+  },
+  {
+    "_id": "690b8884a2a25f0109390605",
+    "role_id": "68be2193ea73210503fa3350",
+    "sidebar_menu_item_id": "68be292c6326800841fa3350"
+  },
+  {
+    "_id": "690b8884a2a25f0109390606",
+    "role_id": "68be2193ea73210503fa3350",
+    "sidebar_menu_item_id": "68be297464d508f0a4fa3350"
+  },
+  {
+    "_id": "690b8884a2a25f0109390607",
+    "role_id": "68be2193ea73210503fa3350",
+    "sidebar_menu_item_id": "68be29cc797ce968d4fa3350"
+  },
+  {
+    "_id": "690b8884a2a25f0109390608",
+    "role_id": "68be2193ea73210503fa3350",
+    "sidebar_menu_item_id": "68be29ddf5f3057028fa3350"
+  },
+  {
+    "_id": "690b8884a2a25f0109390609",
+    "role_id": "68be2193ea73210503fa3350",
+    "sidebar_menu_item_id": "68beb96f939b03c716f272e4"
+  },
+  {
+    "_id": "690b8884a2a25f010939060a",
+    "role_id": "68be2193ea73210503fa3350",
+    "sidebar_menu_item_id": "68becd033047d1c419fcea1a"
+  },
+  {
+    "_id": "690b8884a2a25f010939060b",
+    "role_id": "68be2193ea73210503fa3350",
+    "sidebar_menu_item_id": "68be2a2337d76ea524fa3350"
+  },
+  {
+    "_id": "690b8884a2a25f010939060c",
+    "role_id": "68be2193ea73210503fa3350",
+    "sidebar_menu_item_id": "68e574cd83ef8946f2c405db"
+  },
+  {
+    "_id": "690b8884a2a25f010939060d",
+    "role_id": "68be2193ea73210503fa3350",
+    "sidebar_menu_item_id": "68c995a9612c48668872921e"
+  },
+  {
+    "_id": "690b8884a2a25f010939060e",
+    "role_id": "68be2193ea73210503fa3350",
+    "sidebar_menu_item_id": "690864ef538e332fea7fe03a"
+  },
+  {
+    "_id": "690b8884a2a25f010939060f",
+    "role_id": "68be2193ea73210503fa3350",
+    "sidebar_menu_item_id": "68e8526d67236560aa29e74e"
+  },
+  {
+    "_id": "690b8884a2a25f0109390610",
+    "role_id": "68be2193ea73210503fa3350",
+    "sidebar_menu_item_id": "68be2a3f4ec3731485fa3350"
+  },
+  {
+    "_id": "690b8884a2a25f0109390611",
+    "role_id": "68be2193ea73210503fa3350",
+    "sidebar_menu_item_id": "68c2460602ae9b1e9f2aa7dd"
+  },
+  {
+    "_id": "690b8884a2a25f0109390612",
+    "role_id": "68be2193ea73210503fa3350",
+    "sidebar_menu_item_id": "68e857c467236560aa29e750"
+  },
+  {
+    "_id": "690b8884a2a25f0109390613",
+    "role_id": "68be2193ea73210503fa3350",
+    "sidebar_menu_item_id": "68ef064e9655dc4346b9fd87"
+  },
+  {
+    "_id": "690b8884a2a25f0109390614",
+    "role_id": "68be2193ea73210503fa3350",
+    "sidebar_menu_item_id": "68f37a0cd17b9fc5f0663096"
+  },
+  {
+    "_id": "690b8884a2a25f0109390615",
+    "role_id": "68be2193ea73210503fa3350",
+    "sidebar_menu_item_id": "68ef0c679655dc4346b9fd89"
+  },
+  {
+    "_id": "690b8884a2a25f0109390616",
+    "role_id": "68be2193ea73210503fa3350",
+    "sidebar_menu_item_id": "68ef0d309655dc4346b9fd8b"
+  },
+  {
+    "_id": "690b8884a2a25f0109390617",
+    "role_id": "68be2193ea73210503fa3350",
+    "sidebar_menu_item_id": "68ef0d659655dc4346b9fd8d"
+  },
+  {
+    "_id": "690b8884a2a25f0109390618",
+    "role_id": "68be2193ea73210503fa3350",
+    "sidebar_menu_item_id": "68e504dd1e10c8a0300564fb"
+  },
+  {
+    "_id": "690b8884a2a25f0109390619",
+    "role_id": "68be2193ea73210503fa3350",
+    "sidebar_menu_item_id": "68e50b0c1093ef5e75af88a0"
+  },
+  {
+    "_id": "690b8884a2a25f010939061a",
+    "role_id": "68be2193ea73210503fa3350",
+    "sidebar_menu_item_id": "68e50b0c1093ef5e75af88a1"
+  },
+  {
+    "_id": "690b8884a2a25f010939061b",
+    "role_id": "68be2193ea73210503fa3350",
+    "sidebar_menu_item_id": "690b32c4349820613541ca27"
+  },
+  {
+    "_id": "690b8884a2a25f010939061c",
+    "role_id": "68be2193ea73210503fa3350",
+    "sidebar_menu_item_id": "690b32c4349820613541ca28"
+  },
+  {
+    "_id": "690cd6c4139abd509b59b7fd",
+    "role_id": "690750354bdacd1e192d1ab3",
+    "sidebar_menu_item_id": "68be292c6326800841fa3350"
+  },
+  {
+    "_id": "690cd6c4139abd509b59b7fe",
+    "role_id": "690750354bdacd1e192d1ab3",
+    "sidebar_menu_item_id": "68be297464d508f0a4fa3350"
+  },
+  {
+    "_id": "690cd6c4139abd509b59b7ff",
+    "role_id": "690750354bdacd1e192d1ab3",
+    "sidebar_menu_item_id": "68be29ddf5f3057028fa3350"
+  },
+  {
+    "_id": "690cd6c4139abd509b59b800",
+    "role_id": "690750354bdacd1e192d1ab3",
+    "sidebar_menu_item_id": "69072b3d5c5ec9aae535b740"
+  },
+  {
+    "_id": "690cd6c4139abd509b59b801",
+    "role_id": "690750354bdacd1e192d1ab3",
+    "sidebar_menu_item_id": "69072c175c5ec9aae535b741"
+  },
+  {
+    "_id": "690cd6c4139abd509b59b802",
+    "role_id": "690750354bdacd1e192d1ab3",
+    "sidebar_menu_item_id": "69072dc25c5ec9aae535b742"
+  },
+  {
+    "_id": "690cd6c4139abd509b59b803",
+    "role_id": "690750354bdacd1e192d1ab3",
+    "sidebar_menu_item_id": "690736ac5c5ec9aae535b748"
+  },
+  {
+    "_id": "690cd6c4139abd509b59b804",
+    "role_id": "690750354bdacd1e192d1ab3",
+    "sidebar_menu_item_id": "6907cc418e89fa96a1f0eba8"
+  },
+  {
+    "_id": "690cd6c4139abd509b59b805",
+    "role_id": "690750354bdacd1e192d1ab3",
+    "sidebar_menu_item_id": "69084e44d1332b713d9f5e06"
+  },
+  {
+    "_id": "690cd6e5139abd509b59b83e",
+    "role_id": "68f52ae8b9fccf467eadce90",
+    "sidebar_menu_item_id": "68be292c6326800841fa3350"
+  },
+  {
+    "_id": "690cd6e5139abd509b59b83f",
+    "role_id": "68f52ae8b9fccf467eadce90",
+    "sidebar_menu_item_id": "68be297464d508f0a4fa3350"
+  },
+  {
+    "_id": "690cd6e5139abd509b59b840",
+    "role_id": "68f52ae8b9fccf467eadce90",
+    "sidebar_menu_item_id": "68be29ddf5f3057028fa3350"
+  },
+  {
+    "_id": "690cd6e5139abd509b59b841",
+    "role_id": "68f52ae8b9fccf467eadce90",
+    "sidebar_menu_item_id": "69058d1c46f7023b663c9eaa"
+  },
+  {
+    "_id": "690cd6e5139abd509b59b842",
+    "role_id": "68f52ae8b9fccf467eadce90",
+    "sidebar_menu_item_id": "69058d1c46f7023b663c9eab"
+  },
+  {
+    "_id": "690cd6e5139abd509b59b843",
+    "role_id": "68f52ae8b9fccf467eadce90",
+    "sidebar_menu_item_id": "69065b8c3b4a37667d448493"
+  },
+  {
+    "_id": "690f06644eedcac0b2998322",
+    "role_id": "68be2193ea73210503fa3352",
+    "sidebar_menu_item_id": "68be292c6326800841fa3350"
+  },
+  {
+    "_id": "690f06644eedcac0b2998323",
+    "role_id": "68be2193ea73210503fa3352",
+    "sidebar_menu_item_id": "68be297464d508f0a4fa3350"
+  },
+  {
+    "_id": "690f06644eedcac0b2998324",
+    "role_id": "68be2193ea73210503fa3352",
+    "sidebar_menu_item_id": "68be29ddf5f3057028fa3350"
+  },
+  {
+    "_id": "690f06644eedcac0b2998325",
+    "role_id": "68be2193ea73210503fa3352",
+    "sidebar_menu_item_id": "68ef0c679655dc4346b9fd89"
+  },
+  {
+    "_id": "690f06644eedcac0b2998326",
+    "role_id": "68be2193ea73210503fa3352",
+    "sidebar_menu_item_id": "68ef0d659655dc4346b9fd8d"
+  },
+  {
+    "_id": "690f124dfa0604693e85fe5b",
+    "role_id": "68be2193ea73210503fa3352",
+    "sidebar_menu_item_id": "690f11a472ff7e43ad8de9e9"
+  },
+  {
+    "_id": "69101b1b64116a0b0fc9fddf",
+    "role_id": "68bf964f5347ed86d01c9ed2",
+    "sidebar_menu_item_id": "68be292c6326800841fa3350"
+  },
+  {
+    "_id": "69101b1b64116a0b0fc9fde0",
+    "role_id": "68bf964f5347ed86d01c9ed2",
+    "sidebar_menu_item_id": "68be297464d508f0a4fa3350"
+  },
+  {
+    "_id": "69101b1b64116a0b0fc9fde1",
+    "role_id": "68bf964f5347ed86d01c9ed2",
+    "sidebar_menu_item_id": "690f11a472ff7e43ad8de9e9"
+  },
+  {
+    "_id": "69101b1b64116a0b0fc9fde2",
+    "role_id": "68bf964f5347ed86d01c9ed2",
+    "sidebar_menu_item_id": "68be29ddf5f3057028fa3350"
+  },
+  {
+    "_id": "69101b1b64116a0b0fc9fde3",
+    "role_id": "68bf964f5347ed86d01c9ed2",
+    "sidebar_menu_item_id": "68ef0c679655dc4346b9fd89"
+  },
+  {
+    "_id": "69101b1b64116a0b0fc9fde4",
+    "role_id": "68bf964f5347ed86d01c9ed2",
+    "sidebar_menu_item_id": "690b32c4349820613541ca28"
+  },
+  {
+    "_id": "69206aa591575420d407f0ba",
+    "role_id": "68bf964f5347ed86d01c9ed2",
+    "sidebar_menu_item_id": "69206aa591575420d407f068"
+  },
+  {
+    "_id": "69217119b2d479ebcf889561",
+    "role_id": "68bfb833ac67310131c51025",
+    "sidebar_menu_item_id": "68be292c6326800841fa3350"
+  },
+  {
+    "_id": "69217119b2d479ebcf889562",
+    "role_id": "68bfb833ac67310131c51025",
+    "sidebar_menu_item_id": "68be297464d508f0a4fa3350"
+  },
+  {
+    "_id": "69217119b2d479ebcf889563",
+    "role_id": "68bfb833ac67310131c51025",
+    "sidebar_menu_item_id": "690f11a472ff7e43ad8de9e9"
+  },
+  {
+    "_id": "69217119b2d479ebcf889564",
+    "role_id": "68bfb833ac67310131c51025",
+    "sidebar_menu_item_id": "68be29ddf5f3057028fa3350"
+  },
+  {
+    "_id": "69217119b2d479ebcf889565",
+    "role_id": "68bfb833ac67310131c51025",
+    "sidebar_menu_item_id": "68ef0c679655dc4346b9fd89"
+  },
+  {
+    "_id": "69217119b2d479ebcf889566",
+    "role_id": "68bfb833ac67310131c51025",
+    "sidebar_menu_item_id": "69206aa591575420d407f068"
+  },
+  {
+    "_id": "69217119b2d479ebcf889567",
+    "role_id": "68bfb833ac67310131c51025",
+    "sidebar_menu_item_id": "690b32c4349820613541ca28"
+  },
+  {
+    "_id": "69219487edd0fc01ab4439b4",
+    "role_id": "68be2193ea73210503fa3351",
+    "sidebar_menu_item_id": "68be292c6326800841fa3350"
+  },
+  {
+    "_id": "69219487edd0fc01ab4439b5",
+    "role_id": "68be2193ea73210503fa3351",
+    "sidebar_menu_item_id": "68be297464d508f0a4fa3350"
+  },
+  {
+    "_id": "69219487edd0fc01ab4439b6",
+    "role_id": "68be2193ea73210503fa3351",
+    "sidebar_menu_item_id": "690f11a472ff7e43ad8de9e9"
+  },
+  {
+    "_id": "69219487edd0fc01ab4439b7",
+    "role_id": "68be2193ea73210503fa3351",
+    "sidebar_menu_item_id": "68be29ddf5f3057028fa3350"
+  },
+  {
+    "_id": "69219487edd0fc01ab4439b8",
+    "role_id": "68be2193ea73210503fa3351",
+    "sidebar_menu_item_id": "68ef0c679655dc4346b9fd89"
+  },
+  {
+    "_id": "69219487edd0fc01ab4439b9",
+    "role_id": "68be2193ea73210503fa3351",
+    "sidebar_menu_item_id": "69206aa591575420d407f068"
+  },
+  {
+    "_id": "6921aeedc16695663c2f40f9",
+    "role_id": "68f52b04b9fccf467eadceae",
+    "sidebar_menu_item_id": "68be292c6326800841fa3350"
+  },
+  {
+    "_id": "6921aeedc16695663c2f40fa",
+    "role_id": "68f52b04b9fccf467eadceae",
+    "sidebar_menu_item_id": "68be297464d508f0a4fa3350"
+  },
+  {
+    "_id": "6921aeedc16695663c2f40fb",
+    "role_id": "68f52b04b9fccf467eadceae",
+    "sidebar_menu_item_id": "690f11a472ff7e43ad8de9e9"
+  },
+  {
+    "_id": "6921aeedc16695663c2f40fc",
+    "role_id": "68f52b04b9fccf467eadceae",
+    "sidebar_menu_item_id": "68be29ddf5f3057028fa3350"
+  },
+  {
+    "_id": "6921aeedc16695663c2f40fd",
+    "role_id": "68f52b04b9fccf467eadceae",
+    "sidebar_menu_item_id": "68ef0c679655dc4346b9fd89"
+  },
+  {
+    "_id": "6921aeedc16695663c2f40fe",
+    "role_id": "68f52b04b9fccf467eadceae",
+    "sidebar_menu_item_id": "69206aa591575420d407f068"
+  },
+  {
+    "_id": "6923358a3036bc2c47a94b66",
+    "role_id": "68f52b4fb9fccf467eadceec",
+    "sidebar_menu_item_id": "68ef0c679655dc4346b9fd89"
+  },
+  {
+    "_id": "6924a469b7be8e0f245f761b",
+    "role_id": "68f52b1bb9fccf467eadcecd",
+    "sidebar_menu_item_id": "68be292c6326800841fa3350"
+  },
+  {
+    "_id": "6924a469b7be8e0f245f761c",
+    "role_id": "68f52b1bb9fccf467eadcecd",
+    "sidebar_menu_item_id": "68be297464d508f0a4fa3350"
+  },
+  {
+    "_id": "6924a469b7be8e0f245f761d",
+    "role_id": "68f52b1bb9fccf467eadcecd",
+    "sidebar_menu_item_id": "690f11a472ff7e43ad8de9e9"
+  },
+  {
+    "_id": "6924a469b7be8e0f245f761e",
+    "role_id": "68f52b1bb9fccf467eadcecd",
+    "sidebar_menu_item_id": "68be29ddf5f3057028fa3350"
+  },
+  {
+    "_id": "6924a469b7be8e0f245f761f",
+    "role_id": "68f52b1bb9fccf467eadcecd",
+    "sidebar_menu_item_id": "68be2a2337d76ea524fa3350"
+  },
+  {
+    "_id": "6924a469b7be8e0f245f7620",
+    "role_id": "68f52b1bb9fccf467eadcecd",
+    "sidebar_menu_item_id": "690864ef538e332fea7fe03a"
+  },
+  {
+    "_id": "6924a469b7be8e0f245f7621",
+    "role_id": "68f52b1bb9fccf467eadcecd",
+    "sidebar_menu_item_id": "68ef0c679655dc4346b9fd89"
+  },
+  {
+    "_id": "6924a469b7be8e0f245f7622",
+    "role_id": "68f52b1bb9fccf467eadcecd",
+    "sidebar_menu_item_id": "69206aa591575420d407f068"
+  },
+  {
+    "_id": "6924a469b7be8e0f245f7624",
+    "role_id": "68f52b1bb9fccf467eadcecd",
+    "sidebar_menu_item_id": "690b32c4349820613541ca27"
+  },
+  {
+    "_id": "6924a469b7be8e0f245f7625",
+    "role_id": "68f52b1bb9fccf467eadcecd",
+    "sidebar_menu_item_id": "690b32c4349820613541ca28"
+  },
+  {
+    "_id": "6926ad0db544e8a46f3708f9",
+    "role_id": "68f52b4fb9fccf467eadceec",
+    "sidebar_menu_item_id": "6926ad0db544e8a46f3708f7"
+  },
+  {
+    "_id": "6926ad0db544e8a46f3708fc",
+    "role_id": "68f52b1bb9fccf467eadcecd",
+    "sidebar_menu_item_id": "6926ad0db544e8a46f3708f7"
+  },
+  {
+    "_id": "69287f3074f4691e70267417",
+    "role_id": "68f52b4fb9fccf467eadceec",
+    "sidebar_menu_item_id": "69287f3074f4691e70267412"
+  },
+  {
+    "_id": "6928c768d4cc60069418faa4",
+    "role_id": "68f52b1bb9fccf467eadcecd",
+    "sidebar_menu_item_id": "6928c768d4cc60069418faa3",
+    "created_at": "2025-11-27T21:49:28.829Z"
+  },
+  {
+    "_id": "6928c8b914c9b548585059db",
+    "role_id": "68f52b1bb9fccf467eadcecd",
+    "sidebar_menu_item_id": "6928c8b914c9b548585059da",
+    "created_at": "2025-11-27T21:55:05.910Z",
+    "updated_at": "2025-11-27T21:55:05.910Z"
+  },
+  {
+    "_id": "692a30ce6f14055979e7d1a9",
+    "role_id": "68be2193ea73210503fa3351",
+    "sidebar_menu_item_id": "692a30aa8e6302f05940a625"
+  },
+  {
+    "_id": "692a30ce6f14055979e7d1ac",
+    "role_id": "68be2193ea73210503fa3351",
+    "sidebar_menu_item_id": "692a30aa8e6302f05940a628"
+  },
+  {
+    "_id": "692a30ce6f14055979e7d1af",
+    "role_id": "690750354bdacd1e192d1ab3",
+    "sidebar_menu_item_id": "692a30aa8e6302f05940a629"
+  },
+  {
+    "_id": "692a30ce6f14055979e7d1b2",
+    "role_id": "690750354bdacd1e192d1ab3",
+    "sidebar_menu_item_id": "692a30aa8e6302f05940a62a"
+  },
+  {
+    "_id": "692a30ce6f14055979e7d1b5",
+    "role_id": "68be2193ea73210503fa3351",
+    "sidebar_menu_item_id": "692a30aa8e6302f05940a61a"
+  },
+  {
+    "_id": "692a30ce6f14055979e7d1b8",
+    "role_id": "690750354bdacd1e192d1ab3",
+    "sidebar_menu_item_id": "692a30aa8e6302f05940a61a"
+  },
+  {
+    "_id": "692b79b59f4f725e8a8ab7a9",
+    "role_id": "690750354bdacd1e192d1ab3",
+    "sidebar_menu_item_id": "692b79b49f4f725e8a8ab72d"
+  },
+  {
+    "_id": "692b79b59f4f725e8a8ab7ac",
+    "role_id": "690750354bdacd1e192d1ab3",
+    "sidebar_menu_item_id": "692b79b59f4f725e8a8ab764"
+  },
+  {
+    "_id": "692b79b59f4f725e8a8ab7af",
+    "role_id": "690750354bdacd1e192d1ab3",
+    "sidebar_menu_item_id": "692b79b59f4f725e8a8ab784"
+  },
+  {
+    "_id": "692b79b59f4f725e8a8ab7b2",
+    "role_id": "690750354bdacd1e192d1ab3",
+    "sidebar_menu_item_id": "692b79b59f4f725e8a8ab796"
+  },
+  {
+    "_id": "692e1a8ed599e706277ae3d1",
+    "role_id": "68be2193ea73210503fa3352",
+    "sidebar_menu_item_id": "692e1a8dd599e706277ae329"
+  },
+  {
+    "_id": "692e1a8ed599e706277ae3e1",
+    "role_id": "68be2193ea73210503fa3352",
+    "sidebar_menu_item_id": "692e1a8dd599e706277ae372"
+  },
+  {
+    "_id": "692e1a8ed599e706277ae3ee",
+    "role_id": "68be2193ea73210503fa3352",
+    "sidebar_menu_item_id": "692e1a8ed599e706277ae3a9"
+  },
+  {
+    "_id": "692f6f3858f88f7ddb1c3028",
+    "role_id": "68bf964f5347ed86d01c9ed2",
+    "sidebar_menu_item_id": "692f6f3858f88f7ddb1c3027"
+  },
+  {
+    "_id": "692f6f3858f88f7ddb1c3029",
+    "role_id": "68bfb833ac67310131c51025",
+    "sidebar_menu_item_id": "692f6f3858f88f7ddb1c3027"
+  },
+  {
+    "_id": "692f6f3858f88f7ddb1c302a",
+    "role_id": "68be2193ea73210503fa3350",
+    "sidebar_menu_item_id": "692f6f3858f88f7ddb1c3027"
+  },
+  {
+    "_id": "692f6f3858f88f7ddb1c302c",
+    "role_id": "68bf964f5347ed86d01c9ed2",
+    "sidebar_menu_item_id": "692f6f3858f88f7ddb1c302b"
+  },
+  {
+    "_id": "692f6f3858f88f7ddb1c302d",
+    "role_id": "68bfb833ac67310131c51025",
+    "sidebar_menu_item_id": "692f6f3858f88f7ddb1c302b"
+  },
+  {
+    "_id": "692f6f3858f88f7ddb1c302e",
+    "role_id": "68be2193ea73210503fa3350",
+    "sidebar_menu_item_id": "692f6f3858f88f7ddb1c302b"
+  },
+  {
+    "_id": "692fa28e5f8114703a763620",
+    "role_id": "68be2193ea73210503fa3351",
+    "sidebar_menu_item_id": "692f6f3858f88f7ddb1c3027"
+  },
+  {
+    "_id": "692fa28e5f8114703a763649",
+    "role_id": "68be2193ea73210503fa3351",
+    "sidebar_menu_item_id": "692f6f3858f88f7ddb1c302b"
+  },
+  {
+    "_id": "692fa28f5f8114703a7636ad",
+    "role_id": "68c267a5a577d325bc1f58d7",
+    "sidebar_menu_item_id": "692f6f3858f88f7ddb1c3027"
+  },
+  {
+    "_id": "692fa28f5f8114703a7636b6",
+    "role_id": "68c267a5a577d325bc1f58d7",
+    "sidebar_menu_item_id": "692f6f3858f88f7ddb1c302b"
+  },
+  {
+    "_id": "69300e1d3d562c00c6b5ca10",
+    "role_id": "68f52b04b9fccf467eadceae",
+    "sidebar_menu_item_id": "692f6f3858f88f7ddb1c3027"
+  },
+  {
+    "_id": "69300e1d3d562c00c6b5ca48",
+    "role_id": "68f52b04b9fccf467eadceae",
+    "sidebar_menu_item_id": "692f6f3858f88f7ddb1c302b"
+  },
+  {
+    "_id": "693010929e2eb8a068f428aa",
+    "role_id": "68f52b1bb9fccf467eadcecd",
+    "sidebar_menu_item_id": "692f6f3858f88f7ddb1c3027"
+  },
+  {
+    "_id": "693010929e2eb8a068f428e5",
+    "role_id": "68f52b1bb9fccf467eadcecd",
+    "sidebar_menu_item_id": "692f6f3858f88f7ddb1c302b"
+  },
+  {
+    "_id": "693011f929448505149917ab",
+    "role_id": "68f52b4fb9fccf467eadceec",
+    "sidebar_menu_item_id": "692f6f3858f88f7ddb1c3027"
+  },
+  {
+    "_id": "693011f929448505149917ea",
+    "role_id": "68f52b4fb9fccf467eadceec",
+    "sidebar_menu_item_id": "692f6f3858f88f7ddb1c302b"
+  },
+  {
+    "_id": "69303d4a35cf9340479dc8da",
+    "role_id": "690750354bdacd1e192d1ab3",
+    "sidebar_menu_item_id": "6928c768d4cc60069418faa3"
+  },
+  {
+    "_id": "693059575506d52677a477aa",
+    "role_id": "690750354bdacd1e192d1ab3",
+    "sidebar_menu_item_id": "693059575506d52677a47759"
+  },
+  {
+    "_id": "69306e8f5f298006fafd1604",
+    "role_id": "690750354bdacd1e192d1ab3",
+    "sidebar_menu_item_id": "69306e8f5f298006fafd1601",
+    "__v": 0
+  },
+  {
+    "_id": "6930e86330ecfa9ae05cff94",
+    "role_id": "690750354bdacd1e192d1ab3",
+    "sidebar_menu_item_id": "6930e86330ecfa9ae05cff42"
+  },
+  {
+    "_id": "6930e86330ecfa9ae05cffd4",
+    "role_id": "690750354bdacd1e192d1ab3",
+    "sidebar_menu_item_id": "6930e86330ecfa9ae05cffba"
+  },
+  {
+    "_id": "6931c8ea60de94986ca9a967",
+    "role_id": "690750354bdacd1e192d1ab3",
+    "sidebar_menu_item_id": "6931c8ea60de94986ca9a966"
+  },
+  {
+    "_id": "6932f626292dc14211a8079d",
+    "role_id": "68be2193ea73210503fa3352",
+    "sidebar_menu_item_id": "6932f626292dc14211a8079a"
+  }
+]

@@ -38,9 +38,7 @@ async function checkChalanSetup() {
 
     // Check role permissions for Inventory Depot role
     console.log("\n=== ROLE PERMISSIONS (Inventory Depot) ===");
-    const inventoryDepotRole = await db
-      .collection("roles")
-      .findOne({ name: "Inventory Depot" });
+    const inventoryDepotRole = await db.collection("roles").findOne({ name: "Inventory Depot" });
     if (inventoryDepotRole) {
       console.log("Inventory Depot Role ID:", inventoryDepotRole._id);
       const rolePerms = await db

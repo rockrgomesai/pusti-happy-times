@@ -9,7 +9,10 @@ async function testActualEndpoint() {
     console.log("Connected to MongoDB\n");
 
     const models = {
-      DeliveryChalan: mongoose.model("DeliveryChalan", require("./src/models/DeliveryChalan").schema),
+      DeliveryChalan: mongoose.model(
+        "DeliveryChalan",
+        require("./src/models/DeliveryChalan").schema
+      ),
     };
 
     const depot_id = new mongoose.Types.ObjectId("68f2855dbdde87d90d1b9cf1");

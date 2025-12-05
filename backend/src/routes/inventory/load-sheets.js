@@ -43,9 +43,7 @@ const formatChalanParticulars = (items, chalanNumber) => {
 
   items.forEach((item) => {
     const qty = parseFloat(item.qty_ctn || 0);
-    lines.push(
-      `${item.sku} @ ${item.uom || "CTN"}, del: ${qty}`
-    );
+    lines.push(`${item.sku} @ ${item.uom || "CTN"}, del: ${qty}`);
   });
 
   lines.push(`\nCHALAN: ${chalanNumber}`);
@@ -1057,13 +1055,13 @@ router.post(
 
         // Create CustomerLedger debit entry for the chalan
         const CustomerLedger = require("../../models/CustomerLedger");
-        
+
         // Calculate total amount (this is a simplified calculation - you may need to add pricing logic)
         const chalanAmount = total_qty_ctn; // Placeholder - replace with actual price calculation if available
-        
+
         // Format particulars using the helper function
         const particulars = formatChalanParticulars(items, chalan_no);
-        
+
         await CustomerLedger.create({
           distributor_id: distributor._id,
           particulars: particulars,

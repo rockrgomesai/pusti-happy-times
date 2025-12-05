@@ -46,7 +46,7 @@ async function testChalanQuery() {
       // Check if distributors exist
       console.log("\n=== CHECKING REFERENCES ===");
       const firstChalan = chalans[0];
-      
+
       const distributor = await db
         .collection("distributors")
         .findOne({ _id: firstChalan.distributor_id });
@@ -72,7 +72,7 @@ async function testChalanQuery() {
       }
     } else {
       console.log("\n❌ No chalans found");
-      
+
       // Debug: Show all chalans
       console.log("\n=== ALL CHALANS (for debugging) ===");
       const allChalans = await db.collection("deliverychalans").find().toArray();

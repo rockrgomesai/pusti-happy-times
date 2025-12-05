@@ -1,0 +1,541 @@
+[
+  {
+    "_id": "68be292c6326800841fa3350",
+    "label": "Dashboard",
+    "href": "/dashboard",
+    "m_order": 1,
+    "icon": "FaRectangleList",
+    "parent_id": null,
+    "is_submenu": false
+  },
+  {
+    "_id": "68be297464d508f0a4fa3350",
+    "label": "Admin",
+    "href": null,
+    "m_order": 2,
+    "icon": "FaCrown",
+    "parent_id": null,
+    "is_submenu": false
+  },
+  {
+    "_id": "68be29cc797ce968d4fa3350",
+    "label": "User",
+    "href": "/admin/users",
+    "m_order": 2.1,
+    "icon": "FaUsers",
+    "parent_id": "68be297464d508f0a4fa3350",
+    "is_submenu": true
+  },
+  {
+    "_id": "68be29ddf5f3057028fa3350",
+    "label": "Password",
+    "href": "/admin/password",
+    "m_order": 2.2,
+    "icon": "FaKey",
+    "parent_id": "68be297464d508f0a4fa3350",
+    "is_submenu": true
+  },
+  {
+    "_id": "68be2a2337d76ea524fa3350",
+    "label": "Master",
+    "href": null,
+    "m_order": 3,
+    "icon": "FaDatabase",
+    "parent_id": null,
+    "is_submenu": false
+  },
+  {
+    "_id": "68be2a3f4ec3731485fa3350",
+    "label": "Brand",
+    "href": "/product/brands",
+    "m_order": 4.1,
+    "icon": "FaTag",
+    "parent_id": "68e8526d67236560aa29e74e",
+    "is_submenu": true
+  },
+  {
+    "_id": "68beb96f939b03c716f272e4",
+    "label": "Roles",
+    "href": "/admin/roles",
+    "m_order": 2.3,
+    "icon": "FaUserTag",
+    "parent_id": "68be297464d508f0a4fa3350",
+    "is_submenu": true
+  },
+  {
+    "_id": "68becd033047d1c419fcea1a",
+    "label": "Permissions",
+    "href": "/admin/permissions",
+    "m_order": 2.4,
+    "icon": "FaShieldAlt",
+    "parent_id": "68be297464d508f0a4fa3350",
+    "is_submenu": true
+  },
+  {
+    "_id": "68c2460602ae9b1e9f2aa7dd",
+    "label": "Categories",
+    "href": "/product/categories",
+    "m_order": 4.2,
+    "icon": "FaLayerGroup",
+    "parent_id": "68e8526d67236560aa29e74e",
+    "is_submenu": true
+  },
+  {
+    "_id": "68c995a9612c48668872921e",
+    "label": "Transports",
+    "href": "/master/transports",
+    "m_order": 3.3,
+    "icon": "FaTruck",
+    "parent_id": "68be2a2337d76ea524fa3350",
+    "is_submenu": true
+  },
+  {
+    "_id": "68e504dd1e10c8a0300564fb",
+    "label": "HR",
+    "href": null,
+    "m_order": 7,
+    "icon": "FaPeople",
+    "parent_id": null,
+    "is_submenu": false
+  },
+  {
+    "_id": "68e50b0c1093ef5e75af88a0",
+    "label": "Designations",
+    "href": "/hr/designations",
+    "m_order": 7.1,
+    "icon": "FaUserTie",
+    "parent_id": "68e504dd1e10c8a0300564fb",
+    "is_submenu": true
+  },
+  {
+    "_id": "68e50b0c1093ef5e75af88a1",
+    "label": "Employees",
+    "href": "/hr/employees",
+    "m_order": 7.2,
+    "icon": "FaUsers",
+    "parent_id": "68e504dd1e10c8a0300564fb",
+    "is_submenu": true
+  },
+  {
+    "_id": "68e574cd83ef8946f2c405db",
+    "label": "Facilities",
+    "href": "/master/facilities",
+    "m_order": 3.2,
+    "icon": "FaBoxes",
+    "parent_id": "68be2a2337d76ea524fa3350",
+    "is_submenu": true
+  },
+  {
+    "_id": "68e8526d67236560aa29e74e",
+    "label": "Product",
+    "href": null,
+    "m_order": 4,
+    "icon": "FaBoxOpen",
+    "parent_id": null,
+    "is_submenu": false
+  },
+  {
+    "_id": "68e857c467236560aa29e750",
+    "label": "Products",
+    "href": "/product/products",
+    "m_order": 4.4,
+    "icon": "FaLayerGroup",
+    "parent_id": "68e8526d67236560aa29e74e",
+    "is_submenu": true
+  },
+  {
+    "_id": "68ef064e9655dc4346b9fd87",
+    "label": "Offers",
+    "href": "/product/offers",
+    "m_order": 4.5,
+    "icon": "FaOffers",
+    "parent_id": "68e8526d67236560aa29e74e",
+    "is_submenu": true
+  },
+  {
+    "_id": "68ef0c679655dc4346b9fd89",
+    "label": "Order Management",
+    "href": null,
+    "m_order": 5,
+    "icon": "FaShoppingCart",
+    "parent_id": null,
+    "is_submenu": false
+  },
+  {
+    "_id": "68ef0d309655dc4346b9fd8b",
+    "label": "Distributors",
+    "href": "/demandorder/distributors",
+    "m_order": 5.1,
+    "icon": "FaDistributors",
+    "parent_id": "68ef0c679655dc4346b9fd89",
+    "is_submenu": true
+  },
+  {
+    "_id": "68ef0d659655dc4346b9fd8d",
+    "label": "Place Orders",
+    "href": "/ordermanagement/demandorders",
+    "m_order": 5.2,
+    "icon": "FaFileInvoice",
+    "parent_id": "68ef0c679655dc4346b9fd89",
+    "is_submenu": true
+  },
+  {
+    "_id": "68f37a0cd17b9fc5f0663096",
+    "label": "Browse Offers",
+    "href": "/product/browseoffers",
+    "m_order": 4.6,
+    "icon": "FaBrowseOffers",
+    "parent_id": "68e8526d67236560aa29e74e",
+    "is_submenu": true
+  },
+  {
+    "_id": "69058d1c46f7023b663c9eaa",
+    "label": "Production",
+    "href": null,
+    "m_order": 6,
+    "icon": "FaIndustry",
+    "parent_id": null,
+    "is_submenu": false
+  },
+  {
+    "_id": "69058d1c46f7023b663c9eab",
+    "label": "Send to Store",
+    "href": "/production/sendtostore",
+    "m_order": 6.1,
+    "icon": "FaTruck",
+    "parent_id": "69058d1c46f7023b663c9eaa",
+    "is_submenu": true
+  },
+  {
+    "_id": "69065b8c3b4a37667d448493",
+    "label": "Send to Store List",
+    "href": "/production/sendtostorelist",
+    "m_order": 6.2,
+    "icon": "FaList",
+    "parent_id": "69058d1c46f7023b663c9eaa",
+    "is_submenu": true
+  },
+  {
+    "_id": "69072b3d5c5ec9aae535b740",
+    "label": "Inventory",
+    "href": null,
+    "m_order": 7,
+    "icon": "FaInventory",
+    "parent_id": null,
+    "is_submenu": false
+  },
+  {
+    "_id": "69072c175c5ec9aae535b741",
+    "label": "Recv from Production",
+    "href": "/inventory/receive-from-production",
+    "m_order": 7.1,
+    "icon": "FaReceive",
+    "parent_id": "69072b3d5c5ec9aae535b740",
+    "is_submenu": true
+  },
+  {
+    "_id": "69072dc25c5ec9aae535b742",
+    "label": "Recv from Production List",
+    "href": "/inventory/receive-from-production-list",
+    "m_order": 7.2,
+    "icon": "FaReceiveList",
+    "parent_id": "69072b3d5c5ec9aae535b740",
+    "is_submenu": true
+  },
+  {
+    "_id": "690736ac5c5ec9aae535b748",
+    "label": "Local Stock",
+    "href": "/inventory/local-stock",
+    "m_order": 7.3,
+    "icon": "FaStock",
+    "parent_id": "69072b3d5c5ec9aae535b740",
+    "is_submenu": true
+  },
+  {
+    "_id": "6907cc418e89fa96a1f0eba8",
+    "label": "Requisitions",
+    "href": "/inventory/requisitions",
+    "m_order": 7.3999999999999995,
+    "icon": "FaFileInvoice",
+    "parent_id": "69072b3d5c5ec9aae535b740",
+    "is_submenu": true,
+    "__v": 0
+  },
+  {
+    "_id": "69084e44d1332b713d9f5e06",
+    "label": "Requisition List",
+    "href": "/inventory/requisitionlist",
+    "m_order": 7.499999999999999,
+    "icon": "FaClipboardList",
+    "parent_id": "69072b3d5c5ec9aae535b740",
+    "is_submenu": true,
+    "__v": 0
+  },
+  {
+    "_id": "690864ef538e332fea7fe03a",
+    "label": "Banks",
+    "href": "/master/banks",
+    "m_order": 3.4,
+    "icon": "FaUniversity",
+    "parent_id": "68be2a2337d76ea524fa3350",
+    "is_submenu": true,
+    "__v": 0
+  },
+  {
+    "_id": "690b32c4349820613541ca27",
+    "label": "Finance",
+    "icon": "FaMoneyBillWave",
+    "href": null,
+    "parent_id": null,
+    "m_order": 8,
+    "is_submenu": false,
+    "created_at": "2025-11-05T11:19:32.980Z",
+    "updated_at": "2025-11-05T11:19:32.980Z"
+  },
+  {
+    "_id": "690b32c4349820613541ca28",
+    "label": "Customer Ledger",
+    "icon": "FaBook",
+    "href": "/finance/customerledger",
+    "parent_id": "690b32c4349820613541ca27",
+    "m_order": 8.1,
+    "is_submenu": true,
+    "created_at": "2025-11-05T11:19:32.997Z",
+    "updated_at": "2025-11-05T11:19:32.997Z"
+  },
+  {
+    "_id": "690f11a472ff7e43ad8de9e9",
+    "label": "Payments",
+    "href": "/ordermanagement/collections",
+    "icon": "FaMoneyBillWave",
+    "parent_id": "68ef0c679655dc4346b9fd89",
+    "is_submenu": true,
+    "m_order": 2
+  },
+  {
+    "_id": "69206aa591575420d407f068",
+    "label": "Approve Orders",
+    "href": "/ordermanagement/approveorders",
+    "icon": "FaCheckCircle",
+    "parent_id": "68ef0c679655dc4346b9fd89",
+    "m_order": 5.3,
+    "is_submenu": true
+  },
+  {
+    "_id": "6926ad0db544e8a46f3708f7",
+    "label": "Schedulings",
+    "href": "/ordermanagement/schedulings",
+    "icon": "FaCalendar",
+    "parent_id": "68ef0c679655dc4346b9fd89",
+    "m_order": 6.4,
+    "is_submenu": true
+  },
+  {
+    "_id": "69287f3074f4691e70267412",
+    "label": "Scheduled List",
+    "href": "/ordermanagement/scheduledlist",
+    "m_order": 7.4,
+    "icon": "FaListAlt",
+    "parent_id": "68ef0c679655dc4346b9fd89",
+    "is_submenu": false
+  },
+  {
+    "_id": "6928c768d4cc60069418faa3",
+    "label": "Approved Schedules",
+    "href": "/ordermanagement/approvedschedulings",
+    "m_order": 8.4,
+    "icon": "FaCheckCircle",
+    "parent_id": "68ef0c679655dc4346b9fd89",
+    "is_submenu": true,
+    "created_at": "2025-11-27T21:49:28.821Z",
+    "updated_at": "2025-11-27T21:49:28.821Z"
+  },
+  {
+    "_id": "6928c8b914c9b548585059da",
+    "label": "Approved Orders",
+    "href": "/ordermanagement/approvedorders",
+    "m_order": 5.4,
+    "icon": "FaCheckCircle",
+    "parent_id": "68ef0c679655dc4346b9fd89",
+    "is_submenu": true,
+    "created_at": "2025-11-27T21:55:05.894Z",
+    "updated_at": "2025-11-27T22:01:00.871Z"
+  },
+  {
+    "_id": "692a30aa8e6302f05940a61a",
+    "label": "Offer Products",
+    "href": null,
+    "icon": "FaGift",
+    "parent_id": null,
+    "is_submenu": false,
+    "m_order": 600
+  },
+  {
+    "_id": "692a30aa8e6302f05940a625",
+    "label": "Send Items",
+    "href": "/offers/senditems",
+    "icon": "FaPaperPlane",
+    "parent_id": "692a30aa8e6302f05940a61a",
+    "is_submenu": true,
+    "m_order": 1
+  },
+  {
+    "_id": "692a30aa8e6302f05940a628",
+    "label": "Send Items List",
+    "href": "/offers/senditemslist",
+    "icon": "FaList",
+    "parent_id": "692a30aa8e6302f05940a61a",
+    "is_submenu": true,
+    "m_order": 2
+  },
+  {
+    "_id": "692a30aa8e6302f05940a629",
+    "label": "Receive Items",
+    "href": "/offers/receiveitems",
+    "icon": "FaInbox",
+    "parent_id": "692a30aa8e6302f05940a61a",
+    "is_submenu": true,
+    "m_order": 3
+  },
+  {
+    "_id": "692a30aa8e6302f05940a62a",
+    "label": "Receive Items List",
+    "href": "/offers/receiveitemslist",
+    "icon": "FaReceipt",
+    "parent_id": "692a30aa8e6302f05940a61a",
+    "is_submenu": true,
+    "m_order": 4
+  },
+  {
+    "_id": "692b79b49f4f725e8a8ab72d",
+    "title": "Transfer Send",
+    "label": "Transfer Send",
+    "icon": "FaPaperPlane",
+    "href": "/inventory/transfer-send",
+    "parent_id": "69072b3d5c5ec9aae535b740",
+    "is_submenu": true,
+    "m_order": 401,
+    "createdBy": "system",
+    "updatedBy": "system"
+  },
+  {
+    "_id": "692b79b59f4f725e8a8ab764",
+    "title": "Transfer Send List",
+    "label": "Transfer Send List",
+    "icon": "FaList",
+    "href": "/inventory/transfer-send-list",
+    "parent_id": "69072b3d5c5ec9aae535b740",
+    "is_submenu": true,
+    "m_order": 402,
+    "createdBy": "system",
+    "updatedBy": "system"
+  },
+  {
+    "_id": "692b79b59f4f725e8a8ab784",
+    "title": "Transfer Receive",
+    "label": "Transfer Receive",
+    "icon": "FaDownload",
+    "href": "/inventory/transfer-receive",
+    "parent_id": "69072b3d5c5ec9aae535b740",
+    "is_submenu": true,
+    "m_order": 403,
+    "createdBy": "system",
+    "updatedBy": "system"
+  },
+  {
+    "_id": "692b79b59f4f725e8a8ab796",
+    "title": "Transfer Receive List",
+    "label": "Transfer Receive List",
+    "icon": "FaClipboardList",
+    "href": "/inventory/transfer-receive-list",
+    "parent_id": "69072b3d5c5ec9aae535b740",
+    "is_submenu": true,
+    "m_order": 404,
+    "createdBy": "system",
+    "updatedBy": "system"
+  },
+  {
+    "_id": "692e1a8dd599e706277ae329",
+    "label": "Receive Chalans",
+    "href": "/distributor/receive",
+    "icon": "LocalShipping",
+    "m_order": 1,
+    "parent_id": null,
+    "is_submenu": false
+  },
+  {
+    "_id": "692e1a8dd599e706277ae372",
+    "label": "My Stock",
+    "href": "/distributor/stock",
+    "icon": "Inventory",
+    "m_order": 2,
+    "parent_id": null,
+    "is_submenu": false
+  },
+  {
+    "_id": "692e1a8ed599e706277ae3a9",
+    "label": "Received History",
+    "href": "/distributor/history",
+    "icon": "History",
+    "m_order": 3,
+    "parent_id": null,
+    "is_submenu": false
+  },
+  {
+    "_id": "692f6f3858f88f7ddb1c3027",
+    "label": "DO List",
+    "href": "/demandorder/do-list",
+    "m_order": 150,
+    "icon": "ListAlt",
+    "parent_id": null,
+    "is_submenu": false
+  },
+  {
+    "_id": "692f6f3858f88f7ddb1c302b",
+    "label": "My DO List",
+    "href": "/demandorder/my-do-list",
+    "m_order": 151,
+    "icon": "PersonOutline",
+    "parent_id": null,
+    "is_submenu": false
+  },
+  {
+    "_id": "693059575506d52677a47759",
+    "label": "Depot Deliveries",
+    "href": "/inventory/depot-deliveries",
+    "m_order": 15,
+    "icon": "LocalShipping",
+    "parent_id": null,
+    "is_submenu": false
+  },
+  {
+    "_id": "69306e8f5f298006fafd1601",
+    "label": "Load Sheets",
+    "icon": "LocalShipping",
+    "href": "/inventory/load-sheets",
+    "parent_id": null,
+    "m_order": 601,
+    "is_submenu": false,
+    "__v": 0
+  },
+  {
+    "_id": "6930e86330ecfa9ae05cff42",
+    "label": "Delivery Chalans",
+    "href": "/inventory/delivery-chalans",
+    "m_order": 16,
+    "icon": "Description",
+    "parent_id": null,
+    "is_submenu": false
+  },
+  {
+    "_id": "6932f626292dc14211a80799",
+    "label": "Distributor",
+    "icon": "FaStore",
+    "href": null,
+    "parent_id": null,
+    "m_order": null,
+    "is_submenu": false,
+    "created_at": "2025-12-05T15:11:34.237Z",
+    "updated_at": "2025-12-05T15:11:34.237Z"
+  }
+]

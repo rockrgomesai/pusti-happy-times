@@ -13,7 +13,7 @@ async function debugChalanIssue() {
 
     // Get user
     const user = await db.collection("users").findOne({ username: "inventorymanagerpapaya" });
-    
+
     console.log("=== USER CONTEXT ===");
     console.log("Username:", user.username);
     console.log("Facility ID:", user.facility_id);
@@ -32,7 +32,7 @@ async function debugChalanIssue() {
     // Test exact backend query
     console.log("\n=== TESTING BACKEND QUERY ===");
     console.log("Query filter: { depot_id:", depot_id, "}");
-    
+
     // Using Mongoose model
     const DeliveryChalan = mongoose.model(
       "DeliveryChalan",
@@ -62,19 +62,19 @@ async function debugChalanIssue() {
       });
     } else {
       console.log("\n❌ No chalans found with query");
-      
+
       // Check if chalans exist at all
       const allChalans = await DeliveryChalan.find().lean();
       console.log("\nTotal chalans in database:", allChalans.length);
-      
+
       if (allChalans.length > 0) {
         console.log("\nDepot IDs in database:");
-        const depotIds = [...new Set(allChalans.map(c => c.depot_id?.toString()))];
-        depotIds.forEach(id => {
-          const count = allChalans.filter(c => c.depot_id?.toString() === id).length;
+        const depotIds = [...new Set(allChalans.map((c) => c.depot_id?.toString()))];
+        depotIds.forEach((id) => {
+          const count = allChalans.filter((c) => c.depot_id?.toString() === id).length;
           console.log(`  - ${id}: ${count} chalans`);
         });
-        
+
         console.log("\nUser's depot_id:", user.facility_id.toString());
         console.log("Match found:", depotIds.includes(user.facility_id.toString()));
       }
@@ -83,13 +83,13 @@ async function debugChalanIssue() {
     // Test API permission
     console.log("\n=== CHECKING PERMISSIONS ===");
     const chalanReadPerm = await db.collection("apipermissions").findOne({ key: "chalan:read" });
-    
+
     if (chalanReadPerm) {
       const hasPermission = await db.collection("roleapipermissions").findOne({
         role_id: user.role_id,
         api_permission_id: chalanReadPerm._id,
       });
-      
+
       console.log("chalan:read permission exists:", !!chalanReadPerm);
       console.log("User role has permission:", !!hasPermission);
     } else {

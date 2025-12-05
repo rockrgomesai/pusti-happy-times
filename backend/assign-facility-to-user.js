@@ -13,7 +13,7 @@ async function assignFacility() {
 
     // Find the user
     const user = await db.collection("users").findOne({ username: "inventorymanagerpapaya" });
-    
+
     if (!user) {
       console.log("❌ User not found");
       await mongoose.disconnect();
@@ -40,10 +40,9 @@ async function assignFacility() {
     console.log("Type:", depot.type);
 
     // Update user with facility_id
-    const result = await db.collection("users").updateOne(
-      { _id: user._id },
-      { $set: { facility_id: depot._id } }
-    );
+    const result = await db
+      .collection("users")
+      .updateOne({ _id: user._id }, { $set: { facility_id: depot._id } });
 
     if (result.modifiedCount > 0) {
       console.log("\n✅ Successfully assigned facility to user");

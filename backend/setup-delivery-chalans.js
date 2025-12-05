@@ -55,7 +55,7 @@ async function setupDeliveryChalans() {
       await mongoose.disconnect();
       return;
     }
-    
+
     console.log(`Found role: ${inventoryRole.name} (${inventoryRole._id})`);
 
     // 3. Assign permissions to role
@@ -112,9 +112,9 @@ async function setupDeliveryChalans() {
 
     // 5. Assign menu to role
     console.log("\n=== ASSIGNING MENU TO ROLE ===");
-    const menuToAssign = existingMenu || (await db
-      .collection("sidebarmenuitems")
-      .findOne({ href: "/inventory/delivery-chalans" }));
+    const menuToAssign =
+      existingMenu ||
+      (await db.collection("sidebarmenuitems").findOne({ href: "/inventory/delivery-chalans" }));
 
     if (menuToAssign) {
       const existingRoleMenu = await db

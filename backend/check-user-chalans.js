@@ -12,7 +12,7 @@ async function checkUser() {
 
     // Find the user
     const user = await db.collection("users").findOne({ username: "inventorymanagerpapaya" });
-    
+
     if (!user) {
       console.log("❌ User not found");
       await mongoose.disconnect();
@@ -43,7 +43,7 @@ async function checkUser() {
       .collection("deliverychalans")
       .find({ depot_id: user.facility_id })
       .toArray();
-    
+
     console.log("Chalans found:", chalans.length);
     if (chalans.length > 0) {
       chalans.forEach((c) => {
@@ -55,11 +55,13 @@ async function checkUser() {
     console.log("\n=== ALL CHALANS IN DATABASE ===");
     const allChalans = await db.collection("deliverychalans").find().toArray();
     console.log("Total chalans:", allChalans.length);
-    
+
     const depotIds = [...new Set(allChalans.map((c) => c.depot_id.toString()))];
     console.log("\nUnique depot_ids in chalans:");
     for (const depotId of depotIds) {
-      const depot = await db.collection("facilities").findOne({ _id: new mongoose.Types.ObjectId(depotId) });
+      const depot = await db
+        .collection("facilities")
+        .findOne({ _id: new mongoose.Types.ObjectId(depotId) });
       const count = allChalans.filter((c) => c.depot_id.toString() === depotId).length;
       console.log(`  - ${depotId}: ${depot ? depot.name : "Unknown"} (${count} chalans)`);
     }

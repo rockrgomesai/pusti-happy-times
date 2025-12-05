@@ -1,0 +1,70 @@
+[
+  {
+    "_id": "68bef7a96f10e57944cd8e48",
+    "pg_permissions": "pg:Dashboard"
+  },
+  {
+    "_id": "68bef7a96f10e57944cd8e49",
+    "pg_permissions": "pg:User"
+  },
+  {
+    "_id": "68bef7a96f10e57944cd8e4a",
+    "pg_permissions": "pg:Role"
+  },
+  {
+    "_id": "68bef7a96f10e57944cd8e4b",
+    "pg_permissions": "pg:Permission"
+  },
+  {
+    "_id": "68bef7a96f10e57944cd8e4c",
+    "pg_permissions": "pg:Brand"
+  },
+  {
+    "_id": "68bef9e87d57fcc626ddd342",
+    "pg_permissions": "pg:Category"
+  },
+  {
+    "_id": "68c23f52baf588237e30f66e",
+    "pg_permissions": "pg:Product"
+  },
+  {
+    "_id": "68e557986d4f7bd2b5dc7bbe",
+    "pg_permissions": "pg:Depot"
+  },
+  {
+    "_id": "68e557986d4f7bd2b5dc7bbf",
+    "pg_permissions": "pg:Transport"
+  },
+  {
+    "_id": "68e557986d4f7bd2b5dc7bc0",
+    "pg_permissions": "pg:Designation"
+  },
+  {
+    "_id": "6926ac0321f769881e6fe185",
+    "pg_permissions": "pg:ordermanagement:schedulings"
+  },
+  {
+    "_id": "69287ecdb6c1fbe95e7e1db2",
+    "pg_permissions": "pg:ordermanagement:scheduledlist"
+  },
+  {
+    "_id": "6928c8b914c9b548585059d8",
+    "pg_permissions": "pg:ordermanagement:approvedorders"
+  },
+  {
+    "_id": "692a2ffd34487f9a120ebc2c",
+    "pg_permissions": "pg:offers:senditems"
+  },
+  {
+    "_id": "692a2ffd34487f9a120ebc31",
+    "pg_permissions": "pg:offers:senditemslist"
+  },
+  {
+    "_id": "692a2ffd34487f9a120ebc34",
+    "pg_permissions": "pg:offers:receiveitems"
+  },
+  {
+    "_id": "692a2ffd34487f9a120ebc37",
+    "pg_permissions": "pg:offers:receiveitemslist"
+  }
+]

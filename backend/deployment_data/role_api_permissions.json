@@ -1,0 +1,3463 @@
+[
+  {
+    "_id": "6905a4d1171936b67bb59db9",
+    "role_id": "68f52a9fb9fccf467eadce3a",
+    "api_permission_id": "68e80e23828c12a36bced647"
+  },
+  {
+    "_id": "6905d5e48b2296b01a6adb79",
+    "role_id": "68f52a9fb9fccf467eadce3a",
+    "api_permission_id": "6905d5e48b2296b01a6adb78"
+  },
+  {
+    "_id": "690605975935439213957b58",
+    "role_id": "68f52a9fb9fccf467eadce3a",
+    "api_permission_id": "690605975935439213957b57",
+    "created_at": "2025-11-01T13:05:27.312Z",
+    "updated_at": "2025-11-01T13:05:27.312Z"
+  },
+  {
+    "_id": "69062c885ba4817ec9e03a52",
+    "role_id": "68f52ae8b9fccf467eadce90",
+    "api_permission_id": "69062c885ba4817ec9e03a51",
+    "created_at": "2025-11-01T15:51:36.319Z",
+    "updated_at": "2025-11-01T15:51:36.319Z"
+  },
+  {
+    "_id": "69062c885ba4817ec9e03a54",
+    "role_id": "68f52ae8b9fccf467eadce90",
+    "api_permission_id": "69062c885ba4817ec9e03a53",
+    "created_at": "2025-11-01T15:51:36.331Z",
+    "updated_at": "2025-11-01T15:51:36.331Z"
+  },
+  {
+    "_id": "69062c885ba4817ec9e03a56",
+    "role_id": "68f52ae8b9fccf467eadce90",
+    "api_permission_id": "69062c885ba4817ec9e03a55",
+    "created_at": "2025-11-01T15:51:36.340Z",
+    "updated_at": "2025-11-01T15:51:36.340Z"
+  },
+  {
+    "_id": "69062c885ba4817ec9e03a58",
+    "role_id": "68f52ae8b9fccf467eadce90",
+    "api_permission_id": "69062c885ba4817ec9e03a57",
+    "created_at": "2025-11-01T15:51:36.349Z",
+    "updated_at": "2025-11-01T15:51:36.349Z"
+  },
+  {
+    "_id": "690631100698ed862c353af4",
+    "role_id": "68be2193ea73210503fa3350",
+    "api_permission_id": "690631100698ed862c353af3",
+    "created_at": "2025-11-01T16:10:56.417Z",
+    "updated_at": "2025-11-01T16:10:56.417Z"
+  },
+  {
+    "_id": "690631100698ed862c353af5",
+    "role_id": "68be2193ea73210503fa3351",
+    "api_permission_id": "690631100698ed862c353af3",
+    "created_at": "2025-11-01T16:10:56.421Z",
+    "updated_at": "2025-11-01T16:10:56.421Z"
+  },
+  {
+    "_id": "690631100698ed862c353af6",
+    "role_id": "68be2193ea73210503fa3352",
+    "api_permission_id": "690631100698ed862c353af3",
+    "created_at": "2025-11-01T16:10:56.425Z",
+    "updated_at": "2025-11-01T16:10:56.425Z"
+  },
+  {
+    "_id": "690631100698ed862c353af7",
+    "role_id": "68bf964f5347ed86d01c9ed2",
+    "api_permission_id": "690631100698ed862c353af3",
+    "created_at": "2025-11-01T16:10:56.431Z",
+    "updated_at": "2025-11-01T16:10:56.431Z"
+  },
+  {
+    "_id": "690631100698ed862c353af8",
+    "role_id": "68bfb833ac67310131c51025",
+    "api_permission_id": "690631100698ed862c353af3",
+    "created_at": "2025-11-01T16:10:56.435Z",
+    "updated_at": "2025-11-01T16:10:56.435Z"
+  },
+  {
+    "_id": "690631100698ed862c353af9",
+    "role_id": "68c267a5a577d325bc1f58d7",
+    "api_permission_id": "690631100698ed862c353af3",
+    "created_at": "2025-11-01T16:10:56.438Z",
+    "updated_at": "2025-11-01T16:10:56.438Z"
+  },
+  {
+    "_id": "690631100698ed862c353afa",
+    "role_id": "68f52a9fb9fccf467eadce3a",
+    "api_permission_id": "690631100698ed862c353af3",
+    "created_at": "2025-11-01T16:10:56.442Z",
+    "updated_at": "2025-11-01T16:10:56.442Z"
+  },
+  {
+    "_id": "690631100698ed862c353afb",
+    "role_id": "68f52abfb9fccf467eadce56",
+    "api_permission_id": "690631100698ed862c353af3",
+    "created_at": "2025-11-01T16:10:56.446Z",
+    "updated_at": "2025-11-01T16:10:56.446Z"
+  },
+  {
+    "_id": "690631100698ed862c353afc",
+    "role_id": "68f52ae8b9fccf467eadce90",
+    "api_permission_id": "690631100698ed862c353af3",
+    "created_at": "2025-11-01T16:10:56.451Z",
+    "updated_at": "2025-11-01T16:10:56.451Z"
+  },
+  {
+    "_id": "690631100698ed862c353afd",
+    "role_id": "68f52b04b9fccf467eadceae",
+    "api_permission_id": "690631100698ed862c353af3",
+    "created_at": "2025-11-01T16:10:56.455Z",
+    "updated_at": "2025-11-01T16:10:56.455Z"
+  },
+  {
+    "_id": "690631100698ed862c353afe",
+    "role_id": "68f52b1bb9fccf467eadcecd",
+    "api_permission_id": "690631100698ed862c353af3",
+    "created_at": "2025-11-01T16:10:56.458Z",
+    "updated_at": "2025-11-01T16:10:56.458Z"
+  },
+  {
+    "_id": "690631100698ed862c353aff",
+    "role_id": "68f52b4fb9fccf467eadceec",
+    "api_permission_id": "690631100698ed862c353af3",
+    "created_at": "2025-11-01T16:10:56.462Z",
+    "updated_at": "2025-11-01T16:10:56.462Z"
+  },
+  {
+    "_id": "690631100698ed862c353b00",
+    "role_id": "68f8351d90d7eaccb519fd45",
+    "api_permission_id": "690631100698ed862c353af3",
+    "created_at": "2025-11-01T16:10:56.465Z",
+    "updated_at": "2025-11-01T16:10:56.465Z"
+  },
+  {
+    "_id": "690631100698ed862c353b01",
+    "role_id": "68f8352690d7eaccb519fd64",
+    "api_permission_id": "690631100698ed862c353af3",
+    "created_at": "2025-11-01T16:10:56.469Z",
+    "updated_at": "2025-11-01T16:10:56.469Z"
+  },
+  {
+    "_id": "690631100698ed862c353b02",
+    "role_id": "68f8353190d7eaccb519fd83",
+    "api_permission_id": "690631100698ed862c353af3",
+    "created_at": "2025-11-01T16:10:56.472Z",
+    "updated_at": "2025-11-01T16:10:56.472Z"
+  },
+  {
+    "_id": "690631100698ed862c353b03",
+    "role_id": "68f8353890d7eaccb519fda2",
+    "api_permission_id": "690631100698ed862c353af3",
+    "created_at": "2025-11-01T16:10:56.475Z",
+    "updated_at": "2025-11-01T16:10:56.475Z"
+  },
+  {
+    "_id": "690631100698ed862c353b04",
+    "role_id": "68f8354290d7eaccb519fdc1",
+    "api_permission_id": "690631100698ed862c353af3",
+    "created_at": "2025-11-01T16:10:56.479Z",
+    "updated_at": "2025-11-01T16:10:56.479Z"
+  },
+  {
+    "_id": "690631100698ed862c353b06",
+    "role_id": "68be2193ea73210503fa3350",
+    "api_permission_id": "690631100698ed862c353b05",
+    "created_at": "2025-11-01T16:10:56.485Z",
+    "updated_at": "2025-11-01T16:10:56.485Z"
+  },
+  {
+    "_id": "690631100698ed862c353b07",
+    "role_id": "68be2193ea73210503fa3351",
+    "api_permission_id": "690631100698ed862c353b05",
+    "created_at": "2025-11-01T16:10:56.488Z",
+    "updated_at": "2025-11-01T16:10:56.488Z"
+  },
+  {
+    "_id": "690631100698ed862c353b08",
+    "role_id": "68be2193ea73210503fa3352",
+    "api_permission_id": "690631100698ed862c353b05",
+    "created_at": "2025-11-01T16:10:56.492Z",
+    "updated_at": "2025-11-01T16:10:56.492Z"
+  },
+  {
+    "_id": "690631100698ed862c353b09",
+    "role_id": "68bf964f5347ed86d01c9ed2",
+    "api_permission_id": "690631100698ed862c353b05",
+    "created_at": "2025-11-01T16:10:56.496Z",
+    "updated_at": "2025-11-01T16:10:56.496Z"
+  },
+  {
+    "_id": "690631100698ed862c353b0a",
+    "role_id": "68bfb833ac67310131c51025",
+    "api_permission_id": "690631100698ed862c353b05",
+    "created_at": "2025-11-01T16:10:56.501Z",
+    "updated_at": "2025-11-01T16:10:56.501Z"
+  },
+  {
+    "_id": "690631100698ed862c353b0b",
+    "role_id": "68c267a5a577d325bc1f58d7",
+    "api_permission_id": "690631100698ed862c353b05",
+    "created_at": "2025-11-01T16:10:56.503Z",
+    "updated_at": "2025-11-01T16:10:56.503Z"
+  },
+  {
+    "_id": "690631100698ed862c353b0c",
+    "role_id": "68f52a9fb9fccf467eadce3a",
+    "api_permission_id": "690631100698ed862c353b05",
+    "created_at": "2025-11-01T16:10:56.507Z",
+    "updated_at": "2025-11-01T16:10:56.507Z"
+  },
+  {
+    "_id": "690631100698ed862c353b0d",
+    "role_id": "68f52abfb9fccf467eadce56",
+    "api_permission_id": "690631100698ed862c353b05",
+    "created_at": "2025-11-01T16:10:56.510Z",
+    "updated_at": "2025-11-01T16:10:56.510Z"
+  },
+  {
+    "_id": "690631100698ed862c353b0e",
+    "role_id": "68f52ae8b9fccf467eadce90",
+    "api_permission_id": "690631100698ed862c353b05",
+    "created_at": "2025-11-01T16:10:56.514Z",
+    "updated_at": "2025-11-01T16:10:56.514Z"
+  },
+  {
+    "_id": "690631100698ed862c353b0f",
+    "role_id": "68f52b04b9fccf467eadceae",
+    "api_permission_id": "690631100698ed862c353b05",
+    "created_at": "2025-11-01T16:10:56.518Z",
+    "updated_at": "2025-11-01T16:10:56.518Z"
+  },
+  {
+    "_id": "690631100698ed862c353b10",
+    "role_id": "68f52b1bb9fccf467eadcecd",
+    "api_permission_id": "690631100698ed862c353b05",
+    "created_at": "2025-11-01T16:10:56.521Z",
+    "updated_at": "2025-11-01T16:10:56.521Z"
+  },
+  {
+    "_id": "690631100698ed862c353b11",
+    "role_id": "68f52b4fb9fccf467eadceec",
+    "api_permission_id": "690631100698ed862c353b05",
+    "created_at": "2025-11-01T16:10:56.524Z",
+    "updated_at": "2025-11-01T16:10:56.524Z"
+  },
+  {
+    "_id": "690631100698ed862c353b12",
+    "role_id": "68f8351d90d7eaccb519fd45",
+    "api_permission_id": "690631100698ed862c353b05",
+    "created_at": "2025-11-01T16:10:56.529Z",
+    "updated_at": "2025-11-01T16:10:56.529Z"
+  },
+  {
+    "_id": "690631100698ed862c353b13",
+    "role_id": "68f8352690d7eaccb519fd64",
+    "api_permission_id": "690631100698ed862c353b05",
+    "created_at": "2025-11-01T16:10:56.532Z",
+    "updated_at": "2025-11-01T16:10:56.532Z"
+  },
+  {
+    "_id": "690631100698ed862c353b14",
+    "role_id": "68f8353190d7eaccb519fd83",
+    "api_permission_id": "690631100698ed862c353b05",
+    "created_at": "2025-11-01T16:10:56.535Z",
+    "updated_at": "2025-11-01T16:10:56.535Z"
+  },
+  {
+    "_id": "690631100698ed862c353b15",
+    "role_id": "68f8353890d7eaccb519fda2",
+    "api_permission_id": "690631100698ed862c353b05",
+    "created_at": "2025-11-01T16:10:56.538Z",
+    "updated_at": "2025-11-01T16:10:56.538Z"
+  },
+  {
+    "_id": "690631100698ed862c353b16",
+    "role_id": "68f8354290d7eaccb519fdc1",
+    "api_permission_id": "690631100698ed862c353b05",
+    "created_at": "2025-11-01T16:10:56.542Z",
+    "updated_at": "2025-11-01T16:10:56.542Z"
+  },
+  {
+    "_id": "690b3a1d4a8d443f5bcdeb8e",
+    "role_id": "68be2193ea73210503fa3350",
+    "api_permission_id": "690b39e4840e18d9e3439ef1",
+    "created_at": "2025-11-05T11:50:53.323Z",
+    "updated_at": "2025-11-05T11:50:53.323Z"
+  },
+  {
+    "_id": "690b3a1d4a8d443f5bcdeb8f",
+    "role_id": "68be2193ea73210503fa3350",
+    "api_permission_id": "690b39e4840e18d9e3439ef2",
+    "created_at": "2025-11-05T11:50:53.336Z",
+    "updated_at": "2025-11-05T11:50:53.336Z"
+  },
+  {
+    "_id": "690b3a1d4a8d443f5bcdeb90",
+    "role_id": "68be2193ea73210503fa3350",
+    "api_permission_id": "690b39e4840e18d9e3439ef3",
+    "created_at": "2025-11-05T11:50:53.343Z",
+    "updated_at": "2025-11-05T11:50:53.343Z"
+  },
+  {
+    "_id": "690b3a1d4a8d443f5bcdeb91",
+    "role_id": "68be2193ea73210503fa3350",
+    "api_permission_id": "690b39e4840e18d9e3439ef4",
+    "created_at": "2025-11-05T11:50:53.350Z",
+    "updated_at": "2025-11-05T11:50:53.350Z"
+  },
+  {
+    "_id": "690b3a4eff3c2931a0b1d95d",
+    "role_id": "68be2193ea73210503fa3352",
+    "api_permission_id": "690b39e4840e18d9e3439ef1",
+    "created_at": "2025-11-05T11:51:42.311Z",
+    "updated_at": "2025-11-05T11:51:42.311Z"
+  },
+  {
+    "_id": "690b3a4eff3c2931a0b1d95e",
+    "role_id": "68be2193ea73210503fa3352",
+    "api_permission_id": "690b39e4840e18d9e3439ef2",
+    "created_at": "2025-11-05T11:51:42.316Z",
+    "updated_at": "2025-11-05T11:51:42.316Z"
+  },
+  {
+    "_id": "690b3a4eff3c2931a0b1d95f",
+    "role_id": "68be2193ea73210503fa3352",
+    "api_permission_id": "690b39e4840e18d9e3439ef3",
+    "created_at": "2025-11-05T11:51:42.320Z",
+    "updated_at": "2025-11-05T11:51:42.320Z"
+  },
+  {
+    "_id": "690b3a4eff3c2931a0b1d960",
+    "role_id": "68be2193ea73210503fa3352",
+    "api_permission_id": "690b39e4840e18d9e3439ef4",
+    "created_at": "2025-11-05T11:51:42.325Z",
+    "updated_at": "2025-11-05T11:51:42.325Z"
+  },
+  {
+    "_id": "690b3a706b5b9ca5c3edd0f0",
+    "role_id": "68f8351d90d7eaccb519fd45",
+    "api_permission_id": "690b39e4840e18d9e3439ef1",
+    "created_at": "2025-11-05T11:52:16.750Z",
+    "updated_at": "2025-11-05T11:52:16.750Z"
+  },
+  {
+    "_id": "690b3a706b5b9ca5c3edd0f1",
+    "role_id": "68f8351d90d7eaccb519fd45",
+    "api_permission_id": "690b39e4840e18d9e3439ef2",
+    "created_at": "2025-11-05T11:52:16.760Z",
+    "updated_at": "2025-11-05T11:52:16.760Z"
+  },
+  {
+    "_id": "690b3a706b5b9ca5c3edd0f2",
+    "role_id": "68f8351d90d7eaccb519fd45",
+    "api_permission_id": "690b39e4840e18d9e3439ef3",
+    "created_at": "2025-11-05T11:52:16.766Z",
+    "updated_at": "2025-11-05T11:52:16.766Z"
+  },
+  {
+    "_id": "690b3a706b5b9ca5c3edd0f3",
+    "role_id": "68f8351d90d7eaccb519fd45",
+    "api_permission_id": "690b39e4840e18d9e3439ef4",
+    "created_at": "2025-11-05T11:52:16.772Z",
+    "updated_at": "2025-11-05T11:52:16.772Z"
+  },
+  {
+    "_id": "690b3a706b5b9ca5c3edd0f5",
+    "role_id": "68f8352690d7eaccb519fd64",
+    "api_permission_id": "690b39e4840e18d9e3439ef1",
+    "created_at": "2025-11-05T11:52:16.786Z",
+    "updated_at": "2025-11-05T11:52:16.786Z"
+  },
+  {
+    "_id": "690b3a706b5b9ca5c3edd0f6",
+    "role_id": "68f8352690d7eaccb519fd64",
+    "api_permission_id": "690b39e4840e18d9e3439ef2",
+    "created_at": "2025-11-05T11:52:16.794Z",
+    "updated_at": "2025-11-05T11:52:16.794Z"
+  },
+  {
+    "_id": "690b3a706b5b9ca5c3edd0f7",
+    "role_id": "68f8352690d7eaccb519fd64",
+    "api_permission_id": "690b39e4840e18d9e3439ef3",
+    "created_at": "2025-11-05T11:52:16.800Z",
+    "updated_at": "2025-11-05T11:52:16.800Z"
+  },
+  {
+    "_id": "690b3a706b5b9ca5c3edd0f8",
+    "role_id": "68f8352690d7eaccb519fd64",
+    "api_permission_id": "690b39e4840e18d9e3439ef4",
+    "created_at": "2025-11-05T11:52:16.808Z",
+    "updated_at": "2025-11-05T11:52:16.808Z"
+  },
+  {
+    "_id": "690b3a706b5b9ca5c3edd0fa",
+    "role_id": "68f8353190d7eaccb519fd83",
+    "api_permission_id": "690b39e4840e18d9e3439ef1",
+    "created_at": "2025-11-05T11:52:16.826Z",
+    "updated_at": "2025-11-05T11:52:16.826Z"
+  },
+  {
+    "_id": "690b3a706b5b9ca5c3edd0fb",
+    "role_id": "68f8353190d7eaccb519fd83",
+    "api_permission_id": "690b39e4840e18d9e3439ef2",
+    "created_at": "2025-11-05T11:52:16.833Z",
+    "updated_at": "2025-11-05T11:52:16.833Z"
+  },
+  {
+    "_id": "690b3a706b5b9ca5c3edd0fc",
+    "role_id": "68f8353190d7eaccb519fd83",
+    "api_permission_id": "690b39e4840e18d9e3439ef3",
+    "created_at": "2025-11-05T11:52:16.840Z",
+    "updated_at": "2025-11-05T11:52:16.840Z"
+  },
+  {
+    "_id": "690b3a706b5b9ca5c3edd0fd",
+    "role_id": "68f8353190d7eaccb519fd83",
+    "api_permission_id": "690b39e4840e18d9e3439ef4",
+    "created_at": "2025-11-05T11:52:16.846Z",
+    "updated_at": "2025-11-05T11:52:16.846Z"
+  },
+  {
+    "_id": "690b3a706b5b9ca5c3edd0ff",
+    "role_id": "68f52b1bb9fccf467eadcecd",
+    "api_permission_id": "690b39e4840e18d9e3439ef1",
+    "created_at": "2025-11-05T11:52:16.863Z",
+    "updated_at": "2025-11-05T11:52:16.863Z"
+  },
+  {
+    "_id": "690b3a706b5b9ca5c3edd100",
+    "role_id": "68f52b1bb9fccf467eadcecd",
+    "api_permission_id": "690b39e4840e18d9e3439ef2",
+    "created_at": "2025-11-05T11:52:16.870Z",
+    "updated_at": "2025-11-05T11:52:16.870Z"
+  },
+  {
+    "_id": "690b3a706b5b9ca5c3edd101",
+    "role_id": "68f52b1bb9fccf467eadcecd",
+    "api_permission_id": "690b39e4840e18d9e3439ef3",
+    "created_at": "2025-11-05T11:52:16.877Z",
+    "updated_at": "2025-11-05T11:52:16.877Z"
+  },
+  {
+    "_id": "690b3a706b5b9ca5c3edd102",
+    "role_id": "68f52b1bb9fccf467eadcecd",
+    "api_permission_id": "690b39e4840e18d9e3439ef4",
+    "created_at": "2025-11-05T11:52:16.884Z",
+    "updated_at": "2025-11-05T11:52:16.884Z"
+  },
+  {
+    "_id": "690b3a706b5b9ca5c3edd104",
+    "role_id": "68c267a5a577d325bc1f58d7",
+    "api_permission_id": "690b39e4840e18d9e3439ef1",
+    "created_at": "2025-11-05T11:52:16.901Z",
+    "updated_at": "2025-11-05T11:52:16.901Z"
+  },
+  {
+    "_id": "690b3a706b5b9ca5c3edd105",
+    "role_id": "68c267a5a577d325bc1f58d7",
+    "api_permission_id": "690b39e4840e18d9e3439ef2",
+    "created_at": "2025-11-05T11:52:16.909Z",
+    "updated_at": "2025-11-05T11:52:16.909Z"
+  },
+  {
+    "_id": "690b3a706b5b9ca5c3edd106",
+    "role_id": "68c267a5a577d325bc1f58d7",
+    "api_permission_id": "690b39e4840e18d9e3439ef3",
+    "created_at": "2025-11-05T11:52:16.915Z",
+    "updated_at": "2025-11-05T11:52:16.915Z"
+  },
+  {
+    "_id": "690b3a706b5b9ca5c3edd107",
+    "role_id": "68c267a5a577d325bc1f58d7",
+    "api_permission_id": "690b39e4840e18d9e3439ef4",
+    "created_at": "2025-11-05T11:52:16.922Z",
+    "updated_at": "2025-11-05T11:52:16.922Z"
+  },
+  {
+    "_id": "690b3a706b5b9ca5c3edd109",
+    "role_id": "68bfb833ac67310131c51025",
+    "api_permission_id": "690b39e4840e18d9e3439ef1",
+    "created_at": "2025-11-05T11:52:16.941Z",
+    "updated_at": "2025-11-05T11:52:16.941Z"
+  },
+  {
+    "_id": "690b3a706b5b9ca5c3edd10a",
+    "role_id": "68bfb833ac67310131c51025",
+    "api_permission_id": "690b39e4840e18d9e3439ef2",
+    "created_at": "2025-11-05T11:52:16.947Z",
+    "updated_at": "2025-11-05T11:52:16.947Z"
+  },
+  {
+    "_id": "690b3a706b5b9ca5c3edd10b",
+    "role_id": "68bfb833ac67310131c51025",
+    "api_permission_id": "690b39e4840e18d9e3439ef3",
+    "created_at": "2025-11-05T11:52:16.951Z",
+    "updated_at": "2025-11-05T11:52:16.951Z"
+  },
+  {
+    "_id": "690b3a706b5b9ca5c3edd10c",
+    "role_id": "68bfb833ac67310131c51025",
+    "api_permission_id": "690b39e4840e18d9e3439ef4",
+    "created_at": "2025-11-05T11:52:16.958Z",
+    "updated_at": "2025-11-05T11:52:16.958Z"
+  },
+  {
+    "_id": "690b3a706b5b9ca5c3edd10e",
+    "role_id": "68bf964f5347ed86d01c9ed2",
+    "api_permission_id": "690b39e4840e18d9e3439ef1",
+    "created_at": "2025-11-05T11:52:16.971Z",
+    "updated_at": "2025-11-05T11:52:16.971Z"
+  },
+  {
+    "_id": "690b3a706b5b9ca5c3edd10f",
+    "role_id": "68bf964f5347ed86d01c9ed2",
+    "api_permission_id": "690b39e4840e18d9e3439ef2",
+    "created_at": "2025-11-05T11:52:16.980Z",
+    "updated_at": "2025-11-05T11:52:16.980Z"
+  },
+  {
+    "_id": "690b3a706b5b9ca5c3edd110",
+    "role_id": "68bf964f5347ed86d01c9ed2",
+    "api_permission_id": "690b39e4840e18d9e3439ef3",
+    "created_at": "2025-11-05T11:52:16.987Z",
+    "updated_at": "2025-11-05T11:52:16.987Z"
+  },
+  {
+    "_id": "690b3a706b5b9ca5c3edd111",
+    "role_id": "68bf964f5347ed86d01c9ed2",
+    "api_permission_id": "690b39e4840e18d9e3439ef4",
+    "created_at": "2025-11-05T11:52:16.995Z",
+    "updated_at": "2025-11-05T11:52:16.995Z"
+  },
+  {
+    "_id": "690c3d8695599a4afe1da80f",
+    "role_id": "68be2193ea73210503fa3352",
+    "api_permission_id": "690c3d5415b633edd80c48c7",
+    "created_by": "system_setup",
+    "updated_by": "system_setup",
+    "created_at": "2025-11-06T06:17:42.925Z",
+    "updated_at": "2025-11-06T06:17:42.925Z"
+  },
+  {
+    "_id": "690c3d8695599a4afe1da810",
+    "role_id": "68be2193ea73210503fa3352",
+    "api_permission_id": "690c3d5415b633edd80c48c8",
+    "created_by": "system_setup",
+    "updated_by": "system_setup",
+    "created_at": "2025-11-06T06:17:42.943Z",
+    "updated_at": "2025-11-06T06:17:42.943Z"
+  },
+  {
+    "_id": "690c3d8695599a4afe1da811",
+    "role_id": "68be2193ea73210503fa3352",
+    "api_permission_id": "690c3d5415b633edd80c48c9",
+    "created_by": "system_setup",
+    "updated_by": "system_setup",
+    "created_at": "2025-11-06T06:17:42.956Z",
+    "updated_at": "2025-11-06T06:17:42.956Z"
+  },
+  {
+    "_id": "690c3d8695599a4afe1da812",
+    "role_id": "68be2193ea73210503fa3352",
+    "api_permission_id": "690c3d5415b633edd80c48ca",
+    "created_by": "system_setup",
+    "updated_by": "system_setup",
+    "created_at": "2025-11-06T06:17:42.967Z",
+    "updated_at": "2025-11-06T06:17:42.967Z"
+  },
+  {
+    "_id": "690d24306858f087998a6ce7",
+    "role_id": "68f52ae8b9fccf467eadce90",
+    "api_permission_id": "6905d5e48b2296b01a6adb78",
+    "created_at": "2025-11-06T22:41:52.277Z",
+    "updated_at": "2025-11-06T22:41:52.277Z"
+  },
+  {
+    "_id": "690d24306858f087998a6ce8",
+    "role_id": "68f52ae8b9fccf467eadce90",
+    "api_permission_id": "690605975935439213957b57",
+    "created_at": "2025-11-06T22:41:52.287Z",
+    "updated_at": "2025-11-06T22:41:52.287Z"
+  },
+  {
+    "_id": "690e0bb020e5ef8aa77fbda5",
+    "role_id": "68be2193ea73210503fa3350",
+    "api_permission_id": "68ebc224db9a8be0c5c5cd0a"
+  },
+  {
+    "_id": "690e0bb020e5ef8aa77fbde5",
+    "role_id": "68be2193ea73210503fa3352",
+    "api_permission_id": "68ebc224db9a8be0c5c5cd0a"
+  },
+  {
+    "_id": "690e0bb020e5ef8aa77fbe18",
+    "role_id": "68be2193ea73210503fa3350",
+    "api_permission_id": "68ebc1c0db9a8be0c5c5cd09"
+  },
+  {
+    "_id": "690e0bb020e5ef8aa77fbe42",
+    "role_id": "68be2193ea73210503fa3350",
+    "api_permission_id": "68ebc24adb9a8be0c5c5cd0c"
+  },
+  {
+    "_id": "690e0bb020e5ef8aa77fbe4b",
+    "role_id": "68be2193ea73210503fa3350",
+    "api_permission_id": "68ebc236db9a8be0c5c5cd0b"
+  },
+  {
+    "_id": "690e3ee749035bbc0f0ba037",
+    "role_id": "68be2193ea73210503fa3352",
+    "api_permission_id": "68e9bed9adecb3f099c64c83"
+  },
+  {
+    "_id": "690e3f3b864e7ea139eeddfc",
+    "role_id": "68be2193ea73210503fa3350",
+    "api_permission_id": "68e9bed9adecb3f099c64c83"
+  },
+  {
+    "_id": "690e3f3b864e7ea139eede02",
+    "role_id": "68be2193ea73210503fa3351",
+    "api_permission_id": "68e9bed9adecb3f099c64c83"
+  },
+  {
+    "_id": "690e3f3b864e7ea139eede07",
+    "role_id": "68f52b04b9fccf467eadceae",
+    "api_permission_id": "68e9bed9adecb3f099c64c83"
+  },
+  {
+    "_id": "690e401087a4f71174f2daeb",
+    "role_id": "68be2193ea73210503fa3350",
+    "api_permission_id": "68eceab08534a3f27202e6ef"
+  },
+  {
+    "_id": "690e401087a4f71174f2daef",
+    "role_id": "68be2193ea73210503fa3351",
+    "api_permission_id": "68eceab08534a3f27202e6ef"
+  },
+  {
+    "_id": "690e401087a4f71174f2daf3",
+    "role_id": "68f52b04b9fccf467eadceae",
+    "api_permission_id": "68eceab08534a3f27202e6ef"
+  },
+  {
+    "_id": "690e401087a4f71174f2daf7",
+    "role_id": "68be2193ea73210503fa3352",
+    "api_permission_id": "68eceab08534a3f27202e6ef"
+  },
+  {
+    "_id": "690e401087a4f71174f2dafb",
+    "role_id": "68be2193ea73210503fa3350",
+    "api_permission_id": "68ecea898534a3f27202e6ee"
+  },
+  {
+    "_id": "690e401087a4f71174f2dafe",
+    "role_id": "68be2193ea73210503fa3350",
+    "api_permission_id": "68eceadd8534a3f27202e6f1"
+  },
+  {
+    "_id": "690e401187a4f71174f2db02",
+    "role_id": "68be2193ea73210503fa3350",
+    "api_permission_id": "68eceac78534a3f27202e6f0"
+  },
+  {
+    "_id": "690e401187a4f71174f2db06",
+    "role_id": "68be2193ea73210503fa3351",
+    "api_permission_id": "68ecea898534a3f27202e6ee"
+  },
+  {
+    "_id": "690e401187a4f71174f2db09",
+    "role_id": "68be2193ea73210503fa3351",
+    "api_permission_id": "68eceadd8534a3f27202e6f1"
+  },
+  {
+    "_id": "690e401187a4f71174f2db0d",
+    "role_id": "68be2193ea73210503fa3351",
+    "api_permission_id": "68eceac78534a3f27202e6f0"
+  },
+  {
+    "_id": "690f05773398f67380381a10",
+    "role_id": "68be2193ea73210503fa3350",
+    "api_permission_id": "68befc028ac2dd2d94c6eb17"
+  },
+  {
+    "_id": "690f05773398f67380381a16",
+    "role_id": "68be2193ea73210503fa3350",
+    "api_permission_id": "68befc028ac2dd2d94c6eb18"
+  },
+  {
+    "_id": "690f05773398f67380381a1a",
+    "role_id": "68be2193ea73210503fa3350",
+    "api_permission_id": "68befc028ac2dd2d94c6eb19"
+  },
+  {
+    "_id": "690f05773398f67380381a1e",
+    "role_id": "68be2193ea73210503fa3350",
+    "api_permission_id": "68befc028ac2dd2d94c6eb1a"
+  },
+  {
+    "_id": "690f06338be55a8079820206",
+    "role_id": "68be2193ea73210503fa3352",
+    "api_permission_id": "68befc028ac2dd2d94c6eb21"
+  },
+  {
+    "_id": "690f06338be55a8079820208",
+    "api_permission_id": "68befc028ac2dd2d94c6eb22",
+    "role_id": "68be2193ea73210503fa3352"
+  },
+  {
+    "_id": "690f06338be55a807982020a",
+    "role_id": "68be2193ea73210503fa3352",
+    "api_permission_id": "690864ef538e332fea7fe03d"
+  },
+  {
+    "_id": "690f06338be55a807982020c",
+    "api_permission_id": "68befc028ac2dd2d94c6eb1d",
+    "role_id": "68be2193ea73210503fa3352"
+  },
+  {
+    "_id": "690f06338be55a807982020e",
+    "role_id": "68be2193ea73210503fa3352",
+    "api_permission_id": "68c9a115c262d0c226b73483"
+  },
+  {
+    "_id": "690f06338be55a8079820219",
+    "role_id": "68be2193ea73210503fa3352",
+    "api_permission_id": "68f89e9f018f5630badbf3d5"
+  },
+  {
+    "_id": "690f06338be55a807982021e",
+    "api_permission_id": "68e80e23828c12a36bced647",
+    "role_id": "68be2193ea73210503fa3352"
+  },
+  {
+    "_id": "690f0b60b0c6ea815ec8804c",
+    "role_id": "68be2193ea73210503fa3352",
+    "api_permission_id": "690f0b60b0c6ea815ec8803e"
+  },
+  {
+    "_id": "690f0f628be55a8079820e49",
+    "api_permission_id": "68e54e9015e3cc3215edc72e",
+    "role_id": "68be2193ea73210503fa3352"
+  },
+  {
+    "_id": "690f248134f5551230e555ca",
+    "role_id": "68be2193ea73210503fa3352",
+    "api_permission_id": "690f248134f5551230e55579"
+  },
+  {
+    "_id": "690f248134f5551230e55612",
+    "role_id": "68be2193ea73210503fa3352",
+    "api_permission_id": "690f248134f5551230e55608"
+  },
+  {
+    "_id": "690f248134f5551230e5561a",
+    "role_id": "68be2193ea73210503fa3352",
+    "api_permission_id": "690f248134f5551230e55617"
+  },
+  {
+    "_id": "690f7576faebd360ec50d245",
+    "role_id": "68be2193ea73210503fa3351",
+    "api_permission_id": "690f7576faebd360ec50d1f4"
+  },
+  {
+    "_id": "690f7576faebd360ec50d26a",
+    "role_id": "68f52b04b9fccf467eadceae",
+    "api_permission_id": "690f7576faebd360ec50d1f4"
+  },
+  {
+    "_id": "690f7576faebd360ec50d294",
+    "role_id": "68be2193ea73210503fa3351",
+    "api_permission_id": "690f7576faebd360ec50d27c"
+  },
+  {
+    "_id": "690f7576faebd360ec50d29d",
+    "role_id": "68f52b04b9fccf467eadceae",
+    "api_permission_id": "690f7576faebd360ec50d27c"
+  },
+  {
+    "_id": "690f7576faebd360ec50d2a1",
+    "role_id": "68f52b1bb9fccf467eadcecd",
+    "api_permission_id": "690f7576faebd360ec50d27c"
+  },
+  {
+    "_id": "690f7577faebd360ec50d2a8",
+    "role_id": "68f52b1bb9fccf467eadcecd",
+    "api_permission_id": "690f7576faebd360ec50d2a4"
+  },
+  {
+    "_id": "690f7577faebd360ec50d2b1",
+    "role_id": "68be2193ea73210503fa3351",
+    "api_permission_id": "690f7577faebd360ec50d2ab"
+  },
+  {
+    "_id": "690f7577faebd360ec50d2b5",
+    "role_id": "68f52b04b9fccf467eadceae",
+    "api_permission_id": "690f7577faebd360ec50d2ab"
+  },
+  {
+    "_id": "690f7577faebd360ec50d2b9",
+    "role_id": "68f52b1bb9fccf467eadcecd",
+    "api_permission_id": "690f7577faebd360ec50d2ab"
+  },
+  {
+    "_id": "690f7577faebd360ec50d2c3",
+    "role_id": "68be2193ea73210503fa3351",
+    "api_permission_id": "690f7577faebd360ec50d2bc"
+  },
+  {
+    "_id": "690f7577faebd360ec50d2c7",
+    "role_id": "68f52b04b9fccf467eadceae",
+    "api_permission_id": "690f7577faebd360ec50d2bc"
+  },
+  {
+    "_id": "690f7577faebd360ec50d2cb",
+    "role_id": "68f52b1bb9fccf467eadcecd",
+    "api_permission_id": "690f7577faebd360ec50d2bc"
+  },
+  {
+    "_id": "690f75c8d7d4cafc57551189",
+    "role_id": "68bf964f5347ed86d01c9ed2",
+    "api_permission_id": "690f7576faebd360ec50d1f4"
+  },
+  {
+    "_id": "690f75c8d7d4cafc575511de",
+    "role_id": "68bfb833ac67310131c51025",
+    "api_permission_id": "690f7576faebd360ec50d1f4"
+  },
+  {
+    "_id": "690f75c8d7d4cafc57551214",
+    "role_id": "68bf964f5347ed86d01c9ed2",
+    "api_permission_id": "690f7576faebd360ec50d27c"
+  },
+  {
+    "_id": "690f75c8d7d4cafc57551218",
+    "role_id": "68bfb833ac67310131c51025",
+    "api_permission_id": "690f7576faebd360ec50d27c"
+  },
+  {
+    "_id": "690f75c8d7d4cafc57551226",
+    "role_id": "68bf964f5347ed86d01c9ed2",
+    "api_permission_id": "690f7577faebd360ec50d2ab"
+  },
+  {
+    "_id": "690f75c8d7d4cafc5755122a",
+    "role_id": "68bfb833ac67310131c51025",
+    "api_permission_id": "690f7577faebd360ec50d2ab"
+  },
+  {
+    "_id": "690f75c8d7d4cafc57551235",
+    "role_id": "68bf964f5347ed86d01c9ed2",
+    "api_permission_id": "690f7577faebd360ec50d2bc"
+  },
+  {
+    "_id": "690f75c8d7d4cafc57551239",
+    "role_id": "68bfb833ac67310131c51025",
+    "api_permission_id": "690f7577faebd360ec50d2bc"
+  },
+  {
+    "_id": "690f75c8d7d4cafc5755123d",
+    "role_id": "68c267a5a577d325bc1f58d7",
+    "api_permission_id": "690f7577faebd360ec50d2bc"
+  },
+  {
+    "_id": "690f7ca55d02e3fe98339499",
+    "role_id": "68f52b04b9fccf467eadceae",
+    "api_permission_id": "690f7ca55d02e3fe9833945c"
+  },
+  {
+    "_id": "690f7ca55d02e3fe983394fa",
+    "role_id": "68f52b1bb9fccf467eadcecd",
+    "api_permission_id": "690f7ca55d02e3fe9833945c"
+  },
+  {
+    "_id": "69101a798be55a807982869f",
+    "api_permission_id": "68befc028ac2dd2d94c6eb21",
+    "role_id": "68be2193ea73210503fa3350"
+  },
+  {
+    "_id": "69101a798be55a80798286a1",
+    "api_permission_id": "68befc028ac2dd2d94c6eb22",
+    "role_id": "68be2193ea73210503fa3350"
+  },
+  {
+    "_id": "69101a798be55a80798286a3",
+    "api_permission_id": "690865cbd212a3137849effd",
+    "role_id": "68be2193ea73210503fa3350"
+  },
+  {
+    "_id": "69101a798be55a80798286a5",
+    "api_permission_id": "690865cbd212a3137849f003",
+    "role_id": "68be2193ea73210503fa3350"
+  },
+  {
+    "_id": "69101a798be55a80798286a7",
+    "api_permission_id": "690864ef538e332fea7fe03d",
+    "role_id": "68be2193ea73210503fa3350"
+  },
+  {
+    "_id": "69101a798be55a80798286a9",
+    "api_permission_id": "690865cbd212a3137849f000",
+    "role_id": "68be2193ea73210503fa3350"
+  },
+  {
+    "_id": "69101a798be55a80798286ab",
+    "api_permission_id": "690864ef538e332fea7fe040",
+    "role_id": "68be2193ea73210503fa3350"
+  },
+  {
+    "_id": "69101a798be55a80798286ad",
+    "api_permission_id": "690f0b60b0c6ea815ec8803e",
+    "role_id": "68be2193ea73210503fa3350"
+  },
+  {
+    "_id": "69101a798be55a80798286af",
+    "api_permission_id": "68befc028ac2dd2d94c6eb1e",
+    "role_id": "68be2193ea73210503fa3350"
+  },
+  {
+    "_id": "69101a798be55a80798286b1",
+    "api_permission_id": "68befc028ac2dd2d94c6eb20",
+    "role_id": "68be2193ea73210503fa3350"
+  },
+  {
+    "_id": "69101a798be55a80798286b3",
+    "api_permission_id": "68befc028ac2dd2d94c6eb1d",
+    "role_id": "68be2193ea73210503fa3350"
+  },
+  {
+    "_id": "69101a798be55a80798286b5",
+    "api_permission_id": "68befc028ac2dd2d94c6eb1f",
+    "role_id": "68be2193ea73210503fa3350"
+  },
+  {
+    "_id": "69101a798be55a80798286b7",
+    "api_permission_id": "68c9a115c262d0c226b73489",
+    "role_id": "68be2193ea73210503fa3350"
+  },
+  {
+    "_id": "69101a798be55a80798286b9",
+    "api_permission_id": "68c9a115c262d0c226b73491",
+    "role_id": "68be2193ea73210503fa3350"
+  },
+  {
+    "_id": "69101a798be55a80798286bb",
+    "api_permission_id": "68c9a115c262d0c226b73483",
+    "role_id": "68be2193ea73210503fa3350"
+  },
+  {
+    "_id": "69101a798be55a80798286bd",
+    "api_permission_id": "68c9a115c262d0c226b7348e",
+    "role_id": "68be2193ea73210503fa3350"
+  },
+  {
+    "_id": "69101a798be55a80798286bf",
+    "api_permission_id": "690f7576faebd360ec50d2a4",
+    "role_id": "68be2193ea73210503fa3350"
+  },
+  {
+    "_id": "69101a798be55a80798286c1",
+    "api_permission_id": "690f7576faebd360ec50d27c",
+    "role_id": "68be2193ea73210503fa3350"
+  },
+  {
+    "_id": "69101a798be55a80798286c3",
+    "api_permission_id": "690f248134f5551230e55608",
+    "role_id": "68be2193ea73210503fa3350"
+  },
+  {
+    "_id": "69101a798be55a80798286c5",
+    "api_permission_id": "690f248134f5551230e55617",
+    "role_id": "68be2193ea73210503fa3350"
+  },
+  {
+    "_id": "69101a798be55a80798286c7",
+    "api_permission_id": "690f7577faebd360ec50d2ab",
+    "role_id": "68be2193ea73210503fa3350"
+  },
+  {
+    "_id": "69101a798be55a80798286c9",
+    "api_permission_id": "690f7576faebd360ec50d1f4",
+    "role_id": "68be2193ea73210503fa3350"
+  },
+  {
+    "_id": "69101a798be55a80798286cb",
+    "api_permission_id": "690f248134f5551230e55579",
+    "role_id": "68be2193ea73210503fa3350"
+  },
+  {
+    "_id": "69101a798be55a80798286cd",
+    "api_permission_id": "690f7ca55d02e3fe9833945c",
+    "role_id": "68be2193ea73210503fa3350"
+  },
+  {
+    "_id": "69101a798be55a80798286cf",
+    "api_permission_id": "690f7577faebd360ec50d2bc",
+    "role_id": "68be2193ea73210503fa3350"
+  },
+  {
+    "_id": "69101a798be55a80798286d5",
+    "api_permission_id": "68e548f267236560aa29e738",
+    "role_id": "68be2193ea73210503fa3350"
+  },
+  {
+    "_id": "69101a798be55a80798286d7",
+    "api_permission_id": "68e5493567236560aa29e73e",
+    "role_id": "68be2193ea73210503fa3350"
+  },
+  {
+    "_id": "69101a798be55a80798286d9",
+    "api_permission_id": "68e5491267236560aa29e73a",
+    "role_id": "68be2193ea73210503fa3350"
+  },
+  {
+    "_id": "69101a798be55a80798286db",
+    "api_permission_id": "68e5491f67236560aa29e73c",
+    "role_id": "68be2193ea73210503fa3350"
+  },
+  {
+    "_id": "69101a798be55a80798286e1",
+    "api_permission_id": "68e54e9015e3cc3215edc72f",
+    "role_id": "68be2193ea73210503fa3350"
+  },
+  {
+    "_id": "69101a798be55a80798286e3",
+    "api_permission_id": "68e54e9015e3cc3215edc731",
+    "role_id": "68be2193ea73210503fa3350"
+  },
+  {
+    "_id": "69101a798be55a80798286e5",
+    "api_permission_id": "68e54e9015e3cc3215edc72e",
+    "role_id": "68be2193ea73210503fa3350"
+  },
+  {
+    "_id": "69101a798be55a80798286e7",
+    "api_permission_id": "68e54e9015e3cc3215edc730",
+    "role_id": "68be2193ea73210503fa3350"
+  },
+  {
+    "_id": "69101a798be55a80798286e9",
+    "api_permission_id": "68f89e9f018f5630badbf3d2",
+    "role_id": "68be2193ea73210503fa3350"
+  },
+  {
+    "_id": "69101a798be55a80798286eb",
+    "api_permission_id": "68f89e9f018f5630badbf3db",
+    "role_id": "68be2193ea73210503fa3350"
+  },
+  {
+    "_id": "69101a798be55a80798286ed",
+    "api_permission_id": "68f89e9f018f5630badbf3d5",
+    "role_id": "68be2193ea73210503fa3350"
+  },
+  {
+    "_id": "69101a798be55a80798286ef",
+    "api_permission_id": "68f89e9f018f5630badbf3d8",
+    "role_id": "68be2193ea73210503fa3350"
+  },
+  {
+    "_id": "69101a798be55a80798286f1",
+    "api_permission_id": "69062c885ba4817ec9e03a51",
+    "role_id": "68be2193ea73210503fa3350"
+  },
+  {
+    "_id": "69101a798be55a80798286f3",
+    "api_permission_id": "69062c885ba4817ec9e03a53",
+    "role_id": "68be2193ea73210503fa3350"
+  },
+  {
+    "_id": "69101a798be55a80798286f5",
+    "api_permission_id": "6907cc8aa0fe742d3e04fcdd",
+    "role_id": "68be2193ea73210503fa3350"
+  },
+  {
+    "_id": "69101a798be55a80798286f7",
+    "api_permission_id": "6907cc8aa0fe742d3e04fce0",
+    "role_id": "68be2193ea73210503fa3350"
+  },
+  {
+    "_id": "69101a798be55a80798286f9",
+    "api_permission_id": "69062c885ba4817ec9e03a57",
+    "role_id": "68be2193ea73210503fa3350"
+  },
+  {
+    "_id": "69101a798be55a80798286fb",
+    "api_permission_id": "69062c885ba4817ec9e03a55",
+    "role_id": "68be2193ea73210503fa3350"
+  },
+  {
+    "_id": "69101a798be55a8079828703",
+    "api_permission_id": "68befc028ac2dd2d94c6eb1c",
+    "role_id": "68be2193ea73210503fa3350"
+  },
+  {
+    "_id": "69101a798be55a8079828705",
+    "api_permission_id": "68bf821a7d57fcc626ddd344",
+    "role_id": "68be2193ea73210503fa3350"
+  },
+  {
+    "_id": "69101a798be55a8079828707",
+    "api_permission_id": "68bf82437d57fcc626ddd348",
+    "role_id": "68be2193ea73210503fa3350"
+  },
+  {
+    "_id": "69101a798be55a8079828709",
+    "api_permission_id": "68befc028ac2dd2d94c6eb1b",
+    "role_id": "68be2193ea73210503fa3350"
+  },
+  {
+    "_id": "69101a798be55a807982870b",
+    "api_permission_id": "68bf82357d57fcc626ddd346",
+    "role_id": "68be2193ea73210503fa3350"
+  },
+  {
+    "_id": "69101a798be55a807982870d",
+    "api_permission_id": "6905d5e48b2296b01a6adb78",
+    "role_id": "68be2193ea73210503fa3350"
+  },
+  {
+    "_id": "69101a798be55a807982870f",
+    "api_permission_id": "690605975935439213957b57",
+    "role_id": "68be2193ea73210503fa3350"
+  },
+  {
+    "_id": "69101a798be55a8079828711",
+    "api_permission_id": "68e80e23828c12a36bced64a",
+    "role_id": "68be2193ea73210503fa3350"
+  },
+  {
+    "_id": "69101a798be55a8079828713",
+    "api_permission_id": "68e80e23828c12a36bced650",
+    "role_id": "68be2193ea73210503fa3350"
+  },
+  {
+    "_id": "69101a798be55a8079828715",
+    "api_permission_id": "68e80e23828c12a36bced647",
+    "role_id": "68be2193ea73210503fa3350"
+  },
+  {
+    "_id": "69101a798be55a8079828717",
+    "api_permission_id": "68e80e23828c12a36bced64d",
+    "role_id": "68be2193ea73210503fa3350"
+  },
+  {
+    "_id": "69101a798be55a807982871d",
+    "api_permission_id": "68e9bed9adecb3f099c64c84",
+    "role_id": "68be2193ea73210503fa3350"
+  },
+  {
+    "_id": "69101a798be55a807982871f",
+    "api_permission_id": "68e9bed9adecb3f099c64c86",
+    "role_id": "68be2193ea73210503fa3350"
+  },
+  {
+    "_id": "69101a798be55a8079828722",
+    "api_permission_id": "68e9bed9adecb3f099c64c85",
+    "role_id": "68be2193ea73210503fa3350"
+  },
+  {
+    "_id": "69101a798be55a8079828724",
+    "api_permission_id": "68c995e9a5bd48b03e5b6166",
+    "role_id": "68be2193ea73210503fa3350"
+  },
+  {
+    "_id": "69101a798be55a8079828726",
+    "api_permission_id": "68c995e9a5bd48b03e5b616c",
+    "role_id": "68be2193ea73210503fa3350"
+  },
+  {
+    "_id": "69101a798be55a8079828728",
+    "api_permission_id": "68c995e8a5bd48b03e5b6160",
+    "role_id": "68be2193ea73210503fa3350"
+  },
+  {
+    "_id": "69101a798be55a807982872a",
+    "api_permission_id": "68c995e9a5bd48b03e5b6169",
+    "role_id": "68be2193ea73210503fa3350"
+  },
+  {
+    "_id": "69101a798be55a807982872c",
+    "api_permission_id": "68befc028ac2dd2d94c6eb14",
+    "role_id": "68be2193ea73210503fa3350"
+  },
+  {
+    "_id": "69101a798be55a807982872e",
+    "api_permission_id": "68befc028ac2dd2d94c6eb16",
+    "role_id": "68be2193ea73210503fa3350"
+  },
+  {
+    "_id": "69101a798be55a8079828730",
+    "api_permission_id": "68befc028ac2dd2d94c6eb13",
+    "role_id": "68be2193ea73210503fa3350"
+  },
+  {
+    "_id": "69101a798be55a8079828732",
+    "api_permission_id": "68befc028ac2dd2d94c6eb15",
+    "role_id": "68be2193ea73210503fa3350"
+  },
+  {
+    "_id": "69102edc8be55a807982a2d5",
+    "api_permission_id": "690864ef538e332fea7fe03d",
+    "role_id": "68bf964f5347ed86d01c9ed2"
+  },
+  {
+    "_id": "69102edc8be55a807982a2d7",
+    "api_permission_id": "68befc028ac2dd2d94c6eb1d",
+    "role_id": "68bf964f5347ed86d01c9ed2"
+  },
+  {
+    "_id": "69102edc8be55a807982a2d9",
+    "api_permission_id": "68c9a115c262d0c226b73483",
+    "role_id": "68bf964f5347ed86d01c9ed2"
+  },
+  {
+    "_id": "69102edc8be55a807982a2db",
+    "api_permission_id": "690f7576faebd360ec50d2a4",
+    "role_id": "68bf964f5347ed86d01c9ed2"
+  },
+  {
+    "_id": "69102edc8be55a807982a2de",
+    "api_permission_id": "690f248134f5551230e55608",
+    "role_id": "68bf964f5347ed86d01c9ed2"
+  },
+  {
+    "_id": "69102edc8be55a807982a2e0",
+    "api_permission_id": "690f248134f5551230e55617",
+    "role_id": "68bf964f5347ed86d01c9ed2"
+  },
+  {
+    "_id": "69102edc8be55a807982a2e4",
+    "api_permission_id": "690f248134f5551230e55579",
+    "role_id": "68bf964f5347ed86d01c9ed2"
+  },
+  {
+    "_id": "69102edc8be55a807982a2eb",
+    "api_permission_id": "690c3d5415b633edd80c48ca",
+    "role_id": "68bf964f5347ed86d01c9ed2"
+  },
+  {
+    "_id": "69102edc8be55a807982a2ed",
+    "api_permission_id": "690c3d5415b633edd80c48c7",
+    "role_id": "68bf964f5347ed86d01c9ed2"
+  },
+  {
+    "_id": "69102edc8be55a807982a2ef",
+    "api_permission_id": "690c3d5415b633edd80c48c9",
+    "role_id": "68bf964f5347ed86d01c9ed2"
+  },
+  {
+    "_id": "69102edc8be55a807982a2f1",
+    "api_permission_id": "68e5491267236560aa29e73a",
+    "role_id": "68bf964f5347ed86d01c9ed2"
+  },
+  {
+    "_id": "69102edc8be55a807982a2f3",
+    "api_permission_id": "68ebc224db9a8be0c5c5cd0a",
+    "role_id": "68bf964f5347ed86d01c9ed2"
+  },
+  {
+    "_id": "69102edc8be55a807982a2f5",
+    "api_permission_id": "68e54e9015e3cc3215edc72e",
+    "role_id": "68bf964f5347ed86d01c9ed2"
+  },
+  {
+    "_id": "69102edc8be55a807982a2f7",
+    "api_permission_id": "68f89e9f018f5630badbf3d5",
+    "role_id": "68bf964f5347ed86d01c9ed2"
+  },
+  {
+    "_id": "69102edc8be55a807982a2f9",
+    "api_permission_id": "69062c885ba4817ec9e03a55",
+    "role_id": "68bf964f5347ed86d01c9ed2"
+  },
+  {
+    "_id": "69102edc8be55a807982a2fd",
+    "api_permission_id": "68eceab08534a3f27202e6ef",
+    "role_id": "68bf964f5347ed86d01c9ed2"
+  },
+  {
+    "_id": "69102edc8be55a807982a2ff",
+    "api_permission_id": "68befc028ac2dd2d94c6eb1b",
+    "role_id": "68bf964f5347ed86d01c9ed2"
+  },
+  {
+    "_id": "69102edc8be55a807982a301",
+    "api_permission_id": "68e80e23828c12a36bced647",
+    "role_id": "68bf964f5347ed86d01c9ed2"
+  },
+  {
+    "_id": "69102edc8be55a807982a303",
+    "api_permission_id": "68befc028ac2dd2d94c6eb17",
+    "role_id": "68bf964f5347ed86d01c9ed2"
+  },
+  {
+    "_id": "69102edc8be55a807982a305",
+    "api_permission_id": "68e9bed9adecb3f099c64c83",
+    "role_id": "68bf964f5347ed86d01c9ed2"
+  },
+  {
+    "_id": "69102edc8be55a807982a307",
+    "api_permission_id": "68c995e8a5bd48b03e5b6160",
+    "role_id": "68bf964f5347ed86d01c9ed2"
+  },
+  {
+    "_id": "69103d368be55a807982c400",
+    "api_permission_id": "690f0b60b0c6ea815ec8803e",
+    "role_id": "68bf964f5347ed86d01c9ed2"
+  },
+  {
+    "_id": "69106ebf8be55a807982e7e9",
+    "api_permission_id": "68befc028ac2dd2d94c6eb21",
+    "role_id": "68bfb833ac67310131c51025"
+  },
+  {
+    "_id": "69106ebf8be55a807982e7eb",
+    "api_permission_id": "68befc028ac2dd2d94c6eb22",
+    "role_id": "68bfb833ac67310131c51025"
+  },
+  {
+    "_id": "69106ebf8be55a807982e7ed",
+    "api_permission_id": "690864ef538e332fea7fe03d",
+    "role_id": "68bfb833ac67310131c51025"
+  },
+  {
+    "_id": "69106ebf8be55a807982e7ef",
+    "api_permission_id": "690f0b60b0c6ea815ec8803e",
+    "role_id": "68bfb833ac67310131c51025"
+  },
+  {
+    "_id": "69106ebf8be55a807982e7f1",
+    "api_permission_id": "68befc028ac2dd2d94c6eb1d",
+    "role_id": "68bfb833ac67310131c51025"
+  },
+  {
+    "_id": "69106ebf8be55a807982e7f3",
+    "api_permission_id": "68c9a115c262d0c226b73483",
+    "role_id": "68bfb833ac67310131c51025"
+  },
+  {
+    "_id": "69106ebf8be55a807982e7f5",
+    "api_permission_id": "690f7576faebd360ec50d2a4",
+    "role_id": "68bfb833ac67310131c51025"
+  },
+  {
+    "_id": "69106ebf8be55a807982e7f8",
+    "api_permission_id": "690f248134f5551230e55608",
+    "role_id": "68bfb833ac67310131c51025"
+  },
+  {
+    "_id": "69106ebf8be55a807982e7fa",
+    "api_permission_id": "690f248134f5551230e55617",
+    "role_id": "68bfb833ac67310131c51025"
+  },
+  {
+    "_id": "69106ebf8be55a807982e7fe",
+    "api_permission_id": "690f248134f5551230e55579",
+    "role_id": "68bfb833ac67310131c51025"
+  },
+  {
+    "_id": "69106ebf8be55a807982e805",
+    "api_permission_id": "690c3d5415b633edd80c48c7",
+    "role_id": "68bfb833ac67310131c51025"
+  },
+  {
+    "_id": "69106ebf8be55a807982e807",
+    "api_permission_id": "68e5491267236560aa29e73a",
+    "role_id": "68bfb833ac67310131c51025"
+  },
+  {
+    "_id": "69106ebf8be55a807982e809",
+    "api_permission_id": "68ebc224db9a8be0c5c5cd0a",
+    "role_id": "68bfb833ac67310131c51025"
+  },
+  {
+    "_id": "69106ebf8be55a807982e80b",
+    "api_permission_id": "68e54e9015e3cc3215edc72e",
+    "role_id": "68bfb833ac67310131c51025"
+  },
+  {
+    "_id": "69106ebf8be55a807982e80d",
+    "api_permission_id": "68f89e9f018f5630badbf3d5",
+    "role_id": "68bfb833ac67310131c51025"
+  },
+  {
+    "_id": "69106ebf8be55a807982e811",
+    "api_permission_id": "68eceab08534a3f27202e6ef",
+    "role_id": "68bfb833ac67310131c51025"
+  },
+  {
+    "_id": "69106ebf8be55a807982e813",
+    "api_permission_id": "68e80e23828c12a36bced647",
+    "role_id": "68bfb833ac67310131c51025"
+  },
+  {
+    "_id": "69106ebf8be55a807982e815",
+    "api_permission_id": "68befc028ac2dd2d94c6eb17",
+    "role_id": "68bfb833ac67310131c51025"
+  },
+  {
+    "_id": "69106ebf8be55a807982e817",
+    "api_permission_id": "68e9bed9adecb3f099c64c83",
+    "role_id": "68bfb833ac67310131c51025"
+  },
+  {
+    "_id": "69106ebf8be55a807982e819",
+    "api_permission_id": "68c995e8a5bd48b03e5b6160",
+    "role_id": "68bfb833ac67310131c51025"
+  },
+  {
+    "_id": "69106ebf8be55a807982e81b",
+    "api_permission_id": "68befc028ac2dd2d94c6eb13",
+    "role_id": "68bfb833ac67310131c51025"
+  },
+  {
+    "_id": "69106f168be55a807982e888",
+    "api_permission_id": "69062c885ba4817ec9e03a51",
+    "role_id": "68bfb833ac67310131c51025"
+  },
+  {
+    "_id": "69106f168be55a807982e88a",
+    "role_id": "68bfb833ac67310131c51025",
+    "api_permission_id": "6907cc8aa0fe742d3e04fcdd"
+  },
+  {
+    "_id": "69106f168be55a807982e88c",
+    "api_permission_id": "69062c885ba4817ec9e03a57",
+    "role_id": "68bfb833ac67310131c51025"
+  },
+  {
+    "_id": "69106f168be55a807982e88e",
+    "role_id": "68bfb833ac67310131c51025",
+    "api_permission_id": "69062c885ba4817ec9e03a55"
+  },
+  {
+    "_id": "691080758be55a807982f880",
+    "role_id": "68be2193ea73210503fa3351",
+    "api_permission_id": "68befc028ac2dd2d94c6eb21"
+  },
+  {
+    "_id": "691080758be55a807982f882",
+    "role_id": "68be2193ea73210503fa3351",
+    "api_permission_id": "68befc028ac2dd2d94c6eb22"
+  },
+  {
+    "_id": "691080758be55a807982f884",
+    "role_id": "68be2193ea73210503fa3351",
+    "api_permission_id": "690864ef538e332fea7fe03d"
+  },
+  {
+    "_id": "691080758be55a807982f886",
+    "role_id": "68be2193ea73210503fa3351",
+    "api_permission_id": "690f0b60b0c6ea815ec8803e"
+  },
+  {
+    "_id": "691080758be55a807982f888",
+    "role_id": "68be2193ea73210503fa3351",
+    "api_permission_id": "68befc028ac2dd2d94c6eb1d"
+  },
+  {
+    "_id": "691080758be55a807982f88a",
+    "role_id": "68be2193ea73210503fa3351",
+    "api_permission_id": "68c9a115c262d0c226b73489"
+  },
+  {
+    "_id": "691080758be55a807982f88c",
+    "role_id": "68be2193ea73210503fa3351",
+    "api_permission_id": "68c9a115c262d0c226b73483"
+  },
+  {
+    "_id": "691080758be55a807982f891",
+    "role_id": "68be2193ea73210503fa3351",
+    "api_permission_id": "690f248134f5551230e55579"
+  },
+  {
+    "_id": "691080758be55a807982f893",
+    "role_id": "68be2193ea73210503fa3351",
+    "api_permission_id": "690f7ca55d02e3fe9833945c"
+  },
+  {
+    "_id": "691080758be55a807982f896",
+    "role_id": "68be2193ea73210503fa3351",
+    "api_permission_id": "690b39e4840e18d9e3439ef1"
+  },
+  {
+    "_id": "691080758be55a807982f898",
+    "role_id": "68be2193ea73210503fa3351",
+    "api_permission_id": "690b39e4840e18d9e3439ef3"
+  },
+  {
+    "_id": "691080758be55a807982f89a",
+    "role_id": "68be2193ea73210503fa3351",
+    "api_permission_id": "690c3d5415b633edd80c48ca"
+  },
+  {
+    "_id": "691080758be55a807982f89c",
+    "role_id": "68be2193ea73210503fa3351",
+    "api_permission_id": "690c3d5415b633edd80c48c7"
+  },
+  {
+    "_id": "691080758be55a807982f89e",
+    "role_id": "68be2193ea73210503fa3351",
+    "api_permission_id": "690c3d5415b633edd80c48c9"
+  },
+  {
+    "_id": "691080758be55a807982f8a0",
+    "role_id": "68be2193ea73210503fa3351",
+    "api_permission_id": "68e5491267236560aa29e73a"
+  },
+  {
+    "_id": "691080758be55a807982f8a2",
+    "role_id": "68be2193ea73210503fa3351",
+    "api_permission_id": "68ebc224db9a8be0c5c5cd0a"
+  },
+  {
+    "_id": "691080758be55a807982f8a4",
+    "role_id": "68be2193ea73210503fa3351",
+    "api_permission_id": "68e54e9015e3cc3215edc72e"
+  },
+  {
+    "_id": "691080758be55a807982f8a6",
+    "role_id": "68be2193ea73210503fa3351",
+    "api_permission_id": "68f89e9f018f5630badbf3d5"
+  },
+  {
+    "_id": "691080758be55a807982f8a8",
+    "role_id": "68be2193ea73210503fa3351",
+    "api_permission_id": "69062c885ba4817ec9e03a51"
+  },
+  {
+    "_id": "691080758be55a807982f8aa",
+    "role_id": "68be2193ea73210503fa3351",
+    "api_permission_id": "69062c885ba4817ec9e03a53"
+  },
+  {
+    "_id": "691080758be55a807982f8ac",
+    "role_id": "68be2193ea73210503fa3351",
+    "api_permission_id": "6907cc8aa0fe742d3e04fcdd"
+  },
+  {
+    "_id": "691080758be55a807982f8ae",
+    "role_id": "68be2193ea73210503fa3351",
+    "api_permission_id": "6907cc8aa0fe742d3e04fce0"
+  },
+  {
+    "_id": "691080758be55a807982f8b0",
+    "role_id": "68be2193ea73210503fa3351",
+    "api_permission_id": "69062c885ba4817ec9e03a57"
+  },
+  {
+    "_id": "691080758be55a807982f8b2",
+    "role_id": "68be2193ea73210503fa3351",
+    "api_permission_id": "69062c885ba4817ec9e03a55"
+  },
+  {
+    "_id": "691080758be55a807982f8ba",
+    "role_id": "68be2193ea73210503fa3351",
+    "api_permission_id": "68e80e23828c12a36bced647"
+  },
+  {
+    "_id": "691080768be55a807982f8bc",
+    "role_id": "68be2193ea73210503fa3351",
+    "api_permission_id": "68befc028ac2dd2d94c6eb17"
+  },
+  {
+    "_id": "691080768be55a807982f8bf",
+    "role_id": "68be2193ea73210503fa3351",
+    "api_permission_id": "68c995e8a5bd48b03e5b6160"
+  },
+  {
+    "_id": "691080768be55a807982f8c1",
+    "role_id": "68be2193ea73210503fa3351",
+    "api_permission_id": "68befc028ac2dd2d94c6eb13"
+  },
+  {
+    "_id": "6910d0a68be55a8079832c92",
+    "role_id": "68f52b04b9fccf467eadceae",
+    "api_permission_id": "68befc028ac2dd2d94c6eb21"
+  },
+  {
+    "_id": "6910d0a68be55a8079832c94",
+    "role_id": "68f52b04b9fccf467eadceae",
+    "api_permission_id": "68befc028ac2dd2d94c6eb22"
+  },
+  {
+    "_id": "6910d0a68be55a8079832c96",
+    "role_id": "68f52b04b9fccf467eadceae",
+    "api_permission_id": "690864ef538e332fea7fe03d"
+  },
+  {
+    "_id": "6910d0a68be55a8079832c98",
+    "role_id": "68f52b04b9fccf467eadceae",
+    "api_permission_id": "690f0b60b0c6ea815ec8803e"
+  },
+  {
+    "_id": "6910d0a68be55a8079832c9a",
+    "role_id": "68f52b04b9fccf467eadceae",
+    "api_permission_id": "68befc028ac2dd2d94c6eb1d"
+  },
+  {
+    "_id": "6910d0a68be55a8079832c9c",
+    "role_id": "68f52b04b9fccf467eadceae",
+    "api_permission_id": "68c9a115c262d0c226b73483"
+  },
+  {
+    "_id": "6910d0a68be55a8079832ca1",
+    "role_id": "68f52b04b9fccf467eadceae",
+    "api_permission_id": "690f248134f5551230e55579"
+  },
+  {
+    "_id": "6910d0a68be55a8079832ca5",
+    "role_id": "68f52b04b9fccf467eadceae",
+    "api_permission_id": "690b39e4840e18d9e3439ef1"
+  },
+  {
+    "_id": "6910d0a68be55a8079832ca7",
+    "role_id": "68f52b04b9fccf467eadceae",
+    "api_permission_id": "690c3d5415b633edd80c48c7"
+  },
+  {
+    "_id": "6910d0a68be55a8079832ca9",
+    "role_id": "68f52b04b9fccf467eadceae",
+    "api_permission_id": "68e5491267236560aa29e73a"
+  },
+  {
+    "_id": "6910d0a68be55a8079832cab",
+    "role_id": "68f52b04b9fccf467eadceae",
+    "api_permission_id": "68ebc224db9a8be0c5c5cd0a"
+  },
+  {
+    "_id": "6910d0a68be55a8079832cad",
+    "role_id": "68f52b04b9fccf467eadceae",
+    "api_permission_id": "68e54e9015e3cc3215edc72e"
+  },
+  {
+    "_id": "6910d0a68be55a8079832caf",
+    "role_id": "68f52b04b9fccf467eadceae",
+    "api_permission_id": "68f89e9f018f5630badbf3d5"
+  },
+  {
+    "_id": "6910d0a68be55a8079832cb1",
+    "role_id": "68f52b04b9fccf467eadceae",
+    "api_permission_id": "69062c885ba4817ec9e03a51"
+  },
+  {
+    "_id": "6910d0a68be55a8079832cb3",
+    "role_id": "68f52b04b9fccf467eadceae",
+    "api_permission_id": "6907cc8aa0fe742d3e04fcdd"
+  },
+  {
+    "_id": "6910d0a68be55a8079832cb5",
+    "role_id": "68f52b04b9fccf467eadceae",
+    "api_permission_id": "69062c885ba4817ec9e03a57"
+  },
+  {
+    "_id": "6910d0a68be55a8079832cb7",
+    "role_id": "68f52b04b9fccf467eadceae",
+    "api_permission_id": "69062c885ba4817ec9e03a55"
+  },
+  {
+    "_id": "6910d0a68be55a8079832cbc",
+    "role_id": "68f52b04b9fccf467eadceae",
+    "api_permission_id": "68e80e23828c12a36bced647"
+  },
+  {
+    "_id": "6910d0a68be55a8079832cbe",
+    "role_id": "68f52b04b9fccf467eadceae",
+    "api_permission_id": "68befc028ac2dd2d94c6eb17"
+  },
+  {
+    "_id": "6910d0a68be55a8079832cc1",
+    "role_id": "68f52b04b9fccf467eadceae",
+    "api_permission_id": "68c995e8a5bd48b03e5b6160"
+  },
+  {
+    "_id": "6910d2948be55a8079832fb2",
+    "api_permission_id": "68befc028ac2dd2d94c6eb21",
+    "role_id": "68f52b1bb9fccf467eadcecd"
+  },
+  {
+    "_id": "6910d2948be55a8079832fb4",
+    "role_id": "68f52b1bb9fccf467eadcecd",
+    "api_permission_id": "68befc028ac2dd2d94c6eb22"
+  },
+  {
+    "_id": "6910d2948be55a8079832fb6",
+    "api_permission_id": "690864ef538e332fea7fe03d",
+    "role_id": "68f52b1bb9fccf467eadcecd"
+  },
+  {
+    "_id": "6910d2948be55a8079832fb8",
+    "role_id": "68f52b1bb9fccf467eadcecd",
+    "api_permission_id": "690f0b60b0c6ea815ec8803e"
+  },
+  {
+    "_id": "6910d2948be55a8079832fba",
+    "api_permission_id": "68befc028ac2dd2d94c6eb1d",
+    "role_id": "68f52b1bb9fccf467eadcecd"
+  },
+  {
+    "_id": "6910d2948be55a8079832fbc",
+    "role_id": "68f52b1bb9fccf467eadcecd",
+    "api_permission_id": "68c9a115c262d0c226b73483"
+  },
+  {
+    "_id": "6910d2948be55a8079832fc1",
+    "api_permission_id": "690f248134f5551230e55579",
+    "role_id": "68f52b1bb9fccf467eadcecd"
+  },
+  {
+    "_id": "6910d2958be55a8079832fc9",
+    "role_id": "68f52b1bb9fccf467eadcecd",
+    "api_permission_id": "690c3d5415b633edd80c48c7"
+  },
+  {
+    "_id": "6910d2958be55a8079832fcb",
+    "api_permission_id": "68e5491267236560aa29e73a",
+    "role_id": "68f52b1bb9fccf467eadcecd"
+  },
+  {
+    "_id": "6910d2958be55a8079832fcd",
+    "role_id": "68f52b1bb9fccf467eadcecd",
+    "api_permission_id": "68ebc224db9a8be0c5c5cd0a"
+  },
+  {
+    "_id": "6910d2958be55a8079832fcf",
+    "api_permission_id": "68e54e9015e3cc3215edc72e",
+    "role_id": "68f52b1bb9fccf467eadcecd"
+  },
+  {
+    "_id": "6910d2958be55a8079832fd1",
+    "role_id": "68f52b1bb9fccf467eadcecd",
+    "api_permission_id": "68f89e9f018f5630badbf3d5"
+  },
+  {
+    "_id": "6910d2958be55a8079832fd3",
+    "api_permission_id": "69062c885ba4817ec9e03a51",
+    "role_id": "68f52b1bb9fccf467eadcecd"
+  },
+  {
+    "_id": "6910d2958be55a8079832fd5",
+    "role_id": "68f52b1bb9fccf467eadcecd",
+    "api_permission_id": "6907cc8aa0fe742d3e04fcdd"
+  },
+  {
+    "_id": "6910d2958be55a8079832fd7",
+    "api_permission_id": "69062c885ba4817ec9e03a57",
+    "role_id": "68f52b1bb9fccf467eadcecd"
+  },
+  {
+    "_id": "6910d2958be55a8079832fd9",
+    "role_id": "68f52b1bb9fccf467eadcecd",
+    "api_permission_id": "69062c885ba4817ec9e03a55"
+  },
+  {
+    "_id": "6910d2958be55a8079832fdd",
+    "api_permission_id": "68eceab08534a3f27202e6ef",
+    "role_id": "68f52b1bb9fccf467eadcecd"
+  },
+  {
+    "_id": "6910d2958be55a8079832fdf",
+    "role_id": "68f52b1bb9fccf467eadcecd",
+    "api_permission_id": "690605975935439213957b57"
+  },
+  {
+    "_id": "6910d2958be55a8079832fe1",
+    "api_permission_id": "68e80e23828c12a36bced647",
+    "role_id": "68f52b1bb9fccf467eadcecd"
+  },
+  {
+    "_id": "6910d2958be55a8079832fe3",
+    "role_id": "68f52b1bb9fccf467eadcecd",
+    "api_permission_id": "68befc028ac2dd2d94c6eb17"
+  },
+  {
+    "_id": "6910d2958be55a8079832fe5",
+    "api_permission_id": "68e9bed9adecb3f099c64c83",
+    "role_id": "68f52b1bb9fccf467eadcecd"
+  },
+  {
+    "_id": "6910d2958be55a8079832fe7",
+    "role_id": "68f52b1bb9fccf467eadcecd",
+    "api_permission_id": "68c995e8a5bd48b03e5b6160"
+  },
+  {
+    "_id": "69204b36ab36e8eec05d84e7",
+    "role_id": "68be2193ea73210503fa3352",
+    "api_permission_id": "690f7577faebd360ec50d2ab"
+  },
+  {
+    "_id": "6920653bce6aa1e450743f37",
+    "role_id": "68be2193ea73210503fa3352",
+    "api_permission_id": "6920653bce6aa1e450743eaa"
+  },
+  {
+    "_id": "69206b6d49e8a7ba9f031bb2",
+    "role_id": "68bf964f5347ed86d01c9ed2",
+    "api_permission_id": "6920653bce6aa1e450743eaa"
+  },
+  {
+    "_id": "692171723a32168622c26ffd",
+    "role_id": "68bfb833ac67310131c51025",
+    "api_permission_id": "68ecea898534a3f27202e6ee"
+  },
+  {
+    "_id": "692171723a32168622c26fff",
+    "api_permission_id": "68eceadd8534a3f27202e6f1",
+    "role_id": "68bfb833ac67310131c51025"
+  },
+  {
+    "_id": "692171723a32168622c27002",
+    "api_permission_id": "68eceac78534a3f27202e6f0",
+    "role_id": "68bfb833ac67310131c51025"
+  },
+  {
+    "_id": "69217fa5fd5c570ad3faab0f",
+    "role_id": "68bfb833ac67310131c51025",
+    "api_permission_id": "690c3d5415b633edd80c48c9"
+  },
+  {
+    "_id": "6921947b3a32168622c29ff5",
+    "role_id": "68be2193ea73210503fa3351",
+    "api_permission_id": "690c3d5415b633edd80c48c8"
+  },
+  {
+    "_id": "6921947b3a32168622c29ff9",
+    "role_id": "68be2193ea73210503fa3351",
+    "api_permission_id": "6920653bce6aa1e450743eaa"
+  },
+  {
+    "_id": "6921ad7a3a32168622c2bbc6",
+    "api_permission_id": "690c3d5415b633edd80c48ca",
+    "role_id": "68f52b1bb9fccf467eadcecd"
+  },
+  {
+    "_id": "6921aed23a32168622c2bcee",
+    "api_permission_id": "690c3d5415b633edd80c48ca",
+    "role_id": "68f52b04b9fccf467eadceae"
+  },
+  {
+    "_id": "6921d254ed135f24abc59dbe",
+    "role_id": "68f52b04b9fccf467eadceae",
+    "api_permission_id": "690c3d5415b633edd80c48c9"
+  },
+  {
+    "_id": "6921d254ed135f24abc59dc2",
+    "role_id": "68f52b1bb9fccf467eadcecd",
+    "api_permission_id": "690c3d5415b633edd80c48c9"
+  },
+  {
+    "_id": "6921d254ed135f24abc59dc6",
+    "role_id": "68f52b4fb9fccf467eadceec",
+    "api_permission_id": "690c3d5415b633edd80c48c9"
+  },
+  {
+    "_id": "6922644714ceeaafda419b10",
+    "role_id": "68f52b1bb9fccf467eadcecd",
+    "api_permission_id": "6922644714ceeaafda419ad0"
+  },
+  {
+    "_id": "692334ff93d6b27d75c7fd96",
+    "role_id": "68f52b4fb9fccf467eadceec",
+    "api_permission_id": "692334ff93d6b27d75c7fd58"
+  },
+  {
+    "_id": "69236c7b1357b2601f01329c",
+    "role_id": "68f52b1bb9fccf467eadcecd",
+    "api_permission_id": "68c9a115c262d0c226b7348e"
+  },
+  {
+    "_id": "69236c7b1357b2601f0132a0",
+    "role_id": "68f52b1bb9fccf467eadcecd",
+    "api_permission_id": "690f248134f5551230e55608"
+  },
+  {
+    "_id": "69236c7b1357b2601f0132a2",
+    "role_id": "68f52b1bb9fccf467eadcecd",
+    "api_permission_id": "690f248134f5551230e55617"
+  },
+  {
+    "_id": "69236c7b1357b2601f0132ad",
+    "role_id": "68f52b1bb9fccf467eadcecd",
+    "api_permission_id": "690c3d5415b633edd80c48c8"
+  },
+  {
+    "_id": "69236c7b1357b2601f0132b1",
+    "role_id": "68f52b1bb9fccf467eadcecd",
+    "api_permission_id": "6920653bce6aa1e450743eaa"
+  },
+  {
+    "_id": "692394841357b2601f015a68",
+    "api_permission_id": "68befc028ac2dd2d94c6eb21",
+    "role_id": "68f52b4fb9fccf467eadceec"
+  },
+  {
+    "_id": "692394841357b2601f015a6a",
+    "api_permission_id": "68befc028ac2dd2d94c6eb22",
+    "role_id": "68f52b4fb9fccf467eadceec"
+  },
+  {
+    "_id": "692394841357b2601f015a6c",
+    "api_permission_id": "690864ef538e332fea7fe03d",
+    "role_id": "68f52b4fb9fccf467eadceec"
+  },
+  {
+    "_id": "692394841357b2601f015a6e",
+    "api_permission_id": "690f0b60b0c6ea815ec8803e",
+    "role_id": "68f52b4fb9fccf467eadceec"
+  },
+  {
+    "_id": "692394841357b2601f015a70",
+    "api_permission_id": "68befc028ac2dd2d94c6eb1e",
+    "role_id": "68f52b4fb9fccf467eadceec"
+  },
+  {
+    "_id": "692394841357b2601f015a72",
+    "api_permission_id": "68befc028ac2dd2d94c6eb1d",
+    "role_id": "68f52b4fb9fccf467eadceec"
+  },
+  {
+    "_id": "692394841357b2601f015a74",
+    "api_permission_id": "68c9a115c262d0c226b73483",
+    "role_id": "68f52b4fb9fccf467eadceec"
+  },
+  {
+    "_id": "692394841357b2601f015a76",
+    "api_permission_id": "690f7576faebd360ec50d2a4",
+    "role_id": "68f52b4fb9fccf467eadceec"
+  },
+  {
+    "_id": "692394841357b2601f015a78",
+    "api_permission_id": "690f7576faebd360ec50d27c",
+    "role_id": "68f52b4fb9fccf467eadceec"
+  },
+  {
+    "_id": "692394841357b2601f015a7a",
+    "api_permission_id": "690f248134f5551230e55608",
+    "role_id": "68f52b4fb9fccf467eadceec"
+  },
+  {
+    "_id": "692394841357b2601f015a7c",
+    "api_permission_id": "690f248134f5551230e55617",
+    "role_id": "68f52b4fb9fccf467eadceec"
+  },
+  {
+    "_id": "692394841357b2601f015a7e",
+    "api_permission_id": "690f7577faebd360ec50d2ab",
+    "role_id": "68f52b4fb9fccf467eadceec"
+  },
+  {
+    "_id": "692394841357b2601f015a80",
+    "api_permission_id": "690f7576faebd360ec50d1f4",
+    "role_id": "68f52b4fb9fccf467eadceec"
+  },
+  {
+    "_id": "692394841357b2601f015a82",
+    "api_permission_id": "690f248134f5551230e55579",
+    "role_id": "68f52b4fb9fccf467eadceec"
+  },
+  {
+    "_id": "692394841357b2601f015a84",
+    "api_permission_id": "690f7ca55d02e3fe9833945c",
+    "role_id": "68f52b4fb9fccf467eadceec"
+  },
+  {
+    "_id": "692394841357b2601f015a86",
+    "api_permission_id": "690f7577faebd360ec50d2bc",
+    "role_id": "68f52b4fb9fccf467eadceec"
+  },
+  {
+    "_id": "692394841357b2601f015a88",
+    "api_permission_id": "690b39e4840e18d9e3439ef2",
+    "role_id": "68f52b4fb9fccf467eadceec"
+  },
+  {
+    "_id": "692394841357b2601f015a8a",
+    "api_permission_id": "690b39e4840e18d9e3439ef4",
+    "role_id": "68f52b4fb9fccf467eadceec"
+  },
+  {
+    "_id": "692394841357b2601f015a8c",
+    "api_permission_id": "690b39e4840e18d9e3439ef1",
+    "role_id": "68f52b4fb9fccf467eadceec"
+  },
+  {
+    "_id": "692394841357b2601f015a8e",
+    "api_permission_id": "690b39e4840e18d9e3439ef3",
+    "role_id": "68f52b4fb9fccf467eadceec"
+  },
+  {
+    "_id": "692394841357b2601f015a90",
+    "api_permission_id": "6922644714ceeaafda419ad0",
+    "role_id": "68f52b4fb9fccf467eadceec"
+  },
+  {
+    "_id": "692394841357b2601f015a92",
+    "api_permission_id": "690c3d5415b633edd80c48c8",
+    "role_id": "68f52b4fb9fccf467eadceec"
+  },
+  {
+    "_id": "692394841357b2601f015a94",
+    "api_permission_id": "690c3d5415b633edd80c48ca",
+    "role_id": "68f52b4fb9fccf467eadceec"
+  },
+  {
+    "_id": "692394841357b2601f015a96",
+    "api_permission_id": "690c3d5415b633edd80c48c7",
+    "role_id": "68f52b4fb9fccf467eadceec"
+  },
+  {
+    "_id": "692394841357b2601f015a99",
+    "api_permission_id": "6920653bce6aa1e450743eaa",
+    "role_id": "68f52b4fb9fccf467eadceec"
+  },
+  {
+    "_id": "692394841357b2601f015a9c",
+    "api_permission_id": "68e5491267236560aa29e73a",
+    "role_id": "68f52b4fb9fccf467eadceec"
+  },
+  {
+    "_id": "692394841357b2601f015a9e",
+    "api_permission_id": "68ebc224db9a8be0c5c5cd0a",
+    "role_id": "68f52b4fb9fccf467eadceec"
+  },
+  {
+    "_id": "692394841357b2601f015aa0",
+    "api_permission_id": "68e54e9015e3cc3215edc72e",
+    "role_id": "68f52b4fb9fccf467eadceec"
+  },
+  {
+    "_id": "692394841357b2601f015aa2",
+    "api_permission_id": "68f89e9f018f5630badbf3d5",
+    "role_id": "68f52b4fb9fccf467eadceec"
+  },
+  {
+    "_id": "692394841357b2601f015aa4",
+    "api_permission_id": "69062c885ba4817ec9e03a51",
+    "role_id": "68f52b4fb9fccf467eadceec"
+  },
+  {
+    "_id": "692394841357b2601f015aa6",
+    "api_permission_id": "69062c885ba4817ec9e03a53",
+    "role_id": "68f52b4fb9fccf467eadceec"
+  },
+  {
+    "_id": "692394841357b2601f015aa8",
+    "api_permission_id": "6907cc8aa0fe742d3e04fcdd",
+    "role_id": "68f52b4fb9fccf467eadceec"
+  },
+  {
+    "_id": "692394841357b2601f015aaa",
+    "api_permission_id": "6907cc8aa0fe742d3e04fce0",
+    "role_id": "68f52b4fb9fccf467eadceec"
+  },
+  {
+    "_id": "692394841357b2601f015aac",
+    "api_permission_id": "69062c885ba4817ec9e03a57",
+    "role_id": "68f52b4fb9fccf467eadceec"
+  },
+  {
+    "_id": "692394841357b2601f015aae",
+    "api_permission_id": "69062c885ba4817ec9e03a55",
+    "role_id": "68f52b4fb9fccf467eadceec"
+  },
+  {
+    "_id": "692394841357b2601f015ab2",
+    "api_permission_id": "68ecea898534a3f27202e6ee",
+    "role_id": "68f52b4fb9fccf467eadceec"
+  },
+  {
+    "_id": "692394841357b2601f015ab4",
+    "api_permission_id": "68eceadd8534a3f27202e6f1",
+    "role_id": "68f52b4fb9fccf467eadceec"
+  },
+  {
+    "_id": "692394841357b2601f015ab6",
+    "api_permission_id": "68eceab08534a3f27202e6ef",
+    "role_id": "68f52b4fb9fccf467eadceec"
+  },
+  {
+    "_id": "692394841357b2601f015ab8",
+    "api_permission_id": "68eceac78534a3f27202e6f0",
+    "role_id": "68f52b4fb9fccf467eadceec"
+  },
+  {
+    "_id": "692394841357b2601f015aba",
+    "api_permission_id": "6905d5e48b2296b01a6adb78",
+    "role_id": "68f52b4fb9fccf467eadceec"
+  },
+  {
+    "_id": "692394841357b2601f015abc",
+    "api_permission_id": "690605975935439213957b57",
+    "role_id": "68f52b4fb9fccf467eadceec"
+  },
+  {
+    "_id": "692394841357b2601f015abe",
+    "api_permission_id": "68e80e23828c12a36bced64a",
+    "role_id": "68f52b4fb9fccf467eadceec"
+  },
+  {
+    "_id": "692394841357b2601f015ac0",
+    "api_permission_id": "68e80e23828c12a36bced647",
+    "role_id": "68f52b4fb9fccf467eadceec"
+  },
+  {
+    "_id": "692394841357b2601f015ac2",
+    "api_permission_id": "68befc028ac2dd2d94c6eb17",
+    "role_id": "68f52b4fb9fccf467eadceec"
+  },
+  {
+    "_id": "692394841357b2601f015ac4",
+    "api_permission_id": "68e9bed9adecb3f099c64c83",
+    "role_id": "68f52b4fb9fccf467eadceec"
+  },
+  {
+    "_id": "692394841357b2601f015ac6",
+    "api_permission_id": "68c995e8a5bd48b03e5b6160",
+    "role_id": "68f52b4fb9fccf467eadceec"
+  },
+  {
+    "_id": "692394841357b2601f015ac8",
+    "api_permission_id": "68befc028ac2dd2d94c6eb13",
+    "role_id": "68f52b4fb9fccf467eadceec"
+  },
+  {
+    "_id": "6926ac0321f769881e6fe1c1",
+    "role_id": "68f52b4fb9fccf467eadceec",
+    "api_permission_id": "6926ac0321f769881e6fe117"
+  },
+  {
+    "_id": "6926ac0321f769881e6fe1d2",
+    "role_id": "68f52b4fb9fccf467eadceec",
+    "api_permission_id": "6926ac0321f769881e6fe143"
+  },
+  {
+    "_id": "6926ac0321f769881e6fe1d8",
+    "role_id": "68f52b1bb9fccf467eadcecd",
+    "api_permission_id": "6926ac0321f769881e6fe117"
+  },
+  {
+    "_id": "6926ac0321f769881e6fe1dc",
+    "role_id": "68f52b1bb9fccf467eadcecd",
+    "api_permission_id": "6926ac0321f769881e6fe166"
+  },
+  {
+    "_id": "692a13ebaa886935027a4816",
+    "role_id": "68f52a9fb9fccf467eadce3a",
+    "api_permission_id": "68f89e9f018f5630badbf3d5",
+    "created_at": "2025-11-28T21:28:11.107Z",
+    "updated_at": "2025-11-28T21:28:11.107Z"
+  },
+  {
+    "_id": "692a30aa8e6302f05940a62c",
+    "role_id": "68be2193ea73210503fa3351",
+    "api_permission_id": "692a2ffd34487f9a120ebbaf"
+  },
+  {
+    "_id": "692a30aa8e6302f05940a62f",
+    "role_id": "68be2193ea73210503fa3351",
+    "api_permission_id": "692a2ffd34487f9a120ebbd1"
+  },
+  {
+    "_id": "692a30aa8e6302f05940a632",
+    "role_id": "68be2193ea73210503fa3351",
+    "api_permission_id": "692a2ffd34487f9a120ebbef"
+  },
+  {
+    "_id": "692a30aa8e6302f05940a635",
+    "role_id": "68be2193ea73210503fa3351",
+    "api_permission_id": "692a2ffd34487f9a120ebc06"
+  },
+  {
+    "_id": "692a30aa8e6302f05940a638",
+    "role_id": "690750354bdacd1e192d1ab3",
+    "api_permission_id": "692a2ffd34487f9a120ebc15"
+  },
+  {
+    "_id": "692a30aa8e6302f05940a63b",
+    "role_id": "690750354bdacd1e192d1ab3",
+    "api_permission_id": "692a2ffd34487f9a120ebc22"
+  },
+  {
+    "_id": "692afeeda715da4779f3b387",
+    "role_id": "690750354bdacd1e192d1ab3",
+    "api_permission_id": "69062c885ba4817ec9e03a55"
+  },
+  {
+    "_id": "692b79b59f4f725e8a8ab7a0",
+    "role_id": "690750354bdacd1e192d1ab3",
+    "api_permission_id": "692b790ff20582d9a7f42016"
+  },
+  {
+    "_id": "692b79b59f4f725e8a8ab7a3",
+    "role_id": "690750354bdacd1e192d1ab3",
+    "api_permission_id": "692b790ff20582d9a7f42061"
+  },
+  {
+    "_id": "692b79b59f4f725e8a8ab7a6",
+    "role_id": "690750354bdacd1e192d1ab3",
+    "api_permission_id": "692b790ff20582d9a7f420a6"
+  },
+  {
+    "_id": "692b8658d6ff90bdd248b57e",
+    "role_id": "690750354bdacd1e192d1ab3",
+    "api_permission_id": "68f89e9f018f5630badbf3d5"
+  },
+  {
+    "_id": "692deb93aa42dd60a43054ad",
+    "role_id": "690750354bdacd1e192d1ab3",
+    "api_permission_id": "692deb7dc719aea892410b97"
+  },
+  {
+    "_id": "692deb93aa42dd60a4305527",
+    "role_id": "690750354bdacd1e192d1ab3",
+    "api_permission_id": "692deb93aa42dd60a43054e1"
+  },
+  {
+    "_id": "692deb93aa42dd60a430553f",
+    "role_id": "690750354bdacd1e192d1ab3",
+    "api_permission_id": "692deb93aa42dd60a4305534"
+  },
+  {
+    "_id": "692deb93aa42dd60a430554d",
+    "role_id": "690750354bdacd1e192d1ab3",
+    "api_permission_id": "692deb93aa42dd60a4305548"
+  },
+  {
+    "_id": "692deb93aa42dd60a4305555",
+    "role_id": "690750354bdacd1e192d1ab3",
+    "api_permission_id": "692deb93aa42dd60a4305551"
+  },
+  {
+    "_id": "692deb93aa42dd60a430555c",
+    "role_id": "690750354bdacd1e192d1ab3",
+    "api_permission_id": "692deb93aa42dd60a4305559"
+  },
+  {
+    "_id": "692deb93aa42dd60a4305563",
+    "role_id": "690750354bdacd1e192d1ab3",
+    "api_permission_id": "692deb93aa42dd60a4305560"
+  },
+  {
+    "_id": "692deb93aa42dd60a430556a",
+    "role_id": "690750354bdacd1e192d1ab3",
+    "api_permission_id": "692deb93aa42dd60a4305567"
+  },
+  {
+    "_id": "692deb93aa42dd60a4305571",
+    "role_id": "690750354bdacd1e192d1ab3",
+    "api_permission_id": "692deb93aa42dd60a430556e"
+  },
+  {
+    "_id": "692deb93aa42dd60a4305578",
+    "role_id": "690750354bdacd1e192d1ab3",
+    "api_permission_id": "692deb93aa42dd60a4305575"
+  },
+  {
+    "_id": "692deb93aa42dd60a430557f",
+    "role_id": "690750354bdacd1e192d1ab3",
+    "api_permission_id": "692deb93aa42dd60a430557b"
+  },
+  {
+    "_id": "692deb93aa42dd60a4305585",
+    "role_id": "690750354bdacd1e192d1ab3",
+    "api_permission_id": "692deb93aa42dd60a4305582"
+  },
+  {
+    "_id": "692e1a472eb866818d0c88fe",
+    "role_id": "68be2193ea73210503fa3352",
+    "api_permission_id": "692e1a472eb866818d0c8883"
+  },
+  {
+    "_id": "692e1a472eb866818d0c8915",
+    "role_id": "68be2193ea73210503fa3352",
+    "api_permission_id": "692e1a472eb866818d0c88b0"
+  },
+  {
+    "_id": "692e1a472eb866818d0c8928",
+    "role_id": "68be2193ea73210503fa3352",
+    "api_permission_id": "692e1a472eb866818d0c88d7"
+  },
+  {
+    "_id": "692f7bfa9efe2f2458523d0e",
+    "role_id": "68bf964f5347ed86d01c9ed2",
+    "api_permission_id": "692f6e26f437efad606b7ca5"
+  },
+  {
+    "_id": "692f7bfa9efe2f2458523d0f",
+    "role_id": "68bf964f5347ed86d01c9ed2",
+    "api_permission_id": "692f6e26f437efad606b7cb2"
+  },
+  {
+    "_id": "692f7bfa9efe2f2458523d10",
+    "role_id": "68bf964f5347ed86d01c9ed2",
+    "api_permission_id": "692f6e26f437efad606b7cb7"
+  },
+  {
+    "_id": "692f7bfa9efe2f2458523d11",
+    "role_id": "68bf964f5347ed86d01c9ed2",
+    "api_permission_id": "692f6e26f437efad606b7cbc"
+  },
+  {
+    "_id": "692f7bfa9efe2f2458523d12",
+    "role_id": "68bf964f5347ed86d01c9ed2",
+    "api_permission_id": "692f6e26f437efad606b7cc1"
+  },
+  {
+    "_id": "692f7bfa9efe2f2458523d13",
+    "role_id": "68bfb833ac67310131c51025",
+    "api_permission_id": "692f6e26f437efad606b7ca5"
+  },
+  {
+    "_id": "692f7bfa9efe2f2458523d14",
+    "role_id": "68bfb833ac67310131c51025",
+    "api_permission_id": "692f6e26f437efad606b7cb2"
+  },
+  {
+    "_id": "692f7bfa9efe2f2458523d15",
+    "role_id": "68bfb833ac67310131c51025",
+    "api_permission_id": "692f6e26f437efad606b7cb7"
+  },
+  {
+    "_id": "692f7bfa9efe2f2458523d16",
+    "role_id": "68bfb833ac67310131c51025",
+    "api_permission_id": "692f6e26f437efad606b7cbc"
+  },
+  {
+    "_id": "692f7bfa9efe2f2458523d17",
+    "role_id": "68bfb833ac67310131c51025",
+    "api_permission_id": "692f6e26f437efad606b7cc1"
+  },
+  {
+    "_id": "692f7bfa9efe2f2458523d18",
+    "role_id": "68be2193ea73210503fa3350",
+    "api_permission_id": "692f6e26f437efad606b7ca5"
+  },
+  {
+    "_id": "692f7bfa9efe2f2458523d19",
+    "role_id": "68be2193ea73210503fa3350",
+    "api_permission_id": "692f6e26f437efad606b7cb2"
+  },
+  {
+    "_id": "692f7bfa9efe2f2458523d1a",
+    "role_id": "68be2193ea73210503fa3350",
+    "api_permission_id": "692f6e26f437efad606b7cb7"
+  },
+  {
+    "_id": "692f7bfa9efe2f2458523d1b",
+    "role_id": "68be2193ea73210503fa3350",
+    "api_permission_id": "692f6e26f437efad606b7cbc"
+  },
+  {
+    "_id": "692f7bfa9efe2f2458523d1c",
+    "role_id": "68be2193ea73210503fa3350",
+    "api_permission_id": "692f6e26f437efad606b7cc1"
+  },
+  {
+    "_id": "69300507a8796c5c4da93482",
+    "role_id": "68be2193ea73210503fa3351",
+    "api_permission_id": "692f6e26f437efad606b7ca5"
+  },
+  {
+    "_id": "69300507a8796c5c4da934a7",
+    "role_id": "68be2193ea73210503fa3351",
+    "api_permission_id": "692f6e26f437efad606b7cc1"
+  },
+  {
+    "_id": "69300507a8796c5c4da934c0",
+    "role_id": "68be2193ea73210503fa3351",
+    "api_permission_id": "692f6e26f437efad606b7cbc"
+  },
+  {
+    "_id": "69300507a8796c5c4da934d0",
+    "role_id": "68be2193ea73210503fa3351",
+    "api_permission_id": "692f6e26f437efad606b7cb2"
+  },
+  {
+    "_id": "69300507a8796c5c4da934e3",
+    "role_id": "68c267a5a577d325bc1f58d7",
+    "api_permission_id": "692f6e26f437efad606b7ca5"
+  },
+  {
+    "_id": "69300507a8796c5c4da934e6",
+    "role_id": "68c267a5a577d325bc1f58d7",
+    "api_permission_id": "692f6e26f437efad606b7cc1"
+  },
+  {
+    "_id": "69300507a8796c5c4da934e9",
+    "role_id": "68c267a5a577d325bc1f58d7",
+    "api_permission_id": "692f6e26f437efad606b7cbc"
+  },
+  {
+    "_id": "69300507a8796c5c4da934ec",
+    "role_id": "68c267a5a577d325bc1f58d7",
+    "api_permission_id": "692f6e26f437efad606b7cb2"
+  },
+  {
+    "_id": "69300e1d3d562c00c6b5ca6e",
+    "role_id": "68f52b04b9fccf467eadceae",
+    "api_permission_id": "692f6e26f437efad606b7ca5"
+  },
+  {
+    "_id": "69300e1d3d562c00c6b5ca88",
+    "role_id": "68f52b04b9fccf467eadceae",
+    "api_permission_id": "692f6e26f437efad606b7cc1"
+  },
+  {
+    "_id": "69300e1d3d562c00c6b5ca8e",
+    "role_id": "68f52b04b9fccf467eadceae",
+    "api_permission_id": "692f6e26f437efad606b7cbc"
+  },
+  {
+    "_id": "69300e1d3d562c00c6b5ca92",
+    "role_id": "68f52b04b9fccf467eadceae",
+    "api_permission_id": "692f6e26f437efad606b7cb2"
+  },
+  {
+    "_id": "693010929e2eb8a068f4291a",
+    "role_id": "68f52b1bb9fccf467eadcecd",
+    "api_permission_id": "692f6e26f437efad606b7ca5"
+  },
+  {
+    "_id": "693010929e2eb8a068f42937",
+    "role_id": "68f52b1bb9fccf467eadcecd",
+    "api_permission_id": "692f6e26f437efad606b7cc1"
+  },
+  {
+    "_id": "693010929e2eb8a068f4294d",
+    "role_id": "68f52b1bb9fccf467eadcecd",
+    "api_permission_id": "692f6e26f437efad606b7cbc"
+  },
+  {
+    "_id": "693010929e2eb8a068f42951",
+    "role_id": "68f52b1bb9fccf467eadcecd",
+    "api_permission_id": "692f6e26f437efad606b7cb2"
+  },
+  {
+    "_id": "693011f9294485051499183c",
+    "role_id": "68f52b4fb9fccf467eadceec",
+    "api_permission_id": "692f6e26f437efad606b7ca5"
+  },
+  {
+    "_id": "693011f92944850514991849",
+    "role_id": "68f52b4fb9fccf467eadceec",
+    "api_permission_id": "692f6e26f437efad606b7cc1"
+  },
+  {
+    "_id": "693011f9294485051499184d",
+    "role_id": "68f52b4fb9fccf467eadceec",
+    "api_permission_id": "692f6e26f437efad606b7cbc"
+  },
+  {
+    "_id": "693011f92944850514991851",
+    "role_id": "68f52b4fb9fccf467eadceec",
+    "api_permission_id": "692f6e26f437efad606b7cb2"
+  },
+  {
+    "_id": "69303d4a35cf9340479dc932",
+    "role_id": "690750354bdacd1e192d1ab3",
+    "api_permission_id": "692334ff93d6b27d75c7fd58"
+  },
+  {
+    "_id": "69303d4a35cf9340479dc954",
+    "role_id": "690750354bdacd1e192d1ab3",
+    "api_permission_id": "692e1a472eb866818d0c8883"
+  },
+  {
+    "_id": "69303d4a35cf9340479dc957",
+    "role_id": "690750354bdacd1e192d1ab3",
+    "api_permission_id": "692e1a472eb866818d0c88b0"
+  },
+  {
+    "_id": "693048a3d5a50ef82cb2d8ac",
+    "role_id": "68f52b4fb9fccf467eadceec",
+    "api_permission_id": "693048a3d5a50ef82cb2d81a"
+  },
+  {
+    "_id": "693048a3d5a50ef82cb2d8c8",
+    "role_id": "68f52b4fb9fccf467eadceec",
+    "api_permission_id": "693048a3d5a50ef82cb2d84e"
+  },
+  {
+    "_id": "693048a3d5a50ef82cb2d8db",
+    "role_id": "68f52b4fb9fccf467eadceec",
+    "api_permission_id": "693048a3d5a50ef82cb2d877"
+  },
+  {
+    "_id": "693048a3d5a50ef82cb2d8ef",
+    "role_id": "68be2193ea73210503fa3351",
+    "api_permission_id": "693048a3d5a50ef82cb2d81a"
+  },
+  {
+    "_id": "693048a3d5a50ef82cb2d8f4",
+    "role_id": "68be2193ea73210503fa3351",
+    "api_permission_id": "693048a3d5a50ef82cb2d84e"
+  },
+  {
+    "_id": "693048a3d5a50ef82cb2d8f7",
+    "role_id": "68be2193ea73210503fa3351",
+    "api_permission_id": "693048a3d5a50ef82cb2d877"
+  },
+  {
+    "_id": "693048a3d5a50ef82cb2d8fb",
+    "role_id": "68f52b04b9fccf467eadceae",
+    "api_permission_id": "693048a3d5a50ef82cb2d81a"
+  },
+  {
+    "_id": "693048a3d5a50ef82cb2d8fe",
+    "role_id": "68f52b04b9fccf467eadceae",
+    "api_permission_id": "693048a3d5a50ef82cb2d84e"
+  },
+  {
+    "_id": "693048a3d5a50ef82cb2d901",
+    "role_id": "68f52b04b9fccf467eadceae",
+    "api_permission_id": "693048a3d5a50ef82cb2d877"
+  },
+  {
+    "_id": "693048a4d5a50ef82cb2d905",
+    "role_id": "68f52b1bb9fccf467eadcecd",
+    "api_permission_id": "693048a3d5a50ef82cb2d81a"
+  },
+  {
+    "_id": "693048a4d5a50ef82cb2d908",
+    "role_id": "68f52b1bb9fccf467eadcecd",
+    "api_permission_id": "693048a3d5a50ef82cb2d84e"
+  },
+  {
+    "_id": "693048a4d5a50ef82cb2d90b",
+    "role_id": "68f52b1bb9fccf467eadcecd",
+    "api_permission_id": "693048a3d5a50ef82cb2d877"
+  },
+  {
+    "_id": "693048a4d5a50ef82cb2d90f",
+    "role_id": "690750354bdacd1e192d1ab3",
+    "api_permission_id": "693048a3d5a50ef82cb2d81a"
+  },
+  {
+    "_id": "693048a4d5a50ef82cb2d912",
+    "role_id": "690750354bdacd1e192d1ab3",
+    "api_permission_id": "693048a3d5a50ef82cb2d84e"
+  },
+  {
+    "_id": "693048a4d5a50ef82cb2d915",
+    "role_id": "690750354bdacd1e192d1ab3",
+    "api_permission_id": "693048a3d5a50ef82cb2d877"
+  },
+  {
+    "_id": "69305028b60a435f73c3a530",
+    "role_id": "690750354bdacd1e192d1ab3",
+    "api_permission_id": "6926ac0321f769881e6fe117"
+  },
+  {
+    "_id": "693059575506d52677a477e9",
+    "role_id": "690750354bdacd1e192d1ab3",
+    "api_permission_id": "693059575506d52677a477ce"
+  },
+  {
+    "_id": "693070ee6c711c211ab45075",
+    "role_id": "690750354bdacd1e192d1ab3",
+    "api_permission_id": "69306e4e7f7b4e966a2d905b"
+  },
+  {
+    "_id": "69310227fb2f06f00d7d27da",
+    "role_id": "690750354bdacd1e192d1ab3",
+    "api_permission_id": "68c995e8a5bd48b03e5b6160",
+    "__v": 0
+  },
+  {
+    "_id": "693105a29f82f5f5dca1ae72",
+    "role_id": "690750354bdacd1e192d1ab3",
+    "api_permission_id": "6930e84a491df8d409d77629",
+    "__v": 0
+  },
+  {
+    "_id": "6931c8ea60de94986ca9a963",
+    "role_id": "690750354bdacd1e192d1ab3",
+    "api_permission_id": "6931c86b45915915dc75d939"
+  },
+  {
+    "_id": "6931c8ea60de94986ca9a964",
+    "role_id": "690750354bdacd1e192d1ab3",
+    "api_permission_id": "6931c86b45915915dc75d93a"
+  },
+  {
+    "_id": "6931c8ea60de94986ca9a965",
+    "role_id": "690750354bdacd1e192d1ab3",
+    "api_permission_id": "6931c86b45915915dc75d93b"
+  },
+  {
+    "_id": "6932f626292dc14211a8079b",
+    "role_id": "68be2193ea73210503fa3352",
+    "api_permission_id": "6932f626292dc14211a80797"
+  },
+  {
+    "_id": "6932f626292dc14211a8079c",
+    "role_id": "68be2193ea73210503fa3352",
+    "api_permission_id": "6932f626292dc14211a80798"
+  },
+  {
+    "_id": "68be4e18fb0aa983c5fa3350",
+    "role_id": "68be2193ea73210503fa3352",
+    "api_permission_id": "68be4d6e95fe0273f8fa3350"
+  },
+  {
+    "_id": "68be4e18fb0aa983c5fa3351",
+    "role_id": "68be2193ea73210503fa3352",
+    "api_permission_id": "68be4d6e95fe0273f8fa3351"
+  },
+  {
+    "_id": "68be4e18fb0aa983c5fa3352",
+    "role_id": "68be2193ea73210503fa3352",
+    "api_permission_id": "68be4d6e95fe0273f8fa3352"
+  },
+  {
+    "_id": "68be4e18fb0aa983c5fa3353",
+    "role_id": "68be2193ea73210503fa3352",
+    "api_permission_id": "68be4d6e95fe0273f8fa3353"
+  },
+  {
+    "_id": "68be4e18fb0aa983c5fa3354",
+    "role_id": "68be2193ea73210503fa3352",
+    "api_permission_id": "68be4d6e95fe0273f8fa3354"
+  },
+  {
+    "_id": "68be4e18fb0aa983c5fa3355",
+    "role_id": "68be2193ea73210503fa3352",
+    "api_permission_id": "68be4d6e95fe0273f8fa3355"
+  },
+  {
+    "_id": "68be4e18fb0aa983c5fa3356",
+    "role_id": "68be2193ea73210503fa3352",
+    "api_permission_id": "68be4d6e95fe0273f8fa3356"
+  },
+  {
+    "_id": "68be4e18fb0aa983c5fa3357",
+    "role_id": "68be2193ea73210503fa3352",
+    "api_permission_id": "68be4d6e95fe0273f8fa3357"
+  },
+  {
+    "_id": "68be4e18fb0aa983c5fa3358",
+    "role_id": "68be2193ea73210503fa3352",
+    "api_permission_id": "68be4d6e95fe0273f8fa3358"
+  },
+  {
+    "_id": "68be4e18fb0aa983c5fa3359",
+    "role_id": "68be2193ea73210503fa3352",
+    "api_permission_id": "68be4d6e95fe0273f8fa3359"
+  },
+  {
+    "_id": "68be4e18fb0aa983c5fa335a",
+    "role_id": "68be2193ea73210503fa3352",
+    "api_permission_id": "68be4d6e95fe0273f8fa335a"
+  },
+  {
+    "_id": "68be4e18fb0aa983c5fa335b",
+    "role_id": "68be2193ea73210503fa3352",
+    "api_permission_id": "68be4d6e95fe0273f8fa335b"
+  },
+  {
+    "_id": "68be4e507d26134afcfa3350",
+    "role_id": "68be21a51e962b2b59fa3352",
+    "api_permission_id": "68be4d6e95fe0273f8fa3350"
+  },
+  {
+    "_id": "68be4e507d26134afcfa3351",
+    "role_id": "68be21a51e962b2b59fa3352",
+    "api_permission_id": "68be4d6e95fe0273f8fa3351"
+  },
+  {
+    "_id": "68be4e507d26134afcfa3352",
+    "role_id": "68be21a51e962b2b59fa3352",
+    "api_permission_id": "68be4d6e95fe0273f8fa3352"
+  },
+  {
+    "_id": "68be4e507d26134afcfa3353",
+    "role_id": "68be21a51e962b2b59fa3352",
+    "api_permission_id": "68be4d6e95fe0273f8fa3357"
+  },
+  {
+    "_id": "68be4e507d26134afcfa3354",
+    "role_id": "68be21a51e962b2b59fa3352",
+    "api_permission_id": "68be4d6e95fe0273f8fa3358"
+  },
+  {
+    "_id": "68be4e507d26134afcfa3355",
+    "role_id": "68be21a51e962b2b59fa3352",
+    "api_permission_id": "68be4d6e95fe0273f8fa3359"
+  },
+  {
+    "_id": "68be4e507d26134afcfa3356",
+    "role_id": "68be21a51e962b2b59fa3352",
+    "api_permission_id": "68be4d6e95fe0273f8fa335a"
+  },
+  {
+    "_id": "68be4e560359a1a98dfa3350",
+    "role_id": "68be21b0a9b5a7c8c0fa3352",
+    "api_permission_id": "68be4d6e95fe0273f8fa3350"
+  },
+  {
+    "_id": "68be4e560359a1a98dfa3351",
+    "role_id": "68be21b0a9b5a7c8c0fa3352",
+    "api_permission_id": "68be4d6e95fe0273f8fa3351"
+  },
+  {
+    "_id": "68be4e560359a1a98dfa3352",
+    "role_id": "68be21b0a9b5a7c8c0fa3352",
+    "api_permission_id": "68be4d6e95fe0273f8fa3352"
+  },
+  {
+    "_id": "68be4e560359a1a98dfa3353",
+    "role_id": "68be21b0a9b5a7c8c0fa3352",
+    "api_permission_id": "68be4d6e95fe0273f8fa3357"
+  },
+  {
+    "_id": "68bf883b1dcd9820e073fb82",
+    "role_id": "68be2193ea73210503fa3351",
+    "api_permission_id": "68befc028ac2dd2d94c6eb1e"
+  },
+  {
+    "_id": "68bf883b1dcd9820e073fb85",
+    "api_permission_id": "68befc028ac2dd2d94c6eb1f",
+    "role_id": "68be2193ea73210503fa3351"
+  },
+  {
+    "_id": "68bf972a1dcd9820e0740416",
+    "api_permission_id": "68befc028ac2dd2d94c6eb21",
+    "role_id": "68bf964f5347ed86d01c9ed2"
+  },
+  {
+    "_id": "68bf972a1dcd9820e0740418",
+    "api_permission_id": "68befc028ac2dd2d94c6eb22",
+    "role_id": "68bf964f5347ed86d01c9ed2"
+  },
+  {
+    "_id": "68c2b77f40b4afecd32e6eac",
+    "api_permission_id": "68befc028ac2dd2d94c6eb21",
+    "role_id": "68c267a5a577d325bc1f58d7"
+  },
+  {
+    "_id": "68c2b77f40b4afecd32e6eae",
+    "api_permission_id": "68befc028ac2dd2d94c6eb22",
+    "role_id": "68c267a5a577d325bc1f58d7"
+  },
+  {
+    "_id": "68c2b77f40b4afecd32e6eb0",
+    "api_permission_id": "68befc028ac2dd2d94c6eb1d",
+    "role_id": "68c267a5a577d325bc1f58d7"
+  },
+  {
+    "_id": "68e58fa55960cdcdf688b99f",
+    "api_permission_id": "68e54e4eca4e6f1a0352192b",
+    "role_id": "68be2193ea73210503fa3350"
+  },
+  {
+    "_id": "68e58fa55960cdcdf688b9a1",
+    "api_permission_id": "68e54e4eca4e6f1a0352192d",
+    "role_id": "68be2193ea73210503fa3350"
+  },
+  {
+    "_id": "68e58fa55960cdcdf688b9a3",
+    "api_permission_id": "68e54e4eca4e6f1a0352192a",
+    "role_id": "68be2193ea73210503fa3350"
+  },
+  {
+    "_id": "68e58fa55960cdcdf688b9a5",
+    "api_permission_id": "68e54e4eca4e6f1a0352192c",
+    "role_id": "68be2193ea73210503fa3350"
+  },
+  {
+    "_id": "68e58fa55960cdcdf688b9b7",
+    "api_permission_id": "68e54de2672a391e31131d24",
+    "role_id": "68be2193ea73210503fa3350"
+  },
+  {
+    "_id": "68e58fa55960cdcdf688b9b9",
+    "api_permission_id": "68e54de2672a391e31131d26",
+    "role_id": "68be2193ea73210503fa3350"
+  },
+  {
+    "_id": "68e58fa55960cdcdf688b9bb",
+    "api_permission_id": "68e54de2672a391e31131d23",
+    "role_id": "68be2193ea73210503fa3350"
+  },
+  {
+    "_id": "68e58fa55960cdcdf688b9bd",
+    "api_permission_id": "68e54de2672a391e31131d25",
+    "role_id": "68be2193ea73210503fa3350"
+  },
+  {
+    "_id": "68ebe368ce02a29ccfe282e6",
+    "role_id": "68be2193ea73210503fa3351",
+    "api_permission_id": "68ebc1c0db9a8be0c5c5cd09"
+  },
+  {
+    "_id": "68ebe368ce02a29ccfe282eb",
+    "role_id": "68be2193ea73210503fa3351",
+    "api_permission_id": "68ebc24adb9a8be0c5c5cd0c"
+  },
+  {
+    "_id": "68fa11d696f6d60f53d6b1da",
+    "role_id": "68f52abfb9fccf467eadce56",
+    "api_permission_id": "68e9bed9adecb3f099c64c83",
+    "created_at": "2025-10-23T11:30:30.639Z"
+  },
+  {
+    "_id": "68fa11d696f6d60f53d6b1db",
+    "role_id": "68c267a5a577d325bc1f58d7",
+    "api_permission_id": "68e9bed9adecb3f099c64c83",
+    "created_at": "2025-10-23T11:30:30.650Z"
+  },
+  {
+    "_id": "68fa8c0de9b0f1fd7dfe57c1",
+    "role_id": "68f52b1bb9fccf467eadcecd",
+    "api_permission_id": "68e54e4eca4e6f1a0352192a"
+  },
+  {
+    "_id": "68fa8c32e9b0f1fd7dfe581e",
+    "role_id": "68be2193ea73210503fa3352",
+    "api_permission_id": "68e54e4eca4e6f1a0352192a"
+  },
+  {
+    "_id": "68fa8c32e9b0f1fd7dfe5820",
+    "role_id": "68be2193ea73210503fa3352",
+    "api_permission_id": "68e5491267236560aa29e73a"
+  },
+  {
+    "_id": "68fa8c32e9b0f1fd7dfe5828",
+    "role_id": "68be2193ea73210503fa3352",
+    "api_permission_id": "68c995e8a5bd48b03e5b6160"
+  },
+  {
+    "_id": "68fa8d09e9b0f1fd7dfe591a",
+    "role_id": "68f8351d90d7eaccb519fd45",
+    "api_permission_id": "68befc028ac2dd2d94c6eb21"
+  },
+  {
+    "_id": "68fa8d09e9b0f1fd7dfe591c",
+    "role_id": "68f8351d90d7eaccb519fd45",
+    "api_permission_id": "68befc028ac2dd2d94c6eb22"
+  },
+  {
+    "_id": "68fa8d09e9b0f1fd7dfe591e",
+    "role_id": "68f8351d90d7eaccb519fd45",
+    "api_permission_id": "68befc028ac2dd2d94c6eb1d"
+  },
+  {
+    "_id": "68fa8d09e9b0f1fd7dfe5920",
+    "role_id": "68f8351d90d7eaccb519fd45",
+    "api_permission_id": "68c9a115c262d0c226b73483"
+  },
+  {
+    "_id": "68fa8d09e9b0f1fd7dfe5922",
+    "role_id": "68f8351d90d7eaccb519fd45",
+    "api_permission_id": "68e5491267236560aa29e73a"
+  },
+  {
+    "_id": "68fa8d09e9b0f1fd7dfe5924",
+    "role_id": "68f8351d90d7eaccb519fd45",
+    "api_permission_id": "68ebc224db9a8be0c5c5cd0a"
+  },
+  {
+    "_id": "68fa8d09e9b0f1fd7dfe5926",
+    "role_id": "68f8351d90d7eaccb519fd45",
+    "api_permission_id": "68e54e9015e3cc3215edc72e"
+  },
+  {
+    "_id": "68fa8d09e9b0f1fd7dfe5928",
+    "role_id": "68f8351d90d7eaccb519fd45",
+    "api_permission_id": "68f89e9f018f5630badbf3d5"
+  },
+  {
+    "_id": "68fa8d09e9b0f1fd7dfe592a",
+    "role_id": "68f8351d90d7eaccb519fd45",
+    "api_permission_id": "68eceab08534a3f27202e6ef"
+  },
+  {
+    "_id": "68fa8d09e9b0f1fd7dfe592c",
+    "role_id": "68f8351d90d7eaccb519fd45",
+    "api_permission_id": "68e80e23828c12a36bced650"
+  },
+  {
+    "_id": "68fa8d09e9b0f1fd7dfe592e",
+    "role_id": "68f8351d90d7eaccb519fd45",
+    "api_permission_id": "68e9bed9adecb3f099c64c83"
+  },
+  {
+    "_id": "68fa8d09e9b0f1fd7dfe5930",
+    "role_id": "68f8351d90d7eaccb519fd45",
+    "api_permission_id": "68c995e8a5bd48b03e5b6160"
+  },
+  {
+    "_id": "68fa8d09e9b0f1fd7dfe5932",
+    "role_id": "68f8351d90d7eaccb519fd45",
+    "api_permission_id": "68befc028ac2dd2d94c6eb13"
+  },
+  {
+    "_id": "68fa8d4de9b0f1fd7dfe598c",
+    "role_id": "68f52ae8b9fccf467eadce90",
+    "api_permission_id": "68befc028ac2dd2d94c6eb21"
+  },
+  {
+    "_id": "68fa8d4de9b0f1fd7dfe598e",
+    "role_id": "68f52ae8b9fccf467eadce90",
+    "api_permission_id": "68befc028ac2dd2d94c6eb22"
+  },
+  {
+    "_id": "68fa8d4de9b0f1fd7dfe5990",
+    "role_id": "68f52ae8b9fccf467eadce90",
+    "api_permission_id": "68befc028ac2dd2d94c6eb1d"
+  },
+  {
+    "_id": "68fa8d4de9b0f1fd7dfe5992",
+    "role_id": "68f52ae8b9fccf467eadce90",
+    "api_permission_id": "68c9a115c262d0c226b73483"
+  },
+  {
+    "_id": "68fa8d4de9b0f1fd7dfe5994",
+    "role_id": "68f52ae8b9fccf467eadce90",
+    "api_permission_id": "68e5491267236560aa29e73a"
+  },
+  {
+    "_id": "68fa8d4de9b0f1fd7dfe5996",
+    "role_id": "68f52ae8b9fccf467eadce90",
+    "api_permission_id": "68ebc224db9a8be0c5c5cd0a"
+  },
+  {
+    "_id": "68fa8d4de9b0f1fd7dfe5998",
+    "role_id": "68f52ae8b9fccf467eadce90",
+    "api_permission_id": "68e54e9015e3cc3215edc72e"
+  },
+  {
+    "_id": "68fa8d4de9b0f1fd7dfe599a",
+    "role_id": "68f52ae8b9fccf467eadce90",
+    "api_permission_id": "68f89e9f018f5630badbf3d5"
+  },
+  {
+    "_id": "68fa8d4de9b0f1fd7dfe599c",
+    "role_id": "68f52ae8b9fccf467eadce90",
+    "api_permission_id": "68eceab08534a3f27202e6ef"
+  },
+  {
+    "_id": "68fa8d4de9b0f1fd7dfe599e",
+    "role_id": "68f52ae8b9fccf467eadce90",
+    "api_permission_id": "68e80e23828c12a36bced647"
+  },
+  {
+    "_id": "68fa8d4de9b0f1fd7dfe59a0",
+    "role_id": "68f52ae8b9fccf467eadce90",
+    "api_permission_id": "68e9bed9adecb3f099c64c83"
+  },
+  {
+    "_id": "68fa8d4de9b0f1fd7dfe59a2",
+    "role_id": "68f52ae8b9fccf467eadce90",
+    "api_permission_id": "68c995e8a5bd48b03e5b6160"
+  },
+  {
+    "_id": "68fa8ed5e9b0f1fd7dfe5aa1",
+    "role_id": "68f8352690d7eaccb519fd64",
+    "api_permission_id": "68befc028ac2dd2d94c6eb21"
+  },
+  {
+    "_id": "68fa8ed5e9b0f1fd7dfe5aa3",
+    "role_id": "68f8352690d7eaccb519fd64",
+    "api_permission_id": "68befc028ac2dd2d94c6eb22"
+  },
+  {
+    "_id": "68fa8ed5e9b0f1fd7dfe5aa5",
+    "role_id": "68f8352690d7eaccb519fd64",
+    "api_permission_id": "68befc028ac2dd2d94c6eb1d"
+  },
+  {
+    "_id": "68fa8ed5e9b0f1fd7dfe5aa7",
+    "role_id": "68f8352690d7eaccb519fd64",
+    "api_permission_id": "68c9a115c262d0c226b73483"
+  },
+  {
+    "_id": "68fa8ed5e9b0f1fd7dfe5aa9",
+    "role_id": "68f8352690d7eaccb519fd64",
+    "api_permission_id": "68e5491267236560aa29e73a"
+  },
+  {
+    "_id": "68fa8ed5e9b0f1fd7dfe5aab",
+    "role_id": "68f8352690d7eaccb519fd64",
+    "api_permission_id": "68ebc224db9a8be0c5c5cd0a"
+  },
+  {
+    "_id": "68fa8ed5e9b0f1fd7dfe5aad",
+    "role_id": "68f8352690d7eaccb519fd64",
+    "api_permission_id": "68e54e9015e3cc3215edc72e"
+  },
+  {
+    "_id": "68fa8ed5e9b0f1fd7dfe5aaf",
+    "role_id": "68f8352690d7eaccb519fd64",
+    "api_permission_id": "68f89e9f018f5630badbf3d5"
+  },
+  {
+    "_id": "68fa8ed5e9b0f1fd7dfe5ab1",
+    "role_id": "68f8352690d7eaccb519fd64",
+    "api_permission_id": "68eceab08534a3f27202e6ef"
+  },
+  {
+    "_id": "68fa8ed5e9b0f1fd7dfe5ab3",
+    "role_id": "68f8352690d7eaccb519fd64",
+    "api_permission_id": "68e80e23828c12a36bced647"
+  },
+  {
+    "_id": "68fa8ed5e9b0f1fd7dfe5ab5",
+    "role_id": "68f8352690d7eaccb519fd64",
+    "api_permission_id": "68e9bed9adecb3f099c64c83"
+  },
+  {
+    "_id": "68fa8f04e9b0f1fd7dfe5b04",
+    "api_permission_id": "68befc028ac2dd2d94c6eb21",
+    "role_id": "68f8353190d7eaccb519fd83"
+  },
+  {
+    "_id": "68fa8f04e9b0f1fd7dfe5b06",
+    "role_id": "68f8353190d7eaccb519fd83",
+    "api_permission_id": "68befc028ac2dd2d94c6eb22"
+  },
+  {
+    "_id": "68fa8f04e9b0f1fd7dfe5b08",
+    "api_permission_id": "68befc028ac2dd2d94c6eb1d",
+    "role_id": "68f8353190d7eaccb519fd83"
+  },
+  {
+    "_id": "68fa8f04e9b0f1fd7dfe5b0a",
+    "role_id": "68f8353190d7eaccb519fd83",
+    "api_permission_id": "68c9a115c262d0c226b73483"
+  },
+  {
+    "_id": "68fa8f04e9b0f1fd7dfe5b0c",
+    "api_permission_id": "68e5491267236560aa29e73a",
+    "role_id": "68f8353190d7eaccb519fd83"
+  },
+  {
+    "_id": "68fa8f04e9b0f1fd7dfe5b0e",
+    "role_id": "68f8353190d7eaccb519fd83",
+    "api_permission_id": "68ebc224db9a8be0c5c5cd0a"
+  },
+  {
+    "_id": "68fa8f04e9b0f1fd7dfe5b10",
+    "api_permission_id": "68e54e9015e3cc3215edc72e",
+    "role_id": "68f8353190d7eaccb519fd83"
+  },
+  {
+    "_id": "68fa8f04e9b0f1fd7dfe5b12",
+    "role_id": "68f8353190d7eaccb519fd83",
+    "api_permission_id": "68f89e9f018f5630badbf3d5"
+  },
+  {
+    "_id": "68fa8f04e9b0f1fd7dfe5b14",
+    "api_permission_id": "68eceab08534a3f27202e6ef",
+    "role_id": "68f8353190d7eaccb519fd83"
+  },
+  {
+    "_id": "68fa8f04e9b0f1fd7dfe5b16",
+    "role_id": "68f8353190d7eaccb519fd83",
+    "api_permission_id": "68e80e23828c12a36bced647"
+  },
+  {
+    "_id": "68fa8f04e9b0f1fd7dfe5b18",
+    "api_permission_id": "68e9bed9adecb3f099c64c83",
+    "role_id": "68f8353190d7eaccb519fd83"
+  },
+  {
+    "_id": "68fa8f04e9b0f1fd7dfe5b1a",
+    "role_id": "68f8353190d7eaccb519fd83",
+    "api_permission_id": "68c995e8a5bd48b03e5b6160"
+  },
+  {
+    "_id": "68fa8f04e9b0f1fd7dfe5b1c",
+    "api_permission_id": "68befc028ac2dd2d94c6eb13",
+    "role_id": "68f8353190d7eaccb519fd83"
+  },
+  {
+    "_id": "68fa8f40e9b0f1fd7dfe5bc4",
+    "role_id": "68f8353890d7eaccb519fda2",
+    "api_permission_id": "68befc028ac2dd2d94c6eb21"
+  },
+  {
+    "_id": "68fa8f40e9b0f1fd7dfe5bc6",
+    "role_id": "68f8353890d7eaccb519fda2",
+    "api_permission_id": "68befc028ac2dd2d94c6eb22"
+  },
+  {
+    "_id": "68fa8f40e9b0f1fd7dfe5bc8",
+    "role_id": "68f8353890d7eaccb519fda2",
+    "api_permission_id": "68befc028ac2dd2d94c6eb1d"
+  },
+  {
+    "_id": "68fa8f40e9b0f1fd7dfe5bca",
+    "role_id": "68f8353890d7eaccb519fda2",
+    "api_permission_id": "68c9a115c262d0c226b73483"
+  },
+  {
+    "_id": "68fa8f40e9b0f1fd7dfe5bcc",
+    "role_id": "68f8353890d7eaccb519fda2",
+    "api_permission_id": "68e5491267236560aa29e73a"
+  },
+  {
+    "_id": "68fa8f40e9b0f1fd7dfe5bce",
+    "role_id": "68f8353890d7eaccb519fda2",
+    "api_permission_id": "68ebc224db9a8be0c5c5cd0a"
+  },
+  {
+    "_id": "68fa8f40e9b0f1fd7dfe5bd0",
+    "role_id": "68f8353890d7eaccb519fda2",
+    "api_permission_id": "68e54e9015e3cc3215edc72e"
+  },
+  {
+    "_id": "68fa8f40e9b0f1fd7dfe5bd2",
+    "role_id": "68f8353890d7eaccb519fda2",
+    "api_permission_id": "68f89e9f018f5630badbf3d5"
+  },
+  {
+    "_id": "68fa8f40e9b0f1fd7dfe5bd4",
+    "role_id": "68f8353890d7eaccb519fda2",
+    "api_permission_id": "68eceab08534a3f27202e6ef"
+  },
+  {
+    "_id": "68fa8f40e9b0f1fd7dfe5bd6",
+    "role_id": "68f8353890d7eaccb519fda2",
+    "api_permission_id": "68e80e23828c12a36bced647"
+  },
+  {
+    "_id": "68fa8f40e9b0f1fd7dfe5bd8",
+    "role_id": "68f8353890d7eaccb519fda2",
+    "api_permission_id": "68e9bed9adecb3f099c64c83"
+  },
+  {
+    "_id": "68fa8f40e9b0f1fd7dfe5bda",
+    "role_id": "68f8353890d7eaccb519fda2",
+    "api_permission_id": "68c995e8a5bd48b03e5b6160"
+  },
+  {
+    "_id": "68fa8f60e9b0f1fd7dfe5c21",
+    "api_permission_id": "68befc028ac2dd2d94c6eb21",
+    "role_id": "68f52a9fb9fccf467eadce3a"
+  },
+  {
+    "_id": "68fa8f60e9b0f1fd7dfe5c23",
+    "role_id": "68f52a9fb9fccf467eadce3a",
+    "api_permission_id": "68befc028ac2dd2d94c6eb22"
+  },
+  {
+    "_id": "68fa8f60e9b0f1fd7dfe5c25",
+    "api_permission_id": "68befc028ac2dd2d94c6eb1d",
+    "role_id": "68f52a9fb9fccf467eadce3a"
+  },
+  {
+    "_id": "68fa8f60e9b0f1fd7dfe5c27",
+    "role_id": "68f52a9fb9fccf467eadce3a",
+    "api_permission_id": "68c9a115c262d0c226b73483"
+  },
+  {
+    "_id": "68fa8f60e9b0f1fd7dfe5c29",
+    "api_permission_id": "68e5491267236560aa29e73a",
+    "role_id": "68f52a9fb9fccf467eadce3a"
+  },
+  {
+    "_id": "68fa8f60e9b0f1fd7dfe5c2b",
+    "role_id": "68f52a9fb9fccf467eadce3a",
+    "api_permission_id": "68ebc224db9a8be0c5c5cd0a"
+  },
+  {
+    "_id": "68fa8f60e9b0f1fd7dfe5c2d",
+    "api_permission_id": "68e54e9015e3cc3215edc72e",
+    "role_id": "68f52a9fb9fccf467eadce3a"
+  },
+  {
+    "_id": "68fa8f60e9b0f1fd7dfe5c31",
+    "api_permission_id": "68eceab08534a3f27202e6ef",
+    "role_id": "68f52a9fb9fccf467eadce3a"
+  },
+  {
+    "_id": "68fa8f60e9b0f1fd7dfe5c35",
+    "api_permission_id": "68e9bed9adecb3f099c64c83",
+    "role_id": "68f52a9fb9fccf467eadce3a"
+  },
+  {
+    "_id": "68fa8f60e9b0f1fd7dfe5c37",
+    "role_id": "68f52a9fb9fccf467eadce3a",
+    "api_permission_id": "68c995e8a5bd48b03e5b6160"
+  },
+  {
+    "_id": "68fa9045e9b0f1fd7dfe5d5d",
+    "role_id": "68f8354290d7eaccb519fdc1",
+    "api_permission_id": "68befc028ac2dd2d94c6eb21"
+  },
+  {
+    "_id": "68fa9045e9b0f1fd7dfe5d5f",
+    "role_id": "68f8354290d7eaccb519fdc1",
+    "api_permission_id": "68befc028ac2dd2d94c6eb22"
+  },
+  {
+    "_id": "68fa9045e9b0f1fd7dfe5d61",
+    "role_id": "68f8354290d7eaccb519fdc1",
+    "api_permission_id": "68befc028ac2dd2d94c6eb1d"
+  },
+  {
+    "_id": "68fa9045e9b0f1fd7dfe5d63",
+    "role_id": "68f8354290d7eaccb519fdc1",
+    "api_permission_id": "68c9a115c262d0c226b73483"
+  },
+  {
+    "_id": "68fa9045e9b0f1fd7dfe5d65",
+    "role_id": "68f8354290d7eaccb519fdc1",
+    "api_permission_id": "68e5491267236560aa29e73a"
+  },
+  {
+    "_id": "68fa9045e9b0f1fd7dfe5d67",
+    "role_id": "68f8354290d7eaccb519fdc1",
+    "api_permission_id": "68ebc224db9a8be0c5c5cd0a"
+  },
+  {
+    "_id": "68fa9045e9b0f1fd7dfe5d69",
+    "role_id": "68f8354290d7eaccb519fdc1",
+    "api_permission_id": "68e54e9015e3cc3215edc72e"
+  },
+  {
+    "_id": "68fa9045e9b0f1fd7dfe5d6b",
+    "role_id": "68f8354290d7eaccb519fdc1",
+    "api_permission_id": "68f89e9f018f5630badbf3d5"
+  },
+  {
+    "_id": "68fa9045e9b0f1fd7dfe5d6d",
+    "role_id": "68f8354290d7eaccb519fdc1",
+    "api_permission_id": "68eceab08534a3f27202e6ef"
+  },
+  {
+    "_id": "68fa9045e9b0f1fd7dfe5d6f",
+    "role_id": "68f8354290d7eaccb519fdc1",
+    "api_permission_id": "68e80e23828c12a36bced647"
+  },
+  {
+    "_id": "68fa9045e9b0f1fd7dfe5d71",
+    "role_id": "68f8354290d7eaccb519fdc1",
+    "api_permission_id": "68e9bed9adecb3f099c64c83"
+  },
+  {
+    "_id": "68fa9045e9b0f1fd7dfe5d73",
+    "role_id": "68f8354290d7eaccb519fdc1",
+    "api_permission_id": "68c995e8a5bd48b03e5b6160"
+  },
+  {
+    "_id": "68fa90b3e9b0f1fd7dfe5de2",
+    "role_id": "68f52abfb9fccf467eadce56",
+    "api_permission_id": "68befc028ac2dd2d94c6eb21"
+  },
+  {
+    "_id": "68fa90b3e9b0f1fd7dfe5de4",
+    "role_id": "68f52abfb9fccf467eadce56",
+    "api_permission_id": "68befc028ac2dd2d94c6eb22"
+  },
+  {
+    "_id": "68fa90b3e9b0f1fd7dfe5de6",
+    "role_id": "68f52abfb9fccf467eadce56",
+    "api_permission_id": "68befc028ac2dd2d94c6eb1d"
+  },
+  {
+    "_id": "68fa90b3e9b0f1fd7dfe5de8",
+    "role_id": "68f52abfb9fccf467eadce56",
+    "api_permission_id": "68c9a115c262d0c226b73483"
+  },
+  {
+    "_id": "68fa90b3e9b0f1fd7dfe5dea",
+    "role_id": "68f52abfb9fccf467eadce56",
+    "api_permission_id": "68e5491267236560aa29e73a"
+  },
+  {
+    "_id": "68fa90b3e9b0f1fd7dfe5dec",
+    "role_id": "68f52abfb9fccf467eadce56",
+    "api_permission_id": "68ebc224db9a8be0c5c5cd0a"
+  },
+  {
+    "_id": "68fa90b3e9b0f1fd7dfe5dee",
+    "role_id": "68f52abfb9fccf467eadce56",
+    "api_permission_id": "68e54e9015e3cc3215edc72e"
+  },
+  {
+    "_id": "68fa90b3e9b0f1fd7dfe5df0",
+    "role_id": "68f52abfb9fccf467eadce56",
+    "api_permission_id": "68f89e9f018f5630badbf3d5"
+  },
+  {
+    "_id": "68fa90b3e9b0f1fd7dfe5df2",
+    "role_id": "68f52abfb9fccf467eadce56",
+    "api_permission_id": "68eceab08534a3f27202e6ef"
+  },
+  {
+    "_id": "68fa90b3e9b0f1fd7dfe5df4",
+    "role_id": "68f52abfb9fccf467eadce56",
+    "api_permission_id": "68e80e23828c12a36bced647"
+  },
+  {
+    "_id": "68fa90b3e9b0f1fd7dfe5df7",
+    "role_id": "68f52abfb9fccf467eadce56",
+    "api_permission_id": "68c995e8a5bd48b03e5b6160"
+  },
+  {
+    "_id": "68fa912ae9b0f1fd7dfe5ed3",
+    "role_id": "68c267a5a577d325bc1f58d7",
+    "api_permission_id": "68c9a115c262d0c226b73483"
+  },
+  {
+    "_id": "68fa912ae9b0f1fd7dfe5ed5",
+    "role_id": "68c267a5a577d325bc1f58d7",
+    "api_permission_id": "68e5491267236560aa29e73a"
+  },
+  {
+    "_id": "68fa912ae9b0f1fd7dfe5ed7",
+    "role_id": "68c267a5a577d325bc1f58d7",
+    "api_permission_id": "68ebc224db9a8be0c5c5cd0a"
+  },
+  {
+    "_id": "68fa912ae9b0f1fd7dfe5ed9",
+    "role_id": "68c267a5a577d325bc1f58d7",
+    "api_permission_id": "68e54e9015e3cc3215edc72e"
+  },
+  {
+    "_id": "68fa912ae9b0f1fd7dfe5edb",
+    "role_id": "68c267a5a577d325bc1f58d7",
+    "api_permission_id": "68f89e9f018f5630badbf3d5"
+  },
+  {
+    "_id": "68fa912ae9b0f1fd7dfe5edd",
+    "role_id": "68c267a5a577d325bc1f58d7",
+    "api_permission_id": "68eceab08534a3f27202e6ef"
+  },
+  {
+    "_id": "68fa912ae9b0f1fd7dfe5edf",
+    "role_id": "68c267a5a577d325bc1f58d7",
+    "api_permission_id": "68e80e23828c12a36bced647"
+  },
+  {
+    "_id": "68fa912ae9b0f1fd7dfe5ee2",
+    "role_id": "68c267a5a577d325bc1f58d7",
+    "api_permission_id": "68c995e8a5bd48b03e5b6160"
+  },
+  {
+    "_id": "69065edc199ac3a8594c6e41",
+    "api_permission_id": "68befc028ac2dd2d94c6eb17",
+    "role_id": "68f52ae8b9fccf467eadce90"
+  },
+  {
+    "_id": "6907cc8aa0fe742d3e04fce4",
+    "role_id": "690750354bdacd1e192d1ab3",
+    "api_permission_id": "6907cc8aa0fe742d3e04fcdd",
+    "__v": 0
+  },
+  {
+    "_id": "6907cc8ba0fe742d3e04fce7",
+    "role_id": "690750354bdacd1e192d1ab3",
+    "api_permission_id": "6907cc8aa0fe742d3e04fce0",
+    "__v": 0
+  },
+  {
+    "_id": "6907cc8ba0fe742d3e04fced",
+    "role_id": "68f52ae8b9fccf467eadce90",
+    "api_permission_id": "6907cc8aa0fe742d3e04fcdd",
+    "__v": 0
+  },
+  {
+    "_id": "6907cc8ba0fe742d3e04fcf0",
+    "role_id": "68f52ae8b9fccf467eadce90",
+    "api_permission_id": "6907cc8aa0fe742d3e04fce0",
+    "__v": 0
+  },
+  {
+    "_id": "6908432b660c209c8a62c7af",
+    "api_permission_id": "68befc028ac2dd2d94c6eb21",
+    "role_id": "690750354bdacd1e192d1ab3"
+  },
+  {
+    "_id": "6908432b660c209c8a62c7b1",
+    "api_permission_id": "68befc028ac2dd2d94c6eb22",
+    "role_id": "690750354bdacd1e192d1ab3"
+  },
+  {
+    "_id": "6908432b660c209c8a62c7b3",
+    "api_permission_id": "68befc028ac2dd2d94c6eb1d",
+    "role_id": "690750354bdacd1e192d1ab3"
+  },
+  {
+    "_id": "6908432b660c209c8a62c7b5",
+    "api_permission_id": "68c9a115c262d0c226b73483",
+    "role_id": "690750354bdacd1e192d1ab3"
+  },
+  {
+    "_id": "6908432b660c209c8a62c7b7",
+    "api_permission_id": "68e5491267236560aa29e73a",
+    "role_id": "690750354bdacd1e192d1ab3"
+  },
+  {
+    "_id": "6908432b660c209c8a62c7b9",
+    "api_permission_id": "68e54e9015e3cc3215edc72e",
+    "role_id": "690750354bdacd1e192d1ab3"
+  },
+  {
+    "_id": "6908432b660c209c8a62c7c1",
+    "api_permission_id": "690631100698ed862c353af3",
+    "role_id": "690750354bdacd1e192d1ab3"
+  },
+  {
+    "_id": "6908432b660c209c8a62c7c3",
+    "api_permission_id": "690631100698ed862c353b05",
+    "role_id": "690750354bdacd1e192d1ab3"
+  },
+  {
+    "_id": "6908432b660c209c8a62c7c5",
+    "api_permission_id": "68eceab08534a3f27202e6ef",
+    "role_id": "690750354bdacd1e192d1ab3"
+  },
+  {
+    "_id": "6908432b660c209c8a62c7c7",
+    "api_permission_id": "68befc028ac2dd2d94c6eb17",
+    "role_id": "690750354bdacd1e192d1ab3"
+  },
+  {
+    "_id": "6908432b660c209c8a62c7c9",
+    "api_permission_id": "68e9bed9adecb3f099c64c83",
+    "role_id": "690750354bdacd1e192d1ab3"
+  },
+  {
+    "_id": "6908432b660c209c8a62c7cd",
+    "api_permission_id": "68befc028ac2dd2d94c6eb13",
+    "role_id": "690750354bdacd1e192d1ab3"
+  },
+  {
+    "_id": "690848e4c6f748885d4960e2",
+    "role_id": "690750354bdacd1e192d1ab3",
+    "api_permission_id": "68e80e23828c12a36bced647",
+    "__v": 0
+  },
+  {
+    "_id": "690baec6790ae717cc5cfe33",
+    "api_permission_id": "69062c885ba4817ec9e03a55",
+    "role_id": "68be2193ea73210503fa3352"
+  },
+  {
+    "_id": "690baec6790ae717cc5cfe37",
+    "api_permission_id": "68befc028ac2dd2d94c6eb17",
+    "role_id": "68be2193ea73210503fa3352"
+  },
+  {
+    "_id": "690c3f72790ae717cc5d24fa",
+    "role_id": "68be2193ea73210503fa3352",
+    "api_permission_id": "68e54e4eca4e6f1a0352192b"
+  },
+  {
+    "_id": "690d2944ea51f0b4e03098a7",
+    "role_id": "690750354bdacd1e192d1ab3",
+    "api_permission_id": "69062c885ba4817ec9e03a51"
+  },
+  {
+    "_id": "690d2944ea51f0b4e03098a8",
+    "role_id": "690750354bdacd1e192d1ab3",
+    "api_permission_id": "69062c885ba4817ec9e03a53"
+  }
+]

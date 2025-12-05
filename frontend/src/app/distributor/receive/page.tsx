@@ -31,23 +31,28 @@ import { format } from "date-fns";
 
 interface ChalanItem {
   sku: string;
-  qty_delivered: number;
+  qty_ctn: number;
+  qty_pcs: number;
 }
 
 interface Chalan {
   _id: string;
-  chalan_number: string;
-  load_sheet_number: string;
-  delivery_date: string;
+  chalan_no: string;
+  load_sheet_id?: {
+    load_sheet_number?: string;
+  };
+  chalan_date: string;
+  delivery_date?: string;
   vehicle_no: string;
   driver_name: string;
   depot_id: {
-    facility_name: string;
+    _id: string;
+    facility_name?: string;
   };
   items: ChalanItem[];
-  total_qty_delivered: number;
+  total_qty_ctn: number;
+  total_qty_pcs: number;
   status: string;
-  receipt_status: string;
 }
 
 interface PaginationData {
@@ -112,13 +117,18 @@ export default function ReceiveChalanListPage() {
         `/distributor/chalans/receive-list?${params.toString()}`
       );
 
-      if (response.data.success) {
-        setChalans(response.data.data.chalans);
-        setPagination(response.data.data.pagination);
+      console.log("Chalans response:", response.data);
+
+      // Response structure: response.data = { success: true, data: { chalans: [...], pagination: {...} } }
+      if (response.data.success && response.data.data) {
+        setChalans(response.data.data.chalans || []);
+        setPagination(response.data.data.pagination || pagination);
         setError("");
+      } else {
+        setError("Failed to fetch chalans");
       }
     } catch (err: any) {
-      setError(err.response?.data?.message || "Failed to fetch chalans");
+      setError(err.response?.data?.message || err.message || "Failed to fetch chalans");
       console.error("Fetch chalans error:", err);
     } finally {
       setLoading(false);
@@ -143,7 +153,7 @@ export default function ReceiveChalanListPage() {
   const getTotalItems = (items: ChalanItem[]) => items.length;
 
   const getTotalQty = (items: ChalanItem[]) =>
-    items.reduce((sum, item) => sum + parseFloat(item.qty_delivered.toString()), 0);
+    items.reduce((sum, item) => sum + parseFloat((item.qty_ctn || 0).toString()), 0);
 
   if (!user?.distributor_id && !loading) {
     return (
@@ -298,22 +308,24 @@ export default function ReceiveChalanListPage() {
                         <Stack spacing={1}>
                           <Box>
                             <Typography variant="h6" fontWeight="bold" color="primary">
-                              {chalan.chalan_number}
+                              {chalan.chalan_no}
                             </Typography>
                             <Typography variant="body2" color="text.secondary">
-                              Load Sheet: {chalan.load_sheet_number}
+                              Load Sheet: {chalan.load_sheet_id?.load_sheet_number || "N/A"}
                             </Typography>
                           </Box>
 
                           <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap>
+                            {chalan.delivery_date && (
+                              <Chip
+                                size="small"
+                                icon={<CalendarToday />}
+                                label={format(new Date(chalan.delivery_date), "dd MMM yyyy")}
+                              />
+                            )}
                             <Chip
                               size="small"
-                              icon={<CalendarToday />}
-                              label={format(new Date(chalan.delivery_date), "dd MMM yyyy")}
-                            />
-                            <Chip
-                              size="small"
-                              label={`From: ${chalan.depot_id.facility_name}`}
+                              label={`From: ${chalan.depot_id?.facility_name || "N/A"}`}
                               variant="outlined"
                             />
                           </Stack>

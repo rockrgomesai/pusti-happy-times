@@ -109,6 +109,20 @@ const demandOrderItemSchema = new mongoose.Schema({
     },
   },
 
+  // Delivery tracking - tracks actual received quantities
+  delivered_qty: {
+    type: mongoose.Schema.Types.Decimal128,
+    default: 0,
+    get: (v) => (v ? parseFloat(v.toString()) : 0),
+  },
+  undelivered_qty: {
+    type: mongoose.Schema.Types.Decimal128,
+    default: function () {
+      return this.quantity || 0;
+    },
+    get: (v) => (v ? parseFloat(v.toString()) : 0),
+  },
+
   // Pricing locked at order time (for tiered discounts)
   discount_locked: {
     type: Boolean,

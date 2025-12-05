@@ -50,9 +50,11 @@ interface ReceivedItemDetail {
 
 interface ReceivedChalan {
   _id: string;
-  chalan_number: string;
-  load_sheet_number: string;
-  delivery_date: string;
+  chalan_no: string;
+  load_sheet_id?: {
+    load_sheet_number?: string;
+  };
+  chalan_date: string;
   received_at: string;
   received_by: {
     name: string;
@@ -63,7 +65,8 @@ interface ReceivedChalan {
   vehicle_no: string;
   driver_name: string;
   received_items: ReceivedItemDetail[];
-  total_qty_delivered: number;
+  total_qty_ctn: number;
+  total_qty_pcs: number;
 }
 
 interface PaginationData {
@@ -281,10 +284,10 @@ export default function ReceivedHistoryPage() {
               return (
                 <Accordion
                   key={chalan._id}
-                  expanded={expandedChalan === chalan.chalan_number}
+                  expanded={expandedChalan === chalan.chalan_no}
                   onChange={() =>
                     setExpandedChalan(
-                      expandedChalan === chalan.chalan_number ? null : chalan.chalan_number
+                      expandedChalan === chalan.chalan_no ? null : chalan.chalan_no
                     )
                   }
                 >
@@ -294,7 +297,7 @@ export default function ReceivedHistoryPage() {
                       <Grid item xs={12} md={5}>
                         <Stack spacing={0.5}>
                           <Typography variant="h6" fontWeight="bold" color="primary">
-                            {chalan.chalan_number}
+                            {chalan.chalan_no}
                           </Typography>
                           <Typography variant="body2" color="text.secondary">
                             From: {chalan.depot_id.facility_name}
@@ -365,15 +368,15 @@ export default function ReceivedHistoryPage() {
                               Load Sheet
                             </Typography>
                             <Typography variant="body1" fontWeight="medium">
-                              {chalan.load_sheet_number}
+                              {chalan.load_sheet_id?.load_sheet_number || 'N/A'}
                             </Typography>
                           </Grid>
                           <Grid item xs={6} sm={3}>
                             <Typography variant="body2" color="text.secondary">
-                              Delivery Date
+                              Chalan Date
                             </Typography>
                             <Typography variant="body1" fontWeight="medium">
-                              {format(new Date(chalan.delivery_date), "dd MMM yyyy")}
+                              {format(new Date(chalan.chalan_date), "dd MMM yyyy")}
                             </Typography>
                           </Grid>
                           <Grid item xs={6} sm={3}>

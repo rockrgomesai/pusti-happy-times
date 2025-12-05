@@ -14,6 +14,7 @@ const {
 } = require("../../utils/transactionHelper");
 
 // GET /api/distributor/chalans/receive-list - Get Chalans ready to receive
+// NOTE: This route must be BEFORE the chalans sub-router mount
 router.get(
   "/chalans/receive-list",
   authenticate,
@@ -35,36 +36,43 @@ router.get(
 
       const distributorId = user.distributor_id._id;
 
-      // Build query
+      // Build query - show chalans that are Generated or Delivered and NOT yet received
       const query = {
         distributor_id: distributorId,
-        status: "Delivered",
-        receipt_status: "Pending",
+        status: { $in: ["Generated", "Delivered"], $ne: "Received" },
       };
 
       if (search) {
         query.$or = [
-          { chalan_number: { $regex: search, $options: "i" } },
-          { load_sheet_number: { $regex: search, $options: "i" } },
+          { chalan_no: { $regex: search, $options: "i" } },
         ];
       }
 
       if (date_from || date_to) {
-        query.delivery_date = {};
-        if (date_from) query.delivery_date.$gte = new Date(date_from);
-        if (date_to) query.delivery_date.$lte = new Date(date_to);
+        query.chalan_date = {};
+        if (date_from) query.chalan_date.$gte = new Date(date_from);
+        if (date_to) query.chalan_date.$lte = new Date(date_to);
       }
 
       // Get total count
       const total = await models.DeliveryChalan.countDocuments(query);
 
       // Get paginated chalans
-      const chalans = await models.DeliveryChalan.find(query)
-        .populate("created_by", "name")
-        .populate("depot_id", "facility_name")
-        .sort({ delivery_date: -1, created_at: -1 })
+      let chalans = await models.DeliveryChalan.find(query)
+        .populate({ path: "created_by", select: "name" })
+        .populate({ path: "depot_id", select: "facility_name" })
+        .populate({ path: "load_sheet_id", select: "load_sheet_number" })
+        .sort({ chalan_date: -1, created_at: -1 })
         .skip((page - 1) * limit)
-        .limit(parseInt(limit));
+        .limit(parseInt(limit))
+        .lean();
+
+      // Convert Decimal128 fields for each chalan
+      chalans = chalans.map(chalan => ({
+        ...chalan,
+        total_qty_ctn: chalan.total_qty_ctn ? parseFloat(chalan.total_qty_ctn.toString()) : 0,
+        total_qty_pcs: chalan.total_qty_pcs ? parseFloat(chalan.total_qty_pcs.toString()) : 0,
+      }));
 
       res.json({
         success: true,
@@ -111,21 +119,35 @@ router.get(
 
       const distributorId = user.distributor_id._id;
 
-      // Get chalan
+      // Get chalan - allow Generated or Delivered status
       const chalan = await models.DeliveryChalan.findOne({
         _id: id,
         distributor_id: distributorId,
-        status: "Delivered",
+        status: { $in: ["Generated", "Delivered"] },
       })
-        .populate("depot_id", "facility_name")
-        .populate("created_by", "name")
-        .populate("load_sheet_id", "load_sheet_number");
+        .populate({ path: "depot_id", select: "facility_name" })
+        .populate({ path: "created_by", select: "name" })
+        .populate({ path: "load_sheet_id", select: "load_sheet_number" })
+        .lean();
 
       if (!chalan) {
         return res.status(404).json({
           success: false,
           message: "Chalan not found or not eligible for receiving",
         });
+      }
+
+      // Convert Decimal128 fields to numbers since .lean() skips getters
+      if (chalan.items && Array.isArray(chalan.items)) {
+        chalan.items = chalan.items.map(item => ({
+          ...item,
+          qty_ctn: item.qty_ctn ? parseFloat(item.qty_ctn.toString()) : 0,
+          qty_pcs: item.qty_pcs ? parseFloat(item.qty_pcs.toString()) : 0,
+          received_qty_ctn: item.received_qty_ctn ? parseFloat(item.received_qty_ctn.toString()) : 0,
+          received_qty_pcs: item.received_qty_pcs ? parseFloat(item.received_qty_pcs.toString()) : 0,
+          damage_qty_ctn: item.damage_qty_ctn ? parseFloat(item.damage_qty_ctn.toString()) : 0,
+          damage_qty_pcs: item.damage_qty_pcs ? parseFloat(item.damage_qty_pcs.toString()) : 0,
+        }));
       }
 
       res.json({
@@ -183,12 +205,11 @@ router.post(
 
       const distributorId = user.distributor_id._id;
 
-      // Get chalan
+      // Get chalan - allow Generated or Delivered status
       const chalanQuery = models.DeliveryChalan.findOne({
         _id: id,
         distributor_id: distributorId,
-        status: "Delivered",
-        receipt_status: "Pending",
+        status: { $in: ["Generated", "Delivered"] },
       });
       const chalan = await addSessionToQuery(chalanQuery, session, useTransaction);
 
@@ -215,7 +236,7 @@ router.post(
           });
         }
 
-        const deliveredQty = parseFloat(chalanItem.qty_delivered);
+        const deliveredQty = parseFloat(chalanItem.qty_ctn?.toString() || chalanItem.qty_ctn || 0);
         const receivedQty = parseFloat(received_qty);
         const varianceQty = deliveredQty - receivedQty;
 
@@ -264,15 +285,27 @@ router.post(
       }
 
       // Update chalan with receipt information
-      chalan.receipt_status = "Received";
+      chalan.status = "Received";
       chalan.received_at = new Date();
       chalan.received_by = user_id;
-      chalan.received_items = processedItems;
       if (notes) {
-        chalan.notes = chalan.notes
-          ? `${chalan.notes}\n\nReceipt Notes: ${notes}`
+        chalan.remarks = chalan.remarks
+          ? `${chalan.remarks}\n\nReceipt Notes: ${notes}`
           : `Receipt Notes: ${notes}`;
       }
+      
+      // Update each item with received quantities
+      for (const processedItem of processedItems) {
+        const chalanItem = chalan.items.find(item => item.sku === processedItem.sku);
+        if (chalanItem) {
+          chalanItem.received_qty_ctn = processedItem.received_qty;
+          if (processedItem.variance_qty > 0) {
+            chalanItem.damage_qty_ctn = processedItem.variance_qty;
+            chalanItem.damage_reason = processedItem.variance_reason;
+          }
+        }
+      }
+      
       await chalan.save(getSaveOptions(session, useTransaction));
 
       await commitTransaction(session, useTransaction);
@@ -281,7 +314,7 @@ router.post(
         success: true,
         message: "Chalan received successfully",
         data: {
-          chalan_number: chalan.chalan_number,
+          chalan_number: chalan.chalan_no,
           received_items: processedItems,
           total_variance: processedItems.reduce((sum, item) => sum + item.variance_qty, 0),
         },
@@ -409,7 +442,7 @@ router.get(
       // Build query
       const query = {
         distributor_id: distributorId,
-        receipt_status: "Received",
+        status: "Received",
       };
 
       if (date_from || date_to) {
@@ -422,12 +455,32 @@ router.get(
       const total = await models.DeliveryChalan.countDocuments(query);
 
       // Get paginated history
-      const chalans = await models.DeliveryChalan.find(query)
-        .populate("received_by", "name")
-        .populate("depot_id", "facility_name")
+      let chalans = await models.DeliveryChalan.find(query)
+        .populate({ path: "received_by", select: "name" })
+        .populate({ path: "depot_id", select: "facility_name" })
+        .populate({ path: "load_sheet_id", select: "load_sheet_number" })
         .sort({ received_at: -1 })
         .skip((page - 1) * limit)
-        .limit(parseInt(limit));
+        .limit(parseInt(limit))
+        .lean();
+
+      // Convert Decimal128 fields and transform items to received_items format
+      chalans = chalans.map(chalan => {
+        const received_items = (chalan.items || []).map(item => ({
+          sku: item.sku,
+          delivered_qty: item.qty_ctn ? parseFloat(item.qty_ctn.toString()) : 0,
+          received_qty: item.received_qty_ctn ? parseFloat(item.received_qty_ctn.toString()) : 0,
+          variance_qty: item.damage_qty_ctn ? parseFloat(item.damage_qty_ctn.toString()) : 0,
+          variance_reason: item.damage_reason || '',
+        }));
+
+        return {
+          ...chalan,
+          total_qty_ctn: chalan.total_qty_ctn ? parseFloat(chalan.total_qty_ctn.toString()) : 0,
+          total_qty_pcs: chalan.total_qty_pcs ? parseFloat(chalan.total_qty_pcs.toString()) : 0,
+          received_items,
+        };
+      });
 
       res.json({
         success: true,
@@ -451,5 +504,9 @@ router.get(
     }
   }
 );
+
+// Mount chalans sub-router LAST to avoid conflicts with specific routes above
+const chalansRouter = require("./chalans");
+router.use("/chalans", chalansRouter);
 
 module.exports = router;

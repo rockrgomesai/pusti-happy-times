@@ -217,6 +217,7 @@ router.post("/login", loginValidation, async (req, res) => {
       const distributor = user.distributor_id; // Already populated
 
       contextData = {
+        distributor_id: distributor._id,
         distributor_name: distributor.name,
         db_point_id: distributor.db_point_id,
         territorries: distributor.territorries,
@@ -367,6 +368,7 @@ router.post("/refresh", refreshTokenValidation, async (req, res) => {
       const distributor = user.distributor_id;
 
       contextData = {
+        distributor_id: distributor._id,
         distributor_name: distributor.name,
         db_point_id: distributor.db_point_id,
       };
@@ -418,14 +420,6 @@ router.post("/logout", authenticate, async (req, res) => {
       await redis.removeRefreshToken(userId);
     } catch (redisError) {
       console.error("Error removing refresh tokens during logout:", redisError);
-      // Continue with logout even if Redis fails
-    }
-
-    // Clear user activity (with error handling)
-    try {
-      await redis.clearUserActivity(userId);
-    } catch (redisError) {
-      console.error("Error clearing user activity during logout:", redisError);
       // Continue with logout even if Redis fails
     }
 
