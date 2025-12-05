@@ -3,8 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "npx next dev --port 3001",
-    "build": "next build --turbopack",
+    "dev": "npx next dev",
+    "build": "next build",
     "start": "next start",
     "lint": "eslint . --max-warnings=0"
   },
@@ -22,6 +22,7 @@
     "js-cookie": "^3.0.5",
     "jspdf": "^2.5.1",
     "jspdf-autotable": "^3.8.4",
+    "lodash":"4.17.21",
     "next": "14.2.33",
     "react": "18.3.1",
     "react-arborist": "^3.4.3",
