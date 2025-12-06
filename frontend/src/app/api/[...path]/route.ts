@@ -45,7 +45,7 @@ async function proxyRequest(
   try {
     const path = pathSegments.join('/');
     const url = new URL(request.url);
-    const backendUrl = `${BACKEND_URL}/${path}${url.search}`;
+    const backendUrl = `${BACKEND_URL}/api/${path}${url.search}`;
 
     // Get request body for POST/PUT/PATCH
     let body = undefined;
