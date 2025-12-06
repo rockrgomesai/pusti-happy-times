@@ -627,6 +627,16 @@
       },
       "name": "pg_permission_id_1",
       "background": true
+    },
+    {
+      "v": 2,
+      "key": {
+        "role_id": 1,
+        "pg_permission_id": 1
+      },
+      "name": "role_id_1_pg_permission_id_1",
+      "background": true,
+      "unique": true
     }
   ],
   "bd_banks": [

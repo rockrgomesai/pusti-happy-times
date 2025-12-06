@@ -50,56 +50,6 @@
     "pg_permission_id": "68be5052bd65258dedfa335a"
   },
   {
-    "_id": "68be51dec462377729fa3350",
-    "role_id": "68be21a51e962b2b59fa3352",
-    "pg_permission_id": "68be5052bd65258dedfa3350"
-  },
-  {
-    "_id": "68be51dec462377729fa3351",
-    "role_id": "68be21a51e962b2b59fa3352",
-    "pg_permission_id": "68be5052bd65258dedfa3352"
-  },
-  {
-    "_id": "68be51dec462377729fa3352",
-    "role_id": "68be21a51e962b2b59fa3352",
-    "pg_permission_id": "68be5052bd65258dedfa3353"
-  },
-  {
-    "_id": "68be51dec462377729fa3353",
-    "role_id": "68be21a51e962b2b59fa3352",
-    "pg_permission_id": "68be5052bd65258dedfa3354"
-  },
-  {
-    "_id": "68be51dec462377729fa3354",
-    "role_id": "68be21a51e962b2b59fa3352",
-    "pg_permission_id": "68be5052bd65258dedfa3355"
-  },
-  {
-    "_id": "68be51dec462377729fa3355",
-    "role_id": "68be21a51e962b2b59fa3352",
-    "pg_permission_id": "68be5052bd65258dedfa3356"
-  },
-  {
-    "_id": "68be51dec462377729fa3356",
-    "role_id": "68be21a51e962b2b59fa3352",
-    "pg_permission_id": "68be5052bd65258dedfa3357"
-  },
-  {
-    "_id": "68be51dec462377729fa3357",
-    "role_id": "68be21a51e962b2b59fa3352",
-    "pg_permission_id": "68be5052bd65258dedfa3358"
-  },
-  {
-    "_id": "68be51dec462377729fa3358",
-    "role_id": "68be21a51e962b2b59fa3352",
-    "pg_permission_id": "68be5052bd65258dedfa3359"
-  },
-  {
-    "_id": "68be51dec462377729fa3359",
-    "role_id": "68be21a51e962b2b59fa3352",
-    "pg_permission_id": "68be5052bd65258dedfa335a"
-  },
-  {
     "_id": "68be51e305dd60ef61fa3350",
     "role_id": "68be21b0a9b5a7c8c0fa3352",
     "pg_permission_id": "68be5052bd65258dedfa3350"
@@ -116,26 +66,6 @@
   },
   {
     "_id": "68be51e305dd60ef61fa3353",
-    "role_id": "68be21b0a9b5a7c8c0fa3352",
-    "pg_permission_id": "68be5052bd65258dedfa335a"
-  },
-  {
-    "_id": "68be51e81d50c61871fa3350",
-    "role_id": "68be21b0a9b5a7c8c0fa3352",
-    "pg_permission_id": "68be5052bd65258dedfa3350"
-  },
-  {
-    "_id": "68be51e81d50c61871fa3351",
-    "role_id": "68be21b0a9b5a7c8c0fa3352",
-    "pg_permission_id": "68be5052bd65258dedfa3354"
-  },
-  {
-    "_id": "68be51e81d50c61871fa3352",
-    "role_id": "68be21b0a9b5a7c8c0fa3352",
-    "pg_permission_id": "68be5052bd65258dedfa3355"
-  },
-  {
-    "_id": "68be51e81d50c61871fa3353",
     "role_id": "68be21b0a9b5a7c8c0fa3352",
     "pg_permission_id": "68be5052bd65258dedfa335a"
   },
