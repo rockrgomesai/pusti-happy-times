@@ -67,7 +67,13 @@ async function importDeploymentData() {
       const filePath = path.join(INPUT_DIR, file);
       
       try {
-        const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+        const data = JSON.parse(fs.readFileSync(filePath, 'utf8'), (key, value) => {
+          // Convert string IDs back to ObjectId for fields ending with _id or named _id
+          if ((key === '_id' || key.endsWith('_id')) && typeof value === 'string' && /^[0-9a-fA-F]{24}$/.test(value)) {
+            return new mongoose.Types.ObjectId(value);
+          }
+          return value;
+        });
         
         if (data.length > 0) {
           await db.collection(collectionName).insertMany(data);
