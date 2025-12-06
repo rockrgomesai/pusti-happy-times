@@ -96,16 +96,14 @@ async function exportDeploymentData() {
     
     const users = db.collection('users');
     const superadmin = await users.findOne({ 
-      $or: [
-        { role_name: 'Superadmin' },
-        { email: 'superadmin@pusti.com' }
-      ]
+      username: 'superadmin'
     });
     
     if (superadmin) {
       const filePath = path.join(OUTPUT_DIR, 'users.json');
       fs.writeFileSync(filePath, JSON.stringify([superadmin], null, 2));
       console.log(`   ✓ users: 1 document (superadmin only)`);
+      console.log(`   📧 Email: ${superadmin.email}`);
     } else {
       console.log('   ⚠️  Superadmin user not found!');
     }
