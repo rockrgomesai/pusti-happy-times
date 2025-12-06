@@ -177,7 +177,8 @@ const initializeDatabases = async () => {
     await validateEmployeeRoleAssignments();
 
     // Then initialize distributor permissions
-    await scheduleDistributorPermissionBootstrap();
+    // DISABLED: Permissions already imported from deployment data
+    // await scheduleDistributorPermissionBootstrap();
   } catch (error) {
     console.error("❌ Error during database initialization:", error);
     process.exit(1);
