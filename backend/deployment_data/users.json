@@ -7,7 +7,7 @@
     "email": "superadmin@bdcompute.com",
     "active": true,
     "user_type": "employee",
-    "employee_id": "68e64a6428a8c429eed4bacc",
+    "employee_id": null,
     "distributor_id": null,
     "tokenVersion": 0,
     "created_at": "2025-10-19T11:07:45.641Z",
