@@ -537,5 +537,14 @@
     "is_submenu": false,
     "created_at": "2025-12-05T15:11:34.237Z",
     "updated_at": "2025-12-05T15:11:34.237Z"
+  },
+  {
+    "_id": "6933d15604060cb1f06725f5",
+    "label": "Territory",
+    "href": "/master/territories",
+    "icon": "FaMapMarkedAlt",
+    "parent_id": "68be2a2337d76ea524fa3350",
+    "is_submenu": true,
+    "m_order": 3.5
   }
 ]
