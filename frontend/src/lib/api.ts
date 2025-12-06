@@ -7,7 +7,7 @@ import Cookies from 'js-cookie';
 const isDevelopment = process.env.NODE_ENV === 'development';
 const RAW_API_URL = isDevelopment 
   ? (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1')
-  : '/api/api/v1'; // Proxy through Next.js: /api/[...path] -> backend /api/v1
+  : '/api/v1'; // Proxy through Next.js: /api/[...path] -> backend /api/v1
 
 const trimTrailingSlash = (url: string) => url.replace(/\/+$/, '');
 
