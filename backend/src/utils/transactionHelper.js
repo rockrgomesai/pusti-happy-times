@@ -20,7 +20,7 @@ async function startTransactionSession() {
     // Check if we're in a replica set before attempting transaction
     const admin = mongoose.connection.db.admin();
     const serverInfo = await admin.serverStatus();
-    
+
     if (serverInfo.repl) {
       // We're in a replica set, transactions are supported
       session = await mongoose.startSession();
@@ -31,9 +31,7 @@ async function startTransactionSession() {
       console.log("⚠ MongoDB standalone mode detected, proceeding without transaction");
     }
   } catch (error) {
-    console.log(
-      "⚠ MongoDB transactions not available:", error.message
-    );
+    console.log("⚠ MongoDB transactions not available:", error.message);
     session = null;
     useTransaction = false;
   }

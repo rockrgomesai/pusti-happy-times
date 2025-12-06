@@ -1,16 +1,16 @@
-const mongoose = require('mongoose');
-const fs = require('fs');
-const path = require('path');
-require('dotenv').config();
+const mongoose = require("mongoose");
+const fs = require("fs");
+const path = require("path");
+require("dotenv").config();
 
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/pusti_happy_times';
-const INPUT_DIR = path.join(__dirname, 'deployment_data');
+const MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost:27017/pusti_happy_times";
+const INPUT_DIR = path.join(__dirname, "deployment_data");
 
 async function importDeploymentData() {
   let connection;
-  
+
   try {
-    console.log('🚀 Starting deployment data import...\n');
+    console.log("🚀 Starting deployment data import...\n");
 
     // Check if deployment_data directory exists
     if (!fs.existsSync(INPUT_DIR)) {
@@ -18,31 +18,31 @@ async function importDeploymentData() {
     }
 
     // Load metadata
-    const metadataPath = path.join(INPUT_DIR, '_metadata.json');
+    const metadataPath = path.join(INPUT_DIR, "_metadata.json");
     if (!fs.existsSync(metadataPath)) {
-      throw new Error('Metadata file not found. Please export data first.');
+      throw new Error("Metadata file not found. Please export data first.");
     }
-    
-    const metadata = JSON.parse(fs.readFileSync(metadataPath, 'utf8'));
-    console.log('📋 Deployment Info:');
+
+    const metadata = JSON.parse(fs.readFileSync(metadataPath, "utf8"));
+    console.log("📋 Deployment Info:");
     console.log(`   Export Date: ${new Date(metadata.exportDate).toLocaleString()}`);
     console.log(`   Collections with data: ${metadata.collectionsWithData.length}`);
     console.log(`   Empty collections: ${metadata.emptyCollections.length}\n`);
 
     // Ask for confirmation (comment out in production)
-    console.log('⚠️  WARNING: This will replace your database with deployment data!');
-    console.log('   Make sure you have a backup if needed.\n');
+    console.log("⚠️  WARNING: This will replace your database with deployment data!");
+    console.log("   Make sure you have a backup if needed.\n");
 
     // Connect to MongoDB
     connection = await mongoose.connect(MONGODB_URI);
     const db = mongoose.connection.db;
-    console.log('✅ Connected to MongoDB\n');
+    console.log("✅ Connected to MongoDB\n");
 
     // Step 1: Drop existing data from all collections
-    console.log('🗑️  Step 1: Clearing existing data...\n');
-    
+    console.log("🗑️  Step 1: Clearing existing data...\n");
+
     const allCollections = [...metadata.collectionsWithData, ...metadata.emptyCollections];
-    
+
     for (const collectionName of allCollections) {
       try {
         const exists = await db.listCollections({ name: collectionName }).hasNext();
@@ -56,25 +56,29 @@ async function importDeploymentData() {
     }
 
     // Step 2: Import data files
-    console.log('\n📥 Step 2: Importing data...\n');
-    
-    const files = fs.readdirSync(INPUT_DIR).filter(f => 
-      f.endsWith('.json') && !f.startsWith('_')
-    );
-    
+    console.log("\n📥 Step 2: Importing data...\n");
+
+    const files = fs
+      .readdirSync(INPUT_DIR)
+      .filter((f) => f.endsWith(".json") && !f.startsWith("_"));
+
     for (const file of files) {
-      const collectionName = file.replace('.json', '');
+      const collectionName = file.replace(".json", "");
       const filePath = path.join(INPUT_DIR, file);
-      
+
       try {
-        const data = JSON.parse(fs.readFileSync(filePath, 'utf8'), (key, value) => {
+        const data = JSON.parse(fs.readFileSync(filePath, "utf8"), (key, value) => {
           // Convert string IDs back to ObjectId for fields ending with _id or named _id
-          if ((key === '_id' || key.endsWith('_id')) && typeof value === 'string' && /^[0-9a-fA-F]{24}$/.test(value)) {
+          if (
+            (key === "_id" || key.endsWith("_id")) &&
+            typeof value === "string" &&
+            /^[0-9a-fA-F]{24}$/.test(value)
+          ) {
             return new mongoose.Types.ObjectId(value);
           }
           return value;
         });
-        
+
         if (data.length > 0) {
           await db.collection(collectionName).insertMany(data);
           console.log(`   ✓ ${collectionName}: Imported ${data.length} documents`);
@@ -87,12 +91,12 @@ async function importDeploymentData() {
     }
 
     // Step 3: Create empty collections and restore indexes
-    console.log('\n🔧 Step 3: Creating empty collections and indexes...\n');
-    
-    const indexesPath = path.join(INPUT_DIR, '_indexes.json');
+    console.log("\n🔧 Step 3: Creating empty collections and indexes...\n");
+
+    const indexesPath = path.join(INPUT_DIR, "_indexes.json");
     if (fs.existsSync(indexesPath)) {
-      const indexesData = JSON.parse(fs.readFileSync(indexesPath, 'utf8'));
-      
+      const indexesData = JSON.parse(fs.readFileSync(indexesPath, "utf8"));
+
       for (const [collectionName, indexes] of Object.entries(indexesData)) {
         try {
           // Create collection if it doesn't exist
@@ -100,7 +104,7 @@ async function importDeploymentData() {
           if (!exists) {
             await db.createCollection(collectionName);
           }
-          
+
           // Create indexes
           if (indexes.length > 0) {
             for (const index of indexes) {
@@ -115,25 +119,24 @@ async function importDeploymentData() {
       }
     }
 
-    console.log('\n✅ Deployment data imported successfully!\n');
-    console.log('📊 Summary:');
+    console.log("\n✅ Deployment data imported successfully!\n");
+    console.log("📊 Summary:");
     console.log(`   - Collections imported: ${files.length}`);
     console.log(`   - Empty collections created: ${metadata.emptyCollections.length}`);
     console.log(`   - Database ready for production use`);
 
-    console.log('\n🔐 IMPORTANT: Security Steps');
-    console.log('1. Login as superadmin and change the default password');
-    console.log('2. Create necessary user accounts');
-    console.log('3. Configure production environment variables');
-    console.log('4. Enable MongoDB authentication if not already enabled');
-
+    console.log("\n🔐 IMPORTANT: Security Steps");
+    console.log("1. Login as superadmin and change the default password");
+    console.log("2. Create necessary user accounts");
+    console.log("3. Configure production environment variables");
+    console.log("4. Enable MongoDB authentication if not already enabled");
   } catch (error) {
-    console.error('❌ Error:', error.message);
+    console.error("❌ Error:", error.message);
     throw error;
   } finally {
     if (connection) {
       await mongoose.disconnect();
-      console.log('\n🔌 Disconnected from MongoDB');
+      console.log("\n🔌 Disconnected from MongoDB");
     }
   }
 }

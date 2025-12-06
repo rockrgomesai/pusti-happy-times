@@ -1,6 +1,7 @@
 # 🚀 DATABASE DEPLOYMENT GUIDE - Contabo Production Server
 
 ## 📋 Overview
+
 This guide explains how to prepare, export, and deploy the database from your local development environment to the production MongoDB server on Contabo.
 
 ---
@@ -8,12 +9,14 @@ This guide explains how to prepare, export, and deploy the database from your lo
 ## 🔧 Prerequisites
 
 ### On Your Local Machine:
+
 - MongoDB installed with `mongodump` and `mongorestore` tools
 - Node.js installed
 - SSH access to Contabo server
 - SCP/SFTP client (built into PowerShell)
 
 ### On Contabo Server:
+
 - MongoDB installed and running
 - Firewall configured (if needed)
 - Sufficient disk space
@@ -30,6 +33,7 @@ node create-deployment-database.js
 ```
 
 **What this does:**
+
 - ✅ Creates a backup of your current database
 - ✅ Creates a clean deployment database: `pusti_happy_times_deployment`
 - ✅ Keeps only system configuration and real business data (bd_banks, banks)
@@ -214,25 +218,28 @@ journalctl -u pusti-backend -f
 ## 🔒 Important Security Notes
 
 1. **Change default credentials** immediately after import:
+
    - Login as superadmin
    - Change password from default
    - Create new admin users as needed
 
 2. **Enable MongoDB authentication** if not already enabled:
+
    ```bash
    # Edit MongoDB config
    sudo nano /etc/mongod.conf
-   
+
    # Add:
    security:
      authorization: enabled
    ```
 
 3. **Firewall rules**:
+
    ```bash
    # Allow MongoDB only from localhost (if app is on same server)
    sudo ufw allow from 127.0.0.1 to any port 27017
-   
+
    # Or allow from specific IP (if app is on different server)
    sudo ufw allow from YOUR_APP_SERVER_IP to any port 27017
    ```
@@ -270,7 +277,9 @@ mongorestore --db=pusti_happy_times ./deployment_backup/pusti_happy_times_backup
 ## 🆘 Troubleshooting
 
 ### Problem: "mongodump: command not found"
+
 **Solution**: Install MongoDB Database Tools
+
 ```powershell
 # Download from: https://www.mongodb.com/try/download/database-tools
 # Or use Chocolatey:
@@ -278,7 +287,9 @@ choco install mongodb-database-tools
 ```
 
 ### Problem: "failed to connect to server"
+
 **Solution**: Check if MongoDB is running
+
 ```bash
 # On Contabo:
 systemctl status mongod
@@ -286,14 +297,18 @@ sudo systemctl start mongod
 ```
 
 ### Problem: "authentication failed"
+
 **Solution**: Use correct credentials or disable auth temporarily
+
 ```bash
 # Edit mongod.conf and comment out security section
 sudo systemctl restart mongod
 ```
 
 ### Problem: Index creation failed
+
 **Solution**: Indexes might already exist. Check with:
+
 ```bash
 db.COLLECTION_NAME.getIndexes()
 ```
@@ -348,6 +363,7 @@ exit
 ## 🎯 Expected Result
 
 After deployment, your production database will have:
+
 - ✅ All system configuration (permissions, roles, menus)
 - ✅ Real business data (bd_banks, banks)
 - ✅ 1 superadmin user

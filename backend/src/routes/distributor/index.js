@@ -43,9 +43,7 @@ router.get(
       };
 
       if (search) {
-        query.$or = [
-          { chalan_no: { $regex: search, $options: "i" } },
-        ];
+        query.$or = [{ chalan_no: { $regex: search, $options: "i" } }];
       }
 
       if (date_from || date_to) {
@@ -68,7 +66,7 @@ router.get(
         .lean();
 
       // Convert Decimal128 fields for each chalan
-      chalans = chalans.map(chalan => ({
+      chalans = chalans.map((chalan) => ({
         ...chalan,
         total_qty_ctn: chalan.total_qty_ctn ? parseFloat(chalan.total_qty_ctn.toString()) : 0,
         total_qty_pcs: chalan.total_qty_pcs ? parseFloat(chalan.total_qty_pcs.toString()) : 0,
@@ -139,12 +137,16 @@ router.get(
 
       // Convert Decimal128 fields to numbers since .lean() skips getters
       if (chalan.items && Array.isArray(chalan.items)) {
-        chalan.items = chalan.items.map(item => ({
+        chalan.items = chalan.items.map((item) => ({
           ...item,
           qty_ctn: item.qty_ctn ? parseFloat(item.qty_ctn.toString()) : 0,
           qty_pcs: item.qty_pcs ? parseFloat(item.qty_pcs.toString()) : 0,
-          received_qty_ctn: item.received_qty_ctn ? parseFloat(item.received_qty_ctn.toString()) : 0,
-          received_qty_pcs: item.received_qty_pcs ? parseFloat(item.received_qty_pcs.toString()) : 0,
+          received_qty_ctn: item.received_qty_ctn
+            ? parseFloat(item.received_qty_ctn.toString())
+            : 0,
+          received_qty_pcs: item.received_qty_pcs
+            ? parseFloat(item.received_qty_pcs.toString())
+            : 0,
           damage_qty_ctn: item.damage_qty_ctn ? parseFloat(item.damage_qty_ctn.toString()) : 0,
           damage_qty_pcs: item.damage_qty_pcs ? parseFloat(item.damage_qty_pcs.toString()) : 0,
         }));
@@ -293,10 +295,10 @@ router.post(
           ? `${chalan.remarks}\n\nReceipt Notes: ${notes}`
           : `Receipt Notes: ${notes}`;
       }
-      
+
       // Update each item with received quantities
       for (const processedItem of processedItems) {
-        const chalanItem = chalan.items.find(item => item.sku === processedItem.sku);
+        const chalanItem = chalan.items.find((item) => item.sku === processedItem.sku);
         if (chalanItem) {
           chalanItem.received_qty_ctn = processedItem.received_qty;
           if (processedItem.variance_qty > 0) {
@@ -305,7 +307,7 @@ router.post(
           }
         }
       }
-      
+
       await chalan.save(getSaveOptions(session, useTransaction));
 
       await commitTransaction(session, useTransaction);
@@ -465,13 +467,13 @@ router.get(
         .lean();
 
       // Convert Decimal128 fields and transform items to received_items format
-      chalans = chalans.map(chalan => {
-        const received_items = (chalan.items || []).map(item => ({
+      chalans = chalans.map((chalan) => {
+        const received_items = (chalan.items || []).map((item) => ({
           sku: item.sku,
           delivered_qty: item.qty_ctn ? parseFloat(item.qty_ctn.toString()) : 0,
           received_qty: item.received_qty_ctn ? parseFloat(item.received_qty_ctn.toString()) : 0,
           variance_qty: item.damage_qty_ctn ? parseFloat(item.damage_qty_ctn.toString()) : 0,
-          variance_reason: item.damage_reason || '',
+          variance_reason: item.damage_reason || "",
         }));
 
         return {

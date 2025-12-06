@@ -14,7 +14,7 @@ async function createTestChalan() {
 
     // Get distbanana user and distributor
     const user = await User.findOne({ username: "distbanana" }).populate("distributor_id");
-    
+
     if (!user || !user.distributor_id) {
       console.log("❌ User or distributor not found!");
       process.exit(1);
@@ -41,7 +41,7 @@ async function createTestChalan() {
 
     // Create a test chalan
     const chalanNo = `TEST-CHN-${Date.now()}`;
-    
+
     const chalanData = {
       chalan_no: chalanNo,
       chalan_date: new Date(),
@@ -74,7 +74,7 @@ async function createTestChalan() {
     };
 
     const chalan = await DeliveryChalan.create(chalanData);
-    
+
     console.log("\n✅ Test chalan created successfully!");
     console.log("   Chalan No:", chalan.chalan_no);
     console.log("   Status:", chalan.status);
