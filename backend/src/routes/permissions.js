@@ -692,13 +692,14 @@ router.get("/roles", authenticate, async (req, res) => {
  */
 router.get("/menu-items", authenticate, async (req, res) => {
   try {
-    const SidebarMenuItem = require("../models/SidebarMenuItem");
     const { roleId } = req.query;
 
-    // Get all menu items first
-    const allMenuItems = await SidebarMenuItem.find()
+    // Get all menu items directly from collection (bypass model validation)
+    const db = mongoose.connection.db;
+    const allMenuItems = await db.collection('sidebar_menu_items')
+      .find({})
       .sort({ m_order: 1 })
-      .lean();
+      .toArray();
 
     let assignedMenuItems = [];
 
