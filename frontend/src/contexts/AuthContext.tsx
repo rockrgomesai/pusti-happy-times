@@ -168,12 +168,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
         throw new Error(response.message || 'Login failed');
       }
     } catch (error: unknown) {
-      const errorMessage = 
-        error instanceof Error 
-          ? error.message 
-          : typeof error === 'object' && error !== null && 'response' in error
-            ? (error as { response?: { data?: { message?: string } } }).response?.data?.message || 'Login failed'
-            : 'Login failed';
+      const status = (error as { response?: { status?: number } })?.response?.status;
+      const backendMsg = (error as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      const errorMessage =
+        status === 401
+          ? 'Wrong username or password!'
+          : backendMsg && typeof backendMsg === 'string'
+            ? backendMsg
+            : error instanceof Error
+              ? error.message
+              : 'Login failed';
       toast.error(errorMessage);
       throw error;
     } finally {
