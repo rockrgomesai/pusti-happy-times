@@ -170,14 +170,22 @@ export function AuthProvider({ children }: AuthProviderProps) {
     } catch (error: unknown) {
       const status = (error as { response?: { status?: number } })?.response?.status;
       const backendMsg = (error as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      const errorMessage =
-        status === 401
-          ? 'Wrong username or password!'
-          : backendMsg && typeof backendMsg === 'string'
-            ? backendMsg
-            : error instanceof Error
-              ? error.message
-              : 'Login failed';
+      const normalizedBackend = backendMsg?.toLowerCase() || '';
+      const isBadCreds =
+        status === 401 ||
+        normalizedBackend.includes('invalid credential') ||
+        normalizedBackend.includes('wrong password') ||
+        normalizedBackend.includes('wrong username') ||
+        normalizedBackend.includes('unauthorized');
+
+      const errorMessage = isBadCreds
+        ? 'Wrong username or password!'
+        : backendMsg && typeof backendMsg === 'string'
+          ? backendMsg
+          : error instanceof Error
+            ? error.message
+            : 'Login failed';
+
       toast.error(errorMessage);
       throw error;
     } finally {
