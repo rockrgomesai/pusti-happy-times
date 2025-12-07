@@ -7,19 +7,14 @@ import {
   Box,
   Card,
   CardContent,
-    reset,
   TextField,
   Button,
   Typography,
-      username: '',
-      password: '',
   InputAdornment,
   CircularProgress,
   useTheme,
 } from '@mui/material';
 import {
-    // Ensure inputs are blank on load/redirect
-    reset({ username: '', password: '' });
   Visibility,
   VisibilityOff,
   Login as LoginIcon,
@@ -42,18 +37,21 @@ export default function LoginPage() {
     control,
     handleSubmit,
     formState: { errors },
+    reset,
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      username: 'superadmin',
-      password: 'sadmin123',
+      username: '',
+      password: '',
     },
   });
 
   // Handle client-side mounting to prevent hydration issues
   useEffect(() => {
     setIsMounted(true);
-  }, []);
+    // Ensure inputs are blank on load/redirect
+    reset({ username: '', password: '' });
+  }, [reset]);
 
   // Redirect if already authenticated
   useEffect(() => {
