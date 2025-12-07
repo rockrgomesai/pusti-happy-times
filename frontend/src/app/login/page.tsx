@@ -7,16 +7,19 @@ import {
   Box,
   Card,
   CardContent,
+    reset,
   TextField,
   Button,
   Typography,
-  Container,
-  IconButton,
+      username: '',
+      password: '',
   InputAdornment,
   CircularProgress,
   useTheme,
 } from '@mui/material';
 import {
+    // Ensure inputs are blank on load/redirect
+    reset({ username: '', password: '' });
   Visibility,
   VisibilityOff,
   Login as LoginIcon,
