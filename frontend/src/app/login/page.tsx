@@ -21,6 +21,7 @@ import {
   VisibilityOff,
   Login as LoginIcon,
 } from '@mui/icons-material';
+import toast from 'react-hot-toast';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { loginSchema, LoginFormData } from '@/lib/validationSchemas';
@@ -68,7 +69,22 @@ export default function LoginPage() {
       // Navigation is handled in the AuthContext login function
     } catch (error) {
       console.error('Login failed:', error);
-      // Error handling is done in the AuthContext
+      const status = (error as { response?: { status?: number } })?.response?.status;
+      const backendMsg = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || '';
+      const normalized = backendMsg.toLowerCase();
+      const isBadCreds =
+        status === 401 ||
+        normalized.includes('invalid credential') ||
+        normalized.includes('wrong password') ||
+        normalized.includes('wrong username') ||
+        normalized.includes('unauthorized');
+
+      const message = isBadCreds
+        ? 'Wrong username or password!'
+        : error instanceof Error
+          ? error.message
+          : 'Login failed';
+      toast.error(message);
     } finally {
       setIsLoading(false);
     }
