@@ -196,15 +196,29 @@ export const authAPI = {
       return response.data;
     } catch (error) {
       console.error('🔐 Login error:', error);
-      if (error instanceof Error && 'response' in error) {
-        const axiosError = error as AxiosError;
-        console.error('🔐 Error response status:', axiosError.response?.status);
-        console.error('🔐 Error response data:', axiosError.response?.data);
-        console.error('🔐 Error response headers:', axiosError.response?.headers);
-        console.error('🔐 Error request config:', axiosError.config);
-        console.error('🔐 Error message:', axiosError.message);
-      }
-      throw error;
+            const axiosError = error as AxiosError;
+            const status = axiosError.response?.status;
+            const backendMsg = (axiosError.response?.data as { message?: string } | undefined)?.message || '';
+            const normalized = backendMsg.toLowerCase();
+            const isBadCreds =
+              status === 401 ||
+              normalized.includes('invalid credential') ||
+              normalized.includes('wrong password') ||
+              normalized.includes('wrong username') ||
+              normalized.includes('unauthorized');
+
+            if (isBadCreds) {
+              throw new Error('Wrong username or password!');
+            }
+
+            if (error instanceof Error && 'response' in error) {
+              console.error('🔐 Error response status:', axiosError.response?.status);
+              console.error('🔐 Error response data:', axiosError.response?.data);
+              console.error('🔐 Error response headers:', axiosError.response?.headers);
+              console.error('🔐 Error request config:', axiosError.config);
+              console.error('🔐 Error message:', axiosError.message);
+            }
+            throw error;
     }
   },
   
