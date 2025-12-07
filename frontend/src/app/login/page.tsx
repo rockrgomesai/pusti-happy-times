@@ -42,7 +42,7 @@ export default function LoginPage() {
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      username: 'SuperAdmin',
+      username: 'superadmin',
       password: 'sadmin123',
     },
   });
@@ -62,7 +62,9 @@ export default function LoginPage() {
   const onSubmit = async (data: LoginFormData) => {
     try {
       setIsLoading(true);
-      await login(data.username, data.password);
+      const username = data.username.trim().toLowerCase();
+      const password = data.password.trim();
+      await login(username, password);
       // Navigation is handled in the AuthContext login function
     } catch (error) {
       console.error('Login failed:', error);
