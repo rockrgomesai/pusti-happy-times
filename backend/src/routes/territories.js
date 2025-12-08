@@ -542,7 +542,7 @@ router.post(
             message: "Parent territory not found",
           });
         }
-        if (parent._id && parent._id.toString() === id) {
+        if (parent._id && parent._id.toString() === (req.params?.id || req.body?.id)) {
           return res.status(400).json({
             success: false,
             message: "A territory cannot be its own parent",
