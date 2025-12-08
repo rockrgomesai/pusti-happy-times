@@ -7,6 +7,7 @@ import React, {
   useCallback,
   useRef,
 } from 'react';
+import { AxiosError } from 'axios';
 import {
   Box,
   Typography,
@@ -635,7 +636,13 @@ export default function TerritoriesPage() {
       });
       loadTerritories();
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to save territory';
+      const axiosError = error as AxiosError<{ message?: string }>;
+      const status = axiosError.response?.status;
+      const backendMsg = axiosError.response?.data?.message;
+      const message =
+        status === 409
+          ? 'A territory with this name already exists. Please use a different name.'
+          : backendMsg || (error instanceof Error ? error.message : 'Failed to save territory');
       setFormError(message);
       toast.error(message);
     }
