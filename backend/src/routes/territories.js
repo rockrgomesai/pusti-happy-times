@@ -11,12 +11,7 @@ const { authenticate, requireApiPermission } = require("../middleware/auth");
 
 const router = express.Router();
 
-const TERRITORY_TYPES = Territory.TERRITORY_TYPES || [
-  "zone",
-  "region",
-  "area",
-  "db_point",
-];
+const TERRITORY_TYPES = Territory.TERRITORY_TYPES || ["zone", "region", "area", "db_point"];
 
 const LEVEL_MAP = Territory.LEVEL_MAP || {
   zone: 0,
@@ -56,14 +51,7 @@ const LEVEL_METADATA = {
   },
 };
 
-const SORTABLE_FIELDS = [
-  "name",
-  "type",
-  "level",
-  "active",
-  "created_at",
-  "updated_at",
-];
+const SORTABLE_FIELDS = ["name", "type", "level", "active", "created_at", "updated_at"];
 
 const handleValidationErrors = (req, res, next) => {
   const errors = validationResult(req);
@@ -185,9 +173,7 @@ const refreshDescendantHierarchy = async (territoryDoc) => {
   }
 };
 
-const idValidation = [
-  param("id").isMongoId().withMessage("Invalid territory ID format"),
-];
+const idValidation = [param("id").isMongoId().withMessage("Invalid territory ID format")];
 
 const baseTerritoryValidation = [
   body("name")
@@ -196,10 +182,7 @@ const baseTerritoryValidation = [
     .withMessage("Territory name is required")
     .isLength({ min: 2, max: 160 })
     .withMessage("Territory name must be between 2 and 160 characters"),
-  body("type")
-    .trim()
-    .isIn(TERRITORY_TYPES)
-    .withMessage("Invalid territory type"),
+  body("type").trim().isIn(TERRITORY_TYPES).withMessage("Invalid territory type"),
   body("parent_id")
     .optional({ nullable: true })
     .custom((value, { req }) => {
@@ -230,11 +213,7 @@ const baseTerritoryValidation = [
 
       return true;
     }),
-  body("active")
-    .optional()
-    .isBoolean()
-    .withMessage("Active must be a boolean")
-    .toBoolean(),
+  body("active").optional().isBoolean().withMessage("Active must be a boolean").toBoolean(),
 ];
 
 const listValidation = [
@@ -243,10 +222,7 @@ const listValidation = [
     .isInt({ min: 0, max: 3 })
     .withMessage("Level must be between 0 and 3")
     .toInt(),
-  query("type")
-    .optional()
-    .isIn(TERRITORY_TYPES)
-    .withMessage("Invalid territory type"),
+  query("type").optional().isIn(TERRITORY_TYPES).withMessage("Invalid territory type"),
   query("parentId")
     .optional()
     .custom((value) => {
@@ -260,29 +236,15 @@ const listValidation = [
     .isBoolean()
     .withMessage("includeInactive must be boolean")
     .toBoolean(),
-  query("page")
-    .optional()
-    .isInt({ min: 1 })
-    .withMessage("Page must be a positive integer")
-    .toInt(),
+  query("page").optional().isInt({ min: 1 }).withMessage("Page must be a positive integer").toInt(),
   query("limit")
     .optional()
     .isInt({ min: 1, max: 200 })
     .withMessage("Limit must be between 1 and 200")
     .toInt(),
-  query("sortBy")
-    .optional()
-    .isIn(SORTABLE_FIELDS)
-    .withMessage("Invalid sort field"),
-  query("sortOrder")
-    .optional()
-    .isIn(["asc", "desc"])
-    .withMessage("Invalid sort order"),
-  query("search")
-    .optional()
-    .trim()
-    .isLength({ max: 160 })
-    .withMessage("Search term is too long"),
+  query("sortBy").optional().isIn(SORTABLE_FIELDS).withMessage("Invalid sort field"),
+  query("sortOrder").optional().isIn(["asc", "desc"]).withMessage("Invalid sort order"),
+  query("search").optional().trim().isLength({ max: 160 }).withMessage("Search term is too long"),
 ];
 
 router.get(
@@ -394,10 +356,7 @@ router.get(
   authenticate,
   requireApiPermission("territories:read"),
   [
-    query("forType")
-      .optional()
-      .isIn(TERRITORY_TYPES)
-      .withMessage("Invalid territory type"),
+    query("forType").optional().isIn(TERRITORY_TYPES).withMessage("Invalid territory type"),
     query("level")
       .optional()
       .isInt({ min: 0, max: 3 })
@@ -455,19 +414,14 @@ router.get(
   }
 );
 
-router.get(
-  "/types",
-  authenticate,
-  requireApiPermission("territories:read"),
-  async (_req, res) => {
-    const data = TERRITORY_TYPES.map((type) => ({
-      type,
-      level: LEVEL_MAP[type],
-      parentType: (getTypeMeta(type) || {}).parentType,
-    }));
-    return res.json({ success: true, data });
-  }
-);
+router.get("/types", authenticate, requireApiPermission("territories:read"), async (_req, res) => {
+  const data = TERRITORY_TYPES.map((type) => ({
+    type,
+    level: LEVEL_MAP[type],
+    parentType: (getTypeMeta(type) || {}).parentType,
+  }));
+  return res.json({ success: true, data });
+});
 
 router.get(
   "/:id",

@@ -39,12 +39,9 @@ import {
   TablePagination,
   Chip,
   Stack,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   FormControlLabel,
   Switch,
+  Autocomplete,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -56,7 +53,6 @@ import {
   ViewModule as ViewModuleIcon,
   Search as SearchIcon,
 } from '@mui/icons-material';
-import type { SelectChangeEvent } from '@mui/material/Select';
 import { useForm, Controller, type SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -1017,79 +1013,86 @@ export default function TerritoriesPage() {
             <Controller
               name="type"
               control={control}
-              render={({ field }) => (
-                <FormControl fullWidth error={Boolean(errors.type)}>
-                  <InputLabel id="territory-type-label">Type</InputLabel>
-                  <Select
-                    {...field}
-                    labelId="territory-type-label"
-                    label="Type"
+              render={({ field }) => {
+                const selectedOption = TERRITORY_META.find((meta) => meta.value === field.value) ?? null;
+
+                return (
+                  <Autocomplete
+                    fullWidth
+                    options={TERRITORY_META}
+                    getOptionLabel={(option) => option.label}
+                    isOptionEqualToValue={(option, value) => option.value === value.value}
+                    value={selectedOption}
+                    disableClearable
+                    onChange={(_, option) => field.onChange((option?.value as TerritoryType | undefined) ?? field.value ?? 'zone')}
                     disabled={Boolean(editingTerritory)}
-                    onChange={(event: SelectChangeEvent<TerritoryType>) => {
-                      field.onChange(event.target.value as TerritoryType);
-                    }}
-                  >
-                    {TERRITORY_META.map((meta) => (
-                      <MenuItem key={meta.value} value={meta.value}>
-                        <Stack spacing={0.5}>
+                    renderOption={(props, option) => (
+                      <li {...props}>
+                        <Stack spacing={0.25}>
                           <Typography variant="body2" fontWeight="medium">
-                            {meta.label}
+                            {option.label}
                           </Typography>
                           <Typography variant="caption" color="text.secondary">
-                            {meta.description}
+                            {option.description}
                           </Typography>
                         </Stack>
-                      </MenuItem>
-                    ))}
-                  </Select>
-                  {errors.type && (
-                    <Typography variant="caption" color="error" sx={{ mt: 0.5 }}>
-                      {errors.type.message}
-                    </Typography>
-                  )}
-                </FormControl>
-              )}
+                      </li>
+                    )}
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        inputRef={field.ref}
+                        label="Type"
+                        error={Boolean(errors.type)}
+                        helperText={errors.type?.message}
+                        onBlur={field.onBlur}
+                      />
+                    )}
+                  />
+                );
+              }}
             />
             {selectedType !== 'zone' && (
               <Controller
                 name="parent_id"
                 control={control}
-                render={({ field }) => (
-                  <FormControl fullWidth error={Boolean(errors.parent_id)}>
-                    <InputLabel id="parent-territory-label">Parent Territory</InputLabel>
-                    <Select
-                      {...field}
-                      labelId="parent-territory-label"
-                      label="Parent Territory"
-                      value={field.value ?? ''}
-                      onChange={(event: SelectChangeEvent<string>) => {
-                        field.onChange(event.target.value || null);
-                      }}
-                    >
-                      {parentOptions.length === 0 ? (
-                        <MenuItem value="" disabled>
-                          No eligible parents found. Create a higher-level territory first.
-                        </MenuItem>
-                      ) : (
-                        parentOptions.map((option) => (
-                          <MenuItem key={option.value} value={option.value}>
-                            {option.label}
+                render={({ field }) => {
+                  const selectedOption = parentOptions.find((option) => option.value === field.value) ?? null;
+
+                  return (
+                    <Autocomplete
+                      fullWidth
+                      options={parentOptions}
+                      value={selectedOption}
+                      getOptionLabel={(option) => option.label}
+                      isOptionEqualToValue={(option, value) => option.value === value.value}
+                      noOptionsText="No eligible parents found. Create a higher-level territory first."
+                      onChange={(_, option) => field.onChange(option?.value ?? null)}
+                      renderOption={(props, option) => (
+                          <li {...props}>
+                          <Stack direction="row" spacing={1} alignItems="center">
+                            <Typography variant="body2">{option.label}</Typography>
                             {!option.active && (
-                              <Typography component="span" variant="caption" color="error" ml={1}>
+                              <Typography component="span" variant="caption" color="error">
                                 (inactive)
                               </Typography>
                             )}
-                          </MenuItem>
-                        ))
+                          </Stack>
+                        </li>
                       )}
-                    </Select>
-                    {errors.parent_id && (
-                      <Typography variant="caption" color="error" sx={{ mt: 0.5 }}>
-                        {errors.parent_id.message}
-                      </Typography>
-                    )}
-                  </FormControl>
-                )}
+                      renderInput={(params) => (
+                        <TextField
+                          {...params}
+                          inputRef={field.ref}
+                          label="Parent Territory"
+                          error={Boolean(errors.parent_id)}
+                          helperText={errors.parent_id?.message}
+                          onBlur={field.onBlur}
+                        />
+                      )}
+                    />
+                  );
+                }}
               />
             )}
             <Controller

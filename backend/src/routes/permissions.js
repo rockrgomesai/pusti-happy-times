@@ -58,9 +58,7 @@ const pagePermissionValidation = [
 ];
 
 // ID parameter validation
-const idValidation = [
-  param("id").isMongoId().withMessage("Invalid permission ID format"),
-];
+const idValidation = [param("id").isMongoId().withMessage("Invalid permission ID format")];
 
 /**
  * Helper Functions
@@ -90,56 +88,50 @@ const handleValidationErrors = (req, res, next) => {
  * @desc    Get all API permissions
  * @access  Private - requires permissions:read
  */
-router.get(
-  "/api",
-  authenticate,
-  requireApiPermission("permissions:read"),
-  async (req, res) => {
-    try {
-      const { page = 1, limit = 20, sort = "api_permissions" } = req.query;
+router.get("/api", authenticate, requireApiPermission("permissions:read"), async (req, res) => {
+  try {
+    const { page = 1, limit = 20, sort = "api_permissions" } = req.query;
 
-      const options = {
-        page: parseInt(page),
-        limit: parseInt(limit),
-        sort: { [sort]: 1 },
-      };
+    const options = {
+      page: parseInt(page),
+      limit: parseInt(limit),
+      sort: { [sort]: 1 },
+    };
 
-      // Calculate skip value for pagination
-      const skip = (options.page - 1) * options.limit;
+    // Calculate skip value for pagination
+    const skip = (options.page - 1) * options.limit;
 
-      // Get API permissions with pagination
-      const apiPermissions = await ApiPermission.find({})
-        .sort(options.sort)
-        .skip(skip)
-        .limit(options.limit);
+    // Get API permissions with pagination
+    const apiPermissions = await ApiPermission.find({})
+      .sort(options.sort)
+      .skip(skip)
+      .limit(options.limit);
 
-      // Get total count for pagination
-      const totalCount = await ApiPermission.countDocuments();
-      const totalPages = Math.ceil(totalCount / options.limit);
+    // Get total count for pagination
+    const totalCount = await ApiPermission.countDocuments();
+    const totalPages = Math.ceil(totalCount / options.limit);
 
-      res.json({
-        success: true,
-        data: apiPermissions,
-        pagination: {
-          page: options.page,
-          limit: options.limit,
-          totalCount,
-          totalPages,
-          hasNextPage: options.page < totalPages,
-          hasPrevPage: options.page > 1,
-        },
-      });
-    } catch (error) {
-      console.error("Error fetching API permissions:", error);
-      res.status(500).json({
-        success: false,
-        message: "Error fetching API permissions",
-        error:
-          process.env.NODE_ENV === "development" ? error.message : undefined,
-      });
-    }
+    res.json({
+      success: true,
+      data: apiPermissions,
+      pagination: {
+        page: options.page,
+        limit: options.limit,
+        totalCount,
+        totalPages,
+        hasNextPage: options.page < totalPages,
+        hasPrevPage: options.page > 1,
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching API permissions:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching API permissions",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
   }
-);
+});
 
 /**
  * @route   GET /api/permissions/api/:id
@@ -180,8 +172,7 @@ router.get(
       res.status(500).json({
         success: false,
         message: "Error fetching API permission",
-        error:
-          process.env.NODE_ENV === "development" ? error.message : undefined,
+        error: process.env.NODE_ENV === "development" ? error.message : undefined,
       });
     }
   }
@@ -239,8 +230,7 @@ router.post(
       res.status(500).json({
         success: false,
         message: "Error creating API permission",
-        error:
-          process.env.NODE_ENV === "development" ? error.message : undefined,
+        error: process.env.NODE_ENV === "development" ? error.message : undefined,
       });
     }
   }
@@ -312,8 +302,7 @@ router.put(
       res.status(500).json({
         success: false,
         message: "Error updating API permission",
-        error:
-          process.env.NODE_ENV === "development" ? error.message : undefined,
+        error: process.env.NODE_ENV === "development" ? error.message : undefined,
       });
     }
   }
@@ -364,8 +353,7 @@ router.delete(
       res.status(500).json({
         success: false,
         message: "Error deleting API permission",
-        error:
-          process.env.NODE_ENV === "development" ? error.message : undefined,
+        error: process.env.NODE_ENV === "development" ? error.message : undefined,
       });
     }
   }
@@ -380,56 +368,50 @@ router.delete(
  * @desc    Get all page permissions
  * @access  Private - requires permissions:read
  */
-router.get(
-  "/page",
-  authenticate,
-  requireApiPermission("permissions:read"),
-  async (req, res) => {
-    try {
-      const { page = 1, limit = 20, sort = "pg_permissions" } = req.query;
+router.get("/page", authenticate, requireApiPermission("permissions:read"), async (req, res) => {
+  try {
+    const { page = 1, limit = 20, sort = "pg_permissions" } = req.query;
 
-      const options = {
-        page: parseInt(page),
-        limit: parseInt(limit),
-        sort: { [sort]: 1 },
-      };
+    const options = {
+      page: parseInt(page),
+      limit: parseInt(limit),
+      sort: { [sort]: 1 },
+    };
 
-      // Calculate skip value for pagination
-      const skip = (options.page - 1) * options.limit;
+    // Calculate skip value for pagination
+    const skip = (options.page - 1) * options.limit;
 
-      // Get page permissions with pagination
-      const pagePermissions = await PagePermission.find({})
-        .sort(options.sort)
-        .skip(skip)
-        .limit(options.limit);
+    // Get page permissions with pagination
+    const pagePermissions = await PagePermission.find({})
+      .sort(options.sort)
+      .skip(skip)
+      .limit(options.limit);
 
-      // Get total count for pagination
-      const totalCount = await PagePermission.countDocuments();
-      const totalPages = Math.ceil(totalCount / options.limit);
+    // Get total count for pagination
+    const totalCount = await PagePermission.countDocuments();
+    const totalPages = Math.ceil(totalCount / options.limit);
 
-      res.json({
-        success: true,
-        data: pagePermissions,
-        pagination: {
-          page: options.page,
-          limit: options.limit,
-          totalCount,
-          totalPages,
-          hasNextPage: options.page < totalPages,
-          hasPrevPage: options.page > 1,
-        },
-      });
-    } catch (error) {
-      console.error("Error fetching page permissions:", error);
-      res.status(500).json({
-        success: false,
-        message: "Error fetching page permissions",
-        error:
-          process.env.NODE_ENV === "development" ? error.message : undefined,
-      });
-    }
+    res.json({
+      success: true,
+      data: pagePermissions,
+      pagination: {
+        page: options.page,
+        limit: options.limit,
+        totalCount,
+        totalPages,
+        hasNextPage: options.page < totalPages,
+        hasPrevPage: options.page > 1,
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching page permissions:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching page permissions",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
   }
-);
+});
 
 /**
  * @route   GET /api/permissions/page/:id
@@ -470,8 +452,7 @@ router.get(
       res.status(500).json({
         success: false,
         message: "Error fetching page permission",
-        error:
-          process.env.NODE_ENV === "development" ? error.message : undefined,
+        error: process.env.NODE_ENV === "development" ? error.message : undefined,
       });
     }
   }
@@ -529,8 +510,7 @@ router.post(
       res.status(500).json({
         success: false,
         message: "Error creating page permission",
-        error:
-          process.env.NODE_ENV === "development" ? error.message : undefined,
+        error: process.env.NODE_ENV === "development" ? error.message : undefined,
       });
     }
   }
@@ -602,8 +582,7 @@ router.put(
       res.status(500).json({
         success: false,
         message: "Error updating page permission",
-        error:
-          process.env.NODE_ENV === "development" ? error.message : undefined,
+        error: process.env.NODE_ENV === "development" ? error.message : undefined,
       });
     }
   }
@@ -654,8 +633,7 @@ router.delete(
       res.status(500).json({
         success: false,
         message: "Error deleting page permission",
-        error:
-          process.env.NODE_ENV === "development" ? error.message : undefined,
+        error: process.env.NODE_ENV === "development" ? error.message : undefined,
       });
     }
   }
@@ -696,7 +674,8 @@ router.get("/menu-items", authenticate, async (req, res) => {
 
     // Get all menu items directly from collection (bypass model validation)
     const db = mongoose.connection.db;
-    const allMenuItems = await db.collection('sidebar_menu_items')
+    const allMenuItems = await db
+      .collection("sidebar_menu_items")
       .find({})
       .sort({ m_order: 1 })
       .toArray();
@@ -779,9 +758,7 @@ router.get("/page-permissions", authenticate, async (req, res) => {
     const { roleId } = req.query;
 
     // Get all page permissions first
-    const allPagePermissions = await PagePermission.find()
-      .sort({ pg_permissions: 1 })
-      .lean();
+    const allPagePermissions = await PagePermission.find().sort({ pg_permissions: 1 }).lean();
 
     let assignedPermissions = [];
 
@@ -818,10 +795,7 @@ router.get("/page-permissions", authenticate, async (req, res) => {
         },
       ]);
 
-      if (
-        rolePermissions.length > 0 &&
-        rolePermissions[0].assignedPermissionIds
-      ) {
+      if (rolePermissions.length > 0 && rolePermissions[0].assignedPermissionIds) {
         assignedPermissions = rolePermissions[0].assignedPermissionIds
           .filter((id) => id !== null)
           .map((id) => id.toString());
@@ -858,9 +832,7 @@ router.get("/api-permissions", authenticate, async (req, res) => {
     const { roleId } = req.query;
 
     // Get all API permissions first
-    const allApiPermissions = await ApiPermission.find()
-      .sort({ api_permissions: 1 })
-      .lean();
+    const allApiPermissions = await ApiPermission.find().sort({ api_permissions: 1 }).lean();
 
     let assignedPermissions = [];
 
@@ -873,9 +845,7 @@ router.get("/api-permissions", authenticate, async (req, res) => {
       const idList = await RoleApiPermission.distinct("api_permission_id", {
         role_id: roleObjectId,
       });
-      assignedPermissions = idList
-        .filter((id) => id)
-        .map((id) => id.toString());
+      assignedPermissions = idList.filter((id) => id).map((id) => id.toString());
       console.log(
         "[api-permissions] roleId",
         roleId,
@@ -913,9 +883,7 @@ router.get("/debug/api-permissions/:roleId", authenticate, async (req, res) => {
   try {
     const { roleId } = req.params;
     if (!mongoose.Types.ObjectId.isValid(roleId)) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Invalid roleId" });
+      return res.status(400).json({ success: false, message: "Invalid roleId" });
     }
     const docs = await RoleApiPermission.find({
       role_id: new mongoose.Types.ObjectId(roleId),

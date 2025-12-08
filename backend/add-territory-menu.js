@@ -31,10 +31,10 @@ async function addTerritoryMenu() {
 
     // 2. Check if Territory menu already exists
     console.log("\n📋 Checking for Territory menu...");
-    
+
     // Use direct collection access to match the existing schema
     const db = mongoose.connection.db;
-    let territoryMenu = await db.collection('sidebar_menu_items').findOne({
+    let territoryMenu = await db.collection("sidebar_menu_items").findOne({
       label: "Territory",
       parent_id: masterMenu._id,
     });
@@ -45,7 +45,8 @@ async function addTerritoryMenu() {
       console.log("   Creating Territory menu...");
 
       // Get max m_order for Master submenu items
-      const maxOrderItem = await db.collection('sidebar_menu_items')
+      const maxOrderItem = await db
+        .collection("sidebar_menu_items")
         .find({
           parent_id: masterMenu._id,
           is_submenu: true,
@@ -56,7 +57,7 @@ async function addTerritoryMenu() {
 
       const newOrder = maxOrderItem.length > 0 ? maxOrderItem[0].m_order + 0.1 : 3.5;
 
-      const result = await db.collection('sidebar_menu_items').insertOne({
+      const result = await db.collection("sidebar_menu_items").insertOne({
         label: "Territory",
         href: "/master/territories",
         icon: "FaMapMarkedAlt",
@@ -64,7 +65,7 @@ async function addTerritoryMenu() {
         is_submenu: true,
         m_order: newOrder,
       });
-      
+
       territoryMenu = { _id: result.insertedId };
       console.log(`   ✅ Created: Territory (${territoryMenu._id}) with order ${newOrder}`);
     }
