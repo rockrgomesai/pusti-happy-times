@@ -587,6 +587,14 @@ router.post(
         });
       }
 
+      // Surface validation/hierarchy errors clearly for the client
+      if (error.name === "ValidationError" || error.message) {
+        return res.status(400).json({
+          success: false,
+          message: error.message || "Failed to create territory",
+        });
+      }
+
       return res.status(500).json({
         success: false,
         message: "Failed to create territory",
