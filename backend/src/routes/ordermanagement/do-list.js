@@ -96,7 +96,18 @@ router.get("/do-list", authenticate, requireApiPermission("do-list:read"), async
     }
 
     if (distributor_id) {
-      filter.distributor_id = mongoose.Types.ObjectId(distributor_id);
+      // If distributor filter is specified, apply it in addition to existing filters
+      const distributorObjectId = mongoose.Types.ObjectId(distributor_id);
+      if (filter.$or) {
+        // Combine with existing $or conditions
+        filter.$and = [
+          { $or: filter.$or },
+          { distributor_id: distributorObjectId }
+        ];
+        delete filter.$or;
+      } else {
+        filter.distributor_id = distributorObjectId;
+      }
     }
 
     if (status) {
