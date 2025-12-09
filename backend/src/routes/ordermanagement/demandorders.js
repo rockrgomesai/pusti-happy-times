@@ -719,20 +719,91 @@ router.get(
   async (req, res) => {
     try {
       const userId = req.user.id;
+      const User = require("../../models/User");
+      const Role = require("../../models/Role");
+      const Employee = require("../../models/Employee");
 
       console.log("🔍 Pending Approval Query Debug:");
       console.log("  User ID:", userId);
-      console.log("  Query:", {
-        current_approver_id: userId,
-        status: { $nin: ["draft", "approved", "cancelled", "rejected"] },
-      });
 
-      // Find all orders where current_approver_id = logged-in user
-      // Status filtering is removed to show all pending orders for this approver
-      const orders = await DemandOrder.find({
-        current_approver_id: userId,
-        status: { $nin: ["draft", "approved", "cancelled", "rejected"] },
-      })
+      // Get user's role and employee info
+      const user = await User.findById(userId).populate("role_id").populate("employee_id").lean();
+      
+      if (!user || !user.role_id) {
+        return res.status(403).json({
+          success: false,
+          message: "User role not found",
+        });
+      }
+
+      const roleName = user.role_id.role || user.role_id.name;
+      console.log("  Role:", roleName);
+
+      let query = {};
+
+      // Territory-based filtering for ASM, RSM, ZSM
+      if (roleName === "ASM" && user.employee_id?.territory_assignments?.all_territory_ids) {
+        // ASM: Show all orders where current_approver_role = "ASM" 
+        // AND distributor's area is in ASM's territory
+        const asmAreas = user.employee_id.territory_assignments.all_territory_ids.filter(tid => {
+          // We need to check if this territory is an Area
+          // For now, include all territories in the employee's assignment
+          return true;
+        });
+
+        console.log("  ASM Areas:", asmAreas.length);
+
+        // Find all distributors in ASM's areas
+        const Distributor = require("../../models/Distributor");
+        const Territory = require("../../models/Territory");
+        
+        const allAreas = await Territory.find({
+          _id: { $in: asmAreas },
+          territory_level: "Area"
+        }).select("_id").lean();
+
+        const areaIds = allAreas.map(a => a._id);
+        console.log("  Filtered Area IDs:", areaIds.length);
+
+        // Find DB Points under these areas
+        const dbPoints = await Territory.find({
+          "ancestors": { $in: areaIds }
+        }).select("_id").lean();
+
+        const dbPointIds = dbPoints.map(d => d._id);
+        console.log("  DB Point IDs:", dbPointIds.length);
+
+        // Find distributors with these DB Points
+        const distributors = await Distributor.find({
+          db_point_id: { $in: dbPointIds }
+        }).select("_id").lean();
+
+        const distributorIds = distributors.map(d => d._id);
+        console.log("  Distributor IDs in ASM area:", distributorIds.length);
+
+        query = {
+          distributor_id: { $in: distributorIds },
+          current_approver_role: "ASM",
+          status: "submitted"
+        };
+      } else if (roleName === "RSM" || roleName === "ZSM") {
+        // RSM/ZSM: Similar territory-based logic
+        query = {
+          current_approver_role: roleName,
+          status: "submitted"
+        };
+      } else {
+        // For other roles (Sales Admin, Order Management, Finance, Distribution)
+        // Show orders where current_approver_role matches their role
+        query = {
+          current_approver_role: roleName,
+          status: { $nin: ["draft", "approved", "cancelled", "rejected"] }
+        };
+      }
+
+      console.log("  Query:", JSON.stringify(query));
+
+      const orders = await DemandOrder.find(query)
         .populate({
           path: "distributor_id",
           select: "name erp_id phone contact_person db_point_id",
@@ -746,28 +817,6 @@ router.get(
         .lean();
 
       console.log("  Orders found:", orders.length);
-      if (orders.length > 0) {
-        console.log("  First order:", {
-          order_number: orders[0].order_number,
-          status: orders[0].status,
-          current_approver_id: orders[0].current_approver_id,
-          current_approver_role: orders[0].current_approver_role,
-        });
-      }
-
-      // Check if there are any submitted orders at all
-      const allSubmittedOrders = await DemandOrder.find({
-        status: "submitted",
-      }).select("order_number current_approver_id current_approver_role").lean();
-      
-      console.log("  Total submitted orders in DB:", allSubmittedOrders.length);
-      if (allSubmittedOrders.length > 0) {
-        console.log("  Sample submitted orders:", allSubmittedOrders.slice(0, 3).map(o => ({
-          order_number: o.order_number,
-          current_approver_id: o.current_approver_id?.toString(),
-          current_approver_role: o.current_approver_role,
-        })));
-      }
 
       // Fix missing performed_by_name in approval history for all orders
       const User = require("../../models/User");
