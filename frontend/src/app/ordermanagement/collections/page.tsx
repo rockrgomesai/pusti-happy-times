@@ -275,8 +275,10 @@ export default function PaymentsPage() {
   const handleViewImage = (image: Collection["image"]) => {
     if (!image) return;
 
+    // Static files are served from root /uploads, not /api/v1/uploads
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '') || '';
     setSelectedImage({
-      url: `${process.env.NEXT_PUBLIC_API_URL}${image.file_path}`,
+      url: `${baseUrl}${image.file_path}`,
       name: image.file_name,
       type: image.mime_type,
     });
