@@ -1696,21 +1696,13 @@ router.post(
         });
       }
 
-      // Find Sales Admin user (assuming first one for now, can be refined)
-      const salesAdminUser = await User.findOne({ role_id: salesAdminRole._id }).lean();
-
-      if (!salesAdminUser) {
-        return res.status(404).json({
-          success: false,
-          message: "Sales Admin user account not found",
-        });
-      }
-
-      // Update order: forward to Sales Admin
+      // Sales Admin is an HQ role - don't assign to specific user
+      // Just set the role and let any Sales Admin see it
+      // Update order: forward to Sales Admin (role-based, not user-specific)
       const updatedOrder = await DemandOrder.findByIdAndUpdate(
         orderId,
         {
-          current_approver_id: salesAdminUser._id,
+          $unset: { current_approver_id: "" }, // Remove specific user assignment for HQ roles
           current_approver_role: "Sales Admin",
           // Status remains 'submitted' during approval chain
           $push: {
@@ -1810,18 +1802,12 @@ router.post(
         });
       }
 
-      const omUser = await User.findOne({ role_id: omRole._id }).lean();
-      if (!omUser) {
-        return res.status(404).json({
-          success: false,
-          message: "Order Management user account not found",
-        });
-      }
-
+      // Order Management is an HQ role - don't assign to specific user
+      // Just set the role and let any Order Management user see it
       const updatedOrder = await DemandOrder.findByIdAndUpdate(
         orderId,
         {
-          current_approver_id: omUser._id,
+          $unset: { current_approver_id: "" },
           current_approver_role: "Order Management",
           // Status remains 'submitted' during approval chain
           $push: {
@@ -1890,18 +1876,12 @@ router.post(
         });
       }
 
-      const financeUser = await User.findOne({ role_id: financeRole._id }).lean();
-      if (!financeUser) {
-        return res.status(404).json({
-          success: false,
-          message: "Finance user account not found",
-        });
-      }
-
+      // Finance is an HQ role - don't assign to specific user
+      // Just set the role and let any Finance user see it
       const updatedOrder = await DemandOrder.findByIdAndUpdate(
         orderId,
         {
-          current_approver_id: financeUser._id,
+          $unset: { current_approver_id: "" },
           current_approver_role: "Finance",
           // Status remains 'submitted' during approval chain
           $push: {
@@ -1970,18 +1950,12 @@ router.post(
         });
       }
 
-      const distributionUser = await User.findOne({ role_id: distributionRole._id }).lean();
-      if (!distributionUser) {
-        return res.status(404).json({
-          success: false,
-          message: "Distribution user account not found",
-        });
-      }
-
+      // Distribution is an HQ role - don't assign to specific user
+      // Just set the role and let any Distribution user see it
       const updatedOrder = await DemandOrder.findByIdAndUpdate(
         orderId,
         {
-          current_approver_id: distributionUser._id,
+          $unset: { current_approver_id: "" },
           current_approver_role: "Distribution",
           status: "forwarded_to_distribution",
           $push: {
