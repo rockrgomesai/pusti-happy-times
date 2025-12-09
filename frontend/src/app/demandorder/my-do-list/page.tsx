@@ -161,11 +161,11 @@ export default function MyDOListPage() {
       if (fromDate) params.from_date = fromDate.toISOString();
       if (toDate) params.to_date = toDate.toISOString();
 
-      const response = await api.get('/demandorders/my-do-list', { params });
+      const response: any = await apiClient.get('/demandorders/my-do-list', params);
 
-      if (response.data.success) {
-        setOrders(response.data.data.orders);
-        setPagination(response.data.data.pagination);
+      if (response.success) {
+        setOrders(response.data.orders);
+        setPagination(response.data.pagination);
       }
     } catch (error: any) {
       setError(error.response?.data?.message || 'Failed to load my DO list');
