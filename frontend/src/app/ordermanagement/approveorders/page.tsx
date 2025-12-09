@@ -261,11 +261,25 @@ const ApproveOrdersPage = () => {
     try {
       setLoading(true);
       setError(null);
+      console.log("🔍 Fetching pending approval orders...");
       const response = await api.get("/ordermanagement/demandorders/pending-approval");
+      console.log("📦 Pending approval response:", {
+        success: response.data.success,
+        count: response.data.count,
+        ordersLength: response.data.data?.length,
+        orders: response.data.data,
+      });
       setOrders(response.data.data || []);
+      if (!response.data.data || response.data.data.length === 0) {
+        console.warn("⚠️ No orders found for current user. Check:");
+        console.warn("  1. Are there any submitted orders in the system?");
+        console.warn("  2. Is current_approver_id set on those orders?");
+        console.warn("  3. Does current_approver_id match your user ID?");
+      }
     } catch (err: any) {
       setError(err.response?.data?.message || "Failed to fetch orders");
-      console.error("Error fetching orders:", err);
+      console.error("❌ Error fetching orders:", err);
+      console.error("  Response:", err.response?.data);
     } finally {
       setLoading(false);
     }
