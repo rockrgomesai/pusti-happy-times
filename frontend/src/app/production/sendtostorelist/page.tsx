@@ -138,7 +138,7 @@ export default function SendToStoreListPage() {
   };
 
   useEffect(() => {
-    if (!authLoading && user?.role?.role === 'Inventory Factory') {
+    if (!authLoading && user && (user.role.role === 'Production' || user.role.role === 'Inventory Factory')) {
       fetchShipments();
     }
   }, [page, rowsPerPage, authLoading, user]);
