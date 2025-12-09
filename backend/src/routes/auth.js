@@ -107,13 +107,13 @@ const passwordResetValidation = [
  */
 router.post("/login", loginValidation, async (req, res) => {
   try {
-    console.log('🔐 Login attempt - Username:', req.body.username);
-    console.log('🔐 Login attempt - Password length:', req.body.password?.length);
-    
+    console.log("🔐 Login attempt - Username:", req.body.username);
+    console.log("🔐 Login attempt - Password length:", req.body.password?.length);
+
     // Check validation errors
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      console.log('❌ Validation errors:', errors.array());
+      console.log("❌ Validation errors:", errors.array());
       return res.status(400).json({
         success: false,
         message: "Validation failed",
@@ -122,7 +122,7 @@ router.post("/login", loginValidation, async (req, res) => {
     }
 
     const { username, password } = req.body;
-    console.log('🔍 Looking up user:', username);
+    console.log("🔍 Looking up user:", username);
 
     // Find user by username and include password, populate employee/distributor
     const user = await User.findOne({ username })
@@ -131,9 +131,9 @@ router.post("/login", loginValidation, async (req, res) => {
       .populate("employee_id")
       .populate("distributor_id");
 
-    console.log('👤 User found:', user ? `Yes (${user._id})` : 'No');
+    console.log("👤 User found:", user ? `Yes (${user._id})` : "No");
     if (!user) {
-      console.log('❌ User not found in database');
+      console.log("❌ User not found in database");
       return res.status(401).json({
         success: false,
         message: "Invalid credentials",
@@ -142,9 +142,9 @@ router.post("/login", loginValidation, async (req, res) => {
     }
 
     // Check if account is active
-    console.log('✅ User active status:', user.active);
+    console.log("✅ User active status:", user.active);
     if (!user.active) {
-      console.log('❌ Account is deactivated');
+      console.log("❌ Account is deactivated");
       return res.status(401).json({
         success: false,
         message: "Account is deactivated",
@@ -155,32 +155,35 @@ router.post("/login", loginValidation, async (req, res) => {
     // Verify password using bcrypt or plain text comparison (temporary)
     let isPasswordValid = false;
 
-    console.log('🔑 Stored password starts with:', user.password.substring(0, 4));
-    console.log('🔑 Is bcrypt hash:', user.password.startsWith("$2b$") || user.password.startsWith("$2a$"));
-    
+    console.log("🔑 Stored password starts with:", user.password.substring(0, 4));
+    console.log(
+      "🔑 Is bcrypt hash:",
+      user.password.startsWith("$2b$") || user.password.startsWith("$2a$")
+    );
+
     // Check if password looks like a bcrypt hash
     if (user.password.startsWith("$2b$") || user.password.startsWith("$2a$")) {
       // Use bcrypt comparison for hashed passwords
-      console.log('🔐 Comparing with bcrypt...');
+      console.log("🔐 Comparing with bcrypt...");
       isPasswordValid = await bcrypt.compare(password, user.password);
-      console.log('🔐 Bcrypt comparison result:', isPasswordValid);
+      console.log("🔐 Bcrypt comparison result:", isPasswordValid);
     } else {
       // Use plain text comparison for non-hashed passwords (temporary)
-      console.log('🔐 Comparing plain text...');
+      console.log("🔐 Comparing plain text...");
       isPasswordValid = password === user.password;
-      console.log('🔐 Plain text comparison result:', isPasswordValid);
+      console.log("🔐 Plain text comparison result:", isPasswordValid);
     }
 
     if (!isPasswordValid) {
-      console.log('❌ Password validation failed');
+      console.log("❌ Password validation failed");
       return res.status(401).json({
         success: false,
         message: "Invalid credentials",
         code: "INVALID_CREDENTIALS",
       });
     }
-    
-    console.log('✅ Password validated successfully');
+
+    console.log("✅ Password validated successfully");
 
     // Check if role exists
     if (!user.role_id) {

@@ -651,11 +651,11 @@ router.post(
         });
       }
 
-      if (error.name === 'ValidationError') {
-        const messages = Object.values(error.errors).map(err => err.message);
+      if (error.name === "ValidationError") {
+        const messages = Object.values(error.errors).map((err) => err.message);
         return res.status(400).json({
           success: false,
-          message: "Validation error: " + messages.join(', '),
+          message: "Validation error: " + messages.join(", "),
           errors: error.errors,
         });
       }

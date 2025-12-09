@@ -373,7 +373,7 @@ employeeSchema.pre("validate", async function (next) {
     ];
     this.territory_assignments.all_territory_ids = allIds;
   }
-  
+
   // Field employees must have territory assignments
   if (this.employee_type === "field") {
     if (

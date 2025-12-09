@@ -973,6 +973,7 @@ export default function DOListPage() {
                 <>
                   <Divider sx={{ my: 3 }} />
                   <Typography variant="subtitle1" gutterBottom fontWeight="bold">Order History</Typography>
+                  {console.log('📋 Approval history for order:', selectedOrder.order_number, selectedOrder.approval_history)}
                   <Timeline position="right">
                     {[...selectedOrder.approval_history].reverse().map((history: any, index: number) => (
                       <TimelineItem key={index}>
