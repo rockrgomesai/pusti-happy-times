@@ -638,11 +638,25 @@ router.post(
       });
     } catch (error) {
       console.error("Error creating employee:", error);
+      console.error("Error stack:", error.stack);
+      console.error("Error name:", error.name);
+      if (error.errors) {
+        console.error("Validation errors:", JSON.stringify(error.errors, null, 2));
+      }
 
       if (error.code === 11000) {
         return res.status(400).json({
           success: false,
           message: "Employee with provided unique field already exists",
+        });
+      }
+
+      if (error.name === 'ValidationError') {
+        const messages = Object.values(error.errors).map(err => err.message);
+        return res.status(400).json({
+          success: false,
+          message: "Validation error: " + messages.join(', '),
+          errors: error.errors,
         });
       }
 
