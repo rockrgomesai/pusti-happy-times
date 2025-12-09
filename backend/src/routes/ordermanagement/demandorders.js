@@ -741,62 +741,87 @@ router.get(
 
       let query = {};
 
-      // Territory-based filtering for ASM, RSM, ZSM
-      if (roleName === "ASM" && user.employee_id?.territory_assignments?.all_territory_ids) {
-        // ASM: Show all orders where current_approver_role = "ASM" 
-        // AND distributor's area is in ASM's territory
-        const asmAreas = user.employee_id.territory_assignments.all_territory_ids.filter(tid => {
-          // We need to check if this territory is an Area
-          // For now, include all territories in the employee's assignment
-          return true;
-        });
+      // Territory-based filtering for territorial roles (ASM, RSM, ZSM)
+      const Distributor = require("../../models/Distributor");
+      const Territory = require("../../models/Territory");
 
-        console.log("  ASM Areas:", asmAreas.length);
-
-        // Find all distributors in ASM's areas
-        const Distributor = require("../../models/Distributor");
-        const Territory = require("../../models/Territory");
+      if ((roleName === "ASM" || roleName === "RSM" || roleName === "ZSM") && 
+          user.employee_id?.territory_assignments?.all_territory_ids) {
         
-        const allAreas = await Territory.find({
-          _id: { $in: asmAreas },
-          territory_level: "Area"
+        const userTerritories = user.employee_id.territory_assignments.all_territory_ids;
+        console.log(`  ${roleName} Territories:`, userTerritories.length);
+
+        // Get the territory level to filter by
+        let territoryLevel;
+        let approverRole;
+        
+        if (roleName === "ASM") {
+          territoryLevel = "Area";
+          approverRole = "ASM";
+        } else if (roleName === "RSM") {
+          territoryLevel = "Region";
+          approverRole = "RSM";
+        } else if (roleName === "ZSM") {
+          territoryLevel = "Zone";
+          approverRole = "ZSM";
+        }
+
+        // Find territories of the appropriate level
+        const territories = await Territory.find({
+          _id: { $in: userTerritories },
+          territory_level: territoryLevel
         }).select("_id").lean();
 
-        const areaIds = allAreas.map(a => a._id);
-        console.log("  Filtered Area IDs:", areaIds.length);
+        const territoryIds = territories.map(t => t._id);
+        console.log(`  Filtered ${territoryLevel} IDs:`, territoryIds.length);
 
-        // Find DB Points under these areas
-        const dbPoints = await Territory.find({
-          "ancestors": { $in: areaIds }
-        }).select("_id").lean();
+        if (territoryIds.length === 0) {
+          // No territories found, return empty
+          query = { _id: null };
+        } else {
+          // Find DB Points under these territories (DB Points have ancestors: [area, region, zone])
+          const dbPoints = await Territory.find({
+            territory_level: "DB Point",
+            "ancestors": { $in: territoryIds }
+          }).select("_id").lean();
 
-        const dbPointIds = dbPoints.map(d => d._id);
-        console.log("  DB Point IDs:", dbPointIds.length);
+          const dbPointIds = dbPoints.map(d => d._id);
+          console.log("  DB Point IDs:", dbPointIds.length);
 
-        // Find distributors with these DB Points
-        const distributors = await Distributor.find({
-          db_point_id: { $in: dbPointIds }
-        }).select("_id").lean();
+          if (dbPointIds.length === 0) {
+            query = { _id: null };
+          } else {
+            // Find distributors with these DB Points
+            const distributors = await Distributor.find({
+              db_point_id: { $in: dbPointIds }
+            }).select("_id").lean();
 
-        const distributorIds = distributors.map(d => d._id);
-        console.log("  Distributor IDs in ASM area:", distributorIds.length);
+            const distributorIds = distributors.map(d => d._id);
+            console.log(`  Distributor IDs in ${roleName} territory:`, distributorIds.length);
 
-        query = {
-          distributor_id: { $in: distributorIds },
-          current_approver_role: "ASM",
-          status: "submitted"
-        };
-      } else if (roleName === "RSM" || roleName === "ZSM") {
-        // RSM/ZSM: Similar territory-based logic
-        query = {
-          current_approver_role: roleName,
-          status: "submitted"
-        };
+            if (distributorIds.length === 0) {
+              query = { _id: null };
+            } else {
+              query = {
+                distributor_id: { $in: distributorIds },
+                current_approver_role: approverRole,
+                status: "submitted"
+              };
+            }
+          }
+        }
       } else {
-        // For other roles (Sales Admin, Order Management, Finance, Distribution)
+        // For non-territorial roles (Sales Admin, Order Management, Finance, Distribution)
         // Show orders where current_approver_role matches their role
+        const roleMapping = {
+          "Sales Admin": "Sales Admin",
+          "Order Management": "Order Management",
+          "Finance": "Finance",
+          "Distribution": "Distribution"
+        };
+        
         query = {
-          current_approver_role: roleName,
+          current_approver_role: roleMapping[roleName] || roleName,
           status: { $nin: ["draft", "approved", "cancelled", "rejected"] }
         };
       }
