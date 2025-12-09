@@ -729,7 +729,7 @@ router.get(
 
       // Get user's role and employee info
       const user = await User.findById(userId).populate("role_id").populate("employee_id").lean();
-      
+
       if (!user || !user.role_id) {
         return res.status(403).json({
           success: false,
@@ -745,67 +745,79 @@ router.get(
       // Territory-based filtering for territorial roles (ASM, RSM, ZSM)
       if (roleName === "ASM" || roleName === "RSM" || roleName === "ZSM") {
         // Check if user has territory assignments
-        if (!user.employee_id?.territory_assignments?.all_territory_ids || 
-            user.employee_id.territory_assignments.all_territory_ids.length === 0) {
+        if (
+          !user.employee_id?.territory_assignments?.all_territory_ids ||
+          user.employee_id.territory_assignments.all_territory_ids.length === 0
+        ) {
           console.log(`  ${roleName} has no territory assignments - returning empty`);
           return res.json({
             success: true,
             data: [],
             count: 0,
-            message: "No territories assigned to this user"
+            message: "No territories assigned to this user",
           });
         }
-        
+
         const userTerritories = user.employee_id.territory_assignments.all_territory_ids;
         console.log(`  ${roleName} Territories:`, userTerritories.length);
 
         // First, check what territory levels the user actually has
         const allUserTerritories = await Territory.find({
-          _id: { $in: userTerritories }
-        }).select("_id territory_level name").lean();
-        
-        console.log(`  User's territory details:`, allUserTerritories.map(t => ({
-          id: t._id.toString(),
-          name: t.name,
-          level: t.territory_level
-        })));
+          _id: { $in: userTerritories },
+        })
+          .select("_id level name type")
+          .lean();
 
-        // Get the territory level to filter by
+        console.log(
+          `  User's territory details:`,
+          allUserTerritories.map((t) => ({
+            id: t._id.toString(),
+            name: t.name,
+            type: t.type,
+            level: t.level,
+          }))
+        );
+
+        // Get the territory level to filter by (numeric: 0=zone, 1=region, 2=area, 3=db_point)
         let territoryLevel;
         let approverRole;
-        
+
         if (roleName === "ASM") {
-          territoryLevel = "Area";
+          territoryLevel = 2; // Area
           approverRole = "ASM";
         } else if (roleName === "RSM") {
-          territoryLevel = "Region";
+          territoryLevel = 1; // Region
           approverRole = "RSM";
         } else if (roleName === "ZSM") {
-          territoryLevel = "Zone";
+          territoryLevel = 0; // Zone
           approverRole = "ZSM";
         }
 
         // Find territories of the appropriate level
-        // Try both territory_level and type fields (database might use either)
         const territories = await Territory.find({
           _id: { $in: userTerritories },
-          $or: [
-            { territory_level: territoryLevel },
-            { type: territoryLevel }
-          ]
-        }).select("_id name type territory_level").lean();
+          level: territoryLevel,
+        })
+          .select("_id name type level")
+          .lean();
 
-        let territoryIds = territories.map(t => t._id);
-        console.log(`  Filtered ${territoryLevel} IDs:`, territoryIds.length, territories.map(t => ({
-          name: t.name,
-          type: t.type,
-          level: t.territory_level
-        })));
-        
+        let territoryIds = territories.map((t) => t._id);
+        console.log(
+          `  Filtered level ${territoryLevel} IDs:`,
+          territoryIds.length,
+          territories.map((t) => ({
+            name: t.name,
+            type: t.type,
+            level: t.level,
+          }))
+        );
+
         // If no territories found with level filter, use all user territories as fallback
         // This handles cases where territory_level/type is not set
         if (territoryIds.length === 0) {
-          console.log(`  Warning: No territories with ${territoryLevel} level found, using all user territories as fallback`);
+          console.log(
+            `  Warning: No territories with ${territoryLevel} level found, using all user territories as fallback`
+          );
           territoryIds = userTerritories;
         }
 
@@ -813,25 +825,64 @@ router.get(
           // No territories found, return empty
           query = { _id: null };
         } else {
-          // Find DB Points under these territories (DB Points have ancestors: [area, region, zone])
+          // Find DB Points - either:
+          // 1. DB Points that have these territories in ancestors (these territories are Areas/Regions/Zones)
+          // 2. OR these territories themselves ARE DB Points
           const dbPoints = await Territory.find({
-            territory_level: "DB Point",
-            "ancestors": { $in: territoryIds }
-          }).select("_id").lean();
+            $or: [
+              { territory_level: "DB Point", ancestors: { $in: territoryIds } },
+              { _id: { $in: territoryIds }, territory_level: "DB Point" },
+              { _id: { $in: territoryIds }, type: "DB Point" },
+              // If territory_level is not set, check if these territories have db_point in name
+              { _id: { $in: territoryIds }, name: /db.?point/i },
+            ],
+          })
+            .select("_id name")
+            .lean();
 
-          const dbPointIds = dbPoints.map(d => d._id);
-          console.log("  DB Point IDs:", dbPointIds.length);
+          let dbPointIds = dbPoints.map((d) => d._id);
+          console.log(
+            "  DB Point IDs:",
+            dbPointIds.length,
+            dbPoints.map((d) => d.name)
+          );
+
+          // If still no DB Points found, the user territories might be Areas containing DB Points
+          // Search for any DB Points that have these territories anywhere in their hierarchy
+          if (dbPointIds.length === 0) {
+            console.log("  No DB Points found, searching for DB Points in hierarchy...");
+            const allDbPoints = await Territory.find({
+              ancestors: { $in: territoryIds },
+            })
+              .select("_id name")
+              .lean();
+            dbPointIds = allDbPoints.map((d) => d._id);
+            console.log(
+              "  DB Points in hierarchy:",
+              dbPointIds.length,
+              allDbPoints.map((d) => d.name)
+            );
+          }
 
           if (dbPointIds.length === 0) {
             query = { _id: null };
           } else {
             // Find distributors with these DB Points
             const distributors = await Distributor.find({
-              db_point_id: { $in: dbPointIds }
-            }).select("_id").lean();
+              db_point_id: { $in: dbPointIds },
+            })
+              .select("_id name db_point_id")
+              .lean();
 
-            const distributorIds = distributors.map(d => d._id);
-            console.log(`  Distributor IDs in ${roleName} territory:`, distributorIds.length);
+            const distributorIds = distributors.map((d) => d._id);
+            console.log(
+              `  Distributor IDs in ${roleName} territory:`,
+              distributorIds.length,
+              distributors.map((d) => ({
+                name: d.name,
+                db_point: d.db_point_id.toString(),
+              }))
+            );
 
             if (distributorIds.length === 0) {
               query = { _id: null };
@@ -839,7 +890,7 @@ router.get(
               query = {
                 distributor_id: { $in: distributorIds },
                 current_approver_role: approverRole,
-                status: "submitted"
+                status: "submitted",
               };
             }
           }
@@ -850,13 +901,13 @@ router.get(
         const roleMapping = {
           "Sales Admin": "Sales Admin",
           "Order Management": "Order Management",
-          "Finance": "Finance",
-          "Distribution": "Distribution"
+          Finance: "Finance",
+          Distribution: "Distribution",
         };
-        
+
         query = {
           current_approver_role: roleMapping[roleName] || roleName,
-          status: { $nin: ["draft", "approved", "cancelled", "rejected"] }
+          status: { $nin: ["draft", "approved", "cancelled", "rejected"] },
         };
       }
 
@@ -878,7 +929,6 @@ router.get(
       console.log("  Orders found:", orders.length);
 
       // Fix missing performed_by_name in approval history for all orders
-
 
       for (let order of orders) {
         if (order.approval_history) {
@@ -1102,8 +1152,6 @@ router.get("/:id", authenticate, requireApiPermission("demandorder:read"), async
 
     // Fix missing performed_by_name in approval history
     if (order.approval_history) {
-
-
       for (let entry of order.approval_history) {
         if (!entry.performed_by_name && entry.performed_by) {
           const historyUser = await User.findById(entry.performed_by).select("username").lean();
@@ -1191,8 +1239,6 @@ router.put("/:id", authenticate, requireApiPermission("demandorder:update"), asy
     const { user } = req;
     const { items, notes, edit_reason } = req.body;
     const distributorId = getDistributorId(user);
-
-
 
     // Get user's role to determine permissions
     let userRole = null;
@@ -1402,9 +1448,6 @@ router.post(
       }
 
       // Find Area Manager (ASM) assigned to this area
-
-
-
 
       const asmRole = await Role.findOne({ role: "ASM" }).lean();
 
@@ -1719,8 +1762,6 @@ router.post(
 
       // Find Sales Admin role
 
-
-
       const salesAdminRole = await Role.findOne({ role: "Sales Admin" });
 
       if (!salesAdminRole) {
@@ -1825,9 +1866,6 @@ router.post(
         });
       }
 
-
-
-
       const omRole = await Role.findOne({ role: "Order Management" });
       if (!omRole) {
         return res.status(500).json({
@@ -1899,9 +1937,6 @@ router.post(
         });
       }
 
-
-
-
       const financeRole = await Role.findOne({ role: "Finance" });
       if (!financeRole) {
         return res.status(500).json({
@@ -1972,9 +2007,6 @@ router.post(
           message: "Demand order not found",
         });
       }
-
-
-
 
       const distributionRole = await Role.findOne({ role: "Distribution" });
       if (!distributionRole) {
@@ -2049,9 +2081,6 @@ router.post(
 
       // Get the current user's role to track who returned it
       const currentUserRole = req.user.role_id?.role || req.user.role_id?.name || "Unknown";
-
-
-
 
       const salesAdminRole = await Role.findOne({ role: "Sales Admin" });
       if (!salesAdminRole) {
