@@ -786,13 +786,28 @@ router.get(
         }
 
         // Find territories of the appropriate level
+        // Try both territory_level and type fields (database might use either)
         const territories = await Territory.find({
           _id: { $in: userTerritories },
-          territory_level: territoryLevel
-        }).select("_id name").lean();
+          $or: [
+            { territory_level: territoryLevel },
+            { type: territoryLevel }
+          ]
+        }).select("_id name type territory_level").lean();
 
-        const territoryIds = territories.map(t => t._id);
-        console.log(`  Filtered ${territoryLevel} IDs:`, territoryIds.length, territories.map(t => t.name));
+        let territoryIds = territories.map(t => t._id);
+        console.log(`  Filtered ${territoryLevel} IDs:`, territoryIds.length, territories.map(t => ({
+          name: t.name,
+          type: t.type,
+          level: t.territory_level
+        })));
+        
+        // If no territories found with level filter, use all user territories as fallback
+        // This handles cases where territory_level/type is not set
+        if (territoryIds.length === 0) {
+          console.log(`  Warning: No territories with ${territoryLevel} level found, using all user territories as fallback`);
+          territoryIds = userTerritories;
+        }
 
         if (territoryIds.length === 0) {
           // No territories found, return empty
