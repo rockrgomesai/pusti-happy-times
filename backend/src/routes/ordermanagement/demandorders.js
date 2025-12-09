@@ -720,6 +720,13 @@ router.get(
     try {
       const userId = req.user.id;
 
+      console.log("🔍 Pending Approval Query Debug:");
+      console.log("  User ID:", userId);
+      console.log("  Query:", {
+        current_approver_id: userId,
+        status: { $nin: ["draft", "approved", "cancelled", "rejected"] },
+      });
+
       // Find all orders where current_approver_id = logged-in user
       // Status filtering is removed to show all pending orders for this approver
       const orders = await DemandOrder.find({
@@ -737,6 +744,30 @@ router.get(
         .populate("created_by", "name email")
         .sort({ submitted_at: -1, created_at: -1 })
         .lean();
+
+      console.log("  Orders found:", orders.length);
+      if (orders.length > 0) {
+        console.log("  First order:", {
+          order_number: orders[0].order_number,
+          status: orders[0].status,
+          current_approver_id: orders[0].current_approver_id,
+          current_approver_role: orders[0].current_approver_role,
+        });
+      }
+
+      // Check if there are any submitted orders at all
+      const allSubmittedOrders = await DemandOrder.find({
+        status: "submitted",
+      }).select("order_number current_approver_id current_approver_role").lean();
+      
+      console.log("  Total submitted orders in DB:", allSubmittedOrders.length);
+      if (allSubmittedOrders.length > 0) {
+        console.log("  Sample submitted orders:", allSubmittedOrders.slice(0, 3).map(o => ({
+          order_number: o.order_number,
+          current_approver_id: o.current_approver_id?.toString(),
+          current_approver_role: o.current_approver_role,
+        })));
+      }
 
       // Fix missing performed_by_name in approval history for all orders
       const User = require("../../models/User");
