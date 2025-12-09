@@ -759,6 +759,17 @@ router.get(
         const userTerritories = user.employee_id.territory_assignments.all_territory_ids;
         console.log(`  ${roleName} Territories:`, userTerritories.length);
 
+        // First, check what territory levels the user actually has
+        const allUserTerritories = await Territory.find({
+          _id: { $in: userTerritories }
+        }).select("_id territory_level name").lean();
+        
+        console.log(`  User's territory details:`, allUserTerritories.map(t => ({
+          id: t._id.toString(),
+          name: t.name,
+          level: t.territory_level
+        })));
+
         // Get the territory level to filter by
         let territoryLevel;
         let approverRole;
@@ -778,10 +789,10 @@ router.get(
         const territories = await Territory.find({
           _id: { $in: userTerritories },
           territory_level: territoryLevel
-        }).select("_id").lean();
+        }).select("_id name").lean();
 
         const territoryIds = territories.map(t => t._id);
-        console.log(`  Filtered ${territoryLevel} IDs:`, territoryIds.length);
+        console.log(`  Filtered ${territoryLevel} IDs:`, territoryIds.length, territories.map(t => t.name));
 
         if (territoryIds.length === 0) {
           // No territories found, return empty
