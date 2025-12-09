@@ -326,9 +326,20 @@ export default function PaymentsPage() {
     setPage(0);
   };
 
-  const handleActionComplete = () => {
+  const handleActionComplete = async () => {
+    // Reload the collections list
     loadCollections();
-    setDetailsOpen(false);
+    
+    // If we have a selected collection, refresh its data to show updated approval_chain
+    if (selectedCollection?._id) {
+      try {
+        const response = await collectionsApi.getCollection(selectedCollection._id);
+        setSelectedCollection(response.data);
+      } catch (error) {
+        console.error('Error refreshing collection details:', error);
+        // Keep dialog open even if refresh fails
+      }
+    }
   };
 
   const formatAmount = (amount: string) => {
