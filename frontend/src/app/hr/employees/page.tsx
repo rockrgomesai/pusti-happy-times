@@ -366,6 +366,7 @@ export default function EmployeesPage() {
     handleSubmit,
     reset,
     watch,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<EmployeeFormData>({
     resolver: zodResolver(employeeSchema),
@@ -414,6 +415,41 @@ export default function EmployeesPage() {
   // Watch employee_type to determine what context fields to show
   const selectedEmployeeType = watch('employee_type');
   const selectedFacilityId = watch('facility_id');
+  const selectedDesignationId = watch('designation_id');
+  
+  // Helper function to detect employee type from designation name
+  const detectEmployeeTypeFromDesignation = useCallback((designationId: string): string | null => {
+    const designation = designations.find(d => d._id === designationId);
+    if (!designation) return null;
+    
+    const name = designation.name.toLowerCase();
+    
+    // Field designations - these require territory assignments
+    const fieldKeywords = ['zonal', 'regional', 'area', 'territory', 'sales officer', 'field'];
+    if (fieldKeywords.some(keyword => name.includes(keyword))) {
+      return 'field';
+    }
+    
+    // Facility designations - these require facility assignment
+    const facilityKeywords = ['production', 'factory', 'depot', 'warehouse', 'inventory', 'store'];
+    if (facilityKeywords.some(keyword => name.includes(keyword))) {
+      return 'facility';
+    }
+    
+    // HQ is the safe default for administrative roles
+    return 'hq';
+  }, [designations]);
+  
+  // Auto-detect employee type when designation changes (only if not already set or is default 'hq')
+  useEffect(() => {
+    if (selectedDesignationId && (selectedEmployeeType === 'hq' || !selectedEmployeeType)) {
+      const detectedType = detectEmployeeTypeFromDesignation(selectedDesignationId);
+      if (detectedType && detectedType !== selectedEmployeeType) {
+        setValue('employee_type', detectedType as 'system_admin' | 'field' | 'facility' | 'hq');
+        toast.info(`Employee type auto-set to "${detectedType}" based on designation`);
+      }
+    }
+  }, [selectedDesignationId, selectedEmployeeType, detectEmployeeTypeFromDesignation, setValue]);
   
   // Determine if facility selector should show
   const shouldShowFacilitySelector = useMemo(() => {
@@ -666,6 +702,7 @@ export default function EmployeesPage() {
 
     // Add territory assignments if employee_type is 'field'
     if (values.employee_type === 'field' && territorySelection) {
+      console.log('Territory selection state:', territorySelection);
       const territory_assignments: any = {};
       
       if (territorySelection.zone_id) {
@@ -678,16 +715,36 @@ export default function EmployeesPage() {
         territory_assignments.area_ids = [territorySelection.area_id];
       }
       
+      console.log('Built territory_assignments:', territory_assignments);
+      
       if (Object.keys(territory_assignments).length > 0) {
         payload.territory_assignments = territory_assignments;
       }
     }
 
+    console.log('Final payload being sent:', JSON.stringify(payload, null, 2));
     return payload;
   };
 
   const onSubmit = async (formData: EmployeeFormData) => {
     try {
+      // Validate territory assignments for field employees
+      if (formData.employee_type === 'field') {
+        const hasTerritory = territorySelection && 
+          (territorySelection.zone_id || territorySelection.region_id || territorySelection.area_id);
+        
+        if (!hasTerritory) {
+          toast.error('Field employees must have at least one territory assignment (Zone, Region, or Area)');
+          return;
+        }
+      }
+      
+      // Validate facility assignment for facility employees
+      if (formData.employee_type === 'facility' && !formData.facility_id) {
+        toast.error('Facility employees must have a facility assignment');
+        return;
+      }
+      
       const payload = buildPayload(formData);
       if (editingEmployee) {
         await api.put(`/employees/${editingEmployee._id}`, payload);

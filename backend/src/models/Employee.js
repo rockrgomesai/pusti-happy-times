@@ -363,6 +363,17 @@ const employeeSchema = new mongoose.Schema(
  * Validation middleware - ensure employee_type matches required context fields
  */
 employeeSchema.pre("validate", async function (next) {
+  // Auto-populate all_territory_ids from individual territory arrays BEFORE validation
+  if (this.territory_assignments) {
+    const allIds = [
+      ...(this.territory_assignments.zone_ids || []),
+      ...(this.territory_assignments.region_ids || []),
+      ...(this.territory_assignments.area_ids || []),
+      ...(this.territory_assignments.db_point_ids || []),
+    ];
+    this.territory_assignments.all_territory_ids = allIds;
+  }
+  
   // Field employees must have territory assignments
   if (this.employee_type === "field") {
     if (
