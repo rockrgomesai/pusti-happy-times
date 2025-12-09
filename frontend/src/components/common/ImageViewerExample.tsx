@@ -62,7 +62,8 @@ export default function CollectionImageExample() {
 
     // Construct full URL (adjust based on your API base URL)
     // Static files are served from root /uploads, not /api/v1/uploads
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '') || '';
+    const isLocalhost = typeof window !== 'undefined' && window.location.hostname === 'localhost';
+    const baseUrl = isLocalhost ? 'http://localhost:5000' : '';
     const imageUrl = `${baseUrl}${image.file_path}`;
 
     setSelectedImage({
@@ -163,7 +164,7 @@ export default function CollectionImageExample() {
               >
                 <Box
                   component="img"
-                  src={`${process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '')}${collection.image.file_path}`}
+                  src={`${typeof window !== 'undefined' && window.location.hostname === 'localhost' ? 'http://localhost:5000' : ''}${collection.image.file_path}`}
                   alt={collection.image.file_name}
                   sx={{
                     width: "100%",

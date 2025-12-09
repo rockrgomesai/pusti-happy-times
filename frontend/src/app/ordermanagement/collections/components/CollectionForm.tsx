@@ -701,7 +701,7 @@ export default function CollectionForm({
       <ImageViewer
         open={imageViewerOpen}
         onClose={() => setImageViewerOpen(false)}
-        imageUrl={`${process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '')}${existingImage.file_path}`}
+        imageUrl={`${typeof window !== 'undefined' && window.location.hostname === 'localhost' ? 'http://localhost:5000' : ''}${existingImage.file_path}`}
         imageName={existingImage.file_name}
         imageType={existingImage.mime_type}
       />

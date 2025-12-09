@@ -276,10 +276,13 @@ export default function PaymentsPage() {
     if (!image) return;
 
     // Static files are served from root /uploads, not /api/v1/uploads
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '') || '';
+    // In production, use empty baseUrl for relative URLs from same origin
+    const isLocalhost = typeof window !== 'undefined' && window.location.hostname === 'localhost';
+    const baseUrl = isLocalhost ? 'http://localhost:5000' : '';
     const finalUrl = `${baseUrl}${image.file_path}`;
     console.log('🖼️ Image URL construction:', {
-      apiUrl: process.env.NEXT_PUBLIC_API_URL,
+      isLocalhost,
+      hostname: typeof window !== 'undefined' ? window.location.hostname : 'server',
       baseUrl,
       filePath: image.file_path,
       finalUrl
