@@ -2434,12 +2434,12 @@ router.post(
       }
 
       // Get user's role to verify authorization
-      const user = await User.findById(userId).populate('role_id');
+      const user = await User.findById(userId).populate("role_id");
       const userRole = user?.role_id?.role;
-      
+
       // For territorial roles (ASM/RSM/ZSM), check role match only
       // For HQ roles, check if assigned
-      if (['ASM', 'RSM', 'ZSM'].includes(userRole)) {
+      if (["ASM", "RSM", "ZSM"].includes(userRole)) {
         if (order.current_approver_role !== userRole) {
           return res.status(403).json({
             success: false,

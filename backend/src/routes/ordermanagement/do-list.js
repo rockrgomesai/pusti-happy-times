@@ -43,9 +43,17 @@ router.get("/do-list", authenticate, requireApiPermission("do-list:read"), async
     } = req.query;
 
     const { user_type, employee_type, territory_id, facility_id } = req.userContext;
+    const userId = req.user._id;
 
-    // Build query filter
-    const filter = {};
+    // Build query filter - include orders where user is involved OR in their territory
+    const filter = {
+      $or: [
+        { created_by: userId },
+        { current_approver_id: userId },
+        { approved_by: userId },
+        { "approval_history.performed_by": userId },
+      ],
+    };
 
     // Territory scoping based on user role
     const isFieldRole = ["ASM", "RSM", "TSO", "Territory Manager"].includes(req.user.role_id?.role);
@@ -54,7 +62,7 @@ router.get("/do-list", authenticate, requireApiPermission("do-list:read"), async
     );
 
     if (isFieldRole && territory_id) {
-      // Field users: scope by their assigned territory
+      // Field users: scope by their assigned territory OR where they're in approval history
       // Get all distributors in this territory and its descendants
       const territory = await models.Territory.findById(territory_id);
 
@@ -74,22 +82,10 @@ router.get("/do-list", authenticate, requireApiPermission("do-list:read"), async
         }).select("_id");
 
         if (distributors.length > 0) {
-          filter.distributor_id = { $in: distributors.map((d) => d._id) };
-        } else {
-          // No distributors in territory - return empty
-          return res.json({
-            success: true,
-            data: {
-              orders: [],
-              pagination: {
-                total: 0,
-                page: parseInt(page),
-                limit: parseInt(limit),
-                pages: 0,
-              },
-            },
-          });
+          // Add territory-based filter as another OR condition
+          filter.$or.push({ distributor_id: { $in: distributors.map((d) => d._id) } });
         }
+        // Don't return empty - user might have approved orders outside their current territory
       }
     }
     // HQ users see all DOs (no territory filter)
@@ -144,21 +140,19 @@ router.get("/do-list", authenticate, requireApiPermission("do-list:read"), async
       }).select("_id");
 
       if (distributorsInTerritory.length > 0) {
-        filter.distributor_id = { $in: distributorsInTerritory.map((d) => d._id) };
-      } else {
-        // No distributors in selected territory
-        return res.json({
-          success: true,
-          data: {
-            orders: [],
-            pagination: {
-              total: 0,
-              page: parseInt(page),
-              limit: parseInt(limit),
-              pages: 0,
-            },
-          },
-        });
+        // When filtering by territory, combine with existing $or filter
+        const territoryDistributorFilter = { distributor_id: { $in: distributorsInTerritory.map((d) => d._id) } };
+        
+        if (filter.$or) {
+          // Wrap existing $or conditions with territory filter
+          filter.$and = [
+            { $or: filter.$or },
+            territoryDistributorFilter
+          ];
+          delete filter.$or;
+        } else {
+          filter.distributor_id = territoryDistributorFilter.distributor_id;
+        }
       }
     }
 

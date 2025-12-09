@@ -197,7 +197,7 @@ export default function DOListPage() {
       if (fromDate) params.from_date = fromDate.toISOString();
       if (toDate) params.to_date = toDate.toISOString();
 
-      const response: any = await apiClient.get('/demandorders/my-do-list', params);
+      const response: any = await apiClient.get('/demandorders/do-list', params);
 
       if (response.success) {
         setOrders(response.data.orders);
