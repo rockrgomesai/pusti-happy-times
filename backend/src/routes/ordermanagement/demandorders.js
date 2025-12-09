@@ -1616,11 +1616,11 @@ router.post(
         });
       }
 
-      // Verify current approver is the logged-in ASM
-      if (order.current_approver_id.toString() !== userId) {
+      // Verify order is awaiting ASM approval (no user-specific check for territorial roles)
+      if (order.current_approver_role !== "ASM") {
         return res.status(403).json({
           success: false,
-          message: "You are not authorized to approve this order",
+          message: "This order is not pending ASM approval",
         });
       }
 
@@ -2433,12 +2433,27 @@ router.post(
         });
       }
 
-      // Verify current approver is the logged-in user
-      if (order.current_approver_id.toString() !== userId) {
-        return res.status(403).json({
-          success: false,
-          message: "You are not authorized to cancel this order",
-        });
+      // Get user's role to verify authorization
+      const user = await User.findById(userId).populate('role_id');
+      const userRole = user?.role_id?.role;
+      
+      // For territorial roles (ASM/RSM/ZSM), check role match only
+      // For HQ roles, check if assigned
+      if (['ASM', 'RSM', 'ZSM'].includes(userRole)) {
+        if (order.current_approver_role !== userRole) {
+          return res.status(403).json({
+            success: false,
+            message: `This order is not pending ${userRole} approval`,
+          });
+        }
+      } else {
+        // HQ roles - check user-specific assignment
+        if (order.current_approver_id && order.current_approver_id.toString() !== userId) {
+          return res.status(403).json({
+            success: false,
+            message: "You are not authorized to cancel this order",
+          });
+        }
       }
 
       // Cannot cancel already approved/rejected/cancelled orders

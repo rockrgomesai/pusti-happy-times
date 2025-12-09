@@ -949,17 +949,19 @@ const ApproveOrdersPage = () => {
                           <Edit />
                         </IconButton>
                       </Tooltip>
-                      {currentUserRole === "ASM" && (
-                        <Tooltip title="Forward to RSM">
-                          <IconButton
-                            size="small"
-                            color="success"
-                            onClick={() => handleForwardToRSM(order._id)}
-                          >
-                            <Send />
-                          </IconButton>
-                        </Tooltip>
-                      )}
+                      <Tooltip title="Delete Order">
+                        <IconButton
+                          size="small"
+                          color="error"
+                          onClick={() => {
+                            setSelectedOrder(order);
+                            setDeleteDialog(true);
+                          }}
+                          disabled={order.status === "approved"}
+                        >
+                          <Delete />
+                        </IconButton>
+                      </Tooltip>
                       <Tooltip title="Cancel Order">
                         <IconButton
                           size="small"
