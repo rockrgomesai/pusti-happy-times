@@ -745,8 +745,18 @@ router.get(
       const Distributor = require("../../models/Distributor");
       const Territory = require("../../models/Territory");
 
-      if ((roleName === "ASM" || roleName === "RSM" || roleName === "ZSM") && 
-          user.employee_id?.territory_assignments?.all_territory_ids) {
+      if (roleName === "ASM" || roleName === "RSM" || roleName === "ZSM") {
+        // Check if user has territory assignments
+        if (!user.employee_id?.territory_assignments?.all_territory_ids || 
+            user.employee_id.territory_assignments.all_territory_ids.length === 0) {
+          console.log(`  ${roleName} has no territory assignments - returning empty`);
+          return res.json({
+            success: true,
+            data: [],
+            count: 0,
+            message: "No territories assigned to this user"
+          });
+        }
         
         const userTerritories = user.employee_id.territory_assignments.all_territory_ids;
         console.log(`  ${roleName} Territories:`, userTerritories.length);
