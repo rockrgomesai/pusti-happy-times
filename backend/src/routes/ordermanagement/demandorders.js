@@ -5,6 +5,10 @@ const Offer = require("../../models/Offer");
 const Distributor = require("../../models/Distributor");
 const Category = require("../../models/Category");
 const DepotStock = require("../../models/DepotStock");
+const User = require("../../models/User");
+const Role = require("../../models/Role");
+const Employee = require("../../models/Employee");
+const Territory = require("../../models/Territory");
 const { requireApiPermission, authenticate } = require("../../middleware/auth");
 
 const router = express.Router();
@@ -719,9 +723,6 @@ router.get(
   async (req, res) => {
     try {
       const userId = req.user.id;
-      const User = require("../../models/User");
-      const Role = require("../../models/Role");
-      const Employee = require("../../models/Employee");
 
       console.log("🔍 Pending Approval Query Debug:");
       console.log("  User ID:", userId);
@@ -742,9 +743,6 @@ router.get(
       let query = {};
 
       // Territory-based filtering for territorial roles (ASM, RSM, ZSM)
-      const Distributor = require("../../models/Distributor");
-      const Territory = require("../../models/Territory");
-
       if (roleName === "ASM" || roleName === "RSM" || roleName === "ZSM") {
         // Check if user has territory assignments
         if (!user.employee_id?.territory_assignments?.all_territory_ids || 
@@ -854,8 +852,8 @@ router.get(
       console.log("  Orders found:", orders.length);
 
       // Fix missing performed_by_name in approval history for all orders
-      const User = require("../../models/User");
-      const Distributor = require("../../models/Distributor");
+
+
       for (let order of orders) {
         if (order.approval_history) {
           for (let entry of order.approval_history) {
@@ -1078,8 +1076,8 @@ router.get("/:id", authenticate, requireApiPermission("demandorder:read"), async
 
     // Fix missing performed_by_name in approval history
     if (order.approval_history) {
-      const User = require("../../models/User");
-      const Distributor = require("../../models/Distributor");
+
+
       for (let entry of order.approval_history) {
         if (!entry.performed_by_name && entry.performed_by) {
           const historyUser = await User.findById(entry.performed_by).select("username").lean();
@@ -1167,8 +1165,8 @@ router.put("/:id", authenticate, requireApiPermission("demandorder:update"), asy
     const { user } = req;
     const { items, notes, edit_reason } = req.body;
     const distributorId = getDistributorId(user);
-    const Role = require("../../models/Role");
-    const Employee = require("../../models/Employee");
+
+
 
     // Get user's role to determine permissions
     let userRole = null;
@@ -1351,7 +1349,7 @@ router.post(
       }
 
       // Find distributor details with territory
-      const Distributor = require("../../models/Distributor");
+
       const distributor = await Distributor.findById(user.distributor_id)
         .populate("db_point_id")
         .lean();
@@ -1378,9 +1376,9 @@ router.post(
       }
 
       // Find Area Manager (ASM) assigned to this area
-      const User = require("../../models/User");
-      const Employee = require("../../models/Employee");
-      const Role = require("../../models/Role");
+
+
+
 
       const asmRole = await Role.findOne({ role: "ASM" }).lean();
 
@@ -1682,7 +1680,7 @@ router.post(
       }
 
       // Get distributor details to find region
-      const Distributor = require("../../models/Distributor");
+
       const distributor = await Distributor.findById(order.distributor_id._id)
         .populate("db_point_id")
         .lean();
@@ -1694,8 +1692,8 @@ router.post(
       }
 
       // Find Sales Admin role
-      const Role = require("../../models/Role");
-      const User = require("../../models/User");
+
+
 
       const salesAdminRole = await Role.findOne({ role: "Sales Admin" });
 
@@ -1801,8 +1799,8 @@ router.post(
         });
       }
 
-      const Role = require("../../models/Role");
-      const User = require("../../models/User");
+
+
 
       const omRole = await Role.findOne({ role: "Order Management" });
       if (!omRole) {
@@ -1875,8 +1873,8 @@ router.post(
         });
       }
 
-      const Role = require("../../models/Role");
-      const User = require("../../models/User");
+
+
 
       const financeRole = await Role.findOne({ role: "Finance" });
       if (!financeRole) {
@@ -1949,8 +1947,8 @@ router.post(
         });
       }
 
-      const Role = require("../../models/Role");
-      const User = require("../../models/User");
+
+
 
       const distributionRole = await Role.findOne({ role: "Distribution" });
       if (!distributionRole) {
@@ -2026,8 +2024,8 @@ router.post(
       // Get the current user's role to track who returned it
       const currentUserRole = req.user.role_id?.role || req.user.role_id?.name || "Unknown";
 
-      const Role = require("../../models/Role");
-      const User = require("../../models/User");
+
+
 
       const salesAdminRole = await Role.findOne({ role: "Sales Admin" });
       if (!salesAdminRole) {
@@ -2101,7 +2099,7 @@ router.post(
       const { comments, force_approve } = req.body;
 
       // Only Finance can approve
-      const Role = require("../../models/Role");
+
       let userRole = null;
       if (req.user.role_id) {
         if (typeof req.user.role_id === "object" && req.user.role_id.role) {
@@ -2182,7 +2180,7 @@ router.post(
       }
 
       // Find Distribution role and user
-      const User = require("../../models/User");
+
       const distributionRole = await Role.findOne({ role: "Distribution" });
       if (!distributionRole) {
         return res.status(500).json({
