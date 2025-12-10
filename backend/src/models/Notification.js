@@ -23,6 +23,7 @@ const NOTIFICATION_TYPES = [
   "stock_out", // Product out of stock
   "adjustment_approved", // Adjustment approved
   "adjustment_rejected", // Adjustment rejected
+  "requisition_pending", // New requisition needs scheduling
 ];
 
 const notificationSchema = new mongoose.Schema(
@@ -95,6 +96,13 @@ const notificationSchema = new mongoose.Schema(
     collection_id: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Collection",
+      default: null,
+      index: true,
+    },
+
+    requisition_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "InventoryRequisition",
       default: null,
       index: true,
     },

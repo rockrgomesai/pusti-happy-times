@@ -39,6 +39,7 @@ const productionSendToStoreRoutes = require("./production/sendToStore");
 const inventoryFactoryToStoreRoutes = require("./inventory/factoryToStore");
 const inventoryLocalStockRoutes = require("./inventory/localStock");
 const inventoryRequisitionsRoutes = require("./inventory/requisitions");
+const requisitionSchedulingsRoutes = require("./inventory/requisition-schedulings");
 const depotTransfersRoutes = require("./inventory/depot-transfers");
 const depotDeliveriesRoutes = require("./inventory/depot-deliveries");
 const loadSheetsRoutes = require("./inventory/load-sheets");
@@ -52,6 +53,7 @@ const offerSendItemsRoutes = require("./offers/sendItems");
 const offerReceiveItemsRoutes = require("./offers/receiveItems");
 const distributionRoutes = require("./distribution");
 const distributorPortalRoutes = require("./distributor");
+const dashboardRoutes = require("./dashboard");
 
 const router = express.Router();
 
@@ -303,6 +305,14 @@ router.use("/territories", territoryRoutes);
 router.use("/distributors", distributorRoutes);
 
 /**
+ * Dashboard Routes
+ * @route   /api/dashboard/*
+ * @desc    Role-specific dashboard widgets and summaries
+ * @access  Private (authenticated users)
+ */
+router.use("/dashboard", dashboardRoutes);
+
+/**
  * Transport Management Routes
  * @route   /api/transports/*
  * @desc    Transport CRUD operations and management
@@ -351,6 +361,7 @@ router.use("/production/send-to-store", productionSendToStoreRoutes);
 router.use("/inventory/factory-to-store", inventoryFactoryToStoreRoutes);
 router.use("/inventory/local-stock", inventoryLocalStockRoutes);
 router.use("/inventory/requisitions", inventoryRequisitionsRoutes);
+router.use("/inventory/requisition-schedulings", requisitionSchedulingsRoutes);
 router.use("/inventory/depot-transfers", depotTransfersRoutes);
 router.use("/inventory/depot-deliveries", depotDeliveriesRoutes);
 router.use("/inventory/load-sheets", loadSheetsRoutes);

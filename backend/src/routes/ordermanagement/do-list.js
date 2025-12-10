@@ -100,10 +100,7 @@ router.get("/do-list", authenticate, requireApiPermission("do-list:read"), async
       const distributorObjectId = mongoose.Types.ObjectId(distributor_id);
       if (filter.$or) {
         // Combine with existing $or conditions
-        filter.$and = [
-          { $or: filter.$or },
-          { distributor_id: distributorObjectId }
-        ];
+        filter.$and = [{ $or: filter.$or }, { distributor_id: distributorObjectId }];
         delete filter.$or;
       } else {
         filter.distributor_id = distributorObjectId;
@@ -152,14 +149,13 @@ router.get("/do-list", authenticate, requireApiPermission("do-list:read"), async
 
       if (distributorsInTerritory.length > 0) {
         // When filtering by territory, combine with existing $or filter
-        const territoryDistributorFilter = { distributor_id: { $in: distributorsInTerritory.map((d) => d._id) } };
-        
+        const territoryDistributorFilter = {
+          distributor_id: { $in: distributorsInTerritory.map((d) => d._id) },
+        };
+
         if (filter.$or) {
           // Wrap existing $or conditions with territory filter
-          filter.$and = [
-            { $or: filter.$or },
-            territoryDistributorFilter
-          ];
+          filter.$and = [{ $or: filter.$or }, territoryDistributorFilter];
           delete filter.$or;
         } else {
           filter.distributor_id = territoryDistributorFilter.distributor_id;

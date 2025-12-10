@@ -3,6 +3,9 @@ const router = express.Router();
 const mongoose = require("mongoose");
 const InventoryRequisition = require("../../models/InventoryRequisition");
 const Product = require("../../models/Product");
+const Notification = require("../../models/Notification");
+const User = require("../../models/User");
+const Role = require("../../models/Role");
 const { authenticate } = require("../../middleware/auth");
 const { requireInventoryRole } = require("../../middleware/roleCheck");
 const { requireApiPermission } = require("../../middleware/auth");
@@ -102,6 +105,41 @@ router.post(
       await requisition.populate("details.product_id", "sku erp_id name ctn_pcs");
       await requisition.populate("from_depot_id", "name code");
       await requisition.populate("created_by", "username");
+
+      // Send notifications to Distribution role
+      try {
+        const distributionRole = await Role.findOne({ role: "Distribution" });
+        if (distributionRole) {
+          const distributionUsers = await User.find({
+            role_id: distributionRole._id,
+            active: true,
+          }).select("_id");
+
+          if (distributionUsers.length > 0) {
+            const notifications = distributionUsers.map((user) => ({
+              user_id: user._id,
+              type: "requisition_pending",
+              title: "New Requisition to Schedule",
+              message: `Requisition ${requisition.requisition_no} from ${requisition.from_depot_id.name} needs scheduling (${details.length} items)`,
+              requisition_id: requisition._id,
+              priority: "normal",
+              action_url: "/inventory/schedule-requisitions",
+              action_label: "Schedule Now",
+              metadata: {
+                requisition_no: requisition.requisition_no,
+                depot_name: requisition.from_depot_id.name,
+                item_count: details.length,
+              },
+            }));
+
+            await Notification.bulkCreate(notifications);
+            console.log(`✅ Sent notifications to ${distributionUsers.length} Distribution users`);
+          }
+        }
+      } catch (notifError) {
+        console.error("Error sending notifications:", notifError);
+        // Don't fail the request if notification fails
+      }
 
       res.status(201).json({
         success: true,

@@ -11,6 +11,16 @@ const inventoryRequisitionDetailSchema = new mongoose.Schema({
     required: true,
     min: 0,
   },
+  scheduled_qty: {
+    type: mongoose.Schema.Types.Decimal128,
+    default: 0,
+    min: 0,
+  },
+  unscheduled_qty: {
+    type: mongoose.Schema.Types.Decimal128,
+    default: null, // Will be set to qty on creation
+    min: 0,
+  },
   production_date: {
     type: Date,
   },
@@ -48,6 +58,19 @@ const inventoryRequisitionSchema = new mongoose.Schema(
       enum: ["submitted", "approved", "rejected", "fulfilled", "cancelled"],
       default: "submitted",
     },
+    scheduling_status: {
+      type: String,
+      enum: ["not-scheduled", "partially-scheduled", "fully-scheduled"],
+      default: "not-scheduled",
+      index: true,
+    },
+    scheduled_by: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
+    scheduled_at: {
+      type: Date,
+    },
     created_by: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
@@ -66,6 +89,18 @@ const inventoryRequisitionSchema = new mongoose.Schema(
     collection: "inventory_manufactured_requisitions",
   }
 );
+
+// Pre-save hook to initialize unscheduled_qty
+inventoryRequisitionSchema.pre("save", function (next) {
+  if (this.isNew) {
+    this.details.forEach((detail) => {
+      if (detail.unscheduled_qty == null) {
+        detail.unscheduled_qty = detail.qty;
+      }
+    });
+  }
+  next();
+});
 
 // Generate unique requisition number
 inventoryRequisitionSchema.statics.generateRequisitionNo = async function () {
