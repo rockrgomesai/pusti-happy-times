@@ -42,10 +42,20 @@ export default function CollectionActions({
   const [loading, setLoading] = useState(false);
   const [confirmCancelOpen, setConfirmCancelOpen] = useState(false);
 
-  // Determine which actions are available
-  const canForward =
-    ["ASM", "RSM", "Sales Admin", "Order Management"].includes(userRole) &&
-    !["approved", "cancelled"].includes(collection.approval_status);
+  // Determine which actions are available based on role AND current status
+  const canForward = (() => {
+    if (["approved", "cancelled"].includes(collection.approval_status)) return false;
+    
+    // Check if payment is currently with this role
+    if (userRole === "ASM" && collection.approval_status === "forwarded_to_area_manager") return true;
+    if (userRole === "RSM" && collection.approval_status === "forwarded_to_regional_manager") return true;
+    if (userRole === "Sales Admin" && 
+        (collection.approval_status === "forwarded_to_zonal_manager_and_sales_admin" ||
+         collection.approval_status === "returned_to_sales_admin")) return true;
+    if (userRole === "Order Management" && collection.approval_status === "forwarded_to_order_management") return true;
+    
+    return false;
+  })();
 
   const canReturn =
     (userRole === "Order Management" &&
@@ -55,9 +65,20 @@ export default function CollectionActions({
   const canApprove =
     userRole === "Finance" && collection.approval_status === "forwarded_to_finance";
 
-  const canCancel =
-    !["approved", "cancelled"].includes(collection.approval_status) &&
-    ["ASM", "RSM", "Sales Admin", "Order Management", "Finance"].includes(userRole);
+  const canCancel = (() => {
+    if (["approved", "cancelled"].includes(collection.approval_status)) return false;
+    
+    // Only current handler can cancel
+    if (userRole === "ASM" && collection.approval_status === "forwarded_to_area_manager") return true;
+    if (userRole === "RSM" && collection.approval_status === "forwarded_to_regional_manager") return true;
+    if (userRole === "Sales Admin" && 
+        (collection.approval_status === "forwarded_to_zonal_manager_and_sales_admin" ||
+         collection.approval_status === "returned_to_sales_admin")) return true;
+    if (userRole === "Order Management" && collection.approval_status === "forwarded_to_order_management") return true;
+    if (userRole === "Finance" && collection.approval_status === "forwarded_to_finance") return true;
+    
+    return false;
+  })();
 
   const canEdit =
     !["approved", "cancelled"].includes(collection.approval_status) &&
