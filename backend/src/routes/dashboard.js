@@ -44,7 +44,8 @@ router.get("/widgets", authenticate, async (req, res) => {
         color: "warning",
         action_url: "/inventory/schedule-requisitions",
         action_label: "Schedule Now",
-        description: pendingRequisitions === 1 ? "requisition to schedule" : "requisitions to schedule",
+        description:
+          pendingRequisitions === 1 ? "requisition to schedule" : "requisitions to schedule",
       });
 
       // Unread Notifications Count

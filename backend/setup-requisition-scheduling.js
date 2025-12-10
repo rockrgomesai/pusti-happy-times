@@ -120,7 +120,9 @@ async function setupRequisitionScheduling() {
         const newItem = await mongoose.connection.db
           .collection("sidebar_menu_items")
           .findOne({ _id: result.insertedId });
-        console.log(`✅ Created menu item: ${item.label} at order ${item.m_order} (${newItem._id})`);
+        console.log(
+          `✅ Created menu item: ${item.label} at order ${item.m_order} (${newItem._id})`
+        );
         createdMenuItems.push(newItem);
       }
     }
@@ -153,7 +155,9 @@ async function setupRequisitionScheduling() {
     console.log(`- Created ${createdPermissions.length} API permissions`);
     console.log(`- Created ${createdMenuItems.length} menu items`);
     console.log(`- Assigned permissions and menus to Distribution role`);
-    console.log("\n⚠️  IMPORTANT: Users must log out and log in again to see new permissions and menus!");
+    console.log(
+      "\n⚠️  IMPORTANT: Users must log out and log in again to see new permissions and menus!"
+    );
 
     process.exit(0);
   } catch (error) {

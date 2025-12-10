@@ -11,7 +11,7 @@ const InventoryRequisition = require("../../models/InventoryRequisition");
 const RequisitionScheduling = require("../../models/RequisitionScheduling");
 const Product = require("../../models/Product");
 const Facility = require("../../models/Facility");
-const InventoryBalance = require("../../models/InventoryBalance");
+const FactoryStoreInventory = require("../../models/FactoryStoreInventory");
 
 /**
  * GET /api/inventory/requisition-schedulings
@@ -44,17 +44,18 @@ router.get(
       for (const req of requisitions) {
         for (const detail of req.details) {
           // Skip if fully scheduled
-          const unscheduledQty = parseFloat(detail.unscheduled_qty?.toString() || detail.qty.toString());
+          const unscheduledQty = parseFloat(
+            detail.unscheduled_qty?.toString() || detail.qty.toString()
+          );
           if (unscheduledQty <= 0) continue;
 
           const product = detail.product_id;
           if (!product) continue;
 
           // Get source depot (first depot_ids or facility_ids)
-          const sourceDepots = product.facility_ids?.length > 0 
-            ? product.facility_ids 
-            : product.depot_ids || [];
-          
+          const sourceDepots =
+            product.facility_ids?.length > 0 ? product.facility_ids : product.depot_ids || [];
+
           if (sourceDepots.length === 0) continue;
 
           const sourceDepotId = sourceDepots[0].toString();
@@ -73,17 +74,22 @@ router.get(
           // Get stock quantities for all source depots
           const stockQuantities = [];
           for (const depotId of sourceDepots) {
-            const balance = await InventoryBalance.findOne({
-              facility_id: depotId,
+            // Sum all batches for this product at this depot
+            const inventories = await FactoryStoreInventory.find({
+              facility_store_id: depotId,
               product_id: product._id,
             }).lean();
+
+            const totalQty = inventories.reduce((sum, inv) => {
+              return sum + parseFloat(inv.qty_ctn?.toString() || "0");
+            }, 0);
 
             const depot = await Facility.findById(depotId).select("name code").lean();
             stockQuantities.push({
               depot_id: depotId.toString(),
               depot_name: depot?.name || "Unknown",
               depot_code: depot?.code,
-              qty: balance ? parseFloat(balance.qty.toString()) : 0,
+              qty: totalQty,
             });
           }
 
@@ -166,9 +172,21 @@ router.post(
 
       // Validate all deliveries first
       for (const delivery of deliveries) {
-        const { requisition_id, requisition_detail_id, delivery_qty, source_depot_id, target_depot_id } = delivery;
+        const {
+          requisition_id,
+          requisition_detail_id,
+          delivery_qty,
+          source_depot_id,
+          target_depot_id,
+        } = delivery;
 
-        if (!requisition_id || !requisition_detail_id || !delivery_qty || !source_depot_id || !target_depot_id) {
+        if (
+          !requisition_id ||
+          !requisition_detail_id ||
+          !delivery_qty ||
+          !source_depot_id ||
+          !target_depot_id
+        ) {
           throw new Error("Missing required fields in delivery");
         }
 
@@ -183,18 +201,22 @@ router.post(
           throw new Error(`Requisition detail ${requisition_detail_id} not found`);
         }
 
-        const unscheduledQty = parseFloat(detail.unscheduled_qty?.toString() || detail.qty.toString());
+        const unscheduledQty = parseFloat(
+          detail.unscheduled_qty?.toString() || detail.qty.toString()
+        );
         if (delivery_qty > unscheduledQty) {
           throw new Error(`Delivery qty ${delivery_qty} exceeds unscheduled qty ${unscheduledQty}`);
         }
 
-        // Check stock availability
-        const balance = await InventoryBalance.findOne({
-          facility_id: source_depot_id,
+        // Check stock availability (sum all batches)
+        const inventories = await FactoryStoreInventory.find({
+          facility_store_id: source_depot_id,
           product_id: detail.product_id,
         }).session(session);
 
-        const stockQty = balance ? parseFloat(balance.qty.toString()) : 0;
+        const stockQty = inventories.reduce((sum, inv) => {
+          return sum + parseFloat(inv.qty_ctn?.toString() || "0");
+        }, 0);
         if (delivery_qty > stockQty) {
           const product = await Product.findById(detail.product_id).select("sku").session(session);
           const depot = await Facility.findById(source_depot_id).select("name").session(session);
@@ -218,10 +240,14 @@ router.post(
 
       for (const [requisitionId, reqDeliveries] of Object.entries(requisitionMap)) {
         const requisition = await InventoryRequisition.findById(requisitionId).session(session);
-        const product = await Product.findById(requisition.details[0].product_id).select("sku erp_id").session(session);
+        const product = await Product.findById(requisition.details[0].product_id)
+          .select("sku erp_id")
+          .session(session);
 
         // Create or update scheduling record
-        let scheduling = await RequisitionScheduling.findOne({ requisition_id: requisitionId }).session(session);
+        let scheduling = await RequisitionScheduling.findOne({
+          requisition_id: requisitionId,
+        }).session(session);
 
         if (!scheduling) {
           scheduling = new RequisitionScheduling({
@@ -236,14 +262,17 @@ router.post(
         // Update requisition details and add to scheduling
         for (const delivery of reqDeliveries) {
           const detail = requisition.details.id(delivery.requisition_detail_id);
-          
+
           // Update scheduled/unscheduled quantities
           const currentScheduled = parseFloat(detail.scheduled_qty?.toString() || "0");
           detail.scheduled_qty = mongoose.Types.Decimal128.fromString(
             (currentScheduled + delivery.delivery_qty).toString()
           );
           detail.unscheduled_qty = mongoose.Types.Decimal128.fromString(
-            (parseFloat(detail.qty.toString()) - (currentScheduled + delivery.delivery_qty)).toString()
+            (
+              parseFloat(detail.qty.toString()) -
+              (currentScheduled + delivery.delivery_qty)
+            ).toString()
           );
 
           // Add to scheduling details
@@ -266,7 +295,9 @@ router.post(
         const allFullyScheduled = requisition.details.every(
           (d) => parseFloat(d.unscheduled_qty?.toString() || "0") === 0
         );
-        requisition.scheduling_status = allFullyScheduled ? "fully-scheduled" : "partially-scheduled";
+        requisition.scheduling_status = allFullyScheduled
+          ? "fully-scheduled"
+          : "partially-scheduled";
         requisition.scheduled_by = userId;
         requisition.scheduled_at = new Date();
         requisition.updated_by = userId;
