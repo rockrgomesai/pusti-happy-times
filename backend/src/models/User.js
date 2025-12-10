@@ -23,6 +23,7 @@ const userSchema = new mongoose.Schema(
       required: [true, "Username is required"],
       unique: true,
       trim: true,
+      // Keep case-sensitive for security
     },
 
     // Password - hashed and validated (matches database schema)
@@ -249,13 +250,13 @@ userSchema.methods.isAccountLocked = function () {
  */
 
 /**
- * Find user by username
+ * Find user by username (case-sensitive)
  * @param {String} username - Username to search for
  * @returns {Object|null} User document or null
  */
 userSchema.statics.findByUsername = async function (username) {
   try {
-    return await this.findOne({ username: username.toLowerCase() });
+    return await this.findOne({ username: username }); // Case-sensitive
   } catch (error) {
     throw new Error(`Error finding user: ${error.message}`);
   }
@@ -275,13 +276,13 @@ userSchema.statics.findByEmail = async function (email) {
 };
 
 /**
- * Find user with password (for authentication)
+ * Find user with password (for authentication - case-sensitive)
  * @param {String} username - Username to search for
  * @returns {Object|null} User document with password or null
  */
 userSchema.statics.findByUsernameWithPassword = async function (username) {
   try {
-    return await this.findOne({ username: username.toLowerCase() }).select("+password");
+    return await this.findOne({ username: username }).select("+password"); // Case-sensitive
   } catch (error) {
     throw new Error(`Error finding user: ${error.message}`);
   }
