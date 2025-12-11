@@ -244,10 +244,10 @@ export default function ScheduleRequisitionsPage() {
               <WarehouseIcon color="primary" />
               <Box sx={{ flexGrow: 1 }}>
                 <Typography variant="subtitle1" fontWeight="bold">
-                  {group.depot_name}
+                  {group.depot_name || 'Unknown Depot'}
                 </Typography>
                 <Typography variant="caption" color="text.secondary">
-                  {group.depot_code} • {group.requisitions.length} requisition(s)
+                  {group.depot_code ? `${group.depot_code} • ` : ''}{group.requisitions?.length || 0} requisition(s)
                 </Typography>
               </Box>
             </Box>
@@ -255,24 +255,24 @@ export default function ScheduleRequisitionsPage() {
 
           <AccordionDetails>
             <Box>
-              {group.requisitions.map((req) => (
+              {(group.requisitions || []).map((req) => (
                 <Card key={req.requisition_id} sx={{ mb: 2 }}>
                   <CardContent>
                     {/* Requisition Header */}
                     <Box sx={{ mb: 2 }}>
                       <Typography variant="subtitle2" fontWeight="bold">
-                        {req.requisition_no}
+                        {req.requisition_no || 'N/A'}
                       </Typography>
                       <Typography variant="caption" color="text.secondary">
-                        Target: {req.from_depot.name} ({req.from_depot.code}) •{" "}
-                        {new Date(req.requisition_date).toLocaleDateString()}
+                        Target: {req.from_depot?.name || 'N/A'} ({req.from_depot?.code || 'N/A'}) •{" "}
+                        {req.requisition_date ? new Date(req.requisition_date).toLocaleDateString() : 'N/A'}
                       </Typography>
                     </Box>
 
                     <Divider sx={{ mb: 2 }} />
 
                     {/* Items */}
-                    {req.items.map((item) => {
+                    {(req.items || []).map((item) => {
                       const key = `${req.requisition_id}_${item.requisition_detail_id}`;
                       const itemData = schedulingData[group.depot_id]?.items[key] || {};
 
