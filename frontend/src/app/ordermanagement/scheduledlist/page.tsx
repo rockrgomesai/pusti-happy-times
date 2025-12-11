@@ -283,23 +283,33 @@ const ScheduledListPage = () => {
     setOrderDetailsOpen(true);
     try {
       console.log("Fetching order details for:", orderId);
-      const response = await apiClient.get(`/ordermanagement/demandorders/${orderId}`);
-      console.log("Order details response:", response.data);
+      const response = await apiClient.get(`/ordermanagement/demandorders/${orderId}`, {
+        headers: {
+          'Cache-Control': 'no-cache', // Force fresh data, avoid 304
+          'Pragma': 'no-cache'
+        }
+      });
+      console.log("Order details response status:", response.status);
+      console.log("Order details response data:", response.data);
       
-      if (response.data.success) {
+      if (response.data && response.data.success) {
         setSelectedOrder(response.data.data);
         await fetchFinancialSummary(orderId);
-      } else {
+      } else if (response.data) {
         console.error("API returned success=false:", response.data.message);
         toast.error(response.data.message || "Failed to fetch order details");
-        setSelectedOrder(null); // Ensure it's null to show error state
+        setSelectedOrder(null);
+      } else {
+        console.error("Empty response data received");
+        toast.error("Empty response from server");
+        setSelectedOrder(null);
       }
     } catch (error: any) {
       console.error("Error fetching order details:", error);
       console.error("Error response:", error.response?.data);
       console.error("Error status:", error.response?.status);
       toast.error(error.response?.data?.message || "Failed to fetch order details");
-      setSelectedOrder(null); // Ensure it's null to show error state
+      setSelectedOrder(null);
     } finally {
       setLoadingOrderDetails(false);
     }
