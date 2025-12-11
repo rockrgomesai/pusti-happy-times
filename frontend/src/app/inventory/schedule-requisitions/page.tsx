@@ -39,16 +39,15 @@ export default function ScheduleRequisitionsPage() {
         apiClient.get("/inventory/requisition-schedulings/depots"),
       ]);
       
-      console.log("RAW requisitionsRes:", requisitionsRes);
-      console.log("requisitionsRes.data:", requisitionsRes.data);
-      console.log("requisitionsRes.data.data:", requisitionsRes.data?.data);
+      // Axios already unwraps to response.data
+      // Check if it's the wrapped format or direct array
+      const groups = Array.isArray(requisitionsRes.data) 
+        ? requisitionsRes.data 
+        : (requisitionsRes.data?.data || []);
       
-      // API returns { success: true, data: [...] }
-      const groups = requisitionsRes.data?.data || [];
-      const depotsData = depotsRes.data?.data || [];
-      
-      console.log("Final Groups:", groups);
-      console.log("Final Depots:", depotsData);
+      const depotsData = Array.isArray(depotsRes.data)
+        ? depotsRes.data
+        : (depotsRes.data?.data || []);
       
       setDepotGroups(groups);
       setDepots(depotsData);
