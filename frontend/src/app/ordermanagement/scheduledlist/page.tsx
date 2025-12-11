@@ -282,16 +282,24 @@ const ScheduledListPage = () => {
     setLoadingOrderDetails(true);
     setOrderDetailsOpen(true);
     try {
+      console.log("Fetching order details for:", orderId);
       const response = await api.get(`/ordermanagement/demandorders/${orderId}`);
+      console.log("Order details response:", response.data);
+      
       if (response.data.success) {
         setSelectedOrder(response.data.data);
         await fetchFinancialSummary(orderId);
       } else {
+        console.error("API returned success=false:", response.data.message);
         toast.error(response.data.message || "Failed to fetch order details");
+        setSelectedOrder(null); // Ensure it's null to show error state
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error fetching order details:", error);
-      toast.error("Failed to fetch order details");
+      console.error("Error response:", error.response?.data);
+      console.error("Error status:", error.response?.status);
+      toast.error(error.response?.data?.message || "Failed to fetch order details");
+      setSelectedOrder(null); // Ensure it's null to show error state
     } finally {
       setLoadingOrderDetails(false);
     }
@@ -534,6 +542,16 @@ const ScheduledListPage = () => {
           {loadingOrderDetails && (
             <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
               <CircularProgress />
+            </Box>
+          )}
+          {!loadingOrderDetails && !selectedOrder && (
+            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', p: 4 }}>
+              <Typography variant="body1" color="error" gutterBottom>
+                Failed to load order details
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Please check the browser console for more information or try again.
+              </Typography>
             </Box>
           )}
           {!loadingOrderDetails && selectedOrder && (
