@@ -38,25 +38,41 @@ router.get(
         .sort({ requisition_date: -1 })
         .lean();
 
+      console.log(`📋 Found ${requisitions.length} requisitions to schedule`);
+
       // Group requisitions by source depot (first depot in product's depot_ids)
       const depotGroups = {};
 
       for (const req of requisitions) {
+        console.log(`  Processing requisition: ${req.requisition_no}, details: ${req.details?.length}`);
+        
         for (const detail of req.details) {
           // Skip if fully scheduled
           const unscheduledQty = parseFloat(
             detail.unscheduled_qty?.toString() || detail.qty.toString()
           );
-          if (unscheduledQty <= 0) continue;
+          console.log(`    Detail unscheduled_qty: ${unscheduledQty}`);
+          if (unscheduledQty <= 0) {
+            console.log(`    ⏭️  Skipping - fully scheduled`);
+            continue;
+          }
 
           const product = detail.product_id;
-          if (!product) continue;
+          if (!product) {
+            console.log(`    ❌ No product populated`);
+            continue;
+          }
+
+          console.log(`    Product: ${product.sku}, facility_ids: ${product.facility_ids?.length}, depot_ids: ${product.depot_ids?.length}`);
 
           // Get source depot (first depot_ids or facility_ids)
           const sourceDepots =
             product.facility_ids?.length > 0 ? product.facility_ids : product.depot_ids || [];
 
-          if (sourceDepots.length === 0) continue;
+          if (sourceDepots.length === 0) {
+            console.log(`    ❌ Product has no depot/facility assignments`);
+            continue;
+          }
 
           const sourceDepotId = sourceDepots[0].toString();
 
