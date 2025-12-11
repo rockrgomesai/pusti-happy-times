@@ -1,6 +1,7 @@
 require('dotenv').config();
 const mongoose = require('mongoose');
 const InventoryRequisition = require('./src/models/InventoryRequisition');
+const Facility = require('./src/models/Facility');
 
 async function checkRequisitionStatus() {
   try {
