@@ -259,7 +259,7 @@ const ScheduledListPage = () => {
   const fetchFinancialSummary = async (orderId: string) => {
     try {
       setLoadingFinancial(true);
-      const response = await api.get(
+      const response = await apiClient.get(
         `/ordermanagement/demandorders/${orderId}/financial-summary`
       );
       setFinancialSummary(response.data.data);
@@ -283,7 +283,7 @@ const ScheduledListPage = () => {
     setOrderDetailsOpen(true);
     try {
       console.log("Fetching order details for:", orderId);
-      const response = await api.get(`/ordermanagement/demandorders/${orderId}`);
+      const response = await apiClient.get(`/ordermanagement/demandorders/${orderId}`);
       console.log("Order details response:", response.data);
       
       if (response.data.success) {
