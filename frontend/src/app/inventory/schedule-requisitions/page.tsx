@@ -47,50 +47,43 @@ export default function ScheduleRequisitionsPage() {
         apiClient.get("/inventory/requisition-schedulings/depots"),
       ]);
 
-      console.log("🔥 RAW Response:", requisitionsRes);
-      console.log("🔥 Response data:", requisitionsRes.data);
-      console.log("🔥 Response success:", requisitionsRes.data.success);
+      // Handle response - check if it's wrapped in success/data or is the array directly
+      const groups = Array.isArray(requisitionsRes.data) 
+        ? requisitionsRes.data 
+        : (requisitionsRes.data?.data || []);
       
-      if (requisitionsRes.data.success) {
-        const groups = requisitionsRes.data.data || [];
-        console.log("📦 Depot Groups received:", groups);
-        console.log("📦 Number of groups:", groups.length);
-        console.log("📦 Is Array?:", Array.isArray(groups));
-        
-        if (groups.length > 0) {
-          console.log("📦 First group:", groups[0]);
-          console.log("📦 First group depot_name:", groups[0].depot_name);
-          console.log("📦 First group requisitions:", groups[0].requisitions);
-          console.log("📦 First group requisitions length:", groups[0].requisitions?.length);
-        }
-        
-        console.log("🔍 BEFORE FILTER - Setting depot groups directly without filter");
-        setDepotGroups(groups);
+      console.log("📦 Depot Groups received:", groups);
+      console.log("📦 Number of groups:", groups.length);
+      
+      if (groups.length > 0) {
+        console.log("📦 First group:", groups[0]);
+      }
+      
+      setDepotGroups(groups);
 
-        // Initialize scheduling data with pre-filled values
-        const initialData = {};
-        groups.forEach((group) => {
-          initialData[group.depot_id] = {
-            items: {},
-          };
-          group.requisitions.forEach((req) => {
-            req.items.forEach((item) => {
-              const key = `${req.requisition_id}_${item.requisition_detail_id}`;
-              initialData[group.depot_id].items[key] = {
-                requisition_id: req.requisition_id,
-                requisition_detail_id: item.requisition_detail_id,
-                delivery_qty: item.unscheduled_qty, // Pre-fill with unscheduled qty
-                source_depot_id: group.depot_id, // Pre-fill with first depot
-                target_depot_id: req.from_depot.id,
-                order_qty: item.order_qty,
-                unscheduled_qty: item.unscheduled_qty,
-                stock_quantities: item.stock_quantities,
-              };
-            });
+      // Initialize scheduling data with pre-filled values
+      const initialData = {};
+      groups.forEach((group) => {
+        initialData[group.depot_id] = {
+          items: {},
+        };
+        group.requisitions?.forEach((req) => {
+          req.items?.forEach((item) => {
+            const key = `${req.requisition_id}_${item.requisition_detail_id}`;
+            initialData[group.depot_id].items[key] = {
+              requisition_id: req.requisition_id,
+              requisition_detail_id: item.requisition_detail_id,
+              delivery_qty: item.unscheduled_qty, // Pre-fill with unscheduled qty
+              source_depot_id: group.depot_id, // Pre-fill with first depot
+              target_depot_id: req.from_depot.id,
+              order_qty: item.order_qty,
+              unscheduled_qty: item.unscheduled_qty,
+              stock_quantities: item.stock_quantities,
+            };
           });
         });
-        setSchedulingData(initialData);
-      }
+      });
+      setSchedulingData(initialData);
 
       if (depotsRes.data.success) {
         setDepots(depotsRes.data.data);
