@@ -62,7 +62,9 @@ async function checkUser103() {
 
     console.log(`=== API PERMISSIONS (${permissions.length}) ===`);
 
-    const loadSheetPerms = permissions.filter((p) => p.api_permissions && p.api_permissions.includes("load-sheet"));
+    const loadSheetPerms = permissions.filter(
+      (p) => p.api_permissions && p.api_permissions.includes("load-sheet")
+    );
     console.log("\nLoad Sheet Permissions:");
     if (loadSheetPerms.length === 0) {
       console.log("  ❌ NO LOAD SHEET PERMISSIONS FOUND!");

@@ -44,7 +44,7 @@ async function fixInventoryDepot() {
 
     // Required permissions
     const requiredPermissions = [
-      "depot-deliveries:read",  // View approved schedules
+      "depot-deliveries:read", // View approved schedules
       "load-sheet:create",
       "load-sheet:read",
       "load-sheet:list",
@@ -93,15 +93,12 @@ async function fixInventoryDepot() {
     console.log("📋 Adding Depot Deliveries Menu...\n");
 
     let depotDeliveriesMenu = await SidebarMenuItem.findOne({
-      $or: [
-        { href: "/inventory/depot-deliveries" },
-        { label: "Depot Deliveries" }
-      ]
+      $or: [{ href: "/inventory/depot-deliveries" }, { label: "Depot Deliveries" }],
     });
 
     if (!depotDeliveriesMenu) {
       console.log("  Creating Depot Deliveries menu item...");
-      
+
       const allMenus = await SidebarMenuItem.find({}).sort({ m_order: -1 });
       const maxOrder = allMenus.length > 0 ? allMenus[0].m_order || 0 : 0;
 
@@ -138,15 +135,12 @@ async function fixInventoryDepot() {
     console.log("\n📋 Adding Load Sheets Menu...\n");
 
     let loadSheetMenu = await SidebarMenuItem.findOne({
-      $or: [
-        { href: "/inventory/load-sheets" },
-        { label: "Load Sheets" }
-      ]
+      $or: [{ href: "/inventory/load-sheets" }, { label: "Load Sheets" }],
     });
 
     if (!loadSheetMenu) {
       console.log("  Creating Load Sheets menu item...");
-      
+
       // Get highest order
       const allMenus = await SidebarMenuItem.find({}).sort({ m_order: -1 });
       const maxOrder = allMenus.length > 0 ? allMenus[0].m_order || 0 : 0;

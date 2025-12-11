@@ -17,7 +17,7 @@ async function checkUser103() {
 
     // Find user 103
     const user = await db.collection("users").findOne({ username: "103" });
-    
+
     if (!user) {
       console.log("❌ User 103 not found!");
       process.exit(1);
@@ -32,28 +32,29 @@ async function checkUser103() {
     if (!user.employee_id) {
       console.log("❌ PROBLEM FOUND: User has no employee_id assigned!");
       console.log("   The API requires: user.employee_id.facility_id to determine depot\n");
-      
-      const depots = await db.collection("facilities")
+
+      const depots = await db
+        .collection("facilities")
         .find({ type: "Depot" })
         .project({ name: 1, type: 1 })
         .toArray();
-      
+
       console.log("📋 Available Depots:");
       depots.forEach((d, idx) => {
         console.log(`  ${idx + 1}. ${d.name} (${d._id})`);
       });
-      
+
       console.log("\n💡 SOLUTION:");
       console.log("   1. Create an employee record for user 103");
       console.log("   2. Assign a depot facility_id to that employee");
       console.log("   3. Link employee to user via user.employee_id\n");
-      
+
       process.exit(1);
     }
 
     // Get employee record
     const employee = await db.collection("employees").findOne({ _id: user.employee_id });
-    
+
     if (!employee) {
       console.log("❌ PROBLEM: Employee record not found!");
       console.log(`   User has employee_id: ${user.employee_id} but record doesn't exist\n`);
@@ -70,17 +71,18 @@ async function checkUser103() {
     if (!employee.facility_id) {
       console.log("❌ PROBLEM FOUND: Employee has no facility_id assigned!");
       console.log("   The API requires: user.employee_id.facility_id\n");
-      
-      const depots = await db.collection("facilities")
+
+      const depots = await db
+        .collection("facilities")
         .find({ type: "Depot" })
         .project({ name: 1, type: 1 })
         .toArray();
-      
+
       console.log("📋 Available Depots:");
       depots.forEach((d, idx) => {
         console.log(`  ${idx + 1}. ${d.name} (${d._id})`);
       });
-      
+
       console.log("\n💡 FIX COMMAND:");
       console.log(`   mongo "mongodb://..." --eval '`);
       console.log(`     db.employees.updateOne(`);
@@ -88,16 +90,18 @@ async function checkUser103() {
       console.log(`       { $set: { facility_id: ObjectId("DEPOT_ID_FROM_ABOVE") } }`);
       console.log(`     )`);
       console.log(`   '\n`);
-      
+
       process.exit(1);
     }
 
     // Get facility details
     const facility = await db.collection("facilities").findOne({ _id: employee.facility_id });
-    
+
     if (!facility) {
       console.log("❌ PROBLEM: Facility not found!");
-      console.log(`   Employee has facility_id: ${employee.facility_id} but record doesn't exist\n`);
+      console.log(
+        `   Employee has facility_id: ${employee.facility_id} but record doesn't exist\n`
+      );
       process.exit(1);
     }
 
@@ -114,7 +118,7 @@ async function checkUser103() {
     // Check for approved schedulings
     const schedulingsCount = await db.collection("schedulings").countDocuments({
       depot_id: facility._id,
-      current_status: "Approved"
+      current_status: "Approved",
     });
 
     console.log("=== DATA CHECK ===");
@@ -123,26 +127,27 @@ async function checkUser103() {
     if (schedulingsCount === 0) {
       console.log("\n⚠️  NO DATA: No approved schedulings exist for this depot!");
       console.log("   That's why Depot Deliveries shows 'No deliveries pending'\n");
-      
+
       const anySchedulings = await db.collection("schedulings").countDocuments({
-        depot_id: facility._id
+        depot_id: facility._id,
       });
-      
+
       console.log(`Total schedulings (any status): ${anySchedulings}`);
-      
+
       if (anySchedulings > 0) {
-        const statuses = await db.collection("schedulings")
+        const statuses = await db
+          .collection("schedulings")
           .aggregate([
             { $match: { depot_id: facility._id } },
-            { $group: { _id: "$current_status", count: { $sum: 1 } } }
+            { $group: { _id: "$current_status", count: { $sum: 1 } } },
           ])
           .toArray();
-        
+
         console.log("\n📊 Schedulings by status:");
         statuses.forEach((s) => {
           console.log(`  - ${s._id}: ${s.count}`);
         });
-        
+
         console.log("\n💡 To see data in Depot Deliveries:");
         console.log("   Schedulings need current_status: 'Approved' (Finance approved)");
       } else {

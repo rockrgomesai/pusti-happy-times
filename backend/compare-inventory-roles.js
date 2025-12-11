@@ -15,10 +15,26 @@ async function compareRoles() {
     console.log("✅ Connected to MongoDB\n");
 
     const Role = mongoose.model("Role", new mongoose.Schema({}, { strict: false }), "roles");
-    const RoleApiPermission = mongoose.model("RoleApiPermission", new mongoose.Schema({}, { strict: false, strictPopulate: false }), "role_api_permissions");
-    const ApiPermission = mongoose.model("ApiPermission", new mongoose.Schema({}, { strict: false }), "api_permissions");
-    const RoleMenuItems = mongoose.model("RoleMenuItems", new mongoose.Schema({}, { strict: false, strictPopulate: false }), "role_menu_items");
-    const SidebarMenuItem = mongoose.model("SidebarMenuItem", new mongoose.Schema({}, { strict: false }), "sidebar_menu_items");
+    const RoleApiPermission = mongoose.model(
+      "RoleApiPermission",
+      new mongoose.Schema({}, { strict: false, strictPopulate: false }),
+      "role_api_permissions"
+    );
+    const ApiPermission = mongoose.model(
+      "ApiPermission",
+      new mongoose.Schema({}, { strict: false }),
+      "api_permissions"
+    );
+    const RoleMenuItems = mongoose.model(
+      "RoleMenuItems",
+      new mongoose.Schema({}, { strict: false, strictPopulate: false }),
+      "role_menu_items"
+    );
+    const SidebarMenuItem = mongoose.model(
+      "SidebarMenuItem",
+      new mongoose.Schema({}, { strict: false }),
+      "sidebar_menu_items"
+    );
 
     // Find both roles
     const depotRole = await Role.findOne({ role: "Inventory Depot" }).lean();
@@ -40,12 +56,14 @@ async function compareRoles() {
 
     // Get permissions from junction table
     const db = mongoose.connection.db;
-    
-    const depotRolePerms = await db.collection("role_api_permissions")
+
+    const depotRolePerms = await db
+      .collection("role_api_permissions")
       .find({ role_id: depotRole._id })
       .toArray();
-    
-    const factoryRolePerms = await db.collection("role_api_permissions")
+
+    const factoryRolePerms = await db
+      .collection("role_api_permissions")
       .find({ role_id: factoryRole._id })
       .toArray();
 
@@ -83,11 +101,13 @@ async function compareRoles() {
     }
 
     // Get menu items for both roles from junction table
-    const depotMenus = await db.collection("role_sidebar_menu_items")
+    const depotMenus = await db
+      .collection("role_sidebar_menu_items")
       .find({ role_id: depotRole._id })
       .toArray();
-    
-    const factoryMenus = await db.collection("role_sidebar_menu_items")
+
+    const factoryMenus = await db
+      .collection("role_sidebar_menu_items")
       .find({ role_id: factoryRole._id })
       .toArray();
 

@@ -15,12 +15,20 @@ async function fixUser103Facility() {
     console.log("✅ Connected to MongoDB\n");
 
     const User = mongoose.model("User", new mongoose.Schema({}, { strict: false }), "users");
-    const Employee = mongoose.model("Employee", new mongoose.Schema({}, { strict: false }), "employees");
-    const Facility = mongoose.model("Facility", new mongoose.Schema({}, { strict: false }), "facilities");
+    const Employee = mongoose.model(
+      "Employee",
+      new mongoose.Schema({}, { strict: false }),
+      "employees"
+    );
+    const Facility = mongoose.model(
+      "Facility",
+      new mongoose.Schema({}, { strict: false }),
+      "facilities"
+    );
 
     // Find user 103
     const user = await User.findOne({ username: "103" });
-    
+
     if (!user) {
       console.log("❌ User 103 not found");
       process.exit(1);
@@ -34,7 +42,7 @@ async function fixUser103Facility() {
     if (!user.employee_id) {
       console.log("❌ User 103 has no employee_id assigned!");
       console.log("\n📋 Available Facilities (Depots):");
-      
+
       const facilities = await Facility.find({ type: "Depot" }).select("name type").lean();
       facilities.forEach((f, idx) => {
         console.log(`  ${idx + 1}. ${f.name} (${f._id})`);
@@ -47,7 +55,7 @@ async function fixUser103Facility() {
 
     // Check employee record
     const employee = await Employee.findById(user.employee_id).populate("facility_id").lean();
-    
+
     if (!employee) {
       console.log("❌ Employee record not found!");
       process.exit(1);
@@ -62,20 +70,22 @@ async function fixUser103Facility() {
     if (!employee.facility_id) {
       console.log("❌ Employee has no facility assigned!");
       console.log("\n📋 Available Facilities (Depots):");
-      
+
       const facilities = await Facility.find({ type: "Depot" }).select("name type").lean();
       facilities.forEach((f, idx) => {
         console.log(`  ${idx + 1}. ${f.name} (${f._id})`);
       });
 
       console.log("\n⚠️  To fix, update employee record with facility_id");
-      console.log(`   db.employees.updateOne({_id: ObjectId("${employee._id}")}, {$set: {facility_id: ObjectId("FACILITY_ID_HERE")}})`);
+      console.log(
+        `   db.employees.updateOne({_id: ObjectId("${employee._id}")}, {$set: {facility_id: ObjectId("FACILITY_ID_HERE")}})`
+      );
       process.exit(1);
     }
 
     console.log("✅ User 103 is properly configured!");
     console.log(`   Assigned to: ${employee.facility_id.name}`);
-    
+
     process.exit(0);
   } catch (error) {
     console.error("❌ Error:", error);

@@ -25,7 +25,8 @@ async function checkStructure() {
     console.log(JSON.stringify(factoryRole, null, 2));
 
     // Check if there's a junction table
-    const rolePermissions = await db.collection("role_api_permissions")
+    const rolePermissions = await db
+      .collection("role_api_permissions")
       .find({ role_id: depotRole._id })
       .limit(5)
       .toArray();
@@ -33,7 +34,8 @@ async function checkStructure() {
     console.log(JSON.stringify(rolePermissions, null, 2));
 
     // Check menu items
-    const roleMenus = await db.collection("role_sidebar_menu_items")
+    const roleMenus = await db
+      .collection("role_sidebar_menu_items")
       .find({ role_id: depotRole._id })
       .limit(5)
       .toArray();
