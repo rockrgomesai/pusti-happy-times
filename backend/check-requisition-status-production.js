@@ -1,11 +1,10 @@
+require('dotenv').config();
 const mongoose = require('mongoose');
 const InventoryRequisition = require('./src/models/InventoryRequisition');
 
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/pusti_ht_production';
-
 async function checkRequisitionStatus() {
   try {
-    await mongoose.connect(MONGODB_URI);
+    await mongoose.connect(process.env.MONGODB_URI);
     console.log('✅ Connected to MongoDB');
 
     // Find all submitted requisitions
