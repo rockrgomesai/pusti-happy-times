@@ -285,29 +285,30 @@ const ScheduledListPage = () => {
       console.log("Fetching order details for:", orderId);
       const response = await apiClient.get(`/ordermanagement/demandorders/${orderId}`, {
         headers: {
-          'Cache-Control': 'no-cache', // Force fresh data, avoid 304
+          'Cache-Control': 'no-cache',
           'Pragma': 'no-cache'
         }
       });
-      console.log("Order details response status:", response.status);
-      console.log("Order details response data:", response.data);
+      console.log("✅ Response status:", response.status);
+      console.log("✅ Response headers:", response.headers);
+      console.log("✅ Full response data:", JSON.stringify(response.data, null, 2));
+      console.log("✅ response.data.success:", response.data?.success);
+      console.log("✅ response.data.data:", response.data?.data);
       
-      if (response.data && response.data.success) {
+      if (response.data && response.data.success && response.data.data) {
+        console.log("✅ Setting order data");
         setSelectedOrder(response.data.data);
         await fetchFinancialSummary(orderId);
-      } else if (response.data) {
-        console.error("API returned success=false:", response.data.message);
-        toast.error(response.data.message || "Failed to fetch order details");
-        setSelectedOrder(null);
       } else {
-        console.error("Empty response data received");
-        toast.error("Empty response from server");
+        console.error("❌ API returned success=false:", response.data?.message);
+        console.error("❌ Full error response:", JSON.stringify(response.data, null, 2));
+        toast.error(response.data?.message || "Failed to fetch order details");
         setSelectedOrder(null);
       }
     } catch (error: any) {
-      console.error("Error fetching order details:", error);
-      console.error("Error response:", error.response?.data);
-      console.error("Error status:", error.response?.status);
+      console.error("❌ Error fetching order details:", error);
+      console.error("❌ Error response:", error.response?.data);
+      console.error("❌ Error status:", error.response?.status);
       toast.error(error.response?.data?.message || "Failed to fetch order details");
       setSelectedOrder(null);
     } finally {
