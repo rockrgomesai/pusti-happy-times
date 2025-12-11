@@ -39,12 +39,16 @@ export default function ScheduleRequisitionsPage() {
         apiClient.get("/inventory/requisition-schedulings/depots"),
       ]);
       
+      console.log("RAW requisitionsRes:", requisitionsRes);
+      console.log("requisitionsRes.data:", requisitionsRes.data);
+      console.log("requisitionsRes.data.data:", requisitionsRes.data?.data);
+      
       // API returns { success: true, data: [...] }
       const groups = requisitionsRes.data?.data || [];
       const depotsData = depotsRes.data?.data || [];
       
-      console.log("Groups:", groups);
-      console.log("Depots:", depotsData);
+      console.log("Final Groups:", groups);
+      console.log("Final Depots:", depotsData);
       
       setDepotGroups(groups);
       setDepots(depotsData);
