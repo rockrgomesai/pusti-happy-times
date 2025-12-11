@@ -5,6 +5,7 @@
  * Usage: node update-finance-password.js
  */
 
+require("dotenv").config();
 const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
 
@@ -14,6 +15,7 @@ const MONGO_URI = process.env.MONGO_URI || "mongodb://localhost:27017/pusti_happ
 const updatePassword = async () => {
   try {
     console.log("🔄 Connecting to MongoDB...");
+    console.log("📍 Using URI:", MONGO_URI.replace(/\/\/([^:]+):([^@]+)@/, "//$1:****@")); // Hide password
     await mongoose.connect(MONGO_URI);
     console.log("✅ Connected to MongoDB");
 

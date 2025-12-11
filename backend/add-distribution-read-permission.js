@@ -3,6 +3,7 @@
  * Distribution users need to read demand orders to view order details in scheduled list
  */
 
+require("dotenv").config();
 const mongoose = require("mongoose");
 
 const MONGO_URI = process.env.MONGO_URI || "mongodb://localhost:27017/pusti_happy_times";
@@ -10,6 +11,7 @@ const MONGO_URI = process.env.MONGO_URI || "mongodb://localhost:27017/pusti_happ
 async function addReadPermission() {
   try {
     console.log("🔄 Connecting to MongoDB...");
+    console.log("📍 Using URI:", MONGO_URI.replace(/\/\/([^:]+):([^@]+)@/, "//$1:****@")); // Hide password
     await mongoose.connect(MONGO_URI);
     console.log("✅ Connected to MongoDB");
 
