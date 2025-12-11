@@ -272,7 +272,7 @@ export default function ScheduleRequisitionsPage() {
                     <Divider sx={{ mb: 2 }} />
 
                     {/* Items */}
-                    {(req.items || []).map((item) => {
+                    {(req.items || []).filter(item => item && item.requisition_detail_id).map((item) => {
                       const key = `${req.requisition_id}_${item.requisition_detail_id}`;
                       const itemData = schedulingData[group.depot_id]?.items[key] || {};
 
