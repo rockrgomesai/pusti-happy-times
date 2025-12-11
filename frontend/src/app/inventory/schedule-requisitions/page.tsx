@@ -49,11 +49,20 @@ export default function ScheduleRequisitionsPage() {
 
       if (requisitionsRes.data.success) {
         const groups = requisitionsRes.data.data || [];
+        console.log("📦 FULL API Response:", requisitionsRes.data);
         console.log("📦 Depot Groups received:", groups);
         console.log("📦 Number of groups:", groups.length);
+        console.log("📦 Type of groups:", typeof groups, Array.isArray(groups));
+        
+        if (groups.length > 0) {
+          console.log("📦 First group structure:", JSON.stringify(groups[0], null, 2));
+        }
         
         // Filter out groups with no requisitions
-        const validGroups = groups.filter(g => g.requisitions && g.requisitions.length > 0);
+        const validGroups = groups.filter(g => {
+          console.log(`📦 Checking group:`, g.depot_name, "has requisitions?", g.requisitions, "length:", g.requisitions?.length);
+          return g.requisitions && g.requisitions.length > 0;
+        });
         console.log("📦 Valid groups (with requisitions):", validGroups.length);
         
         setDepotGroups(validGroups);
