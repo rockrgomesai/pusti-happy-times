@@ -283,7 +283,16 @@ const ScheduledListPage = () => {
       setLoadingOrderDetails(true);
       setOrderDetailsOpen(true);
       
-      const response = await apiClient.get(`/ordermanagement/demandorders/${orderId}`);
+      const response = await apiClient.get(
+        `/ordermanagement/demandorders/${orderId}`,
+        undefined,
+        {
+          headers: {
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache'
+          }
+        }
+      );
       
       if (response.success && response.data) {
         setSelectedOrder(response.data);

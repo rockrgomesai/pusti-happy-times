@@ -251,8 +251,8 @@ export const authAPI = {
 
 // Generic API functions
 export const apiClient = {
-  get: async <T = unknown>(url: string, params?: Record<string, unknown>): Promise<T> => {
-    const response = await api.get(url, { params });
+  get: async <T = unknown>(url: string, params?: Record<string, unknown>, config?: any): Promise<T> => {
+    const response = await api.get(url, { params, ...config });
     return response.data;
   },
   
