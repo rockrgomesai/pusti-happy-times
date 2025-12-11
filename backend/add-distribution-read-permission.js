@@ -19,15 +19,11 @@ async function addReadPermission() {
       "api_permissions"
     );
 
-    const Role = mongoose.model(
-      "Role",
-      new mongoose.Schema({}, { strict: false }),
-      "roles"
-    );
+    const Role = mongoose.model("Role", new mongoose.Schema({}, { strict: false }), "roles");
 
     // Find or create demandorder:read permission
     let readPermission = await ApiPermission.findOne({ code: "demandorder:read" });
-    
+
     if (!readPermission) {
       console.log("\n📝 Creating demandorder:read permission...");
       readPermission = await ApiPermission.create({
@@ -43,7 +39,7 @@ async function addReadPermission() {
 
     // Find Distribution role
     const distributionRole = await Role.findOne({ role: "Distribution" });
-    
+
     if (!distributionRole) {
       console.error("❌ Distribution role not found!");
       process.exit(1);

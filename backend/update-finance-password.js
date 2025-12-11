@@ -1,7 +1,7 @@
 /**
  * Update Finance User Password
  * Sets password to: Tanim999
- * 
+ *
  * Usage: node update-finance-password.js
  */
 
@@ -17,11 +17,7 @@ const updatePassword = async () => {
     await mongoose.connect(MONGO_URI);
     console.log("✅ Connected to MongoDB");
 
-    const User = mongoose.model(
-      "User",
-      new mongoose.Schema({}, { strict: false }),
-      "users"
-    );
+    const User = mongoose.model("User", new mongoose.Schema({}, { strict: false }), "users");
 
     // Find Finance user
     const financeUser = await User.findOne({ username: "Finance" });

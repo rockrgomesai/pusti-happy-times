@@ -279,36 +279,21 @@ const ScheduledListPage = () => {
   };
 
   const handleViewOrder = async (orderId: string) => {
-    setLoadingOrderDetails(true);
-    setOrderDetailsOpen(true);
     try {
-      console.log("Fetching order details for:", orderId);
-      const response = await apiClient.get(`/ordermanagement/demandorders/${orderId}`, {
-        headers: {
-          'Cache-Control': 'no-cache',
-          'Pragma': 'no-cache'
-        }
-      });
-      console.log("✅ Response status:", response.status);
-      console.log("✅ Response headers:", response.headers);
-      console.log("✅ Full response data:", JSON.stringify(response.data, null, 2));
-      console.log("✅ response.data.success:", response.data?.success);
-      console.log("✅ response.data.data:", response.data?.data);
+      setLoadingOrderDetails(true);
+      setOrderDetailsOpen(true);
       
-      if (response.data && response.data.success && response.data.data) {
-        console.log("✅ Setting order data");
-        setSelectedOrder(response.data.data);
+      const response = await apiClient.get(`/ordermanagement/demandorders/${orderId}`);
+      
+      if (response.success && response.data) {
+        setSelectedOrder(response.data);
         await fetchFinancialSummary(orderId);
       } else {
-        console.error("❌ API returned success=false:", response.data?.message);
-        console.error("❌ Full error response:", JSON.stringify(response.data, null, 2));
-        toast.error(response.data?.message || "Failed to fetch order details");
+        toast.error("Failed to fetch order details");
         setSelectedOrder(null);
       }
     } catch (error: any) {
-      console.error("❌ Error fetching order details:", error);
-      console.error("❌ Error response:", error.response?.data);
-      console.error("❌ Error status:", error.response?.status);
+      console.error("Error fetching order details:", error);
       toast.error(error.response?.data?.message || "Failed to fetch order details");
       setSelectedOrder(null);
     } finally {
