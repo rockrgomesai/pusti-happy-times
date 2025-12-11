@@ -44,12 +44,12 @@ async function fixInventoryDepot() {
 
     // Required Load Sheet permissions
     const requiredPermissions = [
-      { code: "load-sheet:create", description: "Create Load Sheets" },
-      { code: "load-sheet:read", description: "View Load Sheet details" },
-      { code: "load-sheet:list", description: "List Load Sheets" },
-      { code: "load-sheet:edit", description: "Edit Load Sheets" },
-      { code: "load-sheet:delete", description: "Delete Load Sheets" },
-      { code: "load-sheet:convert", description: "Convert Load Sheets to Chalans" },
+      "load-sheet:create",
+      "load-sheet:read",
+      "load-sheet:list",
+      "load-sheet:edit",
+      "load-sheet:delete",
+      "load-sheet:convert",
     ];
 
     console.log("📝 Adding API Permissions...\n");
@@ -58,21 +58,18 @@ async function fixInventoryDepot() {
       role.api_permissions = [];
     }
 
-    for (const perm of requiredPermissions) {
+    for (const permCode of requiredPermissions) {
       // Find or create permission
-      let permission = await ApiPermission.findOne({ code: perm.code });
+      let permission = await ApiPermission.findOne({ api_permissions: permCode });
 
       if (!permission) {
-        console.log(`  Creating ${perm.code}...`);
+        console.log(`  Creating ${permCode}...`);
         permission = await ApiPermission.create({
-          code: perm.code,
-          description: perm.description,
-          module: "Inventory",
-          active: true,
+          api_permissions: permCode,
         });
-        console.log(`  ✓ Created ${perm.code}`);
+        console.log(`  ✓ Created ${permCode}`);
       } else {
-        console.log(`  ✓ ${perm.code} exists`);
+        console.log(`  ✓ ${permCode} exists`);
       }
 
       // Add to role if not already there
@@ -82,9 +79,9 @@ async function fixInventoryDepot() {
 
       if (!hasPermission) {
         role.api_permissions.push(permission._id);
-        console.log(`  ➕ Added ${perm.code} to role`);
+        console.log(`  ➕ Added ${permCode} to role`);
       } else {
-        console.log(`  ✓ Role already has ${perm.code}`);
+        console.log(`  ✓ Role already has ${permCode}`);
       }
     }
 

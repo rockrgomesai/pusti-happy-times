@@ -57,17 +57,17 @@ async function checkUser103() {
     // Get API permissions
     const permissionIds = role.api_permissions || [];
     const permissions = await ApiPermission.find({ _id: { $in: permissionIds } })
-      .select("code description")
+      .select("api_permissions")
       .lean();
 
     console.log(`=== API PERMISSIONS (${permissions.length}) ===`);
 
-    const loadSheetPerms = permissions.filter((p) => p.code && p.code.includes("load-sheet"));
+    const loadSheetPerms = permissions.filter((p) => p.api_permissions && p.api_permissions.includes("load-sheet"));
     console.log("\nLoad Sheet Permissions:");
     if (loadSheetPerms.length === 0) {
       console.log("  ❌ NO LOAD SHEET PERMISSIONS FOUND!");
     } else {
-      loadSheetPerms.forEach((p) => console.log(`  ✓ ${p.code}`));
+      loadSheetPerms.forEach((p) => console.log(`  ✓ ${p.api_permissions}`));
     }
 
     // Check for all required load sheet permissions
@@ -82,7 +82,7 @@ async function checkUser103() {
 
     console.log("\nRequired Permissions Check:");
     requiredPerms.forEach((perm) => {
-      const has = permissions.some((p) => p.code === perm);
+      const has = permissions.some((p) => p.api_permissions === perm);
       console.log(`  ${has ? "✓" : "❌"} ${perm}`);
     });
 
