@@ -186,18 +186,18 @@ export default function ScheduleRequisitionsPage() {
                         <Chip label={`Unscheduled: ${item?.unscheduled_qty || 0}`} size="small" color="warning" />
                       </Box>
 
-                      {(item?.stock_quantities || []).length > 0 && (
+                      {Array.isArray(item?.stock_quantities) && item.stock_quantities.length > 0 && (
                         <Box sx={{ mb: 2 }}>
                           <Typography variant="caption" display="block" gutterBottom>
                             Available Stock:
                           </Typography>
                           <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                            {item.stock_quantities.map((stock, stockIdx) => (
+                            {item.stock_quantities.filter(s => s).map((stock, stockIdx) => (
                               <Chip 
-                                key={stock?.depot_id || stockIdx}
-                                label={`${stock?.depot_name || 'N/A'}: ${stock?.qty || 0}`}
+                                key={stock.depot_id || stockIdx}
+                                label={`${stock.depot_name || 'N/A'}: ${stock.qty ?? 0}`}
                                 size="small"
-                                color={stock?.qty > 0 ? 'primary' : 'default'}
+                                color={(stock.qty ?? 0) > 0 ? 'primary' : 'default'}
                               />
                             ))}
                           </Box>
@@ -225,9 +225,9 @@ export default function ScheduleRequisitionsPage() {
                             value={itemData.source_depot_id || ''}
                             onChange={(e) => handleInputChange(key, 'source_depot_id', e.target.value)}
                           >
-                            {depots.map((depot) => (
-                              <MenuItem key={depot?._id} value={depot?._id}>
-                                {depot?.name || 'Unknown'}
+                            {(depots || []).filter(d => d && d._id).map((depot) => (
+                              <MenuItem key={depot._id} value={depot._id}>
+                                {depot.name || 'Unknown'}
                               </MenuItem>
                             ))}
                           </TextField>
