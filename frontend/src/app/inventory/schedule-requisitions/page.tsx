@@ -48,7 +48,9 @@ export default function ScheduleRequisitionsPage() {
       ]);
 
       if (requisitionsRes.data.success) {
-        const groups = requisitionsRes.data.data;
+        const groups = requisitionsRes.data.data || [];
+        console.log("📦 Depot Groups received:", groups);
+        console.log("📦 Number of groups:", groups.length);
         setDepotGroups(groups);
 
         // Initialize scheduling data with pre-filled values
@@ -199,7 +201,10 @@ export default function ScheduleRequisitionsPage() {
     );
   }
 
-  if (depotGroups.length === 0) {
+  console.log("🔍 Rendering with depotGroups:", depotGroups);
+  console.log("🔍 depotGroups.length:", depotGroups.length);
+
+  if (!depotGroups || depotGroups.length === 0) {
     return (
       <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
         <Alert severity="info">No pending requisitions to schedule</Alert>

@@ -9,11 +9,13 @@ The **Inventory Factory** role was missing many functionalities that **Inventory
 ### Before Synchronization
 
 **Inventory Depot had:**
+
 - 47 API permissions
 - 20 menu items
 - Full depot management capabilities
 
 **Inventory Factory had:**
+
 - Only 23 API permissions (missing 28)
 - Only 6 menu items (missing 17)
 - Limited to production receiving only
@@ -21,6 +23,7 @@ The **Inventory Factory** role was missing many functionalities that **Inventory
 ### Missing Capabilities in Factory
 
 **Missing Permissions (28):**
+
 - Chalan management (create, read, edit, delete)
 - Invoice management (create, read, edit)
 - Load Sheet operations (create, read, edit, delete, convert, list, lock)
@@ -32,6 +35,7 @@ The **Inventory Factory** role was missing many functionalities that **Inventory
 - And more...
 
 **Missing Menus (17):**
+
 - Inventory management pages
 - Local Stock
 - Requisitions
@@ -48,14 +52,16 @@ The **Inventory Factory** role was missing many functionalities that **Inventory
 ### Scripts Created
 
 1. **compare-inventory-roles.js**
+
    - Compares permissions and menus between both roles
    - Identifies missing capabilities
    - Shows detailed diff
 
 2. **sync-inventory-factory-permissions.js**
+
    - Automatically copies ALL Inventory Depot permissions to Inventory Factory
    - Copies ALL menu items
-   - Preserves Factory's unique permissions (production:send-to-store:*)
+   - Preserves Factory's unique permissions (production:send-to-store:\*)
 
 3. **check-role-structure.js**
    - Diagnostic tool to inspect role data structure
@@ -67,6 +73,7 @@ node sync-inventory-factory-permissions.js
 ```
 
 **Added to Inventory Factory:**
+
 - ✅ 31 new API permissions
 - ✅ 19 new menu items
 - ✅ All depot management capabilities
@@ -74,17 +81,20 @@ node sync-inventory-factory-permissions.js
 ### After Synchronization
 
 **Inventory Factory now has:**
+
 - 51 API permissions (all 47 from Depot + 4 unique)
 - 23 menu items (all 20 from Depot + 3 unique)
 - **Complete depot management** + production receiving
 
 **Unique Factory Permissions:**
+
 - `production:send-to-store:create`
 - `production:send-to-store:read`
 - `distributors:read`
 - `inventory:transactions:read`
 
 **Unique Factory Menus:**
+
 - Production
 - Send to Store
 - Send to Store List
@@ -119,6 +129,7 @@ node sync-inventory-factory-permissions.js
 ### For Inventory Factory Users
 
 Users with Inventory Factory role can now:
+
 - ✅ Manage depot inventory (like Depot users)
 - ✅ Create and manage Load Sheets
 - ✅ Handle Depot Deliveries
@@ -137,9 +148,11 @@ No changes - they retain all their existing capabilities.
 ### Collections Modified
 
 **role_api_permissions:**
+
 - Added 31 new entries linking Inventory Factory to depot permissions
 
 **role_sidebar_menu_items:**
+
 - Added 19 new entries linking Inventory Factory to depot menus
 
 ### No Breaking Changes
@@ -152,6 +165,7 @@ No changes - they retain all their existing capabilities.
 ## User Action Required
 
 **Users with Inventory Factory role must:**
+
 1. Log out
 2. Log back in
 3. New menus will appear in sidebar
@@ -166,6 +180,7 @@ node compare-inventory-roles.js
 ```
 
 Expected output:
+
 ```
 === MISSING IN INVENTORY FACTORY (0) ===
   ✅ None - Inventory Factory has all Depot permissions
@@ -188,6 +203,7 @@ Expected output:
 ### Permission Storage
 
 Permissions are stored in junction table:
+
 ```javascript
 role_api_permissions: {
   role_id: ObjectId,
@@ -198,6 +214,7 @@ role_api_permissions: {
 ### Menu Storage
 
 Menus are stored in junction table:
+
 ```javascript
 role_sidebar_menu_items: {
   role_id: ObjectId,
@@ -208,6 +225,7 @@ role_sidebar_menu_items: {
 ### Middleware Compatibility
 
 Both roles work with:
+
 - `requireInventoryRole` middleware
 - `requireInventoryFactoryRole` middleware (stricter)
 - All depot-specific endpoints
@@ -234,7 +252,7 @@ Both roles work with:
 ✅ **Result:** Factory role now has complete depot functionality + production receiving  
 ✅ **Impact:** Factory users can manage depots like Depot users, plus receive from production  
 ✅ **Breaking Changes:** None - pure additive changes  
-✅ **User Action:** Log out and back in to see new menus  
+✅ **User Action:** Log out and back in to see new menus
 
 ## Commit
 
