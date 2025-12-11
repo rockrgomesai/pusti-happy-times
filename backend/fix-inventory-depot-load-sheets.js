@@ -42,8 +42,9 @@ async function fixInventoryDepot() {
     console.log("=== FIXING INVENTORY DEPOT ROLE ===");
     console.log(`Role ID: ${role._id}\n`);
 
-    // Required Load Sheet permissions
+    // Required permissions
     const requiredPermissions = [
+      "depot-deliveries:read",  // View approved schedules
       "load-sheet:create",
       "load-sheet:read",
       "load-sheet:list",
@@ -88,8 +89,53 @@ async function fixInventoryDepot() {
     await role.save();
     console.log("\n✅ Permissions updated\n");
 
+    // Add Depot Deliveries menu (where Create Load Sheet button is)
+    console.log("📋 Adding Depot Deliveries Menu...\n");
+
+    let depotDeliveriesMenu = await SidebarMenuItem.findOne({
+      $or: [
+        { href: "/inventory/depot-deliveries" },
+        { label: "Depot Deliveries" }
+      ]
+    });
+
+    if (!depotDeliveriesMenu) {
+      console.log("  Creating Depot Deliveries menu item...");
+      
+      const allMenus = await SidebarMenuItem.find({}).sort({ m_order: -1 });
+      const maxOrder = allMenus.length > 0 ? allMenus[0].m_order || 0 : 0;
+
+      depotDeliveriesMenu = await SidebarMenuItem.create({
+        label: "Depot Deliveries",
+        icon: "LocalShipping",
+        href: "/inventory/depot-deliveries",
+        parent_id: null,
+        m_order: maxOrder + 1,
+        is_submenu: false,
+      });
+      console.log("  ✓ Created Depot Deliveries menu");
+    } else {
+      console.log("  ✓ Depot Deliveries menu exists");
+    }
+
+    // Link Depot Deliveries to role
+    let roleMenuLink = await RoleMenuItems.findOne({
+      role_id: role._id,
+      sidebar_menu_item_id: depotDeliveriesMenu._id,
+    });
+
+    if (!roleMenuLink) {
+      await RoleMenuItems.create({
+        role_id: role._id,
+        sidebar_menu_item_id: depotDeliveriesMenu._id,
+      });
+      console.log("  ➕ Linked Depot Deliveries menu to role");
+    } else {
+      console.log("  ✓ Menu already linked to role");
+    }
+
     // Add Load Sheets menu
-    console.log("📋 Adding Load Sheets Menu...\n");
+    console.log("\n📋 Adding Load Sheets Menu...\n");
 
     let loadSheetMenu = await SidebarMenuItem.findOne({
       $or: [
@@ -118,8 +164,8 @@ async function fixInventoryDepot() {
       console.log("  ✓ Load Sheets menu exists");
     }
 
-    // Link menu to role
-    const roleMenuLink = await RoleMenuItems.findOne({
+    // Link Load Sheets to role
+    roleMenuLink = await RoleMenuItems.findOne({
       role_id: role._id,
       sidebar_menu_item_id: loadSheetMenu._id,
     });
@@ -129,7 +175,7 @@ async function fixInventoryDepot() {
         role_id: role._id,
         sidebar_menu_item_id: loadSheetMenu._id,
       });
-      console.log("  ➕ Linked Load Sheets menu to Inventory Depot role");
+      console.log("  ➕ Linked Load Sheets menu to role");
     } else {
       console.log("  ✓ Menu already linked to role");
     }
@@ -138,9 +184,10 @@ async function fixInventoryDepot() {
     console.log("✅ INVENTORY DEPOT ROLE FIXED!");
     console.log("=".repeat(60));
     console.log("\n📌 Users with Inventory Depot role can now:");
-    console.log("  • See 'Load Sheets' in sidebar menu");
-    console.log("  • Create Load Sheets from approved DOs");
-    console.log("  • View, Edit, Delete Load Sheets");
+    console.log("  • View approved schedules in 'Depot Deliveries'");
+    console.log("  • Select items and create Load Sheets");
+    console.log("  • View and manage Load Sheets");
+    console.log("  • Edit, Delete Load Sheets");
     console.log("  • Convert Load Sheets to Chalans & Invoices");
     console.log("\n⚠️  Users must log out and log back in to see changes\n");
 
