@@ -89,7 +89,7 @@ async function checkUser103() {
     // Check sidebar menu
     const RoleMenuItems = mongoose.model(
       "RoleMenuItems",
-      new mongoose.Schema({}, { strict: false }),
+      new mongoose.Schema({}, { strict: false, strictPopulate: false }),
       "role_sidebar_menu_items"
     );
 
