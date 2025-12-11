@@ -51,11 +51,16 @@ export default function ScheduleRequisitionsPage() {
         const groups = requisitionsRes.data.data || [];
         console.log("📦 Depot Groups received:", groups);
         console.log("📦 Number of groups:", groups.length);
-        setDepotGroups(groups);
+        
+        // Filter out groups with no requisitions
+        const validGroups = groups.filter(g => g.requisitions && g.requisitions.length > 0);
+        console.log("📦 Valid groups (with requisitions):", validGroups.length);
+        
+        setDepotGroups(validGroups);
 
         // Initialize scheduling data with pre-filled values
         const initialData = {};
-        groups.forEach((group) => {
+        validGroups.forEach((group) => {
           initialData[group.depot_id] = {
             items: {},
           };
