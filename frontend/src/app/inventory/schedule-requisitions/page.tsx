@@ -39,14 +39,12 @@ export default function ScheduleRequisitionsPage() {
         apiClient.get("/inventory/requisition-schedulings/depots"),
       ]);
       
-      // Handle response structure
-      const groups = Array.isArray(requisitionsRes.data) 
-        ? requisitionsRes.data 
-        : (requisitionsRes.data?.data || []);
+      // API returns { success: true, data: [...] }
+      const groups = requisitionsRes.data?.data || [];
+      const depotsData = depotsRes.data?.data || [];
       
-      const depotsData = Array.isArray(depotsRes.data)
-        ? depotsRes.data
-        : (depotsRes.data?.data || []);
+      console.log("Groups:", groups);
+      console.log("Depots:", depotsData);
       
       setDepotGroups(groups);
       setDepots(depotsData);
