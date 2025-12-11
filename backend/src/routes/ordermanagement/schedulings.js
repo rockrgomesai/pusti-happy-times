@@ -394,7 +394,7 @@ router.get(
 
 /**
  * GET /ordermanagement/schedulings/approved-rejected
- * Get approved or rejected schedulings for Finance
+ * Get approved or rejected schedulings filtered by user's depot
  * Requires: scheduling:read permission
  */
 router.get(
@@ -404,9 +404,32 @@ router.get(
   async (req, res) => {
     try {
       const { status, from_date, to_date, page = 1, limit = 20 } = req.query;
+      const userId = req.user.id;
 
-      // Build query
+      // Get user's depot assignment
+      const user = await User.findById(userId)
+        .populate({
+          path: "employee_id",
+          select: "facility_id",
+          populate: {
+            path: "facility_id",
+            select: "_id name type",
+          },
+        })
+        .lean();
+
+      if (!user?.employee_id?.facility_id?._id) {
+        return res.status(400).json({
+          success: false,
+          message: "User is not assigned to any depot",
+        });
+      }
+
+      const depotId = user.employee_id.facility_id._id;
+
+      // Build query - filter by user's depot
       const query = {
+        depot_id: depotId,
         current_status: { $in: ["Approved", "Rejected"] },
       };
 
