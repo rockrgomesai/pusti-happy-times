@@ -210,9 +210,6 @@ export default function ScheduleRequisitionsPage() {
     );
   }
 
-  console.log("🔍 Rendering with depotGroups:", depotGroups);
-  console.log("🔍 depotGroups.length:", depotGroups.length);
-
   if (!depotGroups || depotGroups.length === 0) {
     return (
       <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
