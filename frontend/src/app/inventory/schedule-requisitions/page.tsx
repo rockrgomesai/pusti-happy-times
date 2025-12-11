@@ -181,10 +181,9 @@ export default function ScheduleRequisitionsPage() {
                         SKU: {item?.sku || 'N/A'}
                       </Typography>
                       
-                      <Box sx={{ display: 'flex', gap: 1, mb: 2, flexWrap: 'wrap' }}>
-                        <Chip label={`Order: ${item?.order_qty || 0}`} size="small" />
-                        <Chip label={`Unscheduled: ${item?.unscheduled_qty || 0}`} size="small" color="warning" />
-                      </Box>
+                      <Typography variant="body2" gutterBottom>
+                        Order Qty: {item?.order_qty || 0} | Unscheduled: {item?.unscheduled_qty || 0}
+                      </Typography>
                       
                       <Grid2 container spacing={2}>
                         <Grid2 size={{ xs: 12, sm: 6 }}>
