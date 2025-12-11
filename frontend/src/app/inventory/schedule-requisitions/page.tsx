@@ -311,10 +311,10 @@ export default function ScheduleRequisitionsPage() {
                               Available Stock:
                             </Typography>
                             <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
-                              {item.stock_quantities.map((stock) => (
+                              {(item.stock_quantities || []).map((stock) => (
                                 <Chip
                                   key={stock.depot_id}
-                                  label={`${stock.depot_name}: ${stock.qty}`}
+                                  label={`${stock.depot_name || 'N/A'}: ${stock.qty || 0}`}
                                   size="small"
                                   color={stock.qty > 0 ? "primary" : "default"}
                                   variant={stock.depot_id === itemData.source_depot_id ? "filled" : "outlined"}
