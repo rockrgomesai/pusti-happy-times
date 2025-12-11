@@ -85,9 +85,11 @@ export default function ScheduleRequisitionsPage() {
       });
       setSchedulingData(initialData);
 
-      if (depotsRes.data.success) {
-        setDepots(depotsRes.data.data);
-      }
+      // Handle depots response
+      const depotsData = Array.isArray(depotsRes.data)
+        ? depotsRes.data
+        : (depotsRes.data?.data || []);
+      setDepots(depotsData);
     } catch (error) {
       console.error("Error loading data:", error);
       showSnackbar("Failed to load requisitions", "error");
