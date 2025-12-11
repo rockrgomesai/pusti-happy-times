@@ -150,6 +150,14 @@ router.get(
       // Convert to array
       const result = Object.values(depotGroups);
 
+      console.log(`\n📤 Returning ${result.length} depot groups:`);
+      result.forEach(group => {
+        console.log(`  - ${group.depot_name}: ${group.requisitions.length} requisitions`);
+        group.requisitions.forEach(req => {
+          console.log(`    • ${req.requisition_no}: ${req.items.length} items`);
+        });
+      });
+
       res.json({
         success: true,
         data: result,
