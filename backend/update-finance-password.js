@@ -10,7 +10,8 @@ const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
 
 // MongoDB connection
-const MONGO_URI = process.env.MONGODB_URI || process.env.MONGO_URI || "mongodb://localhost:27017/pusti_happy_times";
+const MONGO_URI =
+  process.env.MONGODB_URI || process.env.MONGO_URI || "mongodb://localhost:27017/pusti_happy_times";
 
 const updatePassword = async () => {
   try {
