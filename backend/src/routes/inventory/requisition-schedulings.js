@@ -38,7 +38,7 @@ router.get(
         .sort({ requisition_date: -1 })
         .lean();
 
-      console.log(`📋 Found ${requisitions.length} requisitions to schedule`);
+      console.log(`\n[${new Date().toISOString()}] 📋 Found ${requisitions.length} requisitions to schedule`);
 
       // Group requisitions by source depot (first depot in product's depot_ids)
       const depotGroups = {};
@@ -150,13 +150,14 @@ router.get(
       // Convert to array
       const result = Object.values(depotGroups);
 
-      console.log(`\n📤 Returning ${result.length} depot groups:`);
+      console.log(`\n[${new Date().toISOString()}] 📤 Returning ${result.length} depot groups:`);
       result.forEach(group => {
         console.log(`  - ${group.depot_name}: ${group.requisitions.length} requisitions`);
         group.requisitions.forEach(req => {
           console.log(`    • ${req.requisition_no}: ${req.items.length} items`);
         });
       });
+      console.log(`[${new Date().toISOString()}] 📤 About to send JSON response with ${result.length} groups\n`);
 
       res.json({
         success: true,
