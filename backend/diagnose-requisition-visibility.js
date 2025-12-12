@@ -17,7 +17,7 @@ async function diagnoseRequisitions() {
 
     // Find Dhaka Central Depot
     const dhakaCentral = await db.collection("facilities").findOne({
-      name: /Dhaka Central/i
+      name: /Dhaka Central/i,
     });
 
     console.log("=== DHAKA CENTRAL DEPOT ===");
@@ -25,7 +25,8 @@ async function diagnoseRequisitions() {
     console.log(`Name: ${dhakaCentral.name}\n`);
 
     // Find all requisitions from this depot
-    const allReqs = await db.collection("inventory_requisitions")
+    const allReqs = await db
+      .collection("inventory_requisitions")
       .find({ from_depot_id: dhakaCentral._id })
       .sort({ requisition_date: -1 })
       .toArray();
@@ -38,7 +39,7 @@ async function diagnoseRequisitions() {
       console.log(`  Scheduling Status: ${req.scheduling_status || "N/A"}`);
       console.log(`  Requisition Date: ${req.requisition_date}`);
       console.log(`  Items: ${req.details?.length || 0}`);
-      
+
       if (req.details && req.details.length > 0) {
         req.details.forEach((d, idx) => {
           console.log(`    ${idx + 1}. Qty: ${d.qty}, Unscheduled: ${d.unscheduled_qty || "N/A"}`);
@@ -54,38 +55,41 @@ async function diagnoseRequisitions() {
     console.log("  scheduling_status: { $in: ['not-scheduled', 'partially-scheduled'] }\n");
 
     // Find requisitions matching API query
-    const matchingReqs = await db.collection("inventory_requisitions")
+    const matchingReqs = await db
+      .collection("inventory_requisitions")
       .find({
         from_depot_id: dhakaCentral._id,
         status: "submitted",
-        scheduling_status: { $in: ["not-scheduled", "partially-scheduled"] }
+        scheduling_status: { $in: ["not-scheduled", "partially-scheduled"] },
       })
       .toArray();
 
     console.log(`=== REQUISITIONS MATCHING API QUERY (${matchingReqs.length}) ===`);
     if (matchingReqs.length === 0) {
       console.log("  ❌ NONE - This is why they don't appear!\n");
-      
+
       console.log("=== PROBLEM DIAGNOSIS ===");
-      const submittedReqs = allReqs.filter(r => r.status === "submitted");
+      const submittedReqs = allReqs.filter((r) => r.status === "submitted");
       console.log(`Submitted requisitions: ${submittedReqs.length}`);
-      
+
       if (submittedReqs.length > 0) {
         console.log("\nSubmitted but with wrong scheduling_status:");
-        submittedReqs.forEach(r => {
-          console.log(`  - ${r.requisition_no}: scheduling_status = "${r.scheduling_status || 'MISSING'}"`);
+        submittedReqs.forEach((r) => {
+          console.log(
+            `  - ${r.requisition_no}: scheduling_status = "${r.scheduling_status || "MISSING"}"`
+          );
         });
       }
-      
-      const notSubmitted = allReqs.filter(r => r.status !== "submitted");
+
+      const notSubmitted = allReqs.filter((r) => r.status !== "submitted");
       if (notSubmitted.length > 0) {
         console.log(`\nNot submitted (status != 'submitted'): ${notSubmitted.length}`);
-        notSubmitted.forEach(r => {
+        notSubmitted.forEach((r) => {
           console.log(`  - ${r.requisition_no}: status = "${r.status}"`);
         });
       }
     } else {
-      matchingReqs.forEach(r => {
+      matchingReqs.forEach((r) => {
         console.log(`  ✓ ${r.requisition_no}`);
       });
     }

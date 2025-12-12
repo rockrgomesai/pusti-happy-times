@@ -27,66 +27,69 @@ async function checkDistributionRequisitionPerms() {
     console.log(`Name: ${distRole.role}\n`);
 
     // Get all permissions for Distribution role
-    const rolePerms = await db.collection("role_api_permissions")
+    const rolePerms = await db
+      .collection("role_api_permissions")
       .find({ role_id: distRole._id })
       .toArray();
 
-    const permIds = rolePerms.map(p => p.api_permission_id);
-    const permissions = await db.collection("api_permissions")
+    const permIds = rolePerms.map((p) => p.api_permission_id);
+    const permissions = await db
+      .collection("api_permissions")
       .find({ _id: { $in: permIds } })
       .toArray();
 
-    const permCodes = permissions.map(p => p.api_permissions).sort();
+    const permCodes = permissions.map((p) => p.api_permissions).sort();
 
     console.log(`=== DISTRIBUTION PERMISSIONS (${permCodes.length}) ===`);
-    permCodes.forEach(p => console.log(`  ✓ ${p}`));
+    permCodes.forEach((p) => console.log(`  ✓ ${p}`));
 
     // Check for requisition-scheduling permissions
-    const requisitionPerms = permCodes.filter(p => p.includes("requisition"));
+    const requisitionPerms = permCodes.filter((p) => p.includes("requisition"));
 
     console.log(`\n=== REQUISITION PERMISSIONS (${requisitionPerms.length}) ===`);
     if (requisitionPerms.length === 0) {
       console.log("  ❌ NONE FOUND!");
       console.log("\n⚠️  Distribution role is missing requisition-scheduling permissions!");
     } else {
-      requisitionPerms.forEach(p => console.log(`  ✓ ${p}`));
+      requisitionPerms.forEach((p) => console.log(`  ✓ ${p}`));
     }
 
     // Check what permissions are needed
     console.log("\n=== REQUIRED PERMISSIONS ===");
     const required = [
       "requisition-scheduling:read",
-      "requisition-scheduling:create", 
+      "requisition-scheduling:create",
       "requisition-scheduling:edit",
-      "requisition-scheduling:delete"
+      "requisition-scheduling:delete",
     ];
 
-    const missing = required.filter(r => !permCodes.includes(r));
+    const missing = required.filter((r) => !permCodes.includes(r));
 
     if (missing.length > 0) {
       console.log("Missing permissions:");
-      missing.forEach(p => console.log(`  ❌ ${p}`));
+      missing.forEach((p) => console.log(`  ❌ ${p}`));
     } else {
       console.log("  ✅ All required permissions present");
     }
 
     // Check menu items
     console.log("\n=== DISTRIBUTION MENUS ===");
-    const roleMenus = await db.collection("role_sidebar_menu_items")
+    const roleMenus = await db
+      .collection("role_sidebar_menu_items")
       .find({ role_id: distRole._id })
       .toArray();
 
-    const menuIds = roleMenus.map(m => m.sidebar_menu_item_id);
-    const menus = await db.collection("sidebar_menu_items")
+    const menuIds = roleMenus.map((m) => m.sidebar_menu_item_id);
+    const menus = await db
+      .collection("sidebar_menu_items")
       .find({ _id: { $in: menuIds } })
       .toArray();
 
-    const menuLabels = menus.map(m => m.label).sort();
-    menuLabels.forEach(m => console.log(`  📋 ${m}`));
+    const menuLabels = menus.map((m) => m.label).sort();
+    menuLabels.forEach((m) => console.log(`  📋 ${m}`));
 
-    const requisitionMenus = menus.filter(m => 
-      m.label?.toLowerCase().includes("requisition") || 
-      m.href?.includes("requisition")
+    const requisitionMenus = menus.filter(
+      (m) => m.label?.toLowerCase().includes("requisition") || m.href?.includes("requisition")
     );
 
     console.log(`\n=== REQUISITION MENUS (${requisitionMenus.length}) ===`);
@@ -94,7 +97,7 @@ async function checkDistributionRequisitionPerms() {
       console.log("  ❌ NONE FOUND!");
       console.log("\n⚠️  Distribution role has no requisition scheduling menu!");
     } else {
-      requisitionMenus.forEach(m => {
+      requisitionMenus.forEach((m) => {
         console.log(`  ✓ ${m.label} (${m.href})`);
       });
     }

@@ -38,14 +38,18 @@ router.get(
         .sort({ requisition_date: -1 })
         .lean();
 
-      console.log(`\n[${new Date().toISOString()}] 📋 Found ${requisitions.length} requisitions to schedule`);
+      console.log(
+        `\n[${new Date().toISOString()}] 📋 Found ${requisitions.length} requisitions to schedule`
+      );
 
       // Group requisitions by source depot (first depot in product's depot_ids)
       const depotGroups = {};
 
       for (const req of requisitions) {
-        console.log(`  Processing requisition: ${req.requisition_no}, details: ${req.details?.length}`);
-        
+        console.log(
+          `  Processing requisition: ${req.requisition_no}, details: ${req.details?.length}`
+        );
+
         for (const detail of req.details) {
           // Skip if fully scheduled
           const unscheduledQty = parseFloat(
@@ -63,7 +67,9 @@ router.get(
             continue;
           }
 
-          console.log(`    Product: ${product.sku}, facility_ids: ${product.facility_ids?.length}, depot_ids: ${product.depot_ids?.length}`);
+          console.log(
+            `    Product: ${product.sku}, facility_ids: ${product.facility_ids?.length}, depot_ids: ${product.depot_ids?.length}`
+          );
 
           // Get source depot (first depot_ids or facility_ids)
           const sourceDepots =
@@ -151,13 +157,15 @@ router.get(
       const result = Object.values(depotGroups);
 
       console.log(`\n[${new Date().toISOString()}] 📤 Returning ${result.length} depot groups:`);
-      result.forEach(group => {
+      result.forEach((group) => {
         console.log(`  - ${group.depot_name}: ${group.requisitions.length} requisitions`);
-        group.requisitions.forEach(req => {
+        group.requisitions.forEach((req) => {
           console.log(`    • ${req.requisition_no}: ${req.items.length} items`);
         });
       });
-      console.log(`[${new Date().toISOString()}] 📤 About to send JSON response with ${result.length} groups\n`);
+      console.log(
+        `[${new Date().toISOString()}] 📤 About to send JSON response with ${result.length} groups\n`
+      );
 
       res.json({
         success: true,

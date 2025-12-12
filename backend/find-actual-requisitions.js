@@ -22,7 +22,7 @@ async function findRequisitions() {
 
     for (const reqNo of reqNumbers) {
       const req = await db.collection("inventory_requisitions").findOne({
-        requisition_no: reqNo
+        requisition_no: reqNo,
       });
 
       if (!req) {
@@ -52,7 +52,8 @@ async function findRequisitions() {
 
     // Also search for ANY submitted requisitions
     console.log("=== ALL SUBMITTED REQUISITIONS ===\n");
-    const allSubmitted = await db.collection("inventory_requisitions")
+    const allSubmitted = await db
+      .collection("inventory_requisitions")
       .find({ status: "submitted" })
       .sort({ requisition_date: -1 })
       .limit(5)
@@ -60,7 +61,7 @@ async function findRequisitions() {
 
     console.log(`Found ${allSubmitted.length} submitted requisitions:\n`);
     for (const req of allSubmitted) {
-      const depot = req.from_depot_id 
+      const depot = req.from_depot_id
         ? await db.collection("facilities").findOne({ _id: req.from_depot_id })
         : null;
 

@@ -16,10 +16,11 @@ async function diagnoseProducts() {
     const db = mongoose.connection.db;
 
     // Find submitted requisitions with not-scheduled status
-    const requisitions = await db.collection("inventory_manufactured_requisitions")
+    const requisitions = await db
+      .collection("inventory_manufactured_requisitions")
       .find({
         status: "submitted",
-        scheduling_status: { $in: ["not-scheduled", "partially-scheduled"] }
+        scheduling_status: { $in: ["not-scheduled", "partially-scheduled"] },
       })
       .limit(5)
       .toArray();
@@ -35,7 +36,7 @@ async function diagnoseProducts() {
       if (req.details && req.details.length > 0) {
         for (const detail of req.details) {
           const product = await db.collection("products").findOne({
-            _id: detail.product_id
+            _id: detail.product_id,
           });
 
           console.log(`\n  Product: ${product?.sku || detail.product_id}`);
@@ -46,9 +47,15 @@ async function diagnoseProducts() {
 
           if (product) {
             if (product.facility_ids && product.facility_ids.length > 0) {
-              console.log(`    ✓ Has facility_ids:`, product.facility_ids.map(id => id.toString()));
+              console.log(
+                `    ✓ Has facility_ids:`,
+                product.facility_ids.map((id) => id.toString())
+              );
             } else if (product.depot_ids && product.depot_ids.length > 0) {
-              console.log(`    ✓ Has depot_ids:`, product.depot_ids.map(id => id.toString()));
+              console.log(
+                `    ✓ Has depot_ids:`,
+                product.depot_ids.map((id) => id.toString())
+              );
             } else {
               console.log(`    ❌ NO depot_ids or facility_ids - THIS IS THE PROBLEM!`);
               console.log(`       Product will be skipped by scheduling API`);
@@ -65,8 +72,8 @@ async function diagnoseProducts() {
     const productsWithDepots = await db.collection("products").countDocuments({
       $or: [
         { depot_ids: { $exists: true, $ne: [] } },
-        { facility_ids: { $exists: true, $ne: [] } }
-      ]
+        { facility_ids: { $exists: true, $ne: [] } },
+      ],
     });
 
     const totalProducts = await db.collection("products").countDocuments();

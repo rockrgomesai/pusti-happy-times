@@ -17,14 +17,17 @@ async function fixRequisitions() {
 
     // Check the actual collection
     console.log("=== CHECKING inventory_manufactured_requisitions ===\n");
-    
-    const allReqs = await db.collection("inventory_manufactured_requisitions")
+
+    const allReqs = await db
+      .collection("inventory_manufactured_requisitions")
       .find()
       .sort({ requisition_date: -1 })
       .limit(5)
       .toArray();
 
-    console.log(`Total requisitions in collection: ${await db.collection("inventory_manufactured_requisitions").countDocuments()}\n`);
+    console.log(
+      `Total requisitions in collection: ${await db.collection("inventory_manufactured_requisitions").countDocuments()}\n`
+    );
 
     console.log("=== SAMPLE REQUISITIONS ===\n");
     for (const req of allReqs) {
@@ -32,7 +35,7 @@ async function fixRequisitions() {
       console.log(`  Status: ${req.status || "MISSING"}`);
       console.log(`  Scheduling Status: ${req.scheduling_status || "MISSING"}`);
       console.log(`  From Depot ID: ${req.from_depot_id || "MISSING"}`);
-      
+
       if (req.from_depot_id) {
         const depot = await db.collection("facilities").findOne({ _id: req.from_depot_id });
         console.log(`  From Depot: ${depot?.name || "NOT FOUND"}`);
@@ -41,14 +44,15 @@ async function fixRequisitions() {
     }
 
     // Find submitted requisitions without scheduling_status
-    const needsFixing = await db.collection("inventory_manufactured_requisitions")
+    const needsFixing = await db
+      .collection("inventory_manufactured_requisitions")
       .find({
         status: "submitted",
         $or: [
           { scheduling_status: { $exists: false } },
           { scheduling_status: null },
-          { scheduling_status: "" }
-        ]
+          { scheduling_status: "" },
+        ],
       })
       .toArray();
 
@@ -56,41 +60,41 @@ async function fixRequisitions() {
 
     if (needsFixing.length === 0) {
       console.log("  ✅ All submitted requisitions have scheduling_status\n");
-      
+
       // Check if any match the API query
-      const matching = await db.collection("inventory_manufactured_requisitions")
+      const matching = await db
+        .collection("inventory_manufactured_requisitions")
         .find({
           status: "submitted",
-          scheduling_status: { $in: ["not-scheduled", "partially-scheduled"] }
+          scheduling_status: { $in: ["not-scheduled", "partially-scheduled"] },
         })
         .toArray();
-      
+
       console.log(`Requisitions matching API query: ${matching.length}`);
-      matching.forEach(r => {
+      matching.forEach((r) => {
         console.log(`  - ${r.requisition_no}: ${r.scheduling_status}`);
       });
     } else {
       console.log("Fixing requisitions...\n");
-      
+
       for (const req of needsFixing) {
         // Set scheduling_status to "not-scheduled" and unscheduled_qty for each detail
         const updates = {
-          scheduling_status: "not-scheduled"
+          scheduling_status: "not-scheduled",
         };
 
         // Update detail items to have unscheduled_qty
         if (req.details && req.details.length > 0) {
-          const updatedDetails = req.details.map(detail => ({
+          const updatedDetails = req.details.map((detail) => ({
             ...detail,
-            unscheduled_qty: detail.unscheduled_qty || detail.qty
+            unscheduled_qty: detail.unscheduled_qty || detail.qty,
           }));
           updates.details = updatedDetails;
         }
 
-        await db.collection("inventory_manufactured_requisitions").updateOne(
-          { _id: req._id },
-          { $set: updates }
-        );
+        await db
+          .collection("inventory_manufactured_requisitions")
+          .updateOne({ _id: req._id }, { $set: updates });
 
         console.log(`  ✅ Fixed: ${req.requisition_no}`);
       }

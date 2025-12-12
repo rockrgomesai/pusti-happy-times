@@ -51,6 +51,13 @@ const FactoryStoreInventoryTransaction = require("./FactoryStoreInventoryTransac
 // Import junction table models
 const { RoleSidebarMenuItem, RoleApiPermission, RolePagePermission } = require("./JunctionTables");
 
+// Import requisition workflow models
+const InventoryRequisition = require("./InventoryRequisition");
+const RequisitionScheduling = require("./RequisitionScheduling");
+const RequisitionLoadSheet = require("./RequisitionLoadSheet");
+const RequisitionChalan = require("./RequisitionChalan");
+const RequisitionInvoice = require("./RequisitionInvoice");
+
 /**
  * Model Registry
  * Central registry of all application models
@@ -87,6 +94,13 @@ const models = {
   // Legacy inventory models (deprecated, use depot models instead)
   FactoryStoreInventory,
   FactoryStoreInventoryTransaction,
+
+  // Requisition workflow models
+  InventoryRequisition,
+  RequisitionScheduling,
+  RequisitionLoadSheet,
+  RequisitionChalan,
+  RequisitionInvoice,
 
   // Permission models
   ApiPermission,
@@ -235,6 +249,13 @@ module.exports = {
   // Legacy inventory models (deprecated, use depot models instead)
   FactoryStoreInventory,
   FactoryStoreInventoryTransaction,
+
+  // Requisition workflow models
+  InventoryRequisition,
+  RequisitionScheduling,
+  RequisitionLoadSheet,
+  RequisitionChalan,
+  RequisitionInvoice,
 
   // Permission models
   ApiPermission,

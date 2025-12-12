@@ -28,26 +28,28 @@ async function addRequisitionMenus() {
     console.log(`Name: ${distRole.role}\n`);
 
     // Check current menus
-    const currentMenus = await db.collection("role_sidebar_menu_items")
+    const currentMenus = await db
+      .collection("role_sidebar_menu_items")
       .find({ role_id: distRole._id })
       .toArray();
 
-    const menuIds = currentMenus.map(m => m.sidebar_menu_item_id);
-    const menuDocs = await db.collection("sidebar_menu_items")
+    const menuIds = currentMenus.map((m) => m.sidebar_menu_item_id);
+    const menuDocs = await db
+      .collection("sidebar_menu_items")
       .find({ _id: { $in: menuIds } })
       .toArray();
 
     console.log(`=== CURRENT MENUS (${menuDocs.length}) ===`);
-    menuDocs.forEach(m => console.log(`  📋 ${m.label} (${m.href})`));
+    menuDocs.forEach((m) => console.log(`  📋 ${m.label} (${m.href})`));
 
     // Check if requisition menus exist
-    const requisitionMenus = menuDocs.filter(m => 
-      m.href?.includes("requisition") || m.label?.toLowerCase().includes("requisition")
+    const requisitionMenus = menuDocs.filter(
+      (m) => m.href?.includes("requisition") || m.label?.toLowerCase().includes("requisition")
     );
 
     console.log(`\n=== REQUISITION MENUS (${requisitionMenus.length}) ===`);
     if (requisitionMenus.length > 0) {
-      requisitionMenus.forEach(m => console.log(`  ✓ ${m.label} (${m.href})`));
+      requisitionMenus.forEach((m) => console.log(`  ✓ ${m.label} (${m.href})`));
       console.log("\n✅ Requisition menus already exist!");
       await mongoose.connection.close();
       process.exit(0);
@@ -62,21 +64,21 @@ async function addRequisitionMenus() {
         href: "/inventory/schedule-requisitions",
         icon: "ScheduleIcon",
         parent_id: null,
-        order: 40
+        order: 40,
       },
       {
         label: "Req. Scheduled List",
         href: "/inventory/requisition-scheduled-list",
         icon: "ListAltIcon",
         parent_id: null,
-        order: 41
-      }
+        order: 41,
+      },
     ];
 
     for (const menuData of menusToAdd) {
       // Check if menu exists
       let menu = await db.collection("sidebar_menu_items").findOne({
-        href: menuData.href
+        href: menuData.href,
       });
 
       if (!menu) {
@@ -85,7 +87,7 @@ async function addRequisitionMenus() {
           ...menuData,
           active: true,
           created_at: new Date(),
-          updated_at: new Date()
+          updated_at: new Date(),
         });
         menu = { _id: result.insertedId, ...menuData };
         console.log(`  ✅ Created menu: ${menuData.label}`);
@@ -96,7 +98,7 @@ async function addRequisitionMenus() {
       // Link to Distribution role
       const existingLink = await db.collection("role_sidebar_menu_items").findOne({
         role_id: distRole._id,
-        sidebar_menu_item_id: menu._id
+        sidebar_menu_item_id: menu._id,
       });
 
       if (!existingLink) {
@@ -104,7 +106,7 @@ async function addRequisitionMenus() {
           role_id: distRole._id,
           sidebar_menu_item_id: menu._id,
           created_at: new Date(),
-          updated_at: new Date()
+          updated_at: new Date(),
         });
         console.log(`    → Linked to Distribution role`);
       } else {

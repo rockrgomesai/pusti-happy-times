@@ -28,18 +28,20 @@ async function addRequisitionSchedulingPerms() {
     console.log(`Name: ${distRole.role}\n`);
 
     // Check existing permissions
-    const existingPerms = await db.collection("role_api_permissions")
+    const existingPerms = await db
+      .collection("role_api_permissions")
       .find({ role_id: distRole._id })
       .toArray();
 
-    const existingPermIds = existingPerms.map(p => p.api_permission_id.toString());
+    const existingPermIds = existingPerms.map((p) => p.api_permission_id.toString());
 
     // Get all api_permissions
-    const allPerms = await db.collection("api_permissions")
-      .find({ _id: { $in: existingPerms.map(p => p.api_permission_id) } })
+    const allPerms = await db
+      .collection("api_permissions")
+      .find({ _id: { $in: existingPerms.map((p) => p.api_permission_id) } })
       .toArray();
 
-    const existingPermCodes = allPerms.map(p => p.api_permissions);
+    const existingPermCodes = allPerms.map((p) => p.api_permissions);
 
     console.log("=== CHECKING REQUISITION-SCHEDULING PERMISSIONS ===\n");
 
@@ -47,7 +49,7 @@ async function addRequisitionSchedulingPerms() {
     const requiredPerms = [
       "requisition-scheduling:read",
       "requisition-scheduling:write",
-      "requisition-scheduling:view-history"
+      "requisition-scheduling:view-history",
     ];
 
     let addedCount = 0;
@@ -60,14 +62,14 @@ async function addRequisitionSchedulingPerms() {
 
       // Find or create permission
       let perm = await db.collection("api_permissions").findOne({
-        api_permissions: permCode
+        api_permissions: permCode,
       });
 
       if (!perm) {
         const result = await db.collection("api_permissions").insertOne({
           api_permissions: permCode,
           created_at: new Date(),
-          updated_at: new Date()
+          updated_at: new Date(),
         });
         perm = { _id: result.insertedId, api_permissions: permCode };
         console.log(`  ✅ Created permission: ${permCode}`);
@@ -78,7 +80,7 @@ async function addRequisitionSchedulingPerms() {
       // Link to Distribution role
       const existingLink = await db.collection("role_api_permissions").findOne({
         role_id: distRole._id,
-        api_permission_id: perm._id
+        api_permission_id: perm._id,
       });
 
       if (!existingLink) {
@@ -86,7 +88,7 @@ async function addRequisitionSchedulingPerms() {
           role_id: distRole._id,
           api_permission_id: perm._id,
           created_at: new Date(),
-          updated_at: new Date()
+          updated_at: new Date(),
         });
         console.log(`    → Added to Distribution role`);
         addedCount++;
