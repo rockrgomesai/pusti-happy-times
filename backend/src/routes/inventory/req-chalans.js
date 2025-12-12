@@ -7,8 +7,7 @@ const express = require("express");
 const router = express.Router();
 const mongoose = require("mongoose");
 const models = require("../../models");
-const { authenticate } = require("../../middleware/auth");
-const { checkPermission } = require("../../middleware/checkPermission");
+const { authenticate, requireApiPermission: checkPermission } = require("../../middleware/auth");
 
 /**
  * GET /api/v1/inventory/req-chalans
