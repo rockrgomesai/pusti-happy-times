@@ -20,6 +20,10 @@ dotenv.config({ path: path.join(__dirname, ".env") });
 
 const models = require("./src/models");
 
+// MongoDB URI with fallback
+const MONGO_URI =
+  process.env.MONGODB_URI || process.env.MONGO_URI || "mongodb://localhost:27017/pusti_happy_times";
+
 // Role IDs (verified from database)
 const INVENTORY_DEPOT_ROLE_ID = "690750354bdacd1e192d1ab3";
 const INVENTORY_FACTORY_ROLE_ID = "68f52ae8b9fccf467eadce90";
@@ -50,8 +54,10 @@ const API_PERMISSIONS = [
 
 async function addRequisitionWorkflowPermissions() {
   try {
-    await mongoose.connect(process.env.MONGODB_URI);
-    console.log("✓ Connected to MongoDB\n");
+    console.log("🔄 Connecting to MongoDB...");
+    console.log("📍 Using URI:", MONGO_URI.replace(/\/\/([^:]+):([^@]+)@/, "//$1:****@")); // Hide password
+    await mongoose.connect(MONGO_URI);
+    console.log("✅ Connected to MongoDB\n");
 
     // Get roles
     const depotRole = await models.Role.findById(INVENTORY_DEPOT_ROLE_ID).lean();
