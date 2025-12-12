@@ -35,7 +35,7 @@ import {
   ExpandMore as ExpandMoreIcon,
 } from "@mui/icons-material";
 import toast from "react-hot-toast";
-import apiClient from "@/lib/apiClient";
+import { apiClient } from "@/lib/api";
 
 interface LoadSheet {
   _id: string;

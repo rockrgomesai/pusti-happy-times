@@ -24,7 +24,7 @@ import {
 } from "@mui/material";
 import { ArrowBack as BackIcon, Print as PrintIcon } from "@mui/icons-material";
 import toast from "react-hot-toast";
-import apiClient from "@/lib/apiClient";
+import { apiClient } from "@/lib/api";
 
 interface Invoice {
   _id: string;

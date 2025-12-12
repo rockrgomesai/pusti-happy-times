@@ -25,7 +25,7 @@ import {
   CheckCircle as ReceiveIcon,
 } from "@mui/icons-material";
 import toast from "react-hot-toast";
-import apiClient from "@/lib/apiClient";
+import { apiClient } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface Chalan {
