@@ -244,9 +244,6 @@ router.post(
   authenticate,
   requireApiPermission("requisition-scheduling:write"),
   async (req, res) => {
-    const session = await mongoose.startSession();
-    session.startTransaction();
-
     try {
       const { deliveries } = req.body;
       const userId = req.user._id;
@@ -277,7 +274,7 @@ router.post(
         }
 
         // Get requisition and detail
-        const requisition = await InventoryRequisition.findById(requisition_id).session(session);
+        const requisition = await InventoryRequisition.findById(requisition_id);
         if (!requisition) {
           throw new Error(`Requisition ${requisition_id} not found`);
         }
@@ -298,14 +295,14 @@ router.post(
         const inventories = await FactoryStoreInventory.find({
           facility_store_id: source_depot_id,
           product_id: detail.product_id,
-        }).session(session);
+        });
 
         const stockQty = inventories.reduce((sum, inv) => {
           return sum + parseFloat(inv.qty_ctn?.toString() || "0");
         }, 0);
         if (delivery_qty > stockQty) {
-          const product = await Product.findById(detail.product_id).select("sku").session(session);
-          const depot = await Facility.findById(source_depot_id).select("name").session(session);
+          const product = await Product.findById(detail.product_id).select("sku");
+          const depot = await Facility.findById(source_depot_id).select("name");
           throw new Error(
             `Insufficient stock for ${product.sku} at ${depot.name}. Available: ${stockQty}, Requested: ${delivery_qty}`
           );
@@ -325,10 +322,10 @@ router.post(
       const schedulingRecords = [];
 
       for (const [requisitionId, reqDeliveries] of Object.entries(requisitionMap)) {
-        const requisition = await InventoryRequisition.findById(requisitionId).session(session);
+        const requisition = await InventoryRequisition.findById(requisitionId);
         const product = await Product.findById(requisition.details[0].product_id)
           .select("sku erp_id")
-          .session(session);
+          ;
 
         // Create or update scheduling record
         let scheduling = await RequisitionScheduling.findOne({
@@ -391,13 +388,11 @@ router.post(
         scheduling.status = allFullyScheduled ? "completed" : "in-progress";
         scheduling.updated_by = userId;
 
-        await requisition.save({ session });
-        await scheduling.save({ session });
+        await requisition.save();
+        await scheduling.save();
 
         schedulingRecords.push(scheduling);
       }
-
-      await session.commitTransaction();
 
       res.json({
         success: true,
@@ -405,14 +400,11 @@ router.post(
         data: schedulingRecords,
       });
     } catch (error) {
-      await session.abortTransaction();
       console.error("Error scheduling requisitions:", error);
       res.status(400).json({
         success: false,
         message: error.message || "Failed to schedule requisitions",
       });
-    } finally {
-      session.endSession();
     }
   }
 );
