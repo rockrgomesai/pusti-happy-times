@@ -342,11 +342,11 @@ export default function ScheduleRequisitionsPage() {
                                 }
                                 inputProps={{
                                   min: 0,
-                                  max: item.unscheduled_qty,
+                                  max: Number(item.unscheduled_qty || 0),
                                   step: 1,
                                   inputMode: "numeric",
                                 }}
-                                helperText={`Max: ${item.unscheduled_qty}`}
+                                helperText={`Max: ${String(item.unscheduled_qty || 0)}`}
                               />
                             </Grid2>
 
