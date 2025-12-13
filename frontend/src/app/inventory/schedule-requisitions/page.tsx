@@ -135,9 +135,9 @@ export default function ScheduleRequisitionsPage() {
         );
       }
 
-      if (deliveryQty > item.unscheduled_qty) {
+      if (deliveryQty > Number(item.unscheduled_qty || 0)) {
         errors.push(
-          `SKU ${item.requisition_detail_id.substring(0, 8)} delivery qty ${deliveryQty} exceeds unscheduled ${item.unscheduled_qty}`
+          `SKU ${item.requisition_detail_id.substring(0, 8)} delivery qty ${deliveryQty} exceeds unscheduled ${String(item.unscheduled_qty || 0)}`
         );
       }
     });
