@@ -34,6 +34,37 @@ export default function ScheduleRequisitionsPage() {
   const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
   const [expandedAccordion, setExpandedAccordion] = useState(null);
 
+  const toText = (value, fallback = "") => {
+    if (value === null || value === undefined) return fallback;
+    if (typeof value === "string") return value;
+    if (typeof value === "number" || typeof value === "boolean" || typeof value === "bigint") return String(value);
+
+    if (typeof value === "object") {
+      if (value.$numberDecimal !== undefined && value.$numberDecimal !== null) {
+        return String(value.$numberDecimal);
+      }
+      if (value._bsontype === "Decimal128" && typeof value.toString === "function") {
+        return value.toString();
+      }
+      if (typeof value.toString === "function" && value.toString !== Object.prototype.toString) {
+        return value.toString();
+      }
+      try {
+        return JSON.stringify(value);
+      } catch {
+        return String(value);
+      }
+    }
+
+    return String(value);
+  };
+
+  const toNumber = (value, fallback = 0) => {
+    if (value === "") return fallback;
+    const n = Number(toText(value, ""));
+    return Number.isFinite(n) ? n : fallback;
+  };
+
   // Load initial data
   useEffect(() => {
     loadData();
@@ -73,7 +104,7 @@ export default function ScheduleRequisitionsPage() {
             initialData[group.depot_id].items[key] = {
               requisition_id: req.requisition_id,
               requisition_detail_id: item.requisition_detail_id,
-              delivery_qty: item.unscheduled_qty, // Pre-fill with unscheduled qty
+              delivery_qty: toNumber(item.unscheduled_qty, 0), // Pre-fill with unscheduled qty
               source_depot_id: group.depot_id, // Pre-fill with first depot
               target_depot_id: req.from_depot?.id || req.from_depot?._id || null,
               order_qty: item.order_qty,
@@ -120,14 +151,14 @@ export default function ScheduleRequisitionsPage() {
 
     const errors = [];
     Object.entries(groupData.items).forEach(([key, item]) => {
-      const deliveryQty = parseFloat(item.delivery_qty || 0);
+      const deliveryQty = toNumber(item.delivery_qty, 0);
       if (deliveryQty <= 0) return; // Skip items with no delivery qty
 
       // Find stock for selected source depot
-      const stockInfo = item.stock_quantities.find(
+      const stockInfo = (item.stock_quantities || []).find(
         (s) => s.depot_id === item.source_depot_id
       );
-      const availableStock = stockInfo ? stockInfo.qty : 0;
+      const availableStock = stockInfo ? toNumber(stockInfo.qty, 0) : 0;
 
       if (deliveryQty > availableStock) {
         errors.push(
@@ -135,9 +166,9 @@ export default function ScheduleRequisitionsPage() {
         );
       }
 
-      if (deliveryQty > Number(item.unscheduled_qty || 0)) {
+      if (deliveryQty > toNumber(item.unscheduled_qty, 0)) {
         errors.push(
-          `SKU ${item.requisition_detail_id.substring(0, 8)} delivery qty ${deliveryQty} exceeds unscheduled ${String(item.unscheduled_qty || 0)}`
+          `SKU ${item.requisition_detail_id.substring(0, 8)} delivery qty ${deliveryQty} exceeds unscheduled ${toText(item.unscheduled_qty, "0")}`
         );
       }
     });
@@ -158,11 +189,11 @@ export default function ScheduleRequisitionsPage() {
       // Collect deliveries for this group (only items with delivery_qty > 0)
       const groupData = schedulingData[depotId];
       const deliveries = Object.values(groupData.items)
-        .filter((item) => parseFloat(item.delivery_qty || 0) > 0)
+        .filter((item) => toNumber(item.delivery_qty, 0) > 0)
         .map((item) => ({
           requisition_id: item.requisition_id,
           requisition_detail_id: item.requisition_detail_id,
-          delivery_qty: parseFloat(item.delivery_qty),
+          delivery_qty: toNumber(item.delivery_qty, 0),
           source_depot_id: item.source_depot_id,
           target_depot_id: item.target_depot_id,
         }));
@@ -195,7 +226,8 @@ export default function ScheduleRequisitionsPage() {
   };
 
   const showSnackbar = (message, severity) => {
-    setSnackbar({ open: true, message, severity });
+    const safeMessage = typeof message === "string" ? message : toText(message, "");
+    setSnackbar({ open: true, message: safeMessage, severity });
   };
 
   const handleCloseSnackbar = () => {
@@ -261,23 +293,23 @@ export default function ScheduleRequisitionsPage() {
                     {/* Requisition Header */}
                     <Box sx={{ mb: 2 }}>
                       <Typography variant="subtitle2" fontWeight="bold">
-                        {req.requisition_no || 'N/A'}
+                              SKU: {item.sku || 'N/A'} {item.erp_id ? `(${toText(item.erp_id)})` : ''}
                       </Typography>
                       <Typography variant="caption" color="text.secondary">
                         Target: {req.from_depot?.name || req.from_depot_name || 'N/A'} ({req.from_depot?.code || req.from_depot_code || 'N/A'}) •{" "}
-                        {req.requisition_date ? new Date(req.requisition_date).toLocaleDateString() : 'N/A'}
+                                label={`Order: ${toText(item.order_qty, "0")}`}
                       </Typography>
                     </Box>
 
                     <Divider sx={{ mb: 2 }} />
 
-                    {/* Items */}
+                                label={`Scheduled: ${toText(item.scheduled_qty, "0")}`}
                     {(req.items || []).filter(item => item && item.requisition_detail_id).map((item) => {
                       const key = `${req.requisition_id}_${item.requisition_detail_id}`;
                       const itemData = schedulingData[group.depot_id]?.items[key] || {};
 
                       return (
-                        <Box key={key} sx={{ mb: 3, pb: 2, borderBottom: "1px solid #eee" }}>
+                                label={`Unscheduled: ${toText(item.unscheduled_qty, "0")}`}
                           {/* Product Info */}
                           <Box sx={{ mb: 2 }}>
                             <Typography variant="body2" fontWeight="bold">
@@ -314,9 +346,9 @@ export default function ScheduleRequisitionsPage() {
                               {(item.stock_quantities || []).map((stock, idx) => (
                                 <Chip
                                   key={stock?.depot_id?.toString() || idx}
-                                  label={`${stock?.depot_name || 'N/A'}: ${String(stock?.qty || 0)}`}
+                                  label={`${stock?.depot_name || 'N/A'}: ${toText(stock?.qty, "0")}`}
                                   size="small"
-                                  color={Number(stock?.qty || 0) > 0 ? "primary" : "default"}
+                                  color={toNumber(stock?.qty, 0) > 0 ? "primary" : "default"}
                                   variant={(stock?.depot_id?.toString() || stock?.depot_id) === (itemData?.source_depot_id?.toString() || itemData?.source_depot_id) ? "filled" : "outlined"}
                                 />
                               ))}
@@ -331,7 +363,7 @@ export default function ScheduleRequisitionsPage() {
                                 label="Delivery Qty"
                                 type="number"
                                 size="small"
-                                value={itemData.delivery_qty || ""}
+                                value={itemData.delivery_qty === 0 ? 0 : (itemData.delivery_qty || "")}
                                 onChange={(e) =>
                                   handleInputChange(
                                     group.depot_id,
@@ -342,11 +374,11 @@ export default function ScheduleRequisitionsPage() {
                                 }
                                 inputProps={{
                                   min: 0,
-                                  max: Number(item.unscheduled_qty || 0),
+                                  max: toNumber(item.unscheduled_qty, 0),
                                   step: 1,
                                   inputMode: "numeric",
                                 }}
-                                helperText={`Max: ${String(item.unscheduled_qty || 0)}`}
+                                helperText={`Max: ${toText(item.unscheduled_qty, "0")}`}
                               />
                             </Grid2>
 
@@ -368,7 +400,7 @@ export default function ScheduleRequisitionsPage() {
                               >
                                 {(item.stock_quantities || []).map((stock, idx) => (
                                   <MenuItem key={stock?.depot_id || idx} value={stock?.depot_id}>
-                                    {stock?.depot_name || 'N/A'} ({String(stock?.qty || 0)} available)
+                                    {stock?.depot_name || 'N/A'} ({toText(stock?.qty, "0")} available)
                                   </MenuItem>
                                 ))}
                               </TextField>
