@@ -252,6 +252,29 @@ export default function ScheduleRequisitionsPage() {
     }
   };
 
+  // Calculate already allocated stock for a specific depot and product
+  const calculateAllocatedStock = (currentDepotId, currentKey, sourceDepotId, requisitionDetailId) => {
+    let totalAllocated = 0;
+    
+    // Loop through all depot groups
+    Object.entries(schedulingData).forEach(([depotId, depotData]) => {
+      Object.entries(depotData.items || {}).forEach(([itemKey, item]) => {
+        // Skip current item, only count other items
+        if (depotId === currentDepotId && itemKey === currentKey) return;
+        
+        // Count if same product and same source depot
+        if (
+          item.requisition_detail_id === requisitionDetailId &&
+          item.source_depot_id === sourceDepotId
+        ) {
+          totalAllocated += toNumber(item.delivery_qty, 0);
+        }
+      });
+    });
+    
+    return totalAllocated;
+  };
+
   const handleInputChange = (depotId, key, field, value) => {
     setSchedulingData((prev) => ({
       ...prev,
@@ -488,19 +511,22 @@ export default function ScheduleRequisitionsPage() {
                               Available Stock:
                             </Typography>
                             <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
-                              {(item.stock_quantities || []).map((stock, idx) => (
-                                <Chip
-                                  key={toId(stock?.depot_id, "") || String(idx)}
-                                  label={`${toText(stock?.depot_name, "N/A")}: ${toText(stock?.qty, "0")}`}
-                                  size="small"
-                                  color={toNumber(stock?.qty, 0) > 0 ? "primary" : "default"}
-                                  variant={
-                                    toId(stock?.depot_id, "") === toId(itemData?.source_depot_id, "")
-                                      ? "filled"
-                                      : "outlined"
-                                  }
-                                />
-                              ))}
+                              {(item.stock_quantities || []).map((stock, idx) => {
+                                const stockQty = toNumber(stock?.qty, 0);
+                                const deliveryQty = toNumber(itemData.delivery_qty, 0);
+                                const isSelected = toId(stock?.depot_id, "") === toId(itemData?.source_depot_id, "");
+                                const isInsufficient = isSelected && deliveryQty > stockQty;
+                                
+                                return (
+                                  <Chip
+                                    key={toId(stock?.depot_id, "") || String(idx)}
+                                    label={`${toText(stock?.depot_name, "N/A")}: ${toText(stock?.qty, "0")}`}
+                                    size="small"
+                                    color={isInsufficient ? "error" : (stockQty > 0 ? "primary" : "default")}
+                                    variant={isSelected ? "filled" : "outlined"}
+                                  />
+                                );
+                              })}
                             </Box>
                           </Box>
 
@@ -523,11 +549,39 @@ export default function ScheduleRequisitionsPage() {
                                 }
                                 inputProps={{
                                   min: 0,
-                                  max: toNumber(item.unscheduled_qty, 0),
+                                  max: (() => {
+                                    const unscheduled = toNumber(item.unscheduled_qty, 0);
+                                    const stockInfo = (item.stock_quantities || []).find(
+                                      (s) => toId(s?.depot_id, "") === toId(itemData?.source_depot_id, "")
+                                    );
+                                    const availableStock = stockInfo ? toNumber(stockInfo.qty, 0) : 0;
+                                    const alreadyAllocated = calculateAllocatedStock(
+                                      toId(group.depot_id, ""),
+                                      key,
+                                      toId(itemData?.source_depot_id, ""),
+                                      item.requisition_detail_id
+                                    );
+                                    const remainingStock = Math.max(0, availableStock - alreadyAllocated);
+                                    return Math.min(unscheduled, remainingStock);
+                                  })(),
                                   step: 1,
                                   inputMode: "numeric",
                                 }}
-                                helperText={`Max: ${toText(item.unscheduled_qty, "0")}`}
+                                helperText={`Max: ${(() => {
+                                  const unscheduled = toNumber(item.unscheduled_qty, 0);
+                                  const stockInfo = (item.stock_quantities || []).find(
+                                    (s) => toId(s?.depot_id, "") === toId(itemData?.source_depot_id, "")
+                                  );
+                                  const availableStock = stockInfo ? toNumber(stockInfo.qty, 0) : 0;
+                                  const alreadyAllocated = calculateAllocatedStock(
+                                    toId(group.depot_id, ""),
+                                    key,
+                                    toId(itemData?.source_depot_id, ""),
+                                    item.requisition_detail_id
+                                  );
+                                  const remainingStock = Math.max(0, availableStock - alreadyAllocated);
+                                  return Math.min(unscheduled, remainingStock);
+                                })()}`}
                               />
                             </Grid>
 
