@@ -11,7 +11,7 @@ const InventoryRequisition = require("../../models/InventoryRequisition");
 const RequisitionScheduling = require("../../models/RequisitionScheduling");
 const Product = require("../../models/Product");
 const Facility = require("../../models/Facility");
-const FactoryStoreInventory = require("../../models/FactoryStoreInventory");
+const DepotStock = require("../../models/DepotStock");
 
 // Defensive coercion helpers (prevents leaking Mongoose/Mongo types to the frontend)
 const toText = (value, fallback = "") => {
@@ -138,26 +138,30 @@ router.get(
             };
           }
 
-          // Get stock quantities for all source depots
+          // Get stock quantities for all source depots using SKU-based lookup
           const stockQuantities = [];
-          for (const depotId of sourceDepots) {
-            // Sum all batches for this product at this depot
-            const inventories = await FactoryStoreInventory.find({
-              facility_store_id: depotId,
-              product_id: product._id,
-            }).lean();
+          
+          // Query product by SKU to get correct product_id
+          const productBySku = await Product.findOne({ sku: product.sku }).select('_id').lean();
+          
+          if (productBySku) {
+            for (const depotId of sourceDepots) {
+              // Get depot stock using correct product_id
+              const depotStock = await DepotStock.findOne({
+                depot_id: depotId,
+                product_id: productBySku._id,
+              }).lean();
 
-            const totalQty = inventories.reduce((sum, inv) => {
-              return sum + toNumber(inv?.qty_ctn, 0);
-            }, 0);
+              const totalQty = depotStock ? toNumber(depotStock?.qty_ctn, 0) : 0;
 
-            const depot = await Facility.findById(depotId).select("name code").lean();
-            stockQuantities.push({
-              depot_id: toId(depotId, ""),
-              depot_name: toText(depot?.name, "Unknown"),
-              depot_code: toText(depot?.code, ""),
-              qty: totalQty,
-            });
+              const depot = await Facility.findById(depotId).select("name code").lean();
+              stockQuantities.push({
+                depot_id: toId(depotId, ""),
+                depot_name: toText(depot?.name, "Unknown"),
+                depot_code: toText(depot?.code, ""),
+                qty: totalQty,
+              });
+            }
           }
 
           // Add to group
@@ -184,7 +188,8 @@ router.get(
             existingReq.items.push(reqItem);
           } else {
             const fromDepotId = req?.from_depot_id;
-            const fromDepotObj = fromDepotId && typeof fromDepotId === "object" ? fromDepotId : null;
+            const fromDepotObj =
+              fromDepotId && typeof fromDepotId === "object" ? fromDepotId : null;
 
             depotGroups[sourceDepotId].requisitions.push({
               requisition_id: toId(req?._id, ""),
