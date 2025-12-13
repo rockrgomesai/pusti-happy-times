@@ -104,8 +104,8 @@ router.get("/", authenticate, checkPermission("approved-req-schedules:read"), as
 
     // Get stock from source depot (user's facility)
     const productIds = products.map((p) => p._id);
-    const stockRecords = await models.FactoryStoreInventory.find({
-      facility_id: facility_id,
+    const stockRecords = await models.DepotStock.find({
+      depot_id: facility_id,
       product_id: { $in: productIds },
     })
       .select("product_id qty_ctn blocked_qty")
@@ -146,7 +146,8 @@ router.get("/", authenticate, checkPermission("approved-req-schedules:read"), as
     const requestingDepotMap = {};
 
     for (const scheduling of schedulings) {
-      console.log(`\nProcessing requisition: ${scheduling.requisition_no}`);
+      const reqNo = scheduling.requisition_id?.requisition_no || scheduling._id;
+      console.log(`\nProcessing requisition: ${reqNo}`);
       console.log(`  Scheduling details: ${scheduling.scheduling_details?.length || 0}`);
 
       if (scheduling.scheduling_details && scheduling.scheduling_details.length > 0) {
@@ -207,8 +208,8 @@ router.get("/", authenticate, checkPermission("approved-req-schedules:read"), as
             requisition_scheduling_id: scheduling._id,
             requisition_detail_id: detail.requisition_detail_id,
             requisition_id: scheduling.requisition_id._id,
-            requisition_no: scheduling.requisition_no,
-            requisition_date: scheduling.requisition_id.requisition_date,
+            requisition_no: scheduling.requisition_id?.requisition_no || "N/A",
+            requisition_date: scheduling.requisition_id?.requisition_date,
             sku: detail.sku,
             erp_id: product?.erp_id || null,
             product_name: product?.name || detail.sku,
