@@ -43,17 +43,17 @@ async function fixPermissions() {
 
     // Find user
     console.log(`🔍 Finding user: ${USER_ID}`);
-    const user = await models.User.findById(USER_ID).populate("role");
+    const user = await models.User.findById(USER_ID).populate("role_id", "role");
     
     if (!user) {
       throw new Error("User not found");
     }
 
     console.log(`✅ User found: ${user.username} (${user.full_name})`);
-    console.log(`📋 Role: ${user.role.role} (ID: ${user.role._id})`);
+    console.log(`📋 Role: ${user.role_id.role} (ID: ${user.role_id._id})`);
     console.log(`🏢 Facility: ${user.facility_id}\n`);
 
-    const roleId = user.role._id;
+    const roleId = user.role_id._id;
 
     // Find all requisition workflow permissions
     console.log("🔍 Finding requisition workflow API permissions...");
@@ -97,7 +97,7 @@ async function fixPermissions() {
     }
 
     // Assign permissions to role
-    console.log(`\n📝 Assigning permissions to role: ${user.role.role}...`);
+    console.log(`\n📝 Assigning permissions to role: ${user.role_id.role}...`);
     
     let assigned = 0;
     let skipped = 0;
