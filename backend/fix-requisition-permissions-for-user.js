@@ -58,7 +58,7 @@ async function fixPermissions() {
     // Find all requisition workflow permissions
     console.log("🔍 Finding requisition workflow API permissions...");
     const apiPermissions = await models.ApiPermission.find({
-      permission: { $in: PERMISSION_CODES },
+      api_permissions: { $in: PERMISSION_CODES },
     });
 
     console.log(`✅ Found ${apiPermissions.length} API permissions\n`);
@@ -67,31 +67,31 @@ async function fixPermissions() {
       console.log("⚠️  No API permissions found. Creating them first...\n");
       
       const permissionsToCreate = [
-        { permission: "approved-req-schedules:read", description: "View approved requisition schedules" },
-        { permission: "req-load-sheet:create", description: "Create requisition load sheets" },
-        { permission: "req-load-sheet:read", description: "View requisition load sheets" },
-        { permission: "req-load-sheet:update", description: "Edit requisition load sheets" },
-        { permission: "req-load-sheet:delete", description: "Delete requisition load sheets" },
-        { permission: "req-load-sheet:validate", description: "Validate/lock requisition load sheets" },
-        { permission: "req-load-sheet:convert", description: "Convert load sheets to chalans & invoices" },
-        { permission: "req-chalan:read", description: "View requisition chalans" },
-        { permission: "req-chalan:receive", description: "Receive requisition chalans" },
-        { permission: "req-invoice:read", description: "View requisition invoices" },
+        { api_permissions: "approved-req-schedules:read" },
+        { api_permissions: "req-load-sheet:create" },
+        { api_permissions: "req-load-sheet:read" },
+        { api_permissions: "req-load-sheet:update" },
+        { api_permissions: "req-load-sheet:delete" },
+        { api_permissions: "req-load-sheet:validate" },
+        { api_permissions: "req-load-sheet:convert" },
+        { api_permissions: "req-chalan:read" },
+        { api_permissions: "req-chalan:receive" },
+        { api_permissions: "req-invoice:read" },
       ];
 
       for (const perm of permissionsToCreate) {
-        const existing = await models.ApiPermission.findOne({ permission: perm.permission });
+        const existing = await models.ApiPermission.findOne({ api_permissions: perm.api_permissions });
         if (!existing) {
           await models.ApiPermission.create(perm);
-          console.log(`  ✅ Created: ${perm.permission}`);
+          console.log(`  ✅ Created: ${perm.api_permissions}`);
         } else {
-          console.log(`  ⏭️  Already exists: ${perm.permission}`);
+          console.log(`  ⏭️  Already exists: ${perm.api_permissions}`);
         }
       }
 
       // Re-fetch after creation
       const newApiPermissions = await models.ApiPermission.find({
-        permission: { $in: PERMISSION_CODES },
+        api_permissions: { $in: PERMISSION_CODES },
       });
       apiPermissions.push(...newApiPermissions);
     }
@@ -109,14 +109,14 @@ async function fixPermissions() {
       });
 
       if (existing) {
-        console.log(`  ⏭️  ${apiPerm.permission} - already assigned`);
+        console.log(`  ⏭️  ${apiPerm.api_permissions} - already assigned`);
         skipped++;
       } else {
         await models.RoleApiPermission.create({
           role_id: roleId,
           api_permission_id: apiPerm._id,
         });
-        console.log(`  ✅ ${apiPerm.permission} - assigned`);
+        console.log(`  ✅ ${apiPerm.api_permissions} - assigned`);
         assigned++;
       }
     }
