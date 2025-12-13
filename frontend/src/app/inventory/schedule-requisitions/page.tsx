@@ -512,10 +512,10 @@ export default function ScheduleRequisitionsPage() {
                                 label="Delivery Qty"
                                 type="number"
                                 size="small"
-                                value={itemData.delivery_qty === 0 ? 0 : (itemData.delivery_qty || "")}
+                                value={itemData.delivery_qty === 0 ? 0 : toText(itemData.delivery_qty, "")}
                                 onChange={(e) =>
                                   handleInputChange(
-                                    group.depot_id,
+                                    toId(group.depot_id, ""),
                                     key,
                                     "delivery_qty",
                                     e.target.value
