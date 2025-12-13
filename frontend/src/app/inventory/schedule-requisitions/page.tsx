@@ -75,7 +75,7 @@ export default function ScheduleRequisitionsPage() {
               requisition_detail_id: item.requisition_detail_id,
               delivery_qty: item.unscheduled_qty, // Pre-fill with unscheduled qty
               source_depot_id: group.depot_id, // Pre-fill with first depot
-              target_depot_id: req.from_depot.id,
+              target_depot_id: req.from_depot?.id || req.from_depot?._id || null,
               order_qty: item.order_qty,
               unscheduled_qty: item.unscheduled_qty,
               stock_quantities: item.stock_quantities,
@@ -264,7 +264,7 @@ export default function ScheduleRequisitionsPage() {
                         {req.requisition_no || 'N/A'}
                       </Typography>
                       <Typography variant="caption" color="text.secondary">
-                        Target: {req.from_depot?.name || 'N/A'} ({req.from_depot?.code || 'N/A'}) •{" "}
+                        Target: {req.from_depot?.name || req.from_depot_name || 'N/A'} ({req.from_depot?.code || req.from_depot_code || 'N/A'}) •{" "}
                         {req.requisition_date ? new Date(req.requisition_date).toLocaleDateString() : 'N/A'}
                       </Typography>
                     </Box>
