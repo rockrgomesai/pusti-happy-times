@@ -47,6 +47,18 @@ router.get("/", authenticate, checkPermission("approved-req-schedules:read"), as
     console.log("User Facility Name:", user.employee_id.facility_id.name);
     console.log("Filter:", filter);
 
+    // First, check all RequisitionScheduling records to debug
+    const allSchedulings = await models.RequisitionScheduling.find({}).select("_id status scheduling_details").lean();
+    console.log(`Total RequisitionScheduling records in DB: ${allSchedulings.length}`);
+    allSchedulings.forEach(s => {
+      console.log(`  - Scheduling ${s._id}: status=${s.status}, details=${s.scheduling_details?.length || 0}`);
+      if (s.scheduling_details && s.scheduling_details.length > 0) {
+        s.scheduling_details.forEach((d, idx) => {
+          console.log(`    Detail ${idx}: source=${d.source_depot_id}, target=${d.target_depot_id}`);
+        });
+      }
+    });
+
     // Find all requisition schedulings where this facility is the source
     // Query scheduling_details array for source_depot_id matching user's facility
     const schedulings = await models.RequisitionScheduling.find({
@@ -63,7 +75,7 @@ router.get("/", authenticate, checkPermission("approved-req-schedules:read"), as
       })
       .lean();
 
-    console.log(`Found ${schedulings.length} requisition schedulings`);
+    console.log(`Found ${schedulings.length} requisition schedulings matching user's facility`);
 
     if (schedulings.length === 0) {
       return res.json({
