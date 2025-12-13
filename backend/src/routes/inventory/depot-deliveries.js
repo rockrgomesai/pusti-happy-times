@@ -43,7 +43,7 @@ router.get("/", authenticate, requireApiPermission("depot-deliveries:read"), asy
     }
 
     const depotId = user.employee_id.facility_id._id;
-    console.log(`📦 Fetching deliveries for depot: ${user.employee_id.facility_id.name}`);
+    console.log(`📦 Fetching deliveries for depot: ${user.employee_id.facility_id.name} (${depotId})`);
 
     // Build query for finance-approved schedulings
     const query = {
@@ -51,7 +51,7 @@ router.get("/", authenticate, requireApiPermission("depot-deliveries:read"), asy
       current_status: "Approved", // Finance approved
     };
 
-    console.log(`🔍 Query:`, JSON.stringify(query));
+    console.log(`🔍 Scheduling Query:`, JSON.stringify(query));
 
     // Fetch schedulings
     const schedulings = await Scheduling.find(query)
@@ -77,12 +77,16 @@ router.get("/", authenticate, requireApiPermission("depot-deliveries:read"), asy
     ];
 
     // Get depot stock for these products - simple indexed query
+    console.log(`🔍 Stock Query: depot_id=${depotId}, product_ids=[${allItemIds.join(', ')}]`);
     const stockRecords = await DepotStock.find({
       depot_id: depotId,
       product_id: { $in: allItemIds },
     }).lean();
 
     console.log(`📦 Found ${stockRecords.length} stock records for ${allItemIds.length} products`);
+    if (stockRecords.length === 0) {
+      console.log(`❌ NO STOCK FOUND for depot ${depotId}!`);
+    }
 
     // Map stock by product_id (simple!)
     const stockMap = {};
