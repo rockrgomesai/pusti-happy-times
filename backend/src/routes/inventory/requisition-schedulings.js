@@ -333,7 +333,7 @@ router.post(
         // Create or update scheduling record
         let scheduling = await RequisitionScheduling.findOne({
           requisition_id: requisitionId,
-        }).session(session);
+        });
 
         if (!scheduling) {
           scheduling = new RequisitionScheduling({
