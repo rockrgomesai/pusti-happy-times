@@ -7,7 +7,7 @@ import {
   Typography,
   Card,
   CardContent,
-  Grid2,
+  Grid,
   TextField,
   MenuItem,
   Button,
@@ -18,6 +18,13 @@ import {
   AccordionSummary,
   AccordionDetails,
   Divider,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
 } from "@mui/material";
 import PlaylistAddCheckIcon from "@mui/icons-material/PlaylistAddCheck";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
@@ -46,26 +53,24 @@ export default function RequisitionScheduledListPage() {
     try {
       setLoading(true);
 
-      // Build query params for load sheets
+      // Build query params for scheduled requisitions
       const params = new URLSearchParams();
       if (filters.status) params.append("status", filters.status);
       if (filters.from_date) params.append("from_date", filters.from_date);
       if (filters.to_date) params.append("to_date", filters.to_date);
+      if (filters.source_depot) params.append("source_depot", filters.source_depot);
+      if (filters.target_depot) params.append("target_depot", filters.target_depot);
 
       const [schedulingsRes, depotsRes] = await Promise.all([
-        apiClient.get(`/inventory/req-load-sheets/list?${params.toString()}`),
-        apiClient.get("/facilities"),
+        apiClient.get(`/inventory/requisition-schedulings/scheduled-list?${params.toString()}`),
+        apiClient.get("/inventory/requisition-schedulings/depots"),
       ]);
 
-      if (schedulingsRes.data.success) {
-        setSchedulings(schedulingsRes.data.data);
-      }
-
-      if (depotsRes.data.success) {
-        setDepots(depotsRes.data.data);
-      }
+      setSchedulings(schedulingsRes.data || []);
+      setDepots(depotsRes.data || []);
     } catch (error) {
       console.error("Error loading scheduled list:", error);
+      setSchedulings([]);
     } finally {
       setLoading(false);
     }
@@ -121,10 +126,10 @@ export default function RequisitionScheduledListPage() {
       <Box sx={{ mb: 3 }}>
         <Typography variant="h5" gutterBottom sx={{ display: "flex", alignItems: "center", gap: 1 }}>
           <PlaylistAddCheckIcon />
-          Requisition Load Sheets
+          Scheduled Requisitions
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          View history of all requisition load sheets created for delivery
+          View history of all scheduled requisitions created through Schedule Requisitions
         </Typography>
       </Box>
 
@@ -153,8 +158,8 @@ export default function RequisitionScheduledListPage() {
 
           {showFilters && (
             <>
-              <Grid2 container spacing={2} sx={{ mb: 2 }}>
-                <Grid2 size={{ xs: 12, sm: 6, md: 3 }}>
+              <Grid container spacing={2} sx={{ mb: 2 }}>
+                <Grid item xs={12} sm={6} md={3}>
                   <TextField
                     fullWidth
                     label="From Date"
@@ -166,9 +171,9 @@ export default function RequisitionScheduledListPage() {
                       inputLabel: { shrink: true },
                     }}
                   />
-                </Grid2>
+                </Grid>
 
-                <Grid2 size={{ xs: 12, sm: 6, md: 3 }}>
+                <Grid item xs={12} sm={6} md={3}>
                   <TextField
                     fullWidth
                     label="To Date"
@@ -180,24 +185,44 @@ export default function RequisitionScheduledListPage() {
                       inputLabel: { shrink: true },
                     }}
                   />
-                </Grid2>
+                </Grid>
 
-                <Grid2 size={{ xs: 12, sm: 6, md: 3 }}>
+                <Grid item xs={12} sm={6} md={3}>
                   <TextField
                     fullWidth
                     select
-                    label="Status"
+                    label="Source Depot"
                     size="small"
-                    value={filters.status}
-                    onChange={(e) => handleFilterChange("status", e.target.value)}
+                    value={filters.source_depot}
+                    onChange={(e) => handleFilterChange("source_depot", e.target.value)}
                   >
                     <MenuItem value="">All</MenuItem>
-                    <MenuItem value="draft">Draft</MenuItem>
-                    <MenuItem value="validated">Validated</MenuItem>
-                    <MenuItem value="converted">Converted to Chalan</MenuItem>
+                    {depots.map((depot) => (
+                      <MenuItem key={depot._id} value={depot._id}>
+                        {depot.name} ({depot.code})
+                      </MenuItem>
+                    ))}
                   </TextField>
-                </Grid2>
-              </Grid2>
+                </Grid>
+
+                <Grid item xs={12} sm={6} md={3}>
+                  <TextField
+                    fullWidth
+                    select
+                    label="Target Depot"
+                    size="small"
+                    value={filters.target_depot}
+                    onChange={(e) => handleFilterChange("target_depot", e.target.value)}
+                  >
+                    <MenuItem value="">All</MenuItem>
+                    {depots.map((depot) => (
+                      <MenuItem key={depot._id} value={depot._id}>
+                        {depot.name} ({depot.code})
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                </Grid>
+              </Grid>
 
               <Box sx={{ display: "flex", gap: 1, justifyContent: "flex-end" }}>
                 <Button size="small" variant="outlined" onClick={handleResetFilters}>
@@ -227,15 +252,15 @@ export default function RequisitionScheduledListPage() {
 
       {/* Results */}
       {schedulings.length === 0 ? (
-        <Alert severity="info">No load sheet records found</Alert>
+        <Alert severity="info">No scheduled requisition records found</Alert>
       ) : (
         <Box>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            {schedulings.length} load sheet(s) found
+            {schedulings.length} scheduling record(s) found
           </Typography>
 
-          {schedulings.map((loadSheet) => (
-            <Card key={loadSheet._id} sx={{ mb: 2 }}>
+          {schedulings.map((scheduling) => (
+            <Card key={scheduling._id} sx={{ mb: 2 }}>
               <CardContent>
                 {/* Header */}
                 <Box
@@ -248,23 +273,29 @@ export default function RequisitionScheduledListPage() {
                 >
                   <Box>
                     <Typography variant="subtitle1" fontWeight="bold">
-                      Load Sheet: {loadSheet.load_sheet_no || loadSheet._id}
+                      Requisition: {scheduling.requisition_id?.requisition_no || "N/A"}
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
-                      Created on {new Date(loadSheet.created_at).toLocaleString()}
+                      Req. Date: {scheduling.requisition_id?.requisition_date
+                        ? new Date(scheduling.requisition_id.requisition_date).toLocaleDateString()
+                        : "N/A"}
                     </Typography>
-                    {loadSheet.created_by && (
+                    <Typography variant="caption" display="block" color="text.secondary">
+                      Target Depot: {scheduling.requisition_id?.from_depot_id?.name || "N/A"}{" "}
+                      ({scheduling.requisition_id?.from_depot_id?.code || "N/A"})
+                    </Typography>
+                    <Typography variant="caption" display="block" color="text.secondary">
+                      Scheduled on: {new Date(scheduling.created_at).toLocaleString()}
+                    </Typography>
+                    {scheduling.created_by && (
                       <Typography variant="caption" display="block" color="text.secondary">
-                        By: {loadSheet.created_by.full_name || loadSheet.created_by.username}
-                      </Typography>
-                    )}
-                    {loadSheet.requesting_depot_id && (
-                      <Typography variant="caption" display="block" color="text.secondary">
-                        To: {loadSheet.requesting_depot_id.name || 'N/A'}
+                        By: {scheduling.created_by.full_name || scheduling.created_by.username}
                       </Typography>
                     )}
                   </Box>
-                  <Chip label={loadSheet.status} color={getStatusColor(loadSheet.status)} size="small" />
+                  {scheduling.status && (
+                    <Chip label={scheduling.status} color={getStatusColor(scheduling.status)} size="small" />
+                  )}
                 </Box>
 
                 <Divider sx={{ mb: 2 }} />
@@ -273,75 +304,59 @@ export default function RequisitionScheduledListPage() {
                 <Accordion>
                   <AccordionSummary expandIcon={<ExpandMoreIcon />}>
                     <Typography variant="body2" fontWeight="bold">
-                      {loadSheet.req_items?.length || 0} item(s) in load sheet
+                      {scheduling.scheduling_details?.length || 0} item(s) scheduled
                     </Typography>
                   </AccordionSummary>
                   <AccordionDetails>
-                    <Box>
-                      {(loadSheet.req_items || []).map((item, idx) => (
-                        <Box
-                          key={idx}
-                          sx={{
-                            mb: 2,
-                            pb: 2,
-                            borderBottom:
-                              idx < (loadSheet.req_items?.length || 0) - 1
-                                ? "1px solid #eee"
-                                : "none",
-                          }}
-                        >
-                          <Grid2 container spacing={2}>
-                            <Grid2 size={{ xs: 12, sm: 6 }}>
-                              <Typography variant="caption" color="text.secondary">
-                                Product
-                              </Typography>
-                              <Typography variant="body2" fontWeight="bold">
-                                {item.product_name || item.sku}
-                              </Typography>
-                              <Typography variant="caption" color="text.secondary">
-                                SKU: {item.sku}
-                              </Typography>
-                            </Grid2>
-
-                            <Grid2 size={{ xs: 6, sm: 3 }}>
-                              <Typography variant="caption" color="text.secondary">
-                                Req. No
-                              </Typography>
-                              <Typography variant="body2">
-                                {item.requisition_no || 'N/A'}
-                              </Typography>
-                            </Grid2>
-
-                            <Grid2 size={{ xs: 6, sm: 3 }}>
-                              <Typography variant="caption" color="text.secondary">
-                                Delivery Qty
-                              </Typography>
-                              <Typography variant="body2" fontWeight="bold" color="primary">
-                                {item.delivery_qty || 0}
-                              </Typography>
-                            </Grid2>
-
-                            <Grid2 size={{ xs: 6, sm: 3 }}>
-                              <Typography variant="caption" color="text.secondary">
-                                Order Qty
-                              </Typography>
-                              <Typography variant="body2">
-                                {item.order_qty || 0}
-                              </Typography>
-                            </Grid2>
-
-                            <Grid2 size={{ xs: 6, sm: 3 }}>
-                              <Typography variant="caption" color="text.secondary">
-                                Undelivered
-                              </Typography>
-                              <Typography variant="body2">
-                                {item.undelivered_qty || 0}
-                              </Typography>
-                            </Grid2>
-                          </Grid2>
-                        </Box>
-                      ))}
-                    </Box>
+                    <TableContainer component={Paper} variant="outlined">
+                      <Table size="small">
+                        <TableHead>
+                          <TableRow>
+                            <TableCell>SKU</TableCell>
+                            <TableCell>Source Depot</TableCell>
+                            <TableCell>Target Depot</TableCell>
+                            <TableCell align="right">Delivery Qty</TableCell>
+                          </TableRow>
+                        </TableHead>
+                        <TableBody>
+                          {(scheduling.scheduling_details || []).map((detail, idx) => (
+                            <TableRow key={idx}>
+                              <TableCell>
+                                <Typography variant="body2">
+                                  {detail.sku || "N/A"}
+                                </Typography>
+                                {detail.erp_id && (
+                                  <Typography variant="caption" color="text.secondary">
+                                    {detail.erp_id}
+                                  </Typography>
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                <Typography variant="body2">
+                                  {detail.source_depot_id?.name || "N/A"}
+                                </Typography>
+                                <Typography variant="caption" color="text.secondary">
+                                  {detail.source_depot_id?.code || ""}
+                                </Typography>
+                              </TableCell>
+                              <TableCell>
+                                <Typography variant="body2">
+                                  {detail.target_depot_id?.name || "N/A"}
+                                </Typography>
+                                <Typography variant="caption" color="text.secondary">
+                                  {detail.target_depot_id?.code || ""}
+                                </Typography>
+                              </TableCell>
+                              <TableCell align="right">
+                                <Typography variant="body2" fontWeight="bold" color="primary">
+                                  {detail.delivery_qty || 0}
+                                </Typography>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </TableContainer>
                   </AccordionDetails>
                 </Accordion>
               </CardContent>
