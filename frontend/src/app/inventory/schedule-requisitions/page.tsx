@@ -481,7 +481,7 @@ export default function ScheduleRequisitionsPage() {
                                     key={toId(stock?.depot_id, "") || String(idx)}
                                     value={toId(stock?.depot_id, "")}
                                   >
-                                    {stock?.depot_name || "N/A"} ({toText(stock?.qty, "0")} available)
+                                    {toText(stock?.depot_name, "N/A")} ({toText(stock?.qty, "0")} available)
                                   </MenuItem>
                                 ))}
                               </TextField>
