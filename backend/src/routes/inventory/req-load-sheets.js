@@ -16,9 +16,6 @@ const { authenticate, requireApiPermission: checkPermission } = require("../../m
  * Groups items by requesting depot for delivery
  */
 router.post("/", authenticate, checkPermission("req-load-sheet:create"), async (req, res) => {
-  const session = await mongoose.startSession();
-  session.startTransaction();
-
   try {
     const { facility_id: source_depot_id, user_id } = req.user;
     const { requesting_depot_id, items, delivery_date, vehicle_info, transport_id, notes } =
@@ -54,7 +51,7 @@ router.post("/", authenticate, checkPermission("req-load-sheet:create"), async (
       "scheduling_details.requisition_detail_id": { $in: requisitionDetailIds },
     })
       .populate("requisition_id", "requisition_no requisition_date")
-      .session(session);
+      .lean();
 
     if (!schedulings || schedulings.length === 0) {
       throw new Error("Requisition scheduling details not found");
@@ -83,7 +80,7 @@ router.post("/", authenticate, checkPermission("req-load-sheet:create"), async (
           }
 
           // Get product info
-          const product = await models.Product.findOne({ sku: detail.sku }).session(session);
+          const product = await models.Product.findOne({ sku: detail.sku }).lean();
 
           reqItems.push({
             requisition_id: scheduling.requisition_id._id,
@@ -122,10 +119,10 @@ router.post("/", authenticate, checkPermission("req-load-sheet:create"), async (
     const skus = Object.keys(skuToQtyMap);
     const productIds = skus.map((sku) => skuToQtyMap[sku].product_id);
 
-    const stocks = await models.FactoryStoreInventory.find({
-      facility_id: source_depot_id,
+    const stocks = await models.DepotStock.find({
+      depot_id: source_depot_id,
       product_id: { $in: productIds },
-    }).session(session);
+    }).lean();
 
     const stockMap = {};
     stocks.forEach((stock) => {
@@ -164,7 +161,7 @@ router.post("/", authenticate, checkPermission("req-load-sheet:create"), async (
     // Get requesting depot info
     const requestingDepot = await models.Facility.findById(requesting_depot_id)
       .select("name code")
-      .session(session);
+      .lean();
 
     // Build stock validation cache
     const stockValidationCache = Object.keys(stockMap).map((sku) => ({
@@ -201,26 +198,23 @@ router.post("/", authenticate, checkPermission("req-load-sheet:create"), async (
       notes: notes || "",
     });
 
-    await loadSheet.save({ session });
+    await loadSheet.save();
 
     // Block stock for this load sheet
     for (const sku of skus) {
-      const product = await models.Product.findOne({ sku }).session(session);
+      const product = await models.Product.findOne({ sku }).lean();
       if (!product) continue;
 
-      await models.FactoryStoreInventory.findOneAndUpdate(
+      await models.DepotStock.findOneAndUpdate(
         {
-          facility_id: source_depot_id,
+          depot_id: source_depot_id,
           product_id: product._id,
         },
         {
           $inc: { blocked_qty: skuToQtyMap[sku].qty },
-        },
-        { session }
+        }
       );
     }
-
-    await session.commitTransaction();
 
     console.log(`✅ Load sheet created: ${loadSheetNumber}`);
 
@@ -236,14 +230,11 @@ router.post("/", authenticate, checkPermission("req-load-sheet:create"), async (
       },
     });
   } catch (error) {
-    await session.abortTransaction();
     console.error("❌ Error creating requisition load sheet:", error);
     res.status(500).json({
       success: false,
       message: error.message || "Failed to create requisition load sheet",
     });
-  } finally {
-    session.endSession();
   }
 });
 
