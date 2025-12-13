@@ -5,12 +5,9 @@ import {
   Box,
   Container,
   Typography,
-  Card,
-  CardContent,
   CircularProgress,
   Alert,
   TextField,
-  MenuItem,
   Button,
   Accordion,
   AccordionSummary,
@@ -23,32 +20,56 @@ import {
   TableRow,
   Paper,
   Checkbox,
+  Chip,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { apiClient } from "@/lib/api";
 import toast from "react-hot-toast";
 
-interface DeliveryQty {
-  [key: string]: {
-    delivery_qty: number;
-    depot_id: string;
-  };
+interface Item {
+  requisition_scheduling_id: string;
+  requisition_detail_id: string;
+  requisition_id: string;
+  requisition_no: string;
+  requisition_date: string;
+  sku: string;
+  erp_id: string;
+  product_name: string;
+  dp_price: number;
+  order_qty: number;
+  scheduled_qty: number;
+  delivered_qty: number;
+  remaining_qty: number;
+  stock_qty: number;
+  total_stock_qty: number;
+  blocked_qty: number;
+  is_partial: boolean;
+}
+
+interface DepotGroup {
+  requesting_depot_id: string;
+  requesting_depot_name: string;
+  requesting_depot_code: string;
+  items: Item[];
 }
 
 interface SelectedItems {
-  [groupId: string]: {
+  [depotId: string]: {
     [itemKey: string]: boolean;
   };
+}
+
+interface DeliveryQtys {
+  [itemKey: string]: number;
 }
 
 export default function ScheduleRequisitionsPage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [depotGroups, setDepotGroups] = useState([]);
-  const [facilities, setFacilities] = useState([]);
+  const [depotGroups, setDepotGroups] = useState<DepotGroup[]>([]);
   const [error, setError] = useState("");
-  const [deliveryQtys, setDeliveryQtys] = useState<DeliveryQty>({});
   const [selectedItems, setSelectedItems] = useState<SelectedItems>({});
+  const [deliveryQtys, setDeliveryQtys] = useState<DeliveryQtys>({});
   const [expandedGroup, setExpandedGroup] = useState<string | false>(false);
 
   useEffect(() => {
@@ -58,44 +79,114 @@ export default function ScheduleRequisitionsPage() {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [reqResponse, facilitiesResponse] = await Promise.all([
-        apiClient.get("/inventory/requisition-schedulings"),
-        apiClient.get("/inventory/requisition-schedulings/depots"),
-      ]);
+      setError("");
       
-      // Handle response structure
-      const groups = Array.isArray(reqResponse.data) 
-        ? reqResponse.data 
-        : (reqResponse.data?.data || []);
+      const response = await apiClient.get("/inventory/approved-req-schedules");
       
-      const facilitiesData = Array.isArray(facilitiesResponse.data)
-        ? facilitiesResponse.data
-        : (facilitiesResponse.data?.data || []);
-      
+      const groups = response.data?.data || [];
       setDepotGroups(groups);
-      setFacilities(facilitiesData);
       
-      // Pre-fill delivery quantities
-      const initialDeliveryQtys: DeliveryQty = {};
-      groups.forEach((depot: any) => {
-        (depot.requisitions || []).forEach((req: any) => {
-          (req.items || [])
-            .filter((item: any) => item.unscheduled_qty > 0)
-            .forEach((item: any) => {
-              const itemKey = `${req.requisition_id}_${item.requisition_detail_id}`;
-              initialDeliveryQtys[itemKey] = {
-                delivery_qty: item.unscheduled_qty,
-                depot_id: depot.depot_id,
-              };
-            });
+      // Pre-fill delivery quantities with remaining_qty
+      const initialQtys: DeliveryQtys = {};
+      groups.forEach((depot: DepotGroup) => {
+        depot.items.forEach((item: Item) => {
+          const itemKey = `${depot.requesting_depot_id}_${item.requisition_detail_id}`;
+          initialQtys[itemKey] = item.remaining_qty;
         });
       });
-      setDeliveryQtys(initialDeliveryQtys);
-    } catch (err) {
+      setDeliveryQtys(initialQtys);
+      
+    } catch (err: any) {
       console.error("Error loading data:", err);
-      setError("Failed to load requisitions");
+      setError(err.response?.data?.message || "Failed to load scheduled requisitions");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSelectAll = (depotId: string, items: Item[]) => {
+    const allItemKeys = items.map(item => 
+      `${depotId}_${item.requisition_detail_id}`
+    );
+    
+    const allSelected = allItemKeys.every(key => selectedItems[depotId]?.[key]);
+    
+    setSelectedItems(prev => ({
+      ...prev,
+      [depotId]: allItemKeys.reduce((acc, key) => ({
+        ...acc,
+        [key]: !allSelected
+      }), {})
+    }));
+  };
+
+  const handleCreateLoadSheet = async (group: DepotGroup) => {
+    try {
+      setSubmitting(true);
+      
+      const depotId = group.requesting_depot_id;
+      const selectedItemKeys = Object.keys(selectedItems[depotId] || {}).filter(
+        key => selectedItems[depotId][key]
+      );
+      
+      if (selectedItemKeys.length === 0) {
+        toast.error("Please select at least one item");
+        return;
+      }
+      
+      // Build items array for load sheet
+      const items = group.items
+        .filter(item => {
+          const itemKey = `${depotId}_${item.requisition_detail_id}`;
+          return selectedItems[depotId]?.[itemKey];
+        })
+        .map(item => {
+          const itemKey = `${depotId}_${item.requisition_detail_id}`;
+          const deliveryQty = deliveryQtys[itemKey] || 0;
+          
+          if (deliveryQty <= 0) {
+            throw new Error(`Delivery quantity must be greater than 0 for ${item.sku}`);
+          }
+          
+          if (deliveryQty > item.remaining_qty) {
+            throw new Error(`Delivery quantity cannot exceed remaining quantity (${item.remaining_qty}) for ${item.sku}`);
+          }
+          
+          if (deliveryQty > item.stock_qty) {
+            throw new Error(`Insufficient stock for ${item.sku}. Available: ${item.stock_qty}, Requested: ${deliveryQty}`);
+          }
+          
+          return {
+            requisition_detail_id: item.requisition_detail_id,
+            delivery_qty: deliveryQty,
+          };
+        });
+      
+      // Create load sheet payload
+      const payload = {
+        requesting_depot_id: group.requesting_depot_id,
+        items,
+        notes: `Load sheet for ${group.requesting_depot_name}`,
+      };
+      
+      await apiClient.post("/inventory/req-load-sheets", payload);
+      
+      toast.success("Load sheet created successfully");
+      
+      // Clear selections for this depot
+      setSelectedItems(prev => ({
+        ...prev,
+        [depotId]: {}
+      }));
+      
+      // Reload data
+      loadData();
+      
+    } catch (err: any) {
+      console.error("Error creating load sheet:", err);
+      toast.error(err.message || err.response?.data?.message || "Failed to create load sheet");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -109,7 +200,7 @@ export default function ScheduleRequisitionsPage() {
 
   if (error) {
     return (
-      <Container maxWidth="lg" sx={{ mt: 4 }}>
+      <Container maxWidth="xl" sx={{ mt: 4 }}>
         <Alert severity="error">{error}</Alert>
       </Container>
     );
@@ -117,186 +208,118 @@ export default function ScheduleRequisitionsPage() {
 
   if (!depotGroups || depotGroups.length === 0) {
     return (
-      <Container maxWidth="lg" sx={{ mt: 4 }}>
-        <Alert severity="info">No pending requisitions to schedule</Alert>
+      <Container maxWidth="xl" sx={{ mt: 4 }}>
+        <Alert severity="info">
+          No scheduled requisitions pending delivery. All requisitions have been fulfilled or no items have been scheduled yet.
+        </Alert>
       </Container>
     );
   }
 
-  const handleSelectAll = (groupId: string, requisitions: any[]) => {
-    const allItemKeys: string[] = [];
-    requisitions.forEach((req: any) => {
-      (req.items || [])
-        .filter((item: any) => (item.unscheduled_qty || 0) > 0)
-        .forEach((item: any) => {
-          allItemKeys.push(`${req.requisition_id}_${item.requisition_detail_id}`);
-        });
-    });
-
-    const allSelected = allItemKeys.every(key => selectedItems[groupId]?.[key]);
-    
-    setSelectedItems(prev => ({
-      ...prev,
-      [groupId]: allItemKeys.reduce((acc, key) => ({
-        ...acc,
-        [key]: !allSelected
-      }), {})
-    }));
-  };
-
-  const handleScheduleGroup = async (group: any) => {
-    try {
-      setSubmitting(true);
-      const groupId = group.depot_id;
-      
-      // Collect all selected items from all requisitions in this group
-      const schedulings: any[] = [];
-      
-      (group.requisitions || []).forEach((req: any) => {
-        const items = (req.items || [])
-          .map((item: any) => {
-            const itemKey = `${req.requisition_id}_${item.requisition_detail_id}`;
-            const isSelected = selectedItems[groupId]?.[itemKey];
-            const delivery = deliveryQtys[itemKey];
-            
-            if (isSelected && delivery && delivery.delivery_qty > 0) {
-              return {
-                requisition_detail_id: item.requisition_detail_id,
-                delivery_qty: delivery.delivery_qty,
-                source_depot_id: delivery.depot_id,
-              };
-            }
-            return null;
-          })
-          .filter((d: any) => d !== null);
-
-        if (items.length > 0) {
-          schedulings.push({
-            requisition_id: req.requisition_id,
-            items,
-          });
-        }
-      });
-
-      if (schedulings.length === 0) {
-        toast.error("Please select items and enter delivery quantities");
-        return;
-      }
-
-      // Submit each requisition separately
-      for (const scheduling of schedulings) {
-        await apiClient.post("/inventory/requisition-schedulings", scheduling);
-      }
-
-      toast.success("Schedulings created successfully");
-      loadData();
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || "Failed to create scheduling");
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
   return (
     <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
-      <Typography variant="h5" gutterBottom>
-        Schedule Requisitions
-      </Typography>
+      <Box sx={{ mb: 3 }}>
+        <Typography variant="h5" gutterBottom>
+          Schedule Requisitions
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          View approved requisition schedules and create load sheets for delivery
+        </Typography>
+      </Box>
 
-      {depotGroups.map((group: any, idx) => {
-        const groupId = group.depot_id;
-        const allItems: any[] = [];
-        (group.requisitions || []).forEach((req: any) => {
-          (req.items || [])
-            .filter((item: any) => (item.unscheduled_qty || 0) > 0)
-            .forEach((item: any) => {
-              allItems.push({
-                ...item,
-                requisition_id: req.requisition_id,
-                requisition_no: req.requisition_no,
-                requisition_date: req.requisition_date,
-                from_depot: req.from_depot,
-              });
-            });
-        });
+      {depotGroups.map((group) => {
+        const depotId = group.requesting_depot_id;
+        const selectedCount = Object.values(selectedItems[depotId] || {}).filter(Boolean).length;
+        const totalItems = group.items.length;
 
         return (
           <Accordion
-            key={groupId || idx}
-            expanded={expandedGroup === groupId}
-            onChange={() => setExpandedGroup(expandedGroup === groupId ? false : groupId)}
+            key={depotId}
+            expanded={expandedGroup === depotId}
+            onChange={() => setExpandedGroup(expandedGroup === depotId ? false : depotId)}
             sx={{ mb: 2 }}
           >
             <AccordionSummary expandIcon={<ExpandMoreIcon />}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, width: '100%' }}>
-                <Typography variant="h6">{group.depot_name || 'Unknown Depot'}</Typography>
-                <Typography variant="body2" color="text.secondary">
-                  ({allItems.length} items pending)
+                <Typography variant="h6">
+                  {group.requesting_depot_name}
                 </Typography>
+                <Chip 
+                  label={`${totalItems} items pending`} 
+                  size="small" 
+                  color="primary" 
+                  variant="outlined"
+                />
+                {selectedCount > 0 && (
+                  <Chip 
+                    label={`${selectedCount} selected`} 
+                    size="small" 
+                    color="secondary"
+                  />
+                )}
               </Box>
             </AccordionSummary>
+            
             <AccordionDetails>
               <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Checkbox
-                  checked={allItems.every(item => {
-                    const itemKey = `${item.requisition_id}_${item.requisition_detail_id}`;
-                    return selectedItems[groupId]?.[itemKey];
-                  })}
-                  indeterminate={
-                    allItems.some(item => {
-                      const itemKey = `${item.requisition_id}_${item.requisition_detail_id}`;
-                      return selectedItems[groupId]?.[itemKey];
-                    }) && !allItems.every(item => {
-                      const itemKey = `${item.requisition_id}_${item.requisition_detail_id}`;
-                      return selectedItems[groupId]?.[itemKey];
-                    })
-                  }
-                  onChange={() => handleSelectAll(groupId, group.requisitions)}
-                />
-                <Typography variant="body2">Select All</Typography>
-                <Box sx={{ flexGrow: 1 }} />
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Checkbox
+                    checked={totalItems > 0 && selectedCount === totalItems}
+                    indeterminate={selectedCount > 0 && selectedCount < totalItems}
+                    onChange={() => handleSelectAll(depotId, group.items)}
+                  />
+                  <Typography variant="body2">Select All</Typography>
+                </Box>
+                
                 <Button
                   variant="contained"
-                  disabled={submitting}
-                  onClick={() => handleScheduleGroup(group)}
+                  disabled={submitting || selectedCount === 0}
+                  onClick={() => handleCreateLoadSheet(group)}
                 >
-                  {submitting ? 'Scheduling...' : 'Schedule'}
+                  {submitting ? 'Creating...' : `Create Load Sheet (${selectedCount})`}
                 </Button>
               </Box>
 
-              <TableContainer component={Paper}>
-                <Table size="small">
+              <TableContainer component={Paper} sx={{ maxHeight: 600 }}>
+                <Table size="small" stickyHeader>
                   <TableHead>
                     <TableRow>
                       <TableCell padding="checkbox"></TableCell>
                       <TableCell>Req No</TableCell>
                       <TableCell>SKU</TableCell>
                       <TableCell>ERP ID</TableCell>
-                      <TableCell>Ord Date</TableCell>
-                      <TableCell align="right">Ord Qty</TableCell>
+                      <TableCell>Product Name</TableCell>
                       <TableCell align="right">Schld Qty</TableCell>
-                      <TableCell align="right">Unschld Qty</TableCell>
-                      <TableCell>Stock Qty</TableCell>
-                      <TableCell>Dlvr Qty</TableCell>
-                      <TableCell>Depots</TableCell>
+                      <TableCell align="right">Delivered</TableCell>
+                      <TableCell align="right">Remaining</TableCell>
+                      <TableCell align="right">Stock</TableCell>
+                      <TableCell>Delivery Qty</TableCell>
+                      <TableCell>Status</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {allItems.map((item, itemIdx) => {
-                      const itemKey = `${item.requisition_id}_${item.requisition_detail_id}`;
-                      const delivery = deliveryQtys[itemKey] || { delivery_qty: 0, depot_id: groupId };
-                      const isSelected = selectedItems[groupId]?.[itemKey] || false;
+                    {group.items.map((item) => {
+                      const itemKey = `${depotId}_${item.requisition_detail_id}`;
+                      const isSelected = selectedItems[depotId]?.[itemKey] || false;
+                      const deliveryQty = deliveryQtys[itemKey] || 0;
+                      const hasStock = item.stock_qty >= deliveryQty;
 
                       return (
-                        <TableRow key={itemKey} selected={isSelected}>
+                        <TableRow 
+                          key={itemKey} 
+                          selected={isSelected}
+                          sx={{ 
+                            backgroundColor: !hasStock && isSelected ? 'error.light' : undefined 
+                          }}
+                        >
                           <TableCell padding="checkbox">
                             <Checkbox
                               checked={isSelected}
                               onChange={(e) => {
                                 setSelectedItems(prev => ({
                                   ...prev,
-                                  [groupId]: {
-                                    ...prev[groupId],
+                                  [depotId]: {
+                                    ...prev[depotId],
                                     [itemKey]: e.target.checked
                                   }
                                 }));
@@ -306,61 +329,53 @@ export default function ScheduleRequisitionsPage() {
                           <TableCell>{item.requisition_no}</TableCell>
                           <TableCell>{item.sku}</TableCell>
                           <TableCell>{item.erp_id || '-'}</TableCell>
-                          <TableCell>
-                            {item.requisition_date ? new Date(item.requisition_date).toLocaleDateString() : '-'}
+                          <TableCell>{item.product_name}</TableCell>
+                          <TableCell align="right">{item.scheduled_qty}</TableCell>
+                          <TableCell align="right">{item.delivered_qty}</TableCell>
+                          <TableCell align="right">
+                            <strong>{item.remaining_qty}</strong>
                           </TableCell>
-                          <TableCell align="right">{item.order_qty || 0}</TableCell>
-                          <TableCell align="right">{item.scheduled_qty || 0}</TableCell>
-                          <TableCell align="right">{item.unscheduled_qty || 0}</TableCell>
-                          <TableCell>
-                            {(item.stock_quantities || []).map((stock: any, stockIdx: number) => (
-                              <Box key={stockIdx}>
-                                <Typography variant="caption">
-                                  {stock.depot_name}: {stock.qty}
-                                </Typography>
-                              </Box>
-                            ))}
+                          <TableCell align="right">
+                            <Typography 
+                              variant="body2" 
+                              color={item.stock_qty >= deliveryQty ? 'success.main' : 'error.main'}
+                            >
+                              {item.stock_qty}
+                            </Typography>
                           </TableCell>
                           <TableCell>
                             <TextField
                               type="number"
                               size="small"
-                              value={delivery.delivery_qty}
+                              value={deliveryQty}
                               onChange={(e) => {
                                 const value = parseInt(e.target.value) || 0;
                                 if (value < 0) return;
-                                if (value > (item.unscheduled_qty || 0)) {
-                                  toast.error(`Cannot exceed ${item.unscheduled_qty}`);
+                                if (value > item.remaining_qty) {
+                                  toast.error(`Cannot exceed remaining quantity: ${item.remaining_qty}`);
                                   return;
                                 }
                                 setDeliveryQtys(prev => ({
                                   ...prev,
-                                  [itemKey]: { ...prev[itemKey], delivery_qty: value }
+                                  [itemKey]: value
                                 }));
                               }}
                               sx={{ width: 100 }}
-                              inputProps={{ min: 0, max: item.unscheduled_qty }}
+                              inputProps={{ 
+                                min: 0, 
+                                max: item.remaining_qty,
+                                step: 1 
+                              }}
+                              error={isSelected && (!hasStock || deliveryQty <= 0)}
                             />
                           </TableCell>
                           <TableCell>
-                            <TextField
-                              select
-                              size="small"
-                              value={delivery.depot_id}
-                              onChange={(e) => {
-                                setDeliveryQtys(prev => ({
-                                  ...prev,
-                                  [itemKey]: { ...prev[itemKey], depot_id: e.target.value }
-                                }));
-                              }}
-                              sx={{ width: 150 }}
-                            >
-                              {facilities.map((facility: any) => (
-                                <MenuItem key={facility._id} value={facility._id}>
-                                  {facility.name}
-                                </MenuItem>
-                              ))}
-                            </TextField>
+                            {item.is_partial && (
+                              <Chip label="Partial" size="small" color="warning" />
+                            )}
+                            {!hasStock && isSelected && (
+                              <Chip label="Low Stock" size="small" color="error" />
+                            )}
                           </TableCell>
                         </TableRow>
                       );
