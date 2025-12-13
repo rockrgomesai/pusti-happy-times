@@ -84,7 +84,8 @@ export default function ApprovedReqSchedulesPage() {
       // Add cache-busting timestamp to force fresh data
       const response = await apiClient.get(`/inventory/approved-req-schedules?_t=${Date.now()}`);
       
-      const groups = response.data?.data || [];
+      // apiClient already returns response.data, so response.data is the actual data array
+      const groups = response.data || [];
       setDepotGroups(groups);
       
       // Pre-fill delivery quantities with remaining_qty
