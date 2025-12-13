@@ -281,23 +281,23 @@ export default function ScheduleRequisitionsPage() {
                           {/* Product Info */}
                           <Box sx={{ mb: 2 }}>
                             <Typography variant="body2" fontWeight="bold">
-                              SKU: {item.sku || 'N/A'} {item.erp_id && `(${item.erp_id})`}
+                              SKU: {item.sku || 'N/A'} {item.erp_id && `(${String(item.erp_id)})`}
                             </Typography>
                             <Box sx={{ display: "flex", gap: 1, mt: 1, flexWrap: "wrap" }}>
                               <Chip
-                                label={`Order: ${item.order_qty || 0}`}
+                                label={`Order: ${String(item.order_qty || 0)}`}
                                 size="small"
                                 color="default"
                                 variant="outlined"
                               />
                               <Chip
-                                label={`Scheduled: ${item.scheduled_qty || 0}`}
+                                label={`Scheduled: ${String(item.scheduled_qty || 0)}`}
                                 size="small"
                                 color="success"
                                 variant="outlined"
                               />
                               <Chip
-                                label={`Unscheduled: ${item.unscheduled_qty || 0}`}
+                                label={`Unscheduled: ${String(item.unscheduled_qty || 0)}`}
                                 size="small"
                                 color="warning"
                                 variant="outlined"
