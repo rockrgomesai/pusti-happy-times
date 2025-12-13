@@ -95,7 +95,7 @@ router.get("/", authenticate, requireApiPermission("depot-deliveries:read"), asy
     .populate('product_id', 'sku')
     .lean();
 
-    console.log(`📦 Found ${stockRecords.length} stock records for ${allItemIds.length} products`);
+    console.log(`📦 Found ${stockRecords.length} stock records for ${productIds.length} products`);
     if (stockRecords.length === 0) {
       console.log(`❌ NO STOCK FOUND for depot ${depotId}!`);
     }
