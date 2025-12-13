@@ -13,6 +13,49 @@ const Product = require("../../models/Product");
 const Facility = require("../../models/Facility");
 const FactoryStoreInventory = require("../../models/FactoryStoreInventory");
 
+// Defensive coercion helpers (prevents leaking Mongoose/Mongo types to the frontend)
+const toText = (value, fallback = "") => {
+  if (value === null || value === undefined) return fallback;
+  if (typeof value === "string") return value;
+  if (typeof value === "number" || typeof value === "boolean" || typeof value === "bigint") {
+    return String(value);
+  }
+
+  if (typeof value === "object") {
+    // Support EJSON Decimal128 from some serializers
+    if (value.$numberDecimal !== undefined && value.$numberDecimal !== null) {
+      return String(value.$numberDecimal);
+    }
+    if (value._bsontype === "Decimal128" && typeof value.toString === "function") {
+      return value.toString();
+    }
+    if (value._id && (typeof value._id === "string" || typeof value._id?.toString === "function")) {
+      return value._id.toString();
+    }
+    if (typeof value.toString === "function" && value.toString !== Object.prototype.toString) {
+      return value.toString();
+    }
+    try {
+      return JSON.stringify(value);
+    } catch {
+      return fallback;
+    }
+  }
+
+  return fallback;
+};
+
+const toId = (value, fallback = "") => {
+  const v = toText(value, fallback);
+  return v === "[object Object]" ? fallback : v;
+};
+
+const toNumber = (value, fallback = 0) => {
+  if (value === "") return fallback;
+  const n = Number(toText(value, ""));
+  return Number.isFinite(n) ? n : fallback;
+};
+
 /**
  * GET /api/inventory/requisition-schedulings
  * Get all requisitions that need scheduling (new & partially scheduled)
@@ -50,11 +93,9 @@ router.get(
           `  Processing requisition: ${req.requisition_no}, details: ${req.details?.length}`
         );
 
-        for (const detail of req.details) {
+        for (const detail of req.details || []) {
           // Skip if fully scheduled
-          const unscheduledQty = parseFloat(
-            detail.unscheduled_qty?.toString() || detail.qty.toString()
-          );
+          const unscheduledQty = toNumber(detail?.unscheduled_qty, toNumber(detail?.qty, 0));
           console.log(`    Detail unscheduled_qty: ${unscheduledQty}`);
           if (unscheduledQty <= 0) {
             console.log(`    ⏭️  Skipping - fully scheduled`);
@@ -80,7 +121,11 @@ router.get(
             continue;
           }
 
-          const sourceDepotId = sourceDepots[0].toString();
+          const sourceDepotId = toId(sourceDepots[0], "");
+          if (!sourceDepotId) {
+            console.log(`    ❌ Invalid source depot id`);
+            continue;
+          }
 
           if (!depotGroups[sourceDepotId]) {
             // Load depot info
@@ -103,14 +148,14 @@ router.get(
             }).lean();
 
             const totalQty = inventories.reduce((sum, inv) => {
-              return sum + parseFloat(inv.qty_ctn?.toString() || "0");
+              return sum + toNumber(inv?.qty_ctn, 0);
             }, 0);
 
             const depot = await Facility.findById(depotId).select("name code").lean();
             stockQuantities.push({
-              depot_id: depotId.toString(),
-              depot_name: depot?.name || "Unknown",
-              depot_code: depot?.code,
+              depot_id: toId(depotId, ""),
+              depot_name: toText(depot?.name, "Unknown"),
+              depot_code: toText(depot?.code, ""),
               qty: totalQty,
             });
           }
@@ -120,14 +165,14 @@ router.get(
             (r) => r.requisition_id === req._id.toString()
           );
 
-          const orderQty = parseFloat(detail.qty.toString());
-          const scheduledQty = parseFloat(detail.scheduled_qty?.toString() || "0");
+          const orderQty = toNumber(detail?.qty, 0);
+          const scheduledQty = toNumber(detail?.scheduled_qty, 0);
 
           const reqItem = {
-            requisition_detail_id: detail._id.toString(),
-            sku: product.sku,
-            erp_id: product.erp_id,
-            product_id: product._id.toString(),
+            requisition_detail_id: toId(detail?._id, ""),
+            sku: toText(product?.sku, ""),
+            erp_id: toText(product?.erp_id, ""),
+            product_id: toId(product?._id, ""),
             order_qty: orderQty,
             scheduled_qty: scheduledQty,
             unscheduled_qty: unscheduledQty,
@@ -138,14 +183,17 @@ router.get(
           if (existingReq) {
             existingReq.items.push(reqItem);
           } else {
+            const fromDepotId = req?.from_depot_id;
+            const fromDepotObj = fromDepotId && typeof fromDepotId === "object" ? fromDepotId : null;
+
             depotGroups[sourceDepotId].requisitions.push({
-              requisition_id: req._id.toString(),
-              requisition_no: req.requisition_no,
+              requisition_id: toId(req?._id, ""),
+              requisition_no: toText(req?.requisition_no, ""),
               requisition_date: req.requisition_date,
               from_depot: {
-                id: req.from_depot_id._id.toString(),
-                name: req.from_depot_id.name,
-                code: req.from_depot_id.code,
+                id: toId(fromDepotObj?._id, ""),
+                name: toText(fromDepotObj?.name, ""),
+                code: toText(fromDepotObj?.code, ""),
               },
               items: [reqItem],
             });

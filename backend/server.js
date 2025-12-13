@@ -23,7 +23,33 @@ app.use("/api/v1", apiRoutes); and route configurations.
  */
 
 // Load environment variables first
-require("dotenv").config({ path: __dirname + "/.env" });
+//
+// Production safety note:
+// - Previously we always loaded `.env`, which in this repo defaults `NODE_ENV=development`.
+// - If the process doesn't explicitly set NODE_ENV (common in PM2 setups), production could
+//   accidentally run as "development" (wrong DB URIs, verbose errors, etc.).
+//
+// Behavior:
+// - If NODE_ENV is set: load `.env.<NODE_ENV>` if present, else `.env`.
+// - If NODE_ENV is NOT set: load `.env.production` if present, else `.env`.
+const dotenv = require("dotenv");
+const fs = require("fs");
+const path = require("path");
+
+const backendDir = __dirname;
+const envFromProcess = process.env.NODE_ENV;
+const preferredEnvFile = envFromProcess ? `.env.${envFromProcess}` : ".env.production";
+
+const preferredEnvPath = path.join(backendDir, preferredEnvFile);
+const fallbackEnvPath = path.join(backendDir, ".env");
+
+const chosenEnvPath = fs.existsSync(preferredEnvPath)
+  ? preferredEnvPath
+  : fs.existsSync(fallbackEnvPath)
+    ? fallbackEnvPath
+    : null;
+
+dotenv.config(chosenEnvPath ? { path: chosenEnvPath } : undefined);
 
 const express = require("express");
 const mongoose = require("mongoose");
