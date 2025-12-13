@@ -80,49 +80,48 @@ router.get("/", authenticate, requireApiPermission("depot-deliveries:read"), asy
     const stockRecords = await DepotStock.find({
       depot_id: depotId,
       product_id: { $in: allItemIds },
-    }).lean();
+    })
+      .populate("product_id", "sku") // Populate to get SKU
+      .lean();
 
     console.log(`📦 Found ${stockRecords.length} stock records for ${allItemIds.length} products`);
     if (stockRecords.length > 0) {
       console.log(`Sample stock record:`, {
         product_id: stockRecords[0].product_id,
+        sku: stockRecords[0].product_id?.sku,
         qty_ctn: stockRecords[0].qty_ctn,
         blocked_qty: stockRecords[0].blocked_qty,
       });
     }
 
-    // Build SKU to product_id map from scheduling details (since detail has both)
-    const skuToProductId = {};
-    schedulings.forEach((s) => {
-      (s.scheduling_details || []).forEach((detail) => {
-        skuToProductId[detail.sku] = detail.item_id.toString();
-      });
-    });
-
-    console.log(`📋 SKU to Product ID map has ${Object.keys(skuToProductId).length} entries`);
-
-    // Map stock by product_id first
+    // Map stock by product_id AND by SKU for flexibility
     const stockByProductId = {};
+    const stockMap = {}; // Map by SKU directly
+    
     stockRecords.forEach((stock) => {
-      const productId = stock.product_id.toString();
+      const productId = stock.product_id._id.toString();
+      const sku = stock.product_id.sku;
       const totalQty = stock.qty_ctn ? parseFloat(stock.qty_ctn.toString()) : 0;
       const blockedQty = stock.blocked_qty ? parseFloat(stock.blocked_qty.toString()) : 0;
       const availableQty = totalQty - blockedQty;
-      stockByProductId[productId] = {
+      
+      const stockInfo = {
         total_qty: totalQty,
         blocked_qty: blockedQty,
         available_qty: availableQty,
       };
-    });
-
-    // Now map by SKU to ensure same SKU shows same stock
-    const stockMap = {};
-    Object.keys(skuToProductId).forEach((sku) => {
-      const productId = skuToProductId[sku];
-      if (stockByProductId[productId]) {
-        stockMap[sku] = stockByProductId[productId];
+      
+      // Map by product_id
+      stockByProductId[productId] = stockInfo;
+      
+      // Map by SKU for direct lookup
+      if (sku) {
+        stockMap[sku] = stockInfo;
+        console.log(`  Mapped stock for SKU ${sku}: ${totalQty} CTN (available: ${availableQty})`);
       }
     });
+
+    console.log(`📋 Stock mapped for ${Object.keys(stockMap).length} SKUs`);
 
     // Process schedulings and group by distributor
     // For depot deliveries, we show approved scheduling_details
