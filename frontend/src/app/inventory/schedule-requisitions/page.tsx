@@ -502,6 +502,19 @@ export default function ScheduleRequisitionsPage() {
                                 color="warning"
                                 variant="outlined"
                               />
+                              <Chip
+                                label={`Available for Scheduling: ${(() => {
+                                  const stockInfo = (item.stock_quantities || []).find(
+                                    (s) => toId(s?.depot_id, "") === toId(itemData?.source_depot_id, "")
+                                  );
+                                  const availableStock = stockInfo ? toNumber(stockInfo.qty, 0) : 0;
+                                  const scheduledQty = toNumber(item.scheduled_qty, 0);
+                                  return Math.max(0, availableStock - scheduledQty);
+                                })()}`}
+                                size="small"
+                                color="info"
+                                variant="outlined"
+                              />
                             </Box>
                           </Box>
 
