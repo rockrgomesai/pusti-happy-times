@@ -331,13 +331,13 @@ export default function ScheduleRequisitionsPage() {
         { deliveries }
       );
 
-      if (response.data.success) {
-        showSnackbar(response.data.message || "Scheduling successful", "success");
+      if (response.success) {
+        showSnackbar(response.message || "Scheduling successful", "success");
         // Reload data
         await loadData();
         setExpandedAccordion(null);
       } else {
-        showSnackbar(response.data.message || "Scheduling failed", "error");
+        showSnackbar(response.message || "Scheduling failed", "error");
       }
     } catch (error) {
       console.error("Error scheduling:", error);
