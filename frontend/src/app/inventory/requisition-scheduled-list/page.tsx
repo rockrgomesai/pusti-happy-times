@@ -305,7 +305,7 @@ export default function RequisitionScheduledListPage() {
                 >
                   <Box>
                     <Typography variant="subtitle1" fontWeight="bold">
-                      Requisition: {scheduling.requisition_id?.requisition_no || "N/A"}
+                      Requisition: {toText(scheduling.requisition_id?.requisition_no, "N/A")}
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
                       Req. Date: {scheduling.requisition_id?.requisition_date
@@ -313,20 +313,20 @@ export default function RequisitionScheduledListPage() {
                         : "N/A"}
                     </Typography>
                     <Typography variant="caption" display="block" color="text.secondary">
-                      Target Depot: {scheduling.requisition_id?.from_depot_id?.name || "N/A"}{" "}
-                      ({scheduling.requisition_id?.from_depot_id?.code || "N/A"})
+                      Target Depot: {toText(scheduling.requisition_id?.from_depot_id?.name, "N/A")}{" "}
+                      ({toText(scheduling.requisition_id?.from_depot_id?.code, "N/A")})
                     </Typography>
                     <Typography variant="caption" display="block" color="text.secondary">
                       Scheduled on: {new Date(scheduling.created_at).toLocaleString()}
                     </Typography>
                     {scheduling.created_by && (
                       <Typography variant="caption" display="block" color="text.secondary">
-                        By: {scheduling.created_by.full_name || scheduling.created_by.username}
+                        By: {toText(scheduling.created_by.full_name || scheduling.created_by.username, "N/A")}
                       </Typography>
                     )}
                   </Box>
                   {scheduling.status && (
-                    <Chip label={scheduling.status} color={getStatusColor(scheduling.status)} size="small" />
+                    <Chip label={toText(scheduling.status)} color={getStatusColor(scheduling.status)} size="small" />
                   )}
                 </Box>
 
