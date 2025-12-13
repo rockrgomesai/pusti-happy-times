@@ -45,6 +45,38 @@ export default function RequisitionScheduledListPage() {
   });
   const [showFilters, setShowFilters] = useState(false);
 
+  // Helper to safely convert values to text (handles Decimal128)
+  const toText = (value, fallback = "") => {
+    if (value === null || value === undefined) return fallback;
+    if (typeof value === "string") return value;
+    if (typeof value === "number" || typeof value === "boolean" || typeof value === "bigint") return String(value);
+
+    if (typeof value === "object") {
+      if (value.$numberDecimal !== undefined && value.$numberDecimal !== null) {
+        return String(value.$numberDecimal);
+      }
+      if (value._bsontype === "Decimal128" && typeof value.toString === "function") {
+        return value.toString();
+      }
+      if (typeof value.toString === "function" && value.toString !== Object.prototype.toString) {
+        return value.toString();
+      }
+      try {
+        return JSON.stringify(value);
+      } catch {
+        return String(value);
+      }
+    }
+
+    return String(value);
+  };
+
+  const toNumber = (value, fallback = 0) => {
+    if (value === "") return fallback;
+    const n = Number(toText(value, ""));
+    return Number.isFinite(n) ? n : fallback;
+  };
+
   useEffect(() => {
     loadData();
   }, []);
@@ -323,33 +355,33 @@ export default function RequisitionScheduledListPage() {
                             <TableRow key={idx}>
                               <TableCell>
                                 <Typography variant="body2">
-                                  {detail.sku || "N/A"}
+                                  {toText(detail.sku, "N/A")}
                                 </Typography>
                                 {detail.erp_id && (
                                   <Typography variant="caption" color="text.secondary">
-                                    {detail.erp_id}
+                                    {toText(detail.erp_id)}
                                   </Typography>
                                 )}
                               </TableCell>
                               <TableCell>
                                 <Typography variant="body2">
-                                  {detail.source_depot_id?.name || "N/A"}
+                                  {toText(detail.source_depot_id?.name, "N/A")}
                                 </Typography>
                                 <Typography variant="caption" color="text.secondary">
-                                  {detail.source_depot_id?.code || ""}
+                                  {toText(detail.source_depot_id?.code, "")}
                                 </Typography>
                               </TableCell>
                               <TableCell>
                                 <Typography variant="body2">
-                                  {detail.target_depot_id?.name || "N/A"}
+                                  {toText(detail.target_depot_id?.name, "N/A")}
                                 </Typography>
                                 <Typography variant="caption" color="text.secondary">
-                                  {detail.target_depot_id?.code || ""}
+                                  {toText(detail.target_depot_id?.code, "")}
                                 </Typography>
                               </TableCell>
                               <TableCell align="right">
                                 <Typography variant="body2" fontWeight="bold" color="primary">
-                                  {detail.delivery_qty || 0}
+                                  {toText(detail.delivery_qty, "0")}
                                 </Typography>
                               </TableCell>
                             </TableRow>
