@@ -92,7 +92,7 @@ export default function ApprovedReqSchedulesPage() {
       const initialQtys: DeliveryQtys = {};
       groups.forEach((depot: DepotGroup) => {
         depot.items.forEach((item: Item) => {
-          const itemKey = `${depot.requesting_depot_id}_${item.requisition_detail_id}`;
+          const itemKey = `${depot.requesting_depot_id}_${item.requisition_scheduling_id}_${item.requisition_detail_id}`;
           initialQtys[itemKey] = item.remaining_qty;
         });
       });
@@ -108,7 +108,7 @@ export default function ApprovedReqSchedulesPage() {
 
   const handleSelectAll = (depotId: string, items: Item[]) => {
     const allItemKeys = items.map(item => 
-      `${depotId}_${item.requisition_detail_id}`
+      `${depotId}_${item.requisition_scheduling_id}_${item.requisition_detail_id}`
     );
     
     const allSelected = allItemKeys.every(key => selectedItems[depotId]?.[key]);
@@ -139,11 +139,11 @@ export default function ApprovedReqSchedulesPage() {
       // Build items array for load sheet
       const items = group.items
         .filter(item => {
-          const itemKey = `${depotId}_${item.requisition_detail_id}`;
+          const itemKey = `${depotId}_${item.requisition_scheduling_id}_${item.requisition_detail_id}`;
           return selectedItems[depotId]?.[itemKey];
         })
         .map(item => {
-          const itemKey = `${depotId}_${item.requisition_detail_id}`;
+          const itemKey = `${depotId}_${item.requisition_scheduling_id}_${item.requisition_detail_id}`;
           const deliveryQty = deliveryQtys[itemKey] || 0;
           
           if (deliveryQty <= 0) {
@@ -301,7 +301,7 @@ export default function ApprovedReqSchedulesPage() {
                   </TableHead>
                   <TableBody>
                     {group.items.map((item) => {
-                      const itemKey = `${depotId}_${item.requisition_detail_id}`;
+                      const itemKey = `${depotId}_${item.requisition_scheduling_id}_${item.requisition_detail_id}`;
                       const isSelected = selectedItems[depotId]?.[itemKey] || false;
                       const deliveryQty = deliveryQtys[itemKey] || 0;
                       const hasStock = item.stock_qty >= deliveryQty;
