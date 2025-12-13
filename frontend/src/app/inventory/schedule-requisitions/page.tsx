@@ -420,7 +420,7 @@ export default function ScheduleRequisitionsPage() {
                               {(item.stock_quantities || []).map((stock, idx) => (
                                 <Chip
                                   key={toId(stock?.depot_id, "") || String(idx)}
-                                  label={`${stock?.depot_name || 'N/A'}: ${toText(stock?.qty, "0")}`}
+                                  label={`${toText(stock?.depot_name, "N/A")}: ${toText(stock?.qty, "0")}`}
                                   size="small"
                                   color={toNumber(stock?.qty, 0) > 0 ? "primary" : "default"}
                                   variant={
