@@ -18,18 +18,33 @@ const { authenticate, requireApiPermission: checkPermission } = require("../../m
  */
 router.get("/", authenticate, checkPermission("approved-req-schedules:read"), async (req, res) => {
   try {
-    const { facility_id } = req.user;
+    const userId = req.user.id;
     const { filter = "all", page = 1, limit = 100 } = req.query;
 
-    if (!facility_id) {
+    // Get user's facility from employee assignment
+    const user = await models.User.findById(userId)
+      .populate({
+        path: "employee_id",
+        select: "facility_id",
+        populate: {
+          path: "facility_id",
+          select: "_id name type",
+        },
+      })
+      .lean();
+
+    if (!user?.employee_id?.facility_id?._id) {
       return res.status(400).json({
         success: false,
-        message: "User facility not found",
+        message: "User is not assigned to any facility",
       });
     }
 
+    const facility_id = user.employee_id.facility_id._id;
+
     console.log("\n=== APPROVED REQUISITION SCHEDULES ===");
     console.log("User Facility ID:", facility_id);
+    console.log("User Facility Name:", user.employee_id.facility_id.name);
     console.log("Filter:", filter);
 
     // Find all requisition schedulings where this facility is the source
