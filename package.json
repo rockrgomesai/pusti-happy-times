@@ -3,28 +3,27 @@
   "version": "1.0.0",
   "description": "Pusti Happy Times MERN Stack Application",
   "scripts": {
+    "install:backend": "npm install --prefix backend",
+    "install:frontend": "npm install --prefix frontend",
+    "install:all": "npm run install:backend && npm run install:frontend",
     "dev": "concurrently \"npm run backend:dev\" \"npm run frontend:dev\"",
-    "backend:dev": "cd backend && npm run dev",
-    "frontend:dev": "cd frontend && npm run dev",
-    "build": "cd frontend && npm run build",
+    "backend:dev": "npm run dev --prefix backend",
+    "frontend:dev": "npm run dev --prefix frontend",
+    "build": "npm run build --prefix frontend",
     "start": "concurrently \"npm run backend:start\" \"npm run frontend:start\"",
-    "backend:start": "cd backend && npm start",
-  "frontend:start": "cd frontend && npm start",
-
-  "docker:up": "docker-compose -f docker-compose.yml -f docker-compose.dev.yml up -d mongodb redis",
-  "docker:down": "docker-compose -f docker-compose.yml -f docker-compose.dev.yml down",
-  "docker:logs": "docker-compose -f docker-compose.yml -f docker-compose.dev.yml logs -f",
-
-  "start:backend-only": "cd backend && npm start",
-  "start:frontend-only": "cd frontend && npm start",
-  "start:all": "npm run docker:up && concurrently \"npm run backend:start\" \"npm run frontend:start\"",
-  "dev:all": "npm run docker:up && concurrently \"npm run backend:dev\" \"npm run frontend:dev\"",
-  "seed:menu:categories": "cd backend && npm run seed:menu:categories",
-  "seed:products": "cd backend && npm run seed:products"
-  ,
-  "backup:full": "node db/backup_full.js"
-  ,
-  "dump:db": "node db/dump.js"
+    "backend:start": "npm start --prefix backend",
+    "frontend:start": "npm start --prefix frontend",
+    "docker:up": "docker-compose -f docker-compose.yml -f docker-compose.dev.yml up -d mongodb redis",
+    "docker:down": "docker-compose -f docker-compose.yml -f docker-compose.dev.yml down",
+    "docker:logs": "docker-compose -f docker-compose.yml -f docker-compose.dev.yml logs -f",
+    "start:backend-only": "npm run backend:start",
+    "start:frontend-only": "npm run frontend:start",
+    "start:all": "npm run docker:up && concurrently \"npm run backend:start\" \"npm run frontend:start\"",
+    "dev:all": "npm run docker:up && concurrently \"npm run backend:dev\" \"npm run frontend:dev\"",
+    "seed:menu:categories": "npm run seed:menu:categories --prefix backend",
+    "seed:products": "npm run seed:products --prefix backend",
+    "backup:full": "node db/backup_full.js",
+    "dump:db": "node db/dump.js"
   },
   "keywords": [
     "mern",

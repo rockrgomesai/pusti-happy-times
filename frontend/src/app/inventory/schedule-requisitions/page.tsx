@@ -65,6 +65,73 @@ export default function ScheduleRequisitionsPage() {
     return Number.isFinite(n) ? n : fallback;
   };
 
+  const toId = (value, fallback = "") => {
+    const v = toText(value, fallback);
+    return v === "[object Object]" ? fallback : v;
+  };
+
+  const normalizeGroups = (groups) => {
+    if (!Array.isArray(groups)) return [];
+
+    return groups.map((group) => {
+      const safeDepotId = toId(group?.depot_id, "");
+
+      const requisitions = Array.isArray(group?.requisitions)
+        ? group.requisitions.map((req) => {
+            const fromDepot = req?.from_depot;
+            const normalizedFromDepot =
+              fromDepot && typeof fromDepot === "object"
+                ? {
+                    ...fromDepot,
+                    id: toId(fromDepot.id ?? fromDepot._id, ""),
+                    _id: toId(fromDepot._id, ""),
+                    name: toText(fromDepot.name, ""),
+                    code: toText(fromDepot.code, ""),
+                  }
+                : fromDepot;
+
+            const items = Array.isArray(req?.items)
+              ? req.items.map((item) => {
+                  const stockQuantities = Array.isArray(item?.stock_quantities)
+                    ? item.stock_quantities.map((stock) => ({
+                        ...stock,
+                        depot_id: toId(stock?.depot_id, ""),
+                        depot_name: toText(stock?.depot_name, ""),
+                      }))
+                    : item?.stock_quantities;
+
+                  return {
+                    ...item,
+                    requisition_detail_id: toId(item?.requisition_detail_id, ""),
+                    sku: toText(item?.sku, ""),
+                    erp_id: toText(item?.erp_id, ""),
+                    stock_quantities: stockQuantities,
+                  };
+                })
+              : req?.items;
+
+            return {
+              ...req,
+              requisition_id: toId(req?.requisition_id, ""),
+              requisition_no: toText(req?.requisition_no, ""),
+              from_depot: normalizedFromDepot,
+              from_depot_name: toText(req?.from_depot_name, ""),
+              from_depot_code: toText(req?.from_depot_code, ""),
+              items,
+            };
+          })
+        : group?.requisitions;
+
+      return {
+        ...group,
+        depot_id: safeDepotId,
+        depot_name: toText(group?.depot_name, ""),
+        depot_code: toText(group?.depot_code, ""),
+        requisitions,
+      };
+    });
+  };
+
   // Load initial data
   useEffect(() => {
     loadData();
@@ -82,31 +149,36 @@ export default function ScheduleRequisitionsPage() {
       const groups = Array.isArray(requisitionsRes.data) 
         ? requisitionsRes.data 
         : (requisitionsRes.data?.data || []);
+
+      const normalizedGroups = normalizeGroups(groups);
       
-      console.log("📦 Depot Groups received:", groups);
-      console.log("📦 Number of groups:", groups.length);
+      console.log("📦 Depot Groups received:", normalizedGroups);
+      console.log("📦 Number of groups:", normalizedGroups.length);
       
-      if (groups.length > 0) {
-        console.log("📦 First group:", groups[0]);
+      if (normalizedGroups.length > 0) {
+        console.log("📦 First group:", normalizedGroups[0]);
       }
       
-      setDepotGroups(groups);
+      setDepotGroups(normalizedGroups);
 
       // Initialize scheduling data with pre-filled values
       const initialData = {};
-      groups.forEach((group) => {
-        initialData[group.depot_id] = {
+      normalizedGroups.forEach((group) => {
+        const depotId = toId(group.depot_id, "");
+        if (!depotId) return;
+
+        initialData[depotId] = {
           items: {},
         };
         group.requisitions?.forEach((req) => {
           req.items?.forEach((item) => {
             const key = `${req.requisition_id}_${item.requisition_detail_id}`;
-            initialData[group.depot_id].items[key] = {
+            initialData[depotId].items[key] = {
               requisition_id: req.requisition_id,
               requisition_detail_id: item.requisition_detail_id,
               delivery_qty: toNumber(item.unscheduled_qty, 0), // Pre-fill with unscheduled qty
-              source_depot_id: group.depot_id, // Pre-fill with first depot
-              target_depot_id: req.from_depot?.id || req.from_depot?._id || null,
+              source_depot_id: depotId, // Pre-fill with first depot
+              target_depot_id: toId(req.from_depot?.id || req.from_depot?._id, "") || null,
               order_qty: item.order_qty,
               unscheduled_qty: item.unscheduled_qty,
               stock_quantities: item.stock_quantities,
@@ -276,10 +348,10 @@ export default function ScheduleRequisitionsPage() {
               <WarehouseIcon color="primary" />
               <Box sx={{ flexGrow: 1 }}>
                 <Typography variant="subtitle1" fontWeight="bold">
-                  {group.depot_name || 'Unknown Depot'}
+                  {toText(group.depot_name, "Unknown Depot")}
                 </Typography>
                 <Typography variant="caption" color="text.secondary">
-                  {group.depot_code ? `${group.depot_code} • ` : ''}{group.requisitions?.length || 0} requisition(s)
+                  {group.depot_code ? `${toText(group.depot_code)} • ` : ""}{group.requisitions?.length || 0} requisition(s)
                 </Typography>
               </Box>
             </Box>
@@ -293,10 +365,10 @@ export default function ScheduleRequisitionsPage() {
                     {/* Requisition Header */}
                     <Box sx={{ mb: 2 }}>
                       <Typography variant="subtitle2" fontWeight="bold">
-                        Requisition: {req.requisition_no || req.requisition_id?.substring?.(0, 8) || "N/A"}
+                        Requisition: {toText(req.requisition_no) || toText(req.requisition_id)?.substring?.(0, 8) || "N/A"}
                       </Typography>
                       <Typography variant="caption" color="text.secondary">
-                        Target: {req.from_depot?.name || req.from_depot_name || "N/A"} ({req.from_depot?.code || req.from_depot_code || "N/A"}) •{" "}
+                        Target: {toText(req.from_depot?.name) || toText(req.from_depot_name) || "N/A"} ({toText(req.from_depot?.code) || toText(req.from_depot_code) || "N/A"}) •{" "}
                         {req.requisition_date ? new Date(req.requisition_date).toLocaleDateString() : "N/A"}
                       </Typography>
                     </Box>
@@ -312,7 +384,7 @@ export default function ScheduleRequisitionsPage() {
                           {/* Product Info */}
                           <Box sx={{ mb: 2 }}>
                             <Typography variant="body2" fontWeight="bold">
-                              SKU: {item.sku || "N/A"} {item.erp_id ? `(${toText(item.erp_id)})` : ""}
+                              SKU: {toText(item.sku, "N/A")} {item.erp_id ? `(${toText(item.erp_id)})` : ""}
                             </Typography>
                             <Box sx={{ display: "flex", gap: 1, mt: 1, flexWrap: "wrap" }}>
                               <Chip
