@@ -291,17 +291,20 @@ router.post(
           throw new Error(`Delivery qty ${delivery_qty} exceeds unscheduled qty ${unscheduledQty}`);
         }
 
-        // Check stock availability (sum all batches)
-        const inventories = await FactoryStoreInventory.find({
-          facility_store_id: source_depot_id,
-          product_id: detail.product_id,
-        });
-
-        const stockQty = inventories.reduce((sum, inv) => {
-          return sum + parseFloat(inv.qty_ctn?.toString() || "0");
-        }, 0);
+        // Check stock availability using DepotStock with SKU-based lookup
+        const product = await Product.findById(detail.product_id).select("sku");
+        const productBySku = await Product.findOne({ sku: product.sku }).select('_id').lean();
+        
+        let stockQty = 0;
+        if (productBySku) {
+          const depotStock = await DepotStock.findOne({
+            depot_id: source_depot_id,
+            product_id: productBySku._id,
+          }).lean();
+          stockQty = depotStock ? parseFloat(depotStock.qty_ctn?.toString() || "0") : 0;
+        }
+        
         if (delivery_qty > stockQty) {
-          const product = await Product.findById(detail.product_id).select("sku");
           const depot = await Facility.findById(source_depot_id).select("name");
           throw new Error(
             `Insufficient stock for ${product.sku} at ${depot.name}. Available: ${stockQty}, Requested: ${delivery_qty}`
