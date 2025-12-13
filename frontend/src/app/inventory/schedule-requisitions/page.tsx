@@ -311,13 +311,13 @@ export default function ScheduleRequisitionsPage() {
                               Available Stock:
                             </Typography>
                             <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
-                              {(item.stock_quantities || []).map((stock) => (
+                              {(item.stock_quantities || []).map((stock, idx) => (
                                 <Chip
-                                  key={stock.depot_id}
-                                  label={`${stock.depot_name || 'N/A'}: ${stock.qty || 0}`}
+                                  key={stock?.depot_id?.toString() || idx}
+                                  label={`${stock?.depot_name || 'N/A'}: ${stock?.qty || 0}`}
                                   size="small"
-                                  color={stock.qty > 0 ? "primary" : "default"}
-                                  variant={stock.depot_id === itemData.source_depot_id ? "filled" : "outlined"}
+                                  color={(stock?.qty || 0) > 0 ? "primary" : "default"}
+                                  variant={(stock?.depot_id?.toString() || stock?.depot_id) === (itemData?.source_depot_id?.toString() || itemData?.source_depot_id) ? "filled" : "outlined"}
                                 />
                               ))}
                             </Box>
@@ -366,9 +366,9 @@ export default function ScheduleRequisitionsPage() {
                                   )
                                 }
                               >
-                                {item.stock_quantities.map((stock) => (
-                                  <MenuItem key={stock.depot_id} value={stock.depot_id}>
-                                    {stock.depot_name} ({stock.qty} available)
+                                {(item.stock_quantities || []).map((stock, idx) => (
+                                  <MenuItem key={stock?.depot_id || idx} value={stock?.depot_id}>
+                                    {stock?.depot_name || 'N/A'} ({stock?.qty || 0} available)
                                   </MenuItem>
                                 ))}
                               </TextField>
