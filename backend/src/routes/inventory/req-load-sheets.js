@@ -84,7 +84,7 @@ router.post("/", authenticate, checkPermission("req-load-sheet:create"), async (
 
           reqItems.push({
             requisition_id: scheduling.requisition_id._id,
-            requisition_no: scheduling.requisition_no,
+            requisition_no: scheduling.requisition_id.requisition_no,
             requisition_date: scheduling.requisition_id.requisition_date,
             requisition_scheduling_id: scheduling._id,
             requisition_detail_id: detail.requisition_detail_id,
