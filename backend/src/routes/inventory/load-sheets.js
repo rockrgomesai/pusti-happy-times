@@ -172,16 +172,15 @@ router.post("/", authenticate, requireApiPermission("load-sheet:create"), async 
       const productId = skuToProductId[sku]; // Use product_id from scheduling detail
       const stock = productId ? stockByProductId[productId.toString()] : null;
       const totalQty = stock ? parseFloat(stock.qty_ctn.toString()) : 0;
-      const blockedQty = stock && stock.blocked_qty ? parseFloat(stock.blocked_qty.toString()) : 0;
-      const availableQty = totalQty - blockedQty;
 
       console.log(
-        `  ${sku}: productId=${productId}, stock=${!!stock}, total=${totalQty}, blocked=${blockedQty}, available=${availableQty}, requested=${requested}`
+        `  ${sku}: productId=${productId}, stock=${!!stock}, total=${totalQty}, requested=${requested}`
       );
 
-      if (availableQty < requested) {
+      // Validate against total stock, not available (blocked_qty is for UI reference only)
+      if (totalQty < requested) {
         stockErrors.push(
-          `${sku}: Available ${availableQty} CTN (Total: ${totalQty}, Blocked: ${blockedQty}), Requested: ${requested} CTN`
+          `${sku}: Total Stock ${totalQty} CTN, Requested: ${requested} CTN`
         );
       } else {
         stockUpdates.push({
