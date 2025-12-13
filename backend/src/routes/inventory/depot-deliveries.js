@@ -80,48 +80,25 @@ router.get("/", authenticate, requireApiPermission("depot-deliveries:read"), asy
     const stockRecords = await DepotStock.find({
       depot_id: depotId,
       product_id: { $in: allItemIds },
-    })
-      .populate("product_id", "sku") // Populate to get SKU
-      .lean();
+    }).lean();
 
     console.log(`📦 Found ${stockRecords.length} stock records for ${allItemIds.length} products`);
-    if (stockRecords.length > 0) {
-      console.log(`Sample stock record:`, {
-        product_id: stockRecords[0].product_id,
-        sku: stockRecords[0].product_id?.sku,
-        qty_ctn: stockRecords[0].qty_ctn,
-        blocked_qty: stockRecords[0].blocked_qty,
-      });
-    }
 
-    // Map stock by product_id AND by SKU for flexibility
-    const stockByProductId = {};
-    const stockMap = {}; // Map by SKU directly
-    
+    // Map stock by product_id (simple!)
+    const stockMap = {};
     stockRecords.forEach((stock) => {
-      const productId = stock.product_id._id.toString();
-      const sku = stock.product_id.sku;
+      const productId = stock.product_id.toString();
       const totalQty = stock.qty_ctn ? parseFloat(stock.qty_ctn.toString()) : 0;
       const blockedQty = stock.blocked_qty ? parseFloat(stock.blocked_qty.toString()) : 0;
       const availableQty = totalQty - blockedQty;
-      
-      const stockInfo = {
+
+      stockMap[productId] = {
         total_qty: totalQty,
         blocked_qty: blockedQty,
         available_qty: availableQty,
       };
-      
-      // Map by product_id
-      stockByProductId[productId] = stockInfo;
-      
-      // Map by SKU for direct lookup
-      if (sku) {
-        stockMap[sku] = stockInfo;
-        console.log(`  Mapped stock for SKU ${sku}: ${totalQty} CTN (available: ${availableQty})`);
-      }
+      console.log(`  Product ${productId}: ${totalQty} CTN (available: ${availableQty})`);
     });
-
-    console.log(`📋 Stock mapped for ${Object.keys(stockMap).length} SKUs`);
 
     // Process schedulings and group by distributor
     // For depot deliveries, we show approved scheduling_details
@@ -146,10 +123,11 @@ router.get("/", authenticate, requireApiPermission("depot-deliveries:read"), asy
       // If the scheduling is Finance-approved, all details are ready for depot delivery
       if (scheduling.scheduling_details && scheduling.scheduling_details.length > 0) {
         for (const detail of scheduling.scheduling_details) {
-          console.log(`  Detail: ${detail.sku}, delivery_qty: ${detail.delivery_qty}`);
+          console.log(`  Detail: ${detail.sku}, item_id: ${detail.item_id}`);
 
-          // Look up stock by SKU (not item_id) to ensure consistency
-          const stockInfo = stockMap[detail.sku] || {
+          // Look up stock by product_id (item_id)
+          const productIdKey = detail.item_id.toString();
+          const stockInfo = stockMap[productIdKey] || {
             total_qty: 0,
             blocked_qty: 0,
             available_qty: 0,
