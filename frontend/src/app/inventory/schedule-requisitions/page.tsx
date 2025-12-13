@@ -338,9 +338,11 @@ export default function ScheduleRequisitionsPage() {
       {/* Depot Groups (Accordions) */}
       {depotGroups.map((group) => (
         <Accordion
-          key={group.depot_id}
-          expanded={expandedAccordion === group.depot_id}
-          onChange={(e, isExpanded) => setExpandedAccordion(isExpanded ? group.depot_id : null)}
+          key={toId(group.depot_id, "")}
+          expanded={expandedAccordion === toId(group.depot_id, "")}
+          onChange={(e, isExpanded) =>
+            setExpandedAccordion(isExpanded ? toId(group.depot_id, "") : null)
+          }
           sx={{ mb: 2 }}
         >
           <AccordionSummary expandIcon={<ExpandMoreIcon />}>
@@ -360,7 +362,7 @@ export default function ScheduleRequisitionsPage() {
           <AccordionDetails>
             <Box>
               {(group.requisitions || []).map((req) => (
-                <Card key={req.requisition_id} sx={{ mb: 2 }}>
+                <Card key={toId(req.requisition_id, "") || toText(req.requisition_no, "") || undefined} sx={{ mb: 2 }}>
                   <CardContent>
                     {/* Requisition Header */}
                     <Box sx={{ mb: 2 }}>
@@ -377,7 +379,8 @@ export default function ScheduleRequisitionsPage() {
 
                     {(req.items || []).filter(item => item && item.requisition_detail_id).map((item) => {
                       const key = `${req.requisition_id}_${item.requisition_detail_id}`;
-                      const itemData = schedulingData[group.depot_id]?.items[key] || {};
+                      const groupDepotId = toId(group.depot_id, "");
+                      const itemData = schedulingData[groupDepotId]?.items[key] || {};
 
                       return (
                         <Box key={key} sx={{ mb: 3, pb: 2, borderBottom: "1px solid #eee" }}>
@@ -416,11 +419,15 @@ export default function ScheduleRequisitionsPage() {
                             <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
                               {(item.stock_quantities || []).map((stock, idx) => (
                                 <Chip
-                                  key={stock?.depot_id?.toString() || idx}
+                                  key={toId(stock?.depot_id, "") || String(idx)}
                                   label={`${stock?.depot_name || 'N/A'}: ${toText(stock?.qty, "0")}`}
                                   size="small"
                                   color={toNumber(stock?.qty, 0) > 0 ? "primary" : "default"}
-                                  variant={(stock?.depot_id?.toString() || stock?.depot_id) === (itemData?.source_depot_id?.toString() || itemData?.source_depot_id) ? "filled" : "outlined"}
+                                  variant={
+                                    toId(stock?.depot_id, "") === toId(itemData?.source_depot_id, "")
+                                      ? "filled"
+                                      : "outlined"
+                                  }
                                 />
                               ))}
                             </Box>
@@ -459,10 +466,10 @@ export default function ScheduleRequisitionsPage() {
                                 select
                                 label="Source Depot"
                                 size="small"
-                                value={itemData.source_depot_id || ""}
+                                value={toId(itemData.source_depot_id, "")}
                                 onChange={(e) =>
                                   handleInputChange(
-                                    group.depot_id,
+                                    toId(group.depot_id, ""),
                                     key,
                                     "source_depot_id",
                                     e.target.value
@@ -470,7 +477,10 @@ export default function ScheduleRequisitionsPage() {
                                 }
                               >
                                 {(item.stock_quantities || []).map((stock, idx) => (
-                                  <MenuItem key={stock?.depot_id || idx} value={stock?.depot_id}>
+                                  <MenuItem
+                                    key={toId(stock?.depot_id, "") || String(idx)}
+                                    value={toId(stock?.depot_id, "")}
+                                  >
                                     {stock?.depot_name || "N/A"} ({toText(stock?.qty, "0")} available)
                                   </MenuItem>
                                 ))}
@@ -487,7 +497,7 @@ export default function ScheduleRequisitionsPage() {
                         variant="contained"
                         color="primary"
                         startIcon={<ScheduleSendIcon />}
-                        onClick={() => handleScheduleGroup(group.depot_id)}
+                        onClick={() => handleScheduleGroup(toId(group.depot_id, ""))}
                         disabled={submitting}
                       >
                         {submitting ? <CircularProgress size={20} /> : "Schedule"}
