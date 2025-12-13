@@ -131,21 +131,30 @@ router.post("/", authenticate, requireApiPermission("load-sheet:create"), async 
 
     const distributorsArray = Object.values(distributorMap);
 
-    // Validate and block stock - use item_id from scheduling details
+    // Validate and block stock - query by SKU first to get correct product_ids
     const skuMap = {};
-    const skuToProductId = {}; // Map SKU to actual product_id from scheduling details
     distributorsArray.forEach((dist) => {
       dist.do_items.forEach((item) => {
         if (!skuMap[item.sku]) skuMap[item.sku] = 0;
         skuMap[item.sku] += parseFloat(item.delivery_qty);
-        skuToProductId[item.sku] = item.product_id; // Use product_id from scheduling detail
       });
     });
 
     const skus = Object.keys(skuMap);
-    const productIds = Object.values(skuToProductId);
 
-    // Get current stock with blocked quantities using product_ids from scheduling details
+    // Query products by SKU to get correct product IDs
+    const products = await mongoose.model('Product').find({
+      sku: { $in: skus }
+    }).select('_id sku').lean();
+    
+    const skuToProductId = {};
+    products.forEach(p => {
+      skuToProductId[p.sku] = p._id;
+    });
+    
+    const productIds = products.map(p => p._id);
+
+    // Get current stock using correct product_ids
     const stocks = await models.DepotStock.find({
       depot_id,
       product_id: { $in: productIds },
