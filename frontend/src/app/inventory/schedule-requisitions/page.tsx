@@ -281,7 +281,7 @@ export default function ScheduleRequisitionsPage() {
                           {/* Product Info */}
                           <Box sx={{ mb: 2 }}>
                             <Typography variant="body2" fontWeight="bold">
-                              SKU: {item.sku || 'N/A'} {item.erp_id && `(${String(item.erp_id)})`}
+                              SKU: {item.sku || 'N/A'} {item.erp_id ? `(${String(item.erp_id)})` : ''}
                             </Typography>
                             <Box sx={{ display: "flex", gap: 1, mt: 1, flexWrap: "wrap" }}>
                               <Chip
