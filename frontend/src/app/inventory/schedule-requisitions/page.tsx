@@ -293,43 +293,42 @@ export default function ScheduleRequisitionsPage() {
                     {/* Requisition Header */}
                     <Box sx={{ mb: 2 }}>
                       <Typography variant="subtitle2" fontWeight="bold">
-                              SKU: {item.sku || 'N/A'} {item.erp_id ? `(${toText(item.erp_id)})` : ''}
+                        Requisition: {req.requisition_no || req.requisition_id?.substring?.(0, 8) || "N/A"}
                       </Typography>
                       <Typography variant="caption" color="text.secondary">
-                        Target: {req.from_depot?.name || req.from_depot_name || 'N/A'} ({req.from_depot?.code || req.from_depot_code || 'N/A'}) •{" "}
-                                label={`Order: ${toText(item.order_qty, "0")}`}
+                        Target: {req.from_depot?.name || req.from_depot_name || "N/A"} ({req.from_depot?.code || req.from_depot_code || "N/A"}) •{" "}
+                        {req.requisition_date ? new Date(req.requisition_date).toLocaleDateString() : "N/A"}
                       </Typography>
                     </Box>
 
                     <Divider sx={{ mb: 2 }} />
 
-                                label={`Scheduled: ${toText(item.scheduled_qty, "0")}`}
                     {(req.items || []).filter(item => item && item.requisition_detail_id).map((item) => {
                       const key = `${req.requisition_id}_${item.requisition_detail_id}`;
                       const itemData = schedulingData[group.depot_id]?.items[key] || {};
 
                       return (
-                                label={`Unscheduled: ${toText(item.unscheduled_qty, "0")}`}
+                        <Box key={key} sx={{ mb: 3, pb: 2, borderBottom: "1px solid #eee" }}>
                           {/* Product Info */}
                           <Box sx={{ mb: 2 }}>
                             <Typography variant="body2" fontWeight="bold">
-                              SKU: {item.sku || 'N/A'} {item.erp_id ? `(${String(item.erp_id)})` : ''}
+                              SKU: {item.sku || "N/A"} {item.erp_id ? `(${toText(item.erp_id)})` : ""}
                             </Typography>
                             <Box sx={{ display: "flex", gap: 1, mt: 1, flexWrap: "wrap" }}>
                               <Chip
-                                label={`Order: ${String(item.order_qty || 0)}`}
+                                label={`Order: ${toText(item.order_qty, "0")}`}
                                 size="small"
                                 color="default"
                                 variant="outlined"
                               />
                               <Chip
-                                label={`Scheduled: ${String(item.scheduled_qty || 0)}`}
+                                label={`Scheduled: ${toText(item.scheduled_qty, "0")}`}
                                 size="small"
                                 color="success"
                                 variant="outlined"
                               />
                               <Chip
-                                label={`Unscheduled: ${String(item.unscheduled_qty || 0)}`}
+                                label={`Unscheduled: ${toText(item.unscheduled_qty, "0")}`}
                                 size="small"
                                 color="warning"
                                 variant="outlined"
@@ -400,7 +399,7 @@ export default function ScheduleRequisitionsPage() {
                               >
                                 {(item.stock_quantities || []).map((stock, idx) => (
                                   <MenuItem key={stock?.depot_id || idx} value={stock?.depot_id}>
-                                    {stock?.depot_name || 'N/A'} ({toText(stock?.qty, "0")} available)
+                                    {stock?.depot_name || "N/A"} ({toText(stock?.qty, "0")} available)
                                   </MenuItem>
                                 ))}
                               </TextField>
