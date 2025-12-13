@@ -25,6 +25,46 @@ import ScheduleSendIcon from "@mui/icons-material/ScheduleSend";
 import WarehouseIcon from "@mui/icons-material/Warehouse";
 import { apiClient } from "@/lib/api";
 
+class RenderBoundary extends React.Component<
+  {
+    name: string;
+    context?: Record<string, unknown>;
+    children: React.ReactNode;
+  },
+  { hasError: boolean }
+> {
+  state = { hasError: false };
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: unknown) {
+    try {
+      // Log minimal context so we can locate the exact failing subtree.
+      // eslint-disable-next-line no-console
+      console.error(`[schedule-requisitions] render boundary: ${this.props.name}`, {
+        error,
+        context: this.props.context,
+      });
+    } catch {
+      // ignore logging failures
+    }
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <Alert severity="error">
+          Failed to render this section. Please check console logs.
+        </Alert>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
 export default function ScheduleRequisitionsPage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -68,6 +108,17 @@ export default function ScheduleRequisitionsPage() {
   const toId = (value, fallback = "") => {
     const v = toText(value, fallback);
     return v === "[object Object]" ? fallback : v;
+  };
+
+  const safeDateText = (value, fallback = "N/A") => {
+    if (!value) return fallback;
+    try {
+      const d = new Date(value);
+      const txt = d.toLocaleDateString();
+      return txt && txt !== "Invalid Date" ? txt : fallback;
+    } catch {
+      return fallback;
+    }
   };
 
   const normalizeGroups = (groups) => {
@@ -362,28 +413,48 @@ export default function ScheduleRequisitionsPage() {
           <AccordionDetails>
             <Box>
               {(group.requisitions || []).map((req) => (
-                <Card key={toId(req.requisition_id, "") || toText(req.requisition_no, "") || undefined} sx={{ mb: 2 }}>
-                  <CardContent>
-                    {/* Requisition Header */}
-                    <Box sx={{ mb: 2 }}>
-                      <Typography variant="subtitle2" fontWeight="bold">
-                        Requisition: {toText(req.requisition_no) || toText(req.requisition_id)?.substring?.(0, 8) || "N/A"}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        Target: {toText(req.from_depot?.name) || toText(req.from_depot_name) || "N/A"} ({toText(req.from_depot?.code) || toText(req.from_depot_code) || "N/A"}) •{" "}
-                        {req.requisition_date ? new Date(req.requisition_date).toLocaleDateString() : "N/A"}
-                      </Typography>
-                    </Box>
+                <RenderBoundary
+                  key={toId(req.requisition_id, "") || toText(req.requisition_no, "") || undefined}
+                  name="requisition-card"
+                  context={{
+                    group_depot_id: toId(group?.depot_id, ""),
+                    requisition_id: toId(req?.requisition_id, ""),
+                    requisition_no: toText(req?.requisition_no, ""),
+                  }}
+                >
+                  <Card sx={{ mb: 2 }}>
+                    <CardContent>
+                      {/* Requisition Header */}
+                      <Box sx={{ mb: 2 }}>
+                        <Typography variant="subtitle2" fontWeight="bold">
+                          Requisition: {toText(req.requisition_no) || toText(req.requisition_id)?.substring?.(0, 8) || "N/A"}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          Target: {toText(req.from_depot?.name) || toText(req.from_depot_name) || "N/A"} ({toText(req.from_depot?.code) || toText(req.from_depot_code) || "N/A"}) •{" "}
+                          {safeDateText(req.requisition_date, "N/A")}
+                        </Typography>
+                      </Box>
 
-                    <Divider sx={{ mb: 2 }} />
+                      <Divider sx={{ mb: 2 }} />
 
-                    {(req.items || []).filter(item => item && item.requisition_detail_id).map((item) => {
-                      const key = `${req.requisition_id}_${item.requisition_detail_id}`;
-                      const groupDepotId = toId(group.depot_id, "");
-                      const itemData = schedulingData[groupDepotId]?.items[key] || {};
+                      {(req.items || []).filter((item) => item && item.requisition_detail_id).map((item) => {
+                        const key = `${req.requisition_id}_${item.requisition_detail_id}`;
+                        const groupDepotId = toId(group.depot_id, "");
+                        const itemData = schedulingData[groupDepotId]?.items[key] || {};
 
-                      return (
-                        <Box key={key} sx={{ mb: 3, pb: 2, borderBottom: "1px solid #eee" }}>
+                        return (
+                          <RenderBoundary
+                            key={key}
+                            name="requisition-item"
+                            context={{
+                              group_depot_id: toId(group?.depot_id, ""),
+                              requisition_id: toId(req?.requisition_id, ""),
+                              requisition_no: toText(req?.requisition_no, ""),
+                              requisition_detail_id: toId(item?.requisition_detail_id, ""),
+                              sku: toText(item?.sku, ""),
+                            }}
+                          >
+                            <Box sx={{ mb: 3, pb: 2, borderBottom: "1px solid #eee" }}>
                           {/* Product Info */}
                           <Box sx={{ mb: 2 }}>
                             <Typography variant="body2" fontWeight="bold">
@@ -487,9 +558,10 @@ export default function ScheduleRequisitionsPage() {
                               </TextField>
                             </Grid2>
                           </Grid2>
-                        </Box>
-                      );
-                    })}
+                            </Box>
+                          </RenderBoundary>
+                        );
+                      })}
 
                     {/* Schedule Button for this requisition group */}
                     <Box sx={{ mt: 2, display: "flex", justifyContent: "flex-end" }}>
@@ -504,7 +576,8 @@ export default function ScheduleRequisitionsPage() {
                       </Button>
                     </Box>
                   </CardContent>
-                </Card>
+                  </Card>
+                </RenderBoundary>
               ))}
             </Box>
           </AccordionDetails>
