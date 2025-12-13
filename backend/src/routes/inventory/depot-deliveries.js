@@ -67,41 +67,53 @@ router.get("/", authenticate, requireApiPermission("depot-deliveries:read"), asy
       );
     });
 
-    // Get all unique product IDs (item_id is the product_id)
-    const allItemIds = [
+    // Get all unique SKUs from scheduling details
+    const allSkus = [
       ...new Set(
         schedulings.flatMap((s) =>
-          (s.scheduling_details || []).map((detail) => detail.item_id.toString())
+          (s.scheduling_details || []).map((detail) => detail.sku)
         )
       ),
     ];
 
-    // Get depot stock for these products - simple indexed query
-    console.log(`🔍 Stock Query: depot_id=${depotId}, product_ids=[${allItemIds.join(', ')}]`);
+    console.log(`🔍 Looking up products by SKUs: [${allSkus.join(', ')}]`);
+    
+    // Get product IDs for these SKUs
+    const products = await mongoose.model('Product').find({
+      sku: { $in: allSkus }
+    }).select('_id sku').lean();
+    
+    const productIds = products.map(p => p._id);
+    console.log(`📋 Found ${products.length} products for ${allSkus.length} SKUs`);
+
+    // Get depot stock for these products
+    console.log(`🔍 Stock Query: depot_id=${depotId}, product_ids=[${productIds.join(', ')}]`);
     const stockRecords = await DepotStock.find({
       depot_id: depotId,
-      product_id: { $in: allItemIds },
-    }).lean();
+      product_id: { $in: productIds },
+    })
+    .populate('product_id', 'sku')
+    .lean();
 
     console.log(`📦 Found ${stockRecords.length} stock records for ${allItemIds.length} products`);
     if (stockRecords.length === 0) {
       console.log(`❌ NO STOCK FOUND for depot ${depotId}!`);
     }
 
-    // Map stock by product_id (simple!)
+    // Map stock by SKU (not product_id!)
     const stockMap = {};
     stockRecords.forEach((stock) => {
-      const productId = stock.product_id.toString();
+      const sku = stock.product_id.sku;
       const totalQty = stock.qty_ctn ? parseFloat(stock.qty_ctn.toString()) : 0;
       const blockedQty = stock.blocked_qty ? parseFloat(stock.blocked_qty.toString()) : 0;
       const availableQty = totalQty - blockedQty;
 
-      stockMap[productId] = {
+      stockMap[sku] = {
         total_qty: totalQty,
         blocked_qty: blockedQty,
         available_qty: availableQty,
       };
-      console.log(`  Product ${productId}: ${totalQty} CTN (available: ${availableQty})`);
+      console.log(`  SKU ${sku}: ${totalQty} CTN (available: ${availableQty})`);
     });
 
     // Process schedulings and group by distributor
@@ -129,13 +141,13 @@ router.get("/", authenticate, requireApiPermission("depot-deliveries:read"), asy
         for (const detail of scheduling.scheduling_details) {
           console.log(`  Detail: ${detail.sku}, item_id: ${detail.item_id}`);
 
-          // Look up stock by product_id (item_id)
-          const productIdKey = detail.item_id.toString();
-          const stockInfo = stockMap[productIdKey] || {
+          // Look up stock by SKU (handles mismatched product_ids)
+          const stockInfo = stockMap[detail.sku] || {
             total_qty: 0,
             blocked_qty: 0,
             available_qty: 0,
           };
+          console.log(`  Stock for ${detail.sku}: ${stockInfo.total_qty} CTN`);
 
           // For now, assume all approved details need to be delivered
           // TODO: Track actual deliveries via load sheets/chalans
