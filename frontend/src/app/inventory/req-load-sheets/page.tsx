@@ -49,7 +49,7 @@ interface LoadSheet {
       name: string;
       code: string;
     };
-    items: any[];
+    req_items: any[];
   }>;
   delivery_date?: string;
   vehicle_info?: string;
@@ -146,7 +146,7 @@ export default function ReqLoadSheetsPage() {
   };
 
   const getTotalItems = (loadSheet: LoadSheet) => {
-    return loadSheet.requesting_depots.reduce((sum, depot) => sum + depot.items.length, 0);
+    return loadSheet.requesting_depots.reduce((sum, depot) => sum + (depot.req_items?.length || 0), 0);
   };
 
   const getRequestingDepotsList = (loadSheet: LoadSheet) => {
