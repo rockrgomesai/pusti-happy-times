@@ -68,6 +68,9 @@ export default function ApprovedReqSchedulesPage() {
   const [depotGroups, setDepotGroups] = useState<DepotGroup[]>([]);
   const [error, setError] = useState("");
   const [expandedGroup, setExpandedGroup] = useState<string | false>(false);
+  const [selectedItems, setSelectedItems] = useState<SelectedItems>({});
+  const [deliveryQtys, setDeliveryQtys] = useState<DeliveryQtys>({});
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     loadData();
