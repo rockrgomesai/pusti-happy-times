@@ -17,13 +17,27 @@ const { authenticate, requireApiPermission: checkPermission } = require("../../m
  */
 router.post("/", authenticate, checkPermission("req-load-sheet:create"), async (req, res) => {
   try {
-    const { facility_id: source_depot_id, user_id } = req.user;
+    const userId = req.user.id;
     const { requesting_depot_id, items, delivery_date, vehicle_info, transport_id, notes } =
       req.body;
 
-    if (!source_depot_id || !user_id) {
-      throw new Error("User context not found");
+    // Get user's facility from employee assignment
+    const user = await models.User.findById(userId)
+      .populate({
+        path: "employee_id",
+        select: "facility_id",
+        populate: {
+          path: "facility_id",
+          select: "_id name type",
+        },
+      })
+      .lean();
+
+    if (!user?.employee_id?.facility_id?._id) {
+      throw new Error("User is not assigned to any facility");
     }
+
+    const source_depot_id = user.employee_id.facility_id._id;
 
     if (!requesting_depot_id) {
       throw new Error("Requesting depot ID is required");
@@ -180,7 +194,7 @@ router.post("/", authenticate, checkPermission("req-load-sheet:create"), async (
       load_sheet_number: loadSheetNumber,
       status: "Draft",
       source_depot_id,
-      created_by: user_id,
+      created_by: userId,
       delivery_date: delivery_date || new Date(),
       vehicle_info: vehicle_info || {},
       transport_id: transport_id || null,
