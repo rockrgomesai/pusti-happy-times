@@ -31,7 +31,7 @@ import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { format } from "date-fns";
 import toast from "react-hot-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import api from "@/lib/api";
+import { apiClient } from "@/lib/api";
 
 interface SchedulingDetail {
   scheduled_by: string;
@@ -98,16 +98,16 @@ const ApprovedSchedulingsPage = () => {
       if (fromDate) params.append("from_date", fromDate);
       if (toDate) params.append("to_date", toDate);
 
-      const response = await api.get(
+      const response = await apiClient.get(
         `/ordermanagement/schedulings/approved-rejected?${params.toString()}`
       );
 
-      if (response.data.success) {
-        setData(response.data.data);
-        setTotalPages(response.data.pagination.totalPages);
-        setTotalCount(response.data.pagination.total);
+      if (response.success) {
+        setData(response.data);
+        setTotalPages(response.pagination.totalPages);
+        setTotalCount(response.pagination.total);
       } else {
-        toast.error(response.data.message || "Failed to fetch data");
+        toast.error(response.message || "Failed to fetch data");
       }
     } catch (error) {
       console.error("Error fetching approved schedulings:", error);
