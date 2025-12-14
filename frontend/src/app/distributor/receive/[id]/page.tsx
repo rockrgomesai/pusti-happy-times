@@ -144,6 +144,11 @@ export default function ReceiveChalanPage() {
         return item;
       })
     );
+    
+    // Clear any previous validation errors when user makes changes
+    if (error) {
+      setError("");
+    }
   };
 
   // Handle variance reason change
@@ -157,7 +162,7 @@ export default function ReceiveChalanPage() {
   const validateForm = (): string | null => {
     for (const item of receivedItems) {
       if (item.received_qty < 0 || item.received_qty > item.delivered_qty) {
-        return `Invalid received quantity for SKU ${item.sku}`;
+        return `Invalid received quantity for SKU ${item.sku}. Must be between 0 and ${item.delivered_qty}`;
       }
       if (item.variance_qty > 0 && !item.variance_reason.trim()) {
         return `Please provide variance reason for SKU ${item.sku}`;
