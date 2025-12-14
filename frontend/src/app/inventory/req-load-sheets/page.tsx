@@ -90,9 +90,9 @@ export default function ReqLoadSheetsPage() {
 
       const response = await apiClient.get(`/inventory/req-load-sheets/list?${params}`);
 
-      if (response.data.success) {
-        setLoadSheets(response.data.data);
-        setTotalPages(response.data.pagination.totalPages);
+      if (response.success) {
+        setLoadSheets(response.data);
+        setTotalPages(response.pagination.totalPages);
       }
     } catch (error: any) {
       console.error("Error fetching load sheets:", error);
