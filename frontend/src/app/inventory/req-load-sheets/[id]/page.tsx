@@ -40,7 +40,7 @@ import { apiClient } from "@/lib/api";
 interface LoadSheet {
   _id: string;
   load_sheet_number: string;
-  status: string;
+  status: "Draft" | "Locked" | "Loading" | "Loaded" | "Generated";
   source_depot_id: {
     name: string;
     code: string;
@@ -75,10 +75,10 @@ interface LoadSheet {
 
 const statusColors: Record<string, "default" | "primary" | "warning" | "success" | "info"> = {
   Draft: "default",
-  Validated: "primary",
+  Locked: "primary",
   Loading: "warning",
   Loaded: "info",
-  Converted: "success",
+  Generated: "success",
 };
 
 export default function LoadSheetDetailPage() {
@@ -100,8 +100,8 @@ export default function LoadSheetDetailPage() {
       setLoading(true);
       const response = await apiClient.get(`/inventory/req-load-sheets/${id}`);
 
-      if (response.data.success) {
-        const sheet = response.data.data;
+      if (response.success) {
+        const sheet = response.data;
         setLoadSheet(sheet);
         setEditData({
           delivery_date: sheet.delivery_date
@@ -113,7 +113,7 @@ export default function LoadSheetDetailPage() {
       }
     } catch (error: any) {
       console.error("Error fetching load sheet:", error);
-      toast.error(error.response?.data?.message || "Failed to fetch load sheet");
+      toast.error(error.message || "Failed to fetch load sheet");
     } finally {
       setLoading(false);
     }
@@ -123,34 +123,51 @@ export default function LoadSheetDetailPage() {
     fetchLoadSheet();
   }, [id]);
 
-  const handleValidate = async () => {
-    if (!confirm("Validate this load sheet? This will lock it for editing.")) {
+  const handleLock = async () => {
+    if (!confirm("Lock this load sheet? This will finalize it for delivery.")) {
       return;
     }
 
     try {
-      const response = await apiClient.post(`/inventory/req-load-sheets/${id}/validate`);
-      if (response.data.success) {
-        toast.success("Load sheet validated successfully");
+      const response = await apiClient.post(`/inventory/req-load-sheets/${id}/lock`);
+      if (response.success) {
+        toast.success("Load sheet locked successfully");
         fetchLoadSheet();
       }
     } catch (error: any) {
-      console.error("Error validating load sheet:", error);
-      toast.error(error.response?.data?.message || "Failed to validate load sheet");
+      console.error("Error locking load sheet:", error);
+      toast.error(error.message || "Failed to lock load sheet");
+    }
+  };
+
+  const handleGenerateChalans = async () => {
+    if (!confirm("Generate chalans and invoices? This action cannot be undone.")) {
+      return;
+    }
+
+    try {
+      const response = await apiClient.post(`/inventory/req-load-sheets/${id}/generate-chalans`);
+      if (response.success) {
+        toast.success("Chalans and invoices generated successfully");
+        fetchLoadSheet();
+      }
+    } catch (error: any) {
+      console.error("Error generating chalans:", error);
+      toast.error(error.message || "Failed to generate chalans");
     }
   };
 
   const handleUpdate = async () => {
     try {
       const response = await apiClient.put(`/inventory/req-load-sheets/${id}`, editData);
-      if (response.data.success) {
+      if (response.success) {
         toast.success("Load sheet updated successfully");
         setEditMode(false);
         fetchLoadSheet();
       }
     } catch (error: any) {
       console.error("Error updating load sheet:", error);
-      toast.error(error.response?.data?.message || "Failed to update load sheet");
+      toast.error(error.message || "Failed to update load sheet");
     }
   };
 
@@ -229,11 +246,11 @@ export default function LoadSheetDetailPage() {
                 <Button
                   variant="contained"
                   startIcon={<ValidateIcon />}
-                  onClick={handleValidate}
+                  onClick={handleLock}
                   color="success"
                   size="small"
                 >
-                  Validate
+                  Lock
                 </Button>
               </>
             )}
@@ -259,15 +276,15 @@ export default function LoadSheetDetailPage() {
               </>
             )}
 
-            {(loadSheet.status === "Validated" || loadSheet.status === "Loaded") && (
+            {(loadSheet.status === "Locked" || loadSheet.status === "Loaded") && (
               <Button
                 variant="contained"
                 startIcon={<ConvertIcon />}
-                onClick={() => router.push(`/inventory/req-load-sheets/${id}/convert`)}
+                onClick={handleGenerateChalans}
                 color="primary"
                 size="small"
               >
-                Convert
+                Generate Chalans
               </Button>
             )}
           </Stack>
