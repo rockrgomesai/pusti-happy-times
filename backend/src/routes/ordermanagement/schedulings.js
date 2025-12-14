@@ -4,6 +4,7 @@ const router = express.Router();
 const Scheduling = require("../../models/Scheduling");
 const DemandOrder = require("../../models/DemandOrder");
 const Facility = require("../../models/Facility");
+const User = require("../../models/User");
 const { authenticate, requireApiPermission } = require("../../middleware/auth");
 
 /**
