@@ -21,6 +21,21 @@ router.post("/", authenticate, checkPermission("req-load-sheet:create"), async (
     const { requesting_depot_id, items, delivery_date, vehicle_info, transport_id, notes } =
       req.body;
 
+    // Validate required fields (following DO delivery pattern)
+    if (!delivery_date) {
+      return res.status(400).json({
+        success: false,
+        message: "Delivery date is required",
+      });
+    }
+
+    if (!vehicle_info || !vehicle_info.vehicle_no || !vehicle_info.driver_name || !vehicle_info.driver_phone) {
+      return res.status(400).json({
+        success: false,
+        message: "Vehicle information is required (vehicle_no, driver_name, driver_phone)",
+      });
+    }
+
     // Get user's facility from employee assignment
     const user = await models.User.findById(userId)
       .populate({
