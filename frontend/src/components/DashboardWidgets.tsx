@@ -7,7 +7,7 @@ import {
   CardContent,
   CardActionArea,
   Typography,
-  Grid2,
+  Grid,
   CircularProgress,
   Icon,
   Chip,
@@ -85,13 +85,13 @@ export default function DashboardWidgets() {
       <Typography variant="h6" gutterBottom sx={{ mb: 2 }}>
         Quick Overview
       </Typography>
-      <Grid2 container spacing={2}>
+      <Grid container spacing={2}>
         {widgets.map((widget) => {
           const IconComponent = iconMap[widget.icon] || PendingActions;
           const bgColor = colorMap[widget.color] || "primary.main";
 
           return (
-            <Grid2 key={widget.id} size={{ xs: 12, sm: 6, md: 4, lg: 3 }}>
+            <Grid key={widget.id} item xs={12} sm={6} md={4} lg={3}>
               <Card
                 sx={{
                   height: "100%",
@@ -162,10 +162,10 @@ export default function DashboardWidgets() {
                   </CardContent>
                 </CardActionArea>
               </Card>
-            </Grid2>
+            </Grid>
           );
         })}
-      </Grid2>
+      </Grid>
     </Box>
   );
 }

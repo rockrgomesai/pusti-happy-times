@@ -70,6 +70,11 @@ router.get(
         ...chalan,
         total_qty_ctn: chalan.total_qty_ctn ? parseFloat(chalan.total_qty_ctn.toString()) : 0,
         total_qty_pcs: chalan.total_qty_pcs ? parseFloat(chalan.total_qty_pcs.toString()) : 0,
+        items: chalan.items?.map((item) => ({
+          ...item,
+          qty_ctn: item.qty_ctn ? parseFloat(item.qty_ctn.toString()) : 0,
+          qty_pcs: item.qty_pcs ? parseFloat(item.qty_pcs.toString()) : 0,
+        })) || [],
       }));
 
       res.json({

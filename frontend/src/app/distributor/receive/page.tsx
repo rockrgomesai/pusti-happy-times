@@ -150,10 +150,15 @@ export default function ReceiveChalanListPage() {
     router.push(`/distributor/receive/${chalanId}`);
   };
 
-  const getTotalItems = (items: ChalanItem[]) => items.length;
+  const getTotalItems = (items: ChalanItem[]) => items?.length || 0;
 
-  const getTotalQty = (items: ChalanItem[]) =>
-    items.reduce((sum, item) => sum + parseFloat((item.qty_ctn || 0).toString()), 0);
+  const getTotalQty = (items: ChalanItem[]) => {
+    if (!items || !Array.isArray(items)) return 0;
+    return items.reduce((sum, item) => {
+      const qty = Number(item.qty_ctn) || 0;
+      return sum + qty;
+    }, 0);
+  };
 
   if (!user?.distributor_id && !loading) {
     return (

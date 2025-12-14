@@ -8,7 +8,7 @@ import {
   Accordion,
   AccordionSummary,
   AccordionDetails,
-  Grid2,
+  Grid,
   TextField,
   MenuItem,
   Button,
@@ -324,8 +324,8 @@ export default function ScheduleRequisitionsPage() {
                           </Box>
 
                           {/* Input Fields */}
-                          <Grid2 container spacing={2}>
-                            <Grid2 size={{ xs: 12, sm: 6 }}>
+                          <Grid container spacing={2}>
+                            <Grid item xs={12} sm={6}>
                               <TextField
                                 fullWidth
                                 label="Delivery Qty"
@@ -348,9 +348,9 @@ export default function ScheduleRequisitionsPage() {
                                 }}
                                 helperText={`Max: ${item.unscheduled_qty}`}
                               />
-                            </Grid2>
+                            </Grid>
 
-                            <Grid2 size={{ xs: 12, sm: 6 }}>
+                            <Grid item xs={12} sm={6}>
                               <TextField
                                 fullWidth
                                 select
@@ -372,8 +372,8 @@ export default function ScheduleRequisitionsPage() {
                                   </MenuItem>
                                 ))}
                               </TextField>
-                            </Grid2>
-                          </Grid2>
+                            </Grid>
+                          </Grid>
                         </Box>
                       );
                     })}
