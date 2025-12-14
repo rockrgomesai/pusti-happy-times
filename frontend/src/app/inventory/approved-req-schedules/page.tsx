@@ -287,11 +287,6 @@ export default function ApprovedReqSchedulesPage() {
                   <TableBody>
                     {group.items.map((item, index) => {
                       const itemKey = `${depotId}_${item.requisition_scheduling_id}_${item.requisition_detail_id}_${index}`;
-                      const isSelected = selectedItems[depotId]?.[itemKey] || false;
-                      const deliveryQty = deliveryQtys[itemKey] || 0;
-                      const hasStock = item.stock_qty >= deliveryQty;
-
-                      const itemKey = `${depotId}_${item.requisition_scheduling_id}_${item.requisition_detail_id}_${index}`;
                       const hasStock = item.stock_qty >= item.remaining_qty;
 
                       return (
