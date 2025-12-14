@@ -253,6 +253,289 @@ router.post("/", authenticate, checkPermission("req-load-sheet:create"), async (
 });
 
 /**
+ * GET /api/v1/inventory/req-load-sheets/approved-req-items
+ * Get approved requisition items grouped by requesting depot for load sheet creation
+ * Similar to /approved-dos endpoint in DO delivery system
+ */
+router.get(
+  "/approved-req-items",
+  authenticate,
+  checkPermission("req-load-sheet:create"),
+  async (req, res) => {
+    try {
+      const userId = req.user.id;
+
+      // Get user's facility from employee assignment
+      const user = await models.User.findById(userId)
+        .populate({
+          path: "employee_id",
+          select: "facility_id",
+          populate: {
+            path: "facility_id",
+            select: "_id name type",
+          },
+        })
+        .lean();
+
+      if (!user?.employee_id?.facility_id?._id) {
+        return res.status(400).json({
+          success: false,
+          message: "User is not assigned to any facility",
+        });
+      }
+
+      const source_depot_id = user.employee_id.facility_id._id;
+
+      // Get approved requisition schedulings where this depot is the source
+      const schedulings = await models.RequisitionScheduling.find({
+        from_depot: source_depot_id,
+        status: "approved",
+      })
+        .populate("requisition_id", "requisition_no requisition_date")
+        .populate("requesting_depot", "name code address phone")
+        .populate("from_depot", "name code")
+        .populate({
+          path: "scheduling_details.requisition_detail_id",
+          populate: {
+            path: "product_id",
+            select: "sku name dp_price pack_size unit",
+          },
+        })
+        .lean();
+
+      // Get stock availability for all SKUs
+      const allSKUs = new Set();
+      schedulings.forEach((sched) => {
+        sched.scheduling_details.forEach((detail) => {
+          if (detail.requisition_detail_id?.product_id?.sku) {
+            allSKUs.add(detail.requisition_detail_id.product_id.sku);
+          }
+        });
+      });
+
+      const products = await models.Product.find({
+        sku: { $in: Array.from(allSKUs) },
+      }).select("_id sku");
+
+      const productMap = {};
+      products.forEach((p) => {
+        productMap[p.sku] = p._id;
+      });
+
+      const stocks = await models.DepotStock.find({
+        depot_id: source_depot_id,
+        product_id: { $in: products.map((p) => p._id) },
+      }).lean();
+
+      const stockMap = {};
+      stocks.forEach((stock) => {
+        const sku = Object.keys(productMap).find(
+          (k) => productMap[k].toString() === stock.product_id.toString()
+        );
+        if (sku) {
+          stockMap[sku] = {
+            total: parseFloat(stock.qty_ctn?.toString() || "0"),
+            blocked: parseFloat(stock.blocked_qty?.toString() || "0"),
+            available: parseFloat(stock.qty_ctn?.toString() || "0") - parseFloat(stock.blocked_qty?.toString() || "0"),
+          };
+        }
+      });
+
+      // Group by requesting depot
+      const depotMap = {};
+
+      schedulings.forEach((scheduling) => {
+        const requestingDepot = scheduling.requesting_depot;
+        if (!requestingDepot) return;
+
+        const depotKey = requestingDepot._id.toString();
+
+        if (!depotMap[depotKey]) {
+          depotMap[depotKey] = {
+            requesting_depot_id: requestingDepot._id,
+            requesting_depot_name: requestingDepot.name,
+            requesting_depot_code: requestingDepot.code,
+            requesting_depot_address: requestingDepot.address,
+            requesting_depot_phone: requestingDepot.phone,
+            items: [],
+          };
+        }
+
+        scheduling.scheduling_details.forEach((detail) => {
+          const reqDetail = detail.requisition_detail_id;
+          if (!reqDetail?.product_id) return;
+
+          const product = reqDetail.product_id;
+          const sku = product.sku;
+          const scheduledQty = parseFloat(detail.scheduled_qty?.toString() || "0");
+          const deliveredQty = parseFloat(detail.delivered_qty?.toString() || "0");
+          const remainingQty = scheduledQty - deliveredQty;
+
+          if (remainingQty <= 0) return;
+
+          const stock = stockMap[sku] || { total: 0, blocked: 0, available: 0 };
+
+          depotMap[depotKey].items.push({
+            requisition_scheduling_id: scheduling._id,
+            requisition_detail_id: detail.requisition_detail_id._id,
+            requisition_id: scheduling.requisition_id._id,
+            requisition_no: scheduling.requisition_id.requisition_no,
+            requisition_date: scheduling.requisition_id.requisition_date,
+            sku: sku,
+            product_name: product.name,
+            dp_price: product.dp_price,
+            pack_size: product.pack_size,
+            unit: product.unit || "CTN",
+            order_qty: parseFloat(reqDetail.order_qty?.toString() || "0"),
+            scheduled_qty: scheduledQty,
+            delivered_qty: deliveredQty,
+            remaining_qty: remainingQty,
+            stock_available: stock.available,
+            stock_total: stock.total,
+            stock_blocked: stock.blocked,
+          });
+        });
+      });
+
+      // Convert map to array and filter out empty
+      const result = Object.values(depotMap).filter((depot) => depot.items.length > 0);
+
+      res.json({
+        success: true,
+        data: result,
+        total_depots: result.length,
+        total_items: result.reduce((sum, depot) => sum + depot.items.length, 0),
+      });
+    } catch (error) {
+      console.error("Error fetching approved req items:", error);
+      res.status(500).json({
+        success: false,
+        message: error.message || "Failed to fetch approved requisition items",
+      });
+    }
+  }
+);
+
+/**
+ * POST /api/v1/inventory/req-load-sheets/validate-stock
+ * Validate stock availability for selected items before creating load sheet
+ */
+router.post(
+  "/validate-stock",
+  authenticate,
+  checkPermission("req-load-sheet:create"),
+  async (req, res) => {
+    try {
+      const userId = req.user.id;
+      const { items } = req.body; // Array of { sku, delivery_qty }
+
+      // Get user's facility
+      const user = await models.User.findById(userId)
+        .populate({
+          path: "employee_id",
+          select: "facility_id",
+          populate: {
+            path: "facility_id",
+            select: "_id name type",
+          },
+        })
+        .lean();
+
+      if (!user?.employee_id?.facility_id?._id) {
+        return res.status(400).json({
+          success: false,
+          message: "User is not assigned to any facility",
+        });
+      }
+
+      const source_depot_id = user.employee_id.facility_id._id;
+
+      // Aggregate delivery quantities by SKU
+      const skuQtyMap = {};
+      items.forEach((item) => {
+        if (!skuQtyMap[item.sku]) {
+          skuQtyMap[item.sku] = 0;
+        }
+        skuQtyMap[item.sku] += parseFloat(item.delivery_qty || 0);
+      });
+
+      const skus = Object.keys(skuQtyMap);
+
+      // Get products
+      const products = await models.Product.find({
+        sku: { $in: skus },
+      }).select("_id sku name");
+
+      const productMap = {};
+      products.forEach((p) => {
+        productMap[p.sku] = p;
+      });
+
+      // Get stock availability
+      const stocks = await models.DepotStock.find({
+        depot_id: source_depot_id,
+        product_id: { $in: products.map((p) => p._id) },
+      }).lean();
+
+      const stockValidation = [];
+
+      skus.forEach((sku) => {
+        const product = productMap[sku];
+        if (!product) {
+          stockValidation.push({
+            sku,
+            product_name: sku,
+            required: skuQtyMap[sku],
+            available: 0,
+            blocked: 0,
+            remaining: -skuQtyMap[sku],
+            has_stock: false,
+            message: "Product not found",
+          });
+          return;
+        }
+
+        const stock = stocks.find(
+          (s) => s.product_id.toString() === product._id.toString()
+        );
+
+        const totalQty = stock ? parseFloat(stock.qty_ctn?.toString() || "0") : 0;
+        const blockedQty = stock ? parseFloat(stock.blocked_qty?.toString() || "0") : 0;
+        const availableQty = totalQty - blockedQty;
+        const requiredQty = skuQtyMap[sku];
+        const remainingQty = availableQty - requiredQty;
+
+        stockValidation.push({
+          sku,
+          product_name: product.name,
+          required: requiredQty,
+          available: availableQty,
+          blocked: blockedQty,
+          remaining: remainingQty,
+          has_stock: remainingQty >= 0,
+          message: remainingQty >= 0 ? "Stock available" : `Short by ${Math.abs(remainingQty)}`,
+        });
+      });
+
+      const hasIssues = stockValidation.some((v) => !v.has_stock);
+
+      res.json({
+        success: true,
+        validation: stockValidation,
+        has_issues: hasIssues,
+        can_proceed: !hasIssues,
+      });
+    } catch (error) {
+      console.error("Error validating stock:", error);
+      res.status(500).json({
+        success: false,
+        message: error.message || "Failed to validate stock",
+      });
+    }
+  }
+);
+
+/**
  * GET /api/v1/inventory/req-load-sheets/list
  * List all requisition load sheets with filters
  */
