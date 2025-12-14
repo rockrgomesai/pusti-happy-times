@@ -258,9 +258,29 @@ router.post("/", authenticate, checkPermission("req-load-sheet:create"), async (
  */
 router.get("/list", authenticate, checkPermission("req-load-sheet:read"), async (req, res) => {
   try {
-    const { facility_id: source_depot_id } = req.user;
+    const userId = req.user.id;
     const { status, page = 1, limit = 20, search } = req.query;
 
+    // Get user's facility from employee assignment
+    const user = await models.User.findById(userId)
+      .populate({
+        path: "employee_id",
+        select: "facility_id",
+        populate: {
+          path: "facility_id",
+          select: "_id name type",
+        },
+      })
+      .lean();
+
+    if (!user?.employee_id?.facility_id?._id) {
+      return res.status(400).json({
+        success: false,
+        message: "User is not assigned to any facility",
+      });
+    }
+
+    const source_depot_id = user.employee_id.facility_id._id;
     const query = { source_depot_id };
 
     if (status) {
@@ -310,7 +330,28 @@ router.get("/list", authenticate, checkPermission("req-load-sheet:read"), async 
 router.get("/:id", authenticate, checkPermission("req-load-sheet:read"), async (req, res) => {
   try {
     const { id } = req.params;
-    const { facility_id: source_depot_id } = req.user;
+    const userId = req.user.id;
+
+    // Get user's facility from employee assignment
+    const user = await models.User.findById(userId)
+      .populate({
+        path: "employee_id",
+        select: "facility_id",
+        populate: {
+          path: "facility_id",
+          select: "_id name type",
+        },
+      })
+      .lean();
+
+    if (!user?.employee_id?.facility_id?._id) {
+      return res.status(400).json({
+        success: false,
+        message: "User is not assigned to any facility",
+      });
+    }
+
+    const source_depot_id = user.employee_id.facility_id._id;
 
     const loadSheet = await models.RequisitionLoadSheet.findOne({
       _id: id,
@@ -350,8 +391,29 @@ router.get("/:id", authenticate, checkPermission("req-load-sheet:read"), async (
 router.put("/:id", authenticate, checkPermission("req-load-sheet:update"), async (req, res) => {
   try {
     const { id } = req.params;
-    const { facility_id: source_depot_id } = req.user;
+    const userId = req.user.id;
     const { delivery_date, vehicle_info, transport_id, notes } = req.body;
+
+    // Get user's facility from employee assignment
+    const user = await models.User.findById(userId)
+      .populate({
+        path: "employee_id",
+        select: "facility_id",
+        populate: {
+          path: "facility_id",
+          select: "_id name type",
+        },
+      })
+      .lean();
+
+    if (!user?.employee_id?.facility_id?._id) {
+      return res.status(400).json({
+        success: false,
+        message: "User is not assigned to any facility",
+      });
+    }
+
+    const source_depot_id = user.employee_id.facility_id._id;
 
     const loadSheet = await models.RequisitionLoadSheet.findOne({
       _id: id,
@@ -405,7 +467,28 @@ router.post(
   async (req, res) => {
     try {
       const { id } = req.params;
-      const { facility_id: source_depot_id, user_id } = req.user;
+      const userId = req.user.id;
+
+      // Get user's facility from employee assignment
+      const user = await models.User.findById(userId)
+        .populate({
+          path: "employee_id",
+          select: "facility_id",
+          populate: {
+            path: "facility_id",
+            select: "_id name type",
+          },
+        })
+        .lean();
+
+      if (!user?.employee_id?.facility_id?._id) {
+        return res.status(400).json({
+          success: false,
+          message: "User is not assigned to any facility",
+        });
+      }
+
+      const source_depot_id = user.employee_id.facility_id._id;
 
       const loadSheet = await models.RequisitionLoadSheet.findOne({
         _id: id,
@@ -456,12 +539,30 @@ router.post(
   authenticate,
   checkPermission("req-load-sheet:convert"),
   async (req, res) => {
-    const session = await mongoose.startSession();
-    session.startTransaction();
-
     try {
-      const { facility_id: source_depot_id, user_id } = req.user;
+      const userId = req.user.id;
       const { id } = req.params;
+
+      // Get user's facility from employee assignment
+      const user = await models.User.findById(userId)
+        .populate({
+          path: "employee_id",
+          select: "facility_id",
+          populate: {
+            path: "facility_id",
+            select: "_id name type",
+          },
+        })
+        .lean();
+
+      if (!user?.employee_id?.facility_id?._id) {
+        return res.status(400).json({
+          success: false,
+          message: "User is not assigned to any facility",
+        });
+      }
+
+      const source_depot_id = user.employee_id.facility_id._id;
 
       console.log("\n=== CONVERTING REQUISITION LOAD SHEET ===");
 
