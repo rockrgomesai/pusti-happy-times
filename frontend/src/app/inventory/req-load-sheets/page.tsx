@@ -37,7 +37,7 @@ import { useAuth } from "@/contexts/AuthContext";
 interface LoadSheet {
   _id: string;
   load_sheet_number: string;
-  status: "Draft" | "Validated" | "Loading" | "Loaded" | "Converted";
+  status: "Draft" | "Locked" | "Loading" | "Loaded" | "Generated";
   source_depot_id: {
     _id: string;
     name: string;
@@ -61,10 +61,10 @@ interface LoadSheet {
 
 const statusColors: Record<string, "default" | "primary" | "warning" | "success" | "info"> = {
   Draft: "default",
-  Validated: "primary",
+  Locked: "primary",
   Loading: "warning",
   Loaded: "info",
-  Converted: "success",
+  Generated: "success",
 };
 
 export default function ReqLoadSheetsPage() {
@@ -128,20 +128,37 @@ export default function ReqLoadSheetsPage() {
     }
   };
 
-  const handleValidate = async (id: string, loadSheetNumber: string) => {
-    if (!confirm(`Validate load sheet ${loadSheetNumber}? This will lock the load sheet.`)) {
+  const handleLock = async (id: string, loadSheetNumber: string) => {
+    if (!confirm(`Lock load sheet ${loadSheetNumber}? This will finalize the load sheet for delivery.`)) {
       return;
     }
 
     try {
-      const response = await apiClient.post(`/inventory/req-load-sheets/${id}/validate`);
-      if (response.data.success) {
-        toast.success("Load sheet validated successfully");
+      const response = await apiClient.post(`/inventory/req-load-sheets/${id}/lock`);
+      if (response.success) {
+        toast.success("Load sheet locked successfully");
         fetchLoadSheets();
       }
     } catch (error: any) {
-      console.error("Error validating load sheet:", error);
-      toast.error(error.response?.data?.message || "Failed to validate load sheet");
+      console.error("Error locking load sheet:", error);
+      toast.error(error.response?.data?.message || "Failed to lock load sheet");
+    }
+  };
+
+  const handleGenerateChalans = async (id: string, loadSheetNumber: string) => {
+    if (!confirm(`Generate chalans and invoices for ${loadSheetNumber}? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      const response = await apiClient.post(`/inventory/req-load-sheets/${id}/generate-chalans`);
+      if (response.success) {
+        toast.success("Chalans and invoices generated successfully");
+        fetchLoadSheets();
+      }
+    } catch (error: any) {
+      console.error("Error generating chalans:", error);
+      toast.error(error.response?.data?.message || "Failed to generate chalans");
     }
   };
 
@@ -292,8 +309,8 @@ export default function ReqLoadSheetsPage() {
                             <IconButton
                               size="small"
                               color="success"
-                              onClick={() => handleValidate(sheet._id, sheet.load_sheet_number)}
-                              title="Validate"
+                              onClick={() => handleLock(sheet._id, sheet.load_sheet_number)}
+                              title="Lock Load Sheet"
                             >
                               <ValidateIcon fontSize="small" />
                             </IconButton>
@@ -309,12 +326,12 @@ export default function ReqLoadSheetsPage() {
                           </>
                         )}
 
-                        {(sheet.status === "Validated" || sheet.status === "Loaded") && (
+                        {(sheet.status === "Locked" || sheet.status === "Loaded") && (
                           <IconButton
                             size="small"
                             color="info"
-                            onClick={() => router.push(`/inventory/req-load-sheets/${sheet._id}/convert`)}
-                            title="Convert to Chalans & Invoices"
+                            onClick={() => handleGenerateChalans(sheet._id, sheet.load_sheet_number)}
+                            title="Generate Chalans & Invoices"
                           >
                             <ConvertIcon fontSize="small" />
                           </IconButton>
