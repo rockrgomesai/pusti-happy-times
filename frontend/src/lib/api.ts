@@ -250,6 +250,9 @@ export const authAPI = {
 };
 
 // Generic API functions
+// ⚠️ CRITICAL: Always use apiClient in components, NOT the raw 'api' instance
+// apiClient automatically unwraps response.data so you get { success, data, message }
+// Raw 'api' returns full axios response { data: { success, data, message }, status, headers }
 export const apiClient = {
   get: async <T = unknown>(url: string, params?: Record<string, unknown>, config?: any): Promise<T> => {
     const response = await api.get(url, { params, ...config });

@@ -68,6 +68,11 @@ export default function ApprovedReqSchedulesPage() {
   const [depotGroups, setDepotGroups] = useState<DepotGroup[]>([]);
   const [error, setError] = useState("");
   const [expandedGroup, setExpandedGroup] = useState<string | false>(false);
+  
+  // ⚠️ CRITICAL: These state variables are REQUIRED and used throughout the component.
+  // DO NOT REMOVE: selectedItems tracks checkbox selections for each depot/item
+  // DO NOT REMOVE: deliveryQtys stores user-entered delivery quantities
+  // DO NOT REMOVE: submitting prevents double-submission of load sheet creation
   const [selectedItems, setSelectedItems] = useState<SelectedItems>({});
   const [deliveryQtys, setDeliveryQtys] = useState<DeliveryQtys>({});
   const [submitting, setSubmitting] = useState(false);

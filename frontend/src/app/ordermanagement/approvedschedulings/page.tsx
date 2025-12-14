@@ -31,6 +31,7 @@ import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { format } from "date-fns";
 import toast from "react-hot-toast";
 import { useAuth } from "@/contexts/AuthContext";
+// ⚠️ CRITICAL: Use apiClient (not 'api') - apiClient unwraps response.data automatically
 import { apiClient } from "@/lib/api";
 
 interface SchedulingDetail {
