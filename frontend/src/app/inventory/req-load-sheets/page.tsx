@@ -193,6 +193,16 @@ export default function ReqLoadSheetsPage() {
           <Typography variant="h5" fontWeight="600">
             Requisition Load Sheets
           </Typography>
+          
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => router.push("/inventory/req-load-sheets/create")}
+            fullWidth={false}
+            sx={{ minWidth: { xs: "100%", sm: "auto" } }}
+          >
+            Create Load Sheet
+          </Button>
         </Stack>
 
         <Stack direction={{ xs: "column", sm: "row" }} spacing={2} mb={3}>
