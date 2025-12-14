@@ -119,7 +119,7 @@ const RequisitionLoadSheetSchema = new Schema(
     },
     status: {
       type: String,
-      enum: ["Draft", "Validated", "Loading", "Loaded", "Converted"],
+      enum: ["Draft", "Locked", "Loading", "Loaded", "Generated"],
       default: "Draft",
       index: true,
     },
@@ -160,13 +160,13 @@ const RequisitionLoadSheetSchema = new Schema(
       get: (v) => (v ? parseFloat(v.toString()) : 0),
     },
     notes: String,
-    validated_at: Date,
-    validated_by: {
+    locked_at: Date,
+    locked_by: {
       type: Schema.Types.ObjectId,
       ref: "User",
     },
-    converted_at: Date,
-    converted_by: {
+    generated_at: Date,
+    generated_by: {
       type: Schema.Types.ObjectId,
       ref: "User",
     },

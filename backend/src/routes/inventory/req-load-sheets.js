@@ -359,8 +359,8 @@ router.get("/:id", authenticate, checkPermission("req-load-sheet:read"), async (
     })
       .populate("source_depot_id", "name code type")
       .populate("created_by", "name email")
-      .populate("validated_by", "name email")
-      .populate("converted_by", "name email")
+      .populate("locked_by", "name email")
+      .populate("generated_by", "name email")
       .populate("transport_id", "name vehicle_no driver_name driver_phone")
       .lean();
 
@@ -457,13 +457,13 @@ router.put("/:id", authenticate, checkPermission("req-load-sheet:update"), async
 });
 
 /**
- * POST /api/v1/inventory/req-load-sheets/:id/validate
- * Validate/lock requisition load sheet
+ * POST /api/v1/inventory/req-load-sheets/:id/lock
+ * Lock requisition load sheet for delivery
  */
 router.post(
-  "/:id/validate",
+  "/:id/lock",
   authenticate,
-  checkPermission("req-load-sheet:validate"),
+  checkPermission("req-load-sheet:lock"),
   async (req, res) => {
     try {
       const { id } = req.params;
@@ -505,39 +505,39 @@ router.post(
       if (loadSheet.status !== "Draft") {
         return res.status(400).json({
           success: false,
-          message: "Can only validate load sheets in Draft status",
+          message: "Can only lock load sheets in Draft status",
         });
       }
 
-      loadSheet.status = "Validated";
-      loadSheet.validated_by = user_id;
-      loadSheet.validated_at = new Date();
+      loadSheet.status = "Locked";
+      loadSheet.locked_by = userId;
+      loadSheet.locked_at = new Date();
 
       await loadSheet.save();
 
       res.json({
         success: true,
-        message: "Requisition load sheet validated successfully",
+        message: "Requisition load sheet locked successfully",
         data: loadSheet,
       });
     } catch (error) {
-      console.error("Error validating requisition load sheet:", error);
+      console.error("Error locking requisition load sheet:", error);
       res.status(500).json({
         success: false,
-        message: "Failed to validate requisition load sheet",
+        message: "Failed to lock requisition load sheet",
       });
     }
   }
 );
 
 /**
- * POST /api/v1/inventory/req-load-sheets/:id/convert
- * Convert load sheet to chalans and invoices (4 copies each)
+ * POST /api/v1/inventory/req-load-sheets/:id/generate-chalans
+ * Generate chalans and invoices from load sheet (4 copies each)
  */
 router.post(
-  "/:id/convert",
+  "/:id/generate-chalans",
   authenticate,
-  checkPermission("req-load-sheet:convert"),
+  checkPermission("req-load-sheet:generate-chalans"),
   async (req, res) => {
     try {
       const userId = req.user.id;
@@ -569,7 +569,7 @@ router.post(
       const loadSheet = await models.RequisitionLoadSheet.findOne({
         _id: id,
         source_depot_id,
-        status: { $in: ["Validated", "Loaded"] },
+        status: { $in: ["Locked", "Loaded"] },
       }).session(session);
 
       if (!loadSheet) {
@@ -733,9 +733,9 @@ router.post(
       }
 
       // Update load sheet status and links
-      loadSheet.status = "Converted";
-      loadSheet.converted_by = user_id;
-      loadSheet.converted_at = new Date();
+      loadSheet.status = "Generated";
+      loadSheet.generated_by = userId;
+      loadSheet.generated_at = new Date();
       loadSheet.chalan_ids = createdChalans.map((c) => c._id);
       loadSheet.invoice_ids = createdInvoices.map((i) => i._id);
       await loadSheet.save({ session });
@@ -771,7 +771,7 @@ router.post(
 
       res.json({
         success: true,
-        message: "Load sheet converted successfully",
+        message: "Chalans and invoices generated successfully",
         data: {
           load_sheet_id: loadSheet._id,
           load_sheet_number: loadSheet.load_sheet_number,
