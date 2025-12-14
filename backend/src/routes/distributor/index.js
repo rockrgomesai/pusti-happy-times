@@ -140,9 +140,10 @@ router.get(
         });
       }
 
-      // Convert Decimal128 fields to numbers since .lean() skips getters
+      // Convert Decimal128 fields and group by SKU (fix tied records issue)
       if (chalan.items && Array.isArray(chalan.items)) {
-        chalan.items = chalan.items.map((item) => ({
+        // First convert Decimal128 to numbers
+        const convertedItems = chalan.items.map((item) => ({
           ...item,
           qty_ctn: item.qty_ctn ? parseFloat(item.qty_ctn.toString()) : 0,
           qty_pcs: item.qty_pcs ? parseFloat(item.qty_pcs.toString()) : 0,
@@ -155,6 +156,25 @@ router.get(
           damage_qty_ctn: item.damage_qty_ctn ? parseFloat(item.damage_qty_ctn.toString()) : 0,
           damage_qty_pcs: item.damage_qty_pcs ? parseFloat(item.damage_qty_pcs.toString()) : 0,
         }));
+
+        // Group by SKU to handle tied records (multiple items with same SKU)
+        const groupedItems = {};
+        convertedItems.forEach((item) => {
+          const key = item.sku;
+          if (!groupedItems[key]) {
+            groupedItems[key] = { ...item };
+          } else {
+            // Sum quantities for duplicate SKUs
+            groupedItems[key].qty_ctn += item.qty_ctn;
+            groupedItems[key].qty_pcs += item.qty_pcs;
+            groupedItems[key].received_qty_ctn += item.received_qty_ctn;
+            groupedItems[key].received_qty_pcs += item.received_qty_pcs;
+            groupedItems[key].damage_qty_ctn += item.damage_qty_ctn;
+            groupedItems[key].damage_qty_pcs += item.damage_qty_pcs;
+          }
+        });
+
+        chalan.items = Object.values(groupedItems);
       }
 
       res.json({
