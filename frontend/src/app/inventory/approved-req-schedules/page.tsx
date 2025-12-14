@@ -91,8 +91,8 @@ export default function ApprovedReqSchedulesPage() {
       // Pre-fill delivery quantities with remaining_qty
       const initialQtys: DeliveryQtys = {};
       groups.forEach((depot: DepotGroup) => {
-        depot.items.forEach((item: Item) => {
-          const itemKey = `${depot.requesting_depot_id}_${item.requisition_scheduling_id}_${item.requisition_detail_id}`;
+        depot.items.forEach((item: Item, index: number) => {
+          const itemKey = `${depot.requesting_depot_id}_${item.requisition_scheduling_id}_${item.requisition_detail_id}_${index}`;
           initialQtys[itemKey] = item.remaining_qty;
         });
       });
@@ -107,8 +107,8 @@ export default function ApprovedReqSchedulesPage() {
   };
 
   const handleSelectAll = (depotId: string, items: Item[]) => {
-    const allItemKeys = items.map(item => 
-      `${depotId}_${item.requisition_scheduling_id}_${item.requisition_detail_id}`
+    const allItemKeys = items.map((item, index) => 
+      `${depotId}_${item.requisition_scheduling_id}_${item.requisition_detail_id}_${index}`
     );
     
     const allSelected = allItemKeys.every(key => selectedItems[depotId]?.[key]);
@@ -138,12 +138,12 @@ export default function ApprovedReqSchedulesPage() {
       
       // Build items array for load sheet
       const items = group.items
-        .filter(item => {
-          const itemKey = `${depotId}_${item.requisition_scheduling_id}_${item.requisition_detail_id}`;
+        .filter((item, index) => {
+          const itemKey = `${depotId}_${item.requisition_scheduling_id}_${item.requisition_detail_id}_${index}`;
           return selectedItems[depotId]?.[itemKey];
         })
-        .map(item => {
-          const itemKey = `${depotId}_${item.requisition_scheduling_id}_${item.requisition_detail_id}`;
+        .map((item, index) => {
+          const itemKey = `${depotId}_${item.requisition_scheduling_id}_${item.requisition_detail_id}_${index}`;
           const deliveryQty = deliveryQtys[itemKey] || 0;
           
           if (deliveryQty <= 0) {
@@ -300,8 +300,8 @@ export default function ApprovedReqSchedulesPage() {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {group.items.map((item) => {
-                      const itemKey = `${depotId}_${item.requisition_scheduling_id}_${item.requisition_detail_id}`;
+                    {group.items.map((item, index) => {
+                      const itemKey = `${depotId}_${item.requisition_scheduling_id}_${item.requisition_detail_id}_${index}`;
                       const isSelected = selectedItems[depotId]?.[itemKey] || false;
                       const deliveryQty = deliveryQtys[itemKey] || 0;
                       const hasStock = item.stock_qty >= deliveryQty;
