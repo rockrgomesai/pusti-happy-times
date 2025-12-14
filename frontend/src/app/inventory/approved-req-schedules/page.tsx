@@ -65,11 +65,8 @@ interface DeliveryQtys {
 
 export default function ApprovedReqSchedulesPage() {
   const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
   const [depotGroups, setDepotGroups] = useState<DepotGroup[]>([]);
   const [error, setError] = useState("");
-  const [selectedItems, setSelectedItems] = useState<SelectedItems>({});
-  const [deliveryQtys, setDeliveryQtys] = useState<DeliveryQtys>({});
   const [expandedGroup, setExpandedGroup] = useState<string | false>(false);
 
   useEffect(() => {
@@ -87,16 +84,6 @@ export default function ApprovedReqSchedulesPage() {
       // apiClient already returns response.data, so response.data is the actual data array
       const groups = response.data || [];
       setDepotGroups(groups);
-      
-      // Pre-fill delivery quantities with remaining_qty
-      const initialQtys: DeliveryQtys = {};
-      groups.forEach((depot: DepotGroup) => {
-        depot.items.forEach((item: Item, index: number) => {
-          const itemKey = `${depot.requesting_depot_id}_${item.requisition_scheduling_id}_${item.requisition_detail_id}_${index}`;
-          initialQtys[itemKey] = item.remaining_qty;
-        });
-      });
-      setDeliveryQtys(initialQtys);
       
     } catch (err: any) {
       console.error("Error loading data:", err);
@@ -211,9 +198,16 @@ export default function ApprovedReqSchedulesPage() {
   if (!depotGroups || depotGroups.length === 0) {
     return (
       <Container maxWidth="xl" sx={{ mt: 4 }}>
-        <Alert severity="info">
+        <Alert severity="info" sx={{ mb: 2 }}>
           No approved requisition schedules pending delivery. All requisitions have been fulfilled or no items have been scheduled yet.
         </Alert>
+        
+        <Button
+          variant="contained"
+          onClick={() => (window.location.href = "/inventory/req-load-sheets/create")}
+        >
+          Create Load Sheet
+        </Button>
       </Container>
     );
   }
@@ -225,8 +219,16 @@ export default function ApprovedReqSchedulesPage() {
           Approved Requisition Schedules
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          View approved requisition schedules and create load sheets for delivery
+          View approved requisition schedules pending delivery. Use the Create Load Sheet button to prepare deliveries.
         </Typography>
+        
+        <Button
+          variant="contained"
+          onClick={() => (window.location.href = "/inventory/req-load-sheets/create")}
+          sx={{ mt: 2 }}
+        >
+          Create Load Sheet
+        </Button>
       </Box>
 
       {depotGroups.map((group) => {
@@ -263,39 +265,22 @@ export default function ApprovedReqSchedulesPage() {
             </AccordionSummary>
             
             <AccordionDetails>
-              <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Checkbox
-                    checked={totalItems > 0 && selectedCount === totalItems}
-                    indeterminate={selectedCount > 0 && selectedCount < totalItems}
-                    onChange={() => handleSelectAll(depotId, group.items)}
-                  />
-                  <Typography variant="body2">Select All</Typography>
-                </Box>
-                
-                <Button
-                  variant="contained"
-                  disabled={submitting || selectedCount === 0}
-                  onClick={() => handleCreateLoadSheet(group)}
-                >
-                  {submitting ? 'Creating...' : `Create Load Sheet (${selectedCount})`}
-                </Button>
-              </Box>
+              <Alert severity="info" sx={{ mb: 2 }}>
+                To create a load sheet for these items, use the <strong>Create Load Sheet</strong> button above.
+              </Alert>
 
               <TableContainer component={Paper} sx={{ maxHeight: 600 }}>
                 <Table size="small" stickyHeader>
                   <TableHead>
                     <TableRow>
-                      <TableCell padding="checkbox"></TableCell>
                       <TableCell>Req No</TableCell>
                       <TableCell>SKU</TableCell>
                       <TableCell>ERP ID</TableCell>
                       <TableCell>Product Name</TableCell>
-                      <TableCell align="right">Schld Qty</TableCell>
+                      <TableCell align="right">Scheduled Qty</TableCell>
                       <TableCell align="right">Delivered</TableCell>
                       <TableCell align="right">Remaining</TableCell>
-                      <TableCell align="right">Stock</TableCell>
-                      <TableCell>Delivery Qty</TableCell>
+                      <TableCell align="right">Stock Available</TableCell>
                       <TableCell>Status</TableCell>
                     </TableRow>
                   </TableHead>
@@ -306,28 +291,11 @@ export default function ApprovedReqSchedulesPage() {
                       const deliveryQty = deliveryQtys[itemKey] || 0;
                       const hasStock = item.stock_qty >= deliveryQty;
 
+                      const itemKey = `${depotId}_${item.requisition_scheduling_id}_${item.requisition_detail_id}_${index}`;
+                      const hasStock = item.stock_qty >= item.remaining_qty;
+
                       return (
-                        <TableRow 
-                          key={itemKey} 
-                          selected={isSelected}
-                          sx={{ 
-                            backgroundColor: !hasStock && isSelected ? 'error.light' : undefined 
-                          }}
-                        >
-                          <TableCell padding="checkbox">
-                            <Checkbox
-                              checked={isSelected}
-                              onChange={(e) => {
-                                setSelectedItems(prev => ({
-                                  ...prev,
-                                  [depotId]: {
-                                    ...prev[depotId],
-                                    [itemKey]: e.target.checked
-                                  }
-                                }));
-                              }}
-                            />
-                          </TableCell>
+                        <TableRow key={itemKey} hover>
                           <TableCell>{item.requisition_no}</TableCell>
                           <TableCell>{item.sku}</TableCell>
                           <TableCell>{item.erp_id || '-'}</TableCell>
@@ -335,48 +303,20 @@ export default function ApprovedReqSchedulesPage() {
                           <TableCell align="right">{item.scheduled_qty}</TableCell>
                           <TableCell align="right">{item.delivered_qty}</TableCell>
                           <TableCell align="right">
-                            <strong>{item.remaining_qty}</strong>
-                          </TableCell>
-                          <TableCell align="right">
-                            <Typography 
-                              variant="body2" 
-                              color={item.stock_qty >= deliveryQty ? 'success.main' : 'error.main'}
-                            >
-                              {item.stock_qty}
+                            <Typography variant="body2" fontWeight="600">
+                              {item.remaining_qty}
                             </Typography>
                           </TableCell>
-                          <TableCell>
-                            <TextField
-                              type="number"
+                          <TableCell align="right">
+                            <Chip
+                              label={item.stock_qty}
                               size="small"
-                              value={deliveryQty}
-                              onChange={(e) => {
-                                const value = parseInt(e.target.value) || 0;
-                                if (value < 0) return;
-                                if (value > item.remaining_qty) {
-                                  toast.error(`Cannot exceed remaining quantity: ${item.remaining_qty}`);
-                                  return;
-                                }
-                                setDeliveryQtys(prev => ({
-                                  ...prev,
-                                  [itemKey]: value
-                                }));
-                              }}
-                              sx={{ width: 100 }}
-                              inputProps={{ 
-                                min: 0, 
-                                max: item.remaining_qty,
-                                step: 1 
-                              }}
-                              error={isSelected && (!hasStock || deliveryQty <= 0)}
+                              color={hasStock ? 'success' : 'warning'}
                             />
                           </TableCell>
                           <TableCell>
                             {item.is_partial && (
                               <Chip label="Partial" size="small" color="warning" />
-                            )}
-                            {!hasStock && isSelected && (
-                              <Chip label="Low Stock" size="small" color="error" />
                             )}
                           </TableCell>
                         </TableRow>
