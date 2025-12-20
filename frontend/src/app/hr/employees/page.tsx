@@ -1731,6 +1731,7 @@ export default function EmployeesPage() {
                   render={({ field }) => (
                     <Autocomplete
                       options={meta?.genders ?? []}
+                      getOptionLabel={(option) => option || ''}
                       value={field.value || null}
                       onChange={(_, newValue) => field.onChange(newValue || '')}
                       disabled={isSubmitting || !meta?.genders?.length}
@@ -1740,6 +1741,7 @@ export default function EmployeesPage() {
                       openOnFocus
                       selectOnFocus
                       clearOnBlur
+                      isOptionEqualToValue={(option, value) => option === value}
                       renderInput={(params) => (
                         <TextField
                           {...params}
@@ -1759,6 +1761,7 @@ export default function EmployeesPage() {
                   render={({ field }) => (
                     <Autocomplete
                       options={meta?.religions ?? []}
+                      getOptionLabel={(option) => option || ''}
                       value={field.value || null}
                       onChange={(_, newValue) => field.onChange(newValue || '')}
                       disabled={isSubmitting || !meta?.religions?.length}
@@ -1768,6 +1771,7 @@ export default function EmployeesPage() {
                       openOnFocus
                       selectOnFocus
                       clearOnBlur
+                      isOptionEqualToValue={(option, value) => option === value}
                       renderInput={(params) => (
                         <TextField
                           {...params}
@@ -1787,6 +1791,7 @@ export default function EmployeesPage() {
                   render={({ field }) => (
                     <Autocomplete
                       options={meta?.maritalStatuses ?? []}
+                      getOptionLabel={(option) => option || ''}
                       value={field.value || null}
                       onChange={(_, newValue) => field.onChange(newValue || '')}
                       disabled={isSubmitting || !meta?.maritalStatuses?.length}
@@ -1796,6 +1801,7 @@ export default function EmployeesPage() {
                       openOnFocus
                       selectOnFocus
                       clearOnBlur
+                      isOptionEqualToValue={(option, value) => option === value}
                       renderInput={(params) => (
                         <TextField
                           {...params}
@@ -1883,6 +1889,7 @@ export default function EmployeesPage() {
                   render={({ field }) => (
                     <Autocomplete
                       options={meta?.bloodGroups ?? []}
+                      getOptionLabel={(option) => option || ''}
                       value={field.value || null}
                       onChange={(_, newValue) => field.onChange(newValue || '')}
                       disabled={isSubmitting || !meta?.bloodGroups?.length}
@@ -1892,6 +1899,7 @@ export default function EmployeesPage() {
                       openOnFocus
                       selectOnFocus
                       clearOnBlur
+                      isOptionEqualToValue={(option, value) => option === value}
                       renderInput={(params) => (
                         <TextField
                           {...params}
@@ -1987,6 +1995,7 @@ export default function EmployeesPage() {
                   render={({ field }) => (
                     <Autocomplete
                       options={meta?.districts ?? []}
+                      getOptionLabel={(option) => option || ''}
                       value={field.value || null}
                       onChange={(_, newValue) => field.onChange(newValue || '')}
                       disabled={isSubmitting || !meta?.districts?.length}
@@ -1996,6 +2005,7 @@ export default function EmployeesPage() {
                       openOnFocus
                       selectOnFocus
                       clearOnBlur
+                      isOptionEqualToValue={(option, value) => option === value}
                       renderInput={(params) => (
                         <TextField
                           {...params}
@@ -2015,6 +2025,7 @@ export default function EmployeesPage() {
                   render={({ field }) => (
                     <Autocomplete
                       options={meta?.divisions ?? []}
+                      getOptionLabel={(option) => option || ''}
                       value={field.value || null}
                       onChange={(_, newValue) => field.onChange(newValue || '')}
                       disabled={isSubmitting || !meta?.divisions?.length}
@@ -2024,6 +2035,7 @@ export default function EmployeesPage() {
                       openOnFocus
                       selectOnFocus
                       clearOnBlur
+                      isOptionEqualToValue={(option, value) => option === value}
                       renderInput={(params) => (
                         <TextField
                           {...params}
