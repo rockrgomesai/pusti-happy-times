@@ -1536,6 +1536,8 @@ export default function EmployeesPage() {
                         onChange={(_, newValue) => field.onChange(newValue?.value || '')}
                         disabled={isSubmitting}
                         autoHighlight
+                        autoSelect
+                        freeSolo={false}
                         openOnFocus
                         selectOnFocus
                         clearOnBlur
@@ -1565,6 +1567,8 @@ export default function EmployeesPage() {
                       onChange={(_, newValue) => field.onChange(newValue?._id || '')}
                       disabled={isSubmitting || designations.length === 0}
                       autoHighlight
+                      autoSelect
+                      freeSolo={false}
                       openOnFocus
                       selectOnFocus
                       clearOnBlur
@@ -1596,6 +1600,8 @@ export default function EmployeesPage() {
                         onChange={(_, newValue) => field.onChange(newValue?._id || '')}
                         disabled={isSubmitting || facilities.length === 0}
                         autoHighlight
+                        autoSelect
+                        freeSolo={false}
                         openOnFocus
                         selectOnFocus
                         clearOnBlur
@@ -1729,6 +1735,8 @@ export default function EmployeesPage() {
                       onChange={(_, newValue) => field.onChange(newValue || '')}
                       disabled={isSubmitting || !meta?.genders?.length}
                       autoHighlight
+                      autoSelect
+                      freeSolo={false}
                       openOnFocus
                       selectOnFocus
                       clearOnBlur
@@ -1755,6 +1763,8 @@ export default function EmployeesPage() {
                       onChange={(_, newValue) => field.onChange(newValue || '')}
                       disabled={isSubmitting || !meta?.religions?.length}
                       autoHighlight
+                      autoSelect
+                      freeSolo={false}
                       openOnFocus
                       selectOnFocus
                       clearOnBlur
@@ -1781,6 +1791,8 @@ export default function EmployeesPage() {
                       onChange={(_, newValue) => field.onChange(newValue || '')}
                       disabled={isSubmitting || !meta?.maritalStatuses?.length}
                       autoHighlight
+                      autoSelect
+                      freeSolo={false}
                       openOnFocus
                       selectOnFocus
                       clearOnBlur
@@ -1875,6 +1887,8 @@ export default function EmployeesPage() {
                       onChange={(_, newValue) => field.onChange(newValue || '')}
                       disabled={isSubmitting || !meta?.bloodGroups?.length}
                       autoHighlight
+                      autoSelect
+                      freeSolo={false}
                       openOnFocus
                       selectOnFocus
                       clearOnBlur
@@ -1977,6 +1991,8 @@ export default function EmployeesPage() {
                       onChange={(_, newValue) => field.onChange(newValue || '')}
                       disabled={isSubmitting || !meta?.districts?.length}
                       autoHighlight
+                      autoSelect
+                      freeSolo={false}
                       openOnFocus
                       selectOnFocus
                       clearOnBlur
@@ -2003,6 +2019,8 @@ export default function EmployeesPage() {
                       onChange={(_, newValue) => field.onChange(newValue || '')}
                       disabled={isSubmitting || !meta?.divisions?.length}
                       autoHighlight
+                      autoSelect
+                      freeSolo={false}
                       openOnFocus
                       selectOnFocus
                       clearOnBlur
