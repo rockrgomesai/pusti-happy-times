@@ -1535,6 +1535,7 @@ export default function EmployeesPage() {
                         value={employeeTypeOptions.find(opt => opt.value === (field.value || 'hq')) || employeeTypeOptions[0]}
                         onChange={(_, newValue) => field.onChange(newValue?.value || 'hq')}
                         disabled={isSubmitting}
+                        autoHighlight
                         isOptionEqualToValue={(option, value) => option.value === value.value}
                         renderInput={(params) => (
                           <TextField
@@ -1560,6 +1561,7 @@ export default function EmployeesPage() {
                       value={designations.find(d => d._id === field.value) || null}
                       onChange={(_, newValue) => field.onChange(newValue?._id || '')}
                       disabled={isSubmitting || designations.length === 0}
+                      autoHighlight
                       isOptionEqualToValue={(option, value) => option._id === value._id}
                       renderInput={(params) => (
                         <TextField
@@ -1587,6 +1589,7 @@ export default function EmployeesPage() {
                         value={facilities.find(f => f._id === field.value) || null}
                         onChange={(_, newValue) => field.onChange(newValue?._id || '')}
                         disabled={isSubmitting || facilities.length === 0}
+                        autoHighlight
                         isOptionEqualToValue={(option, value) => option._id === value._id}
                         renderInput={(params) => (
                           <TextField
@@ -1716,6 +1719,7 @@ export default function EmployeesPage() {
                       value={field.value || null}
                       onChange={(_, newValue) => field.onChange(newValue || '')}
                       disabled={isSubmitting || !meta?.genders?.length}
+                      autoHighlight
                       renderInput={(params) => (
                         <TextField
                           {...params}
@@ -1738,6 +1742,7 @@ export default function EmployeesPage() {
                       value={field.value || null}
                       onChange={(_, newValue) => field.onChange(newValue || '')}
                       disabled={isSubmitting || !meta?.religions?.length}
+                      autoHighlight
                       renderInput={(params) => (
                         <TextField
                           {...params}
@@ -1760,6 +1765,7 @@ export default function EmployeesPage() {
                       value={field.value || null}
                       onChange={(_, newValue) => field.onChange(newValue || '')}
                       disabled={isSubmitting || !meta?.maritalStatuses?.length}
+                      autoHighlight
                       renderInput={(params) => (
                         <TextField
                           {...params}
@@ -1850,6 +1856,7 @@ export default function EmployeesPage() {
                       value={field.value || null}
                       onChange={(_, newValue) => field.onChange(newValue || '')}
                       disabled={isSubmitting || !meta?.bloodGroups?.length}
+                      autoHighlight
                       renderInput={(params) => (
                         <TextField
                           {...params}
@@ -1948,6 +1955,7 @@ export default function EmployeesPage() {
                       value={field.value || null}
                       onChange={(_, newValue) => field.onChange(newValue || '')}
                       disabled={isSubmitting || !meta?.districts?.length}
+                      autoHighlight
                       renderInput={(params) => (
                         <TextField
                           {...params}
@@ -1970,6 +1978,7 @@ export default function EmployeesPage() {
                       value={field.value || null}
                       onChange={(_, newValue) => field.onChange(newValue || '')}
                       disabled={isSubmitting || !meta?.divisions?.length}
+                      autoHighlight
                       renderInput={(params) => (
                         <TextField
                           {...params}
