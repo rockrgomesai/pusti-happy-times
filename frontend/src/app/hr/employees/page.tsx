@@ -1554,21 +1554,22 @@ export default function EmployeesPage() {
                   name="designation_id"
                   control={control}
                   render={({ field }) => (
-                    <TextField
-                      {...field}
-                      select
-                      label="Designation"
-                      fullWidth
-                      error={Boolean(errors.designation_id)}
-                      helperText={errors.designation_id?.message}
+                    <Autocomplete
+                      options={designations}
+                      getOptionLabel={(option) => option.name}
+                      value={designations.find(d => d._id === field.value) || null}
+                      onChange={(_, newValue) => field.onChange(newValue?._id || '')}
                       disabled={isSubmitting || designations.length === 0}
-                    >
-                      {designations.map((designation) => (
-                        <MenuItem key={designation._id} value={designation._id}>
-                          {designation.name}
-                        </MenuItem>
-                      ))}
-                    </TextField>
+                      isOptionEqualToValue={(option, value) => option._id === value._id}
+                      renderInput={(params) => (
+                        <TextField
+                          {...params}
+                          label="Designation"
+                          error={Boolean(errors.designation_id)}
+                          helperText={errors.designation_id?.message}
+                        />
+                      )}
+                    />
                   )}
                 />
               </Grid>
@@ -1576,28 +1577,31 @@ export default function EmployeesPage() {
               {/* Facility Selector - Only for 'facility' employee type */}
               {shouldShowFacilitySelector && (
                 <Grid size={{ xs: 12, md: 6 }}>
-                  <TextField
-                    select
-                    label="Facility"
-                    fullWidth
-                    {...register('facility_id')}
-                    value={watch('facility_id') || ''}
-                    error={Boolean(errors.facility_id)}
-                    helperText={
-                      errors.facility_id?.message || 
-                      'Production role: Select Factory. Inventory role: Select Depot'
-                    }
-                    disabled={isSubmitting || facilities.length === 0}
-                  >
-                    <MenuItem value="">
-                      <em>No Facility</em>
-                    </MenuItem>
-                    {facilities.map((facility) => (
-                      <MenuItem key={facility._id} value={facility._id}>
-                        {facility.name} ({facility.type})
-                      </MenuItem>
-                    ))}
-                  </TextField>
+                  <Controller
+                    name="facility_id"
+                    control={control}
+                    render={({ field }) => (
+                      <Autocomplete
+                        options={facilities}
+                        getOptionLabel={(option) => `${option.name} (${option.type})`}
+                        value={facilities.find(f => f._id === field.value) || null}
+                        onChange={(_, newValue) => field.onChange(newValue?._id || '')}
+                        disabled={isSubmitting || facilities.length === 0}
+                        isOptionEqualToValue={(option, value) => option._id === value._id}
+                        renderInput={(params) => (
+                          <TextField
+                            {...params}
+                            label="Facility"
+                            error={Boolean(errors.facility_id)}
+                            helperText={
+                              errors.facility_id?.message || 
+                              'Production role: Select Factory. Inventory role: Select Depot'
+                            }
+                          />
+                        )}
+                      />
+                    )}
+                  />
                 </Grid>
               )}
 
