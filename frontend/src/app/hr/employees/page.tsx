@@ -1532,10 +1532,13 @@ export default function EmployeesPage() {
                       <Autocomplete
                         options={employeeTypeOptions}
                         getOptionLabel={(option) => option.label}
-                        value={employeeTypeOptions.find(opt => opt.value === (field.value || 'hq')) || employeeTypeOptions[0]}
-                        onChange={(_, newValue) => field.onChange(newValue?.value || 'hq')}
+                        value={employeeTypeOptions.find(opt => opt.value === field.value) || null}
+                        onChange={(_, newValue) => field.onChange(newValue?.value || '')}
                         disabled={isSubmitting}
                         autoHighlight
+                        openOnFocus
+                        selectOnFocus
+                        clearOnBlur
                         isOptionEqualToValue={(option, value) => option.value === value.value}
                         renderInput={(params) => (
                           <TextField
@@ -1562,6 +1565,9 @@ export default function EmployeesPage() {
                       onChange={(_, newValue) => field.onChange(newValue?._id || '')}
                       disabled={isSubmitting || designations.length === 0}
                       autoHighlight
+                      openOnFocus
+                      selectOnFocus
+                      clearOnBlur
                       isOptionEqualToValue={(option, value) => option._id === value._id}
                       renderInput={(params) => (
                         <TextField
@@ -1590,6 +1596,9 @@ export default function EmployeesPage() {
                         onChange={(_, newValue) => field.onChange(newValue?._id || '')}
                         disabled={isSubmitting || facilities.length === 0}
                         autoHighlight
+                        openOnFocus
+                        selectOnFocus
+                        clearOnBlur
                         isOptionEqualToValue={(option, value) => option._id === value._id}
                         renderInput={(params) => (
                           <TextField
@@ -1720,6 +1729,9 @@ export default function EmployeesPage() {
                       onChange={(_, newValue) => field.onChange(newValue || '')}
                       disabled={isSubmitting || !meta?.genders?.length}
                       autoHighlight
+                      openOnFocus
+                      selectOnFocus
+                      clearOnBlur
                       renderInput={(params) => (
                         <TextField
                           {...params}
@@ -1743,6 +1755,9 @@ export default function EmployeesPage() {
                       onChange={(_, newValue) => field.onChange(newValue || '')}
                       disabled={isSubmitting || !meta?.religions?.length}
                       autoHighlight
+                      openOnFocus
+                      selectOnFocus
+                      clearOnBlur
                       renderInput={(params) => (
                         <TextField
                           {...params}
@@ -1766,6 +1781,9 @@ export default function EmployeesPage() {
                       onChange={(_, newValue) => field.onChange(newValue || '')}
                       disabled={isSubmitting || !meta?.maritalStatuses?.length}
                       autoHighlight
+                      openOnFocus
+                      selectOnFocus
+                      clearOnBlur
                       renderInput={(params) => (
                         <TextField
                           {...params}
@@ -1857,6 +1875,9 @@ export default function EmployeesPage() {
                       onChange={(_, newValue) => field.onChange(newValue || '')}
                       disabled={isSubmitting || !meta?.bloodGroups?.length}
                       autoHighlight
+                      openOnFocus
+                      selectOnFocus
+                      clearOnBlur
                       renderInput={(params) => (
                         <TextField
                           {...params}
@@ -1956,6 +1977,9 @@ export default function EmployeesPage() {
                       onChange={(_, newValue) => field.onChange(newValue || '')}
                       disabled={isSubmitting || !meta?.districts?.length}
                       autoHighlight
+                      openOnFocus
+                      selectOnFocus
+                      clearOnBlur
                       renderInput={(params) => (
                         <TextField
                           {...params}
@@ -1979,6 +2003,9 @@ export default function EmployeesPage() {
                       onChange={(_, newValue) => field.onChange(newValue || '')}
                       disabled={isSubmitting || !meta?.divisions?.length}
                       autoHighlight
+                      openOnFocus
+                      selectOnFocus
+                      clearOnBlur
                       renderInput={(params) => (
                         <TextField
                           {...params}
