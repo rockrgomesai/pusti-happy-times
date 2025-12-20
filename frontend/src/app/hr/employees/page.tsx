@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
   Alert,
+  Autocomplete,
   Box,
   Button,
   Card,
@@ -1520,23 +1521,32 @@ export default function EmployeesPage() {
                 <Controller
                   name="employee_type"
                   control={control}
-                  render={({ field }) => (
-                    <TextField
-                      select
-                      label="Employee Type"
-                      fullWidth
-                      {...field}
-                      value={field.value || 'hq'}
-                      error={Boolean(errors.employee_type)}
-                      helperText={errors.employee_type?.message || 'Select employee type to determine context requirements'}
-                      disabled={isSubmitting}
-                    >
-                      <MenuItem value="hq">HQ</MenuItem>
-                      <MenuItem value="field">Field</MenuItem>
-                      <MenuItem value="facility">Facility</MenuItem>
-                      <MenuItem value="system_admin">System Admin</MenuItem>
-                    </TextField>
-                  )}
+                  render={({ field }) => {
+                    const employeeTypeOptions = [
+                      { value: 'hq', label: 'HQ' },
+                      { value: 'field', label: 'Field' },
+                      { value: 'facility', label: 'Facility' },
+                      { value: 'system_admin', label: 'System Admin' }
+                    ];
+                    return (
+                      <Autocomplete
+                        options={employeeTypeOptions}
+                        getOptionLabel={(option) => option.label}
+                        value={employeeTypeOptions.find(opt => opt.value === (field.value || 'hq')) || employeeTypeOptions[0]}
+                        onChange={(_, newValue) => field.onChange(newValue?.value || 'hq')}
+                        disabled={isSubmitting}
+                        isOptionEqualToValue={(option, value) => option.value === value.value}
+                        renderInput={(params) => (
+                          <TextField
+                            {...params}
+                            label="Employee Type"
+                            error={Boolean(errors.employee_type)}
+                            helperText={errors.employee_type?.message || 'Select employee type to determine context requirements'}
+                          />
+                        )}
+                      />
+                    );
+                  }}
                 />
               </Grid>
               <Grid size={{ xs: 12, md: 6 }}>
@@ -1697,21 +1707,20 @@ export default function EmployeesPage() {
                   name="gender"
                   control={control}
                   render={({ field }) => (
-                    <TextField
-                      {...field}
-                      select
-                      label="Gender"
-                      fullWidth
-                      error={Boolean(errors.gender)}
-                      helperText={errors.gender?.message}
+                    <Autocomplete
+                      options={meta?.genders ?? []}
+                      value={field.value || null}
+                      onChange={(_, newValue) => field.onChange(newValue || '')}
                       disabled={isSubmitting || !meta?.genders?.length}
-                    >
-                      {(meta?.genders ?? []).map((gender) => (
-                        <MenuItem key={gender} value={gender}>
-                          {gender}
-                        </MenuItem>
-                      ))}
-                    </TextField>
+                      renderInput={(params) => (
+                        <TextField
+                          {...params}
+                          label="Gender"
+                          error={Boolean(errors.gender)}
+                          helperText={errors.gender?.message}
+                        />
+                      )}
+                    />
                   )}
                 />
               </Grid>
@@ -1720,21 +1729,20 @@ export default function EmployeesPage() {
                   name="religion"
                   control={control}
                   render={({ field }) => (
-                    <TextField
-                      {...field}
-                      select
-                      label="Religion"
-                      fullWidth
-                      error={Boolean(errors.religion)}
-                      helperText={errors.religion?.message}
+                    <Autocomplete
+                      options={meta?.religions ?? []}
+                      value={field.value || null}
+                      onChange={(_, newValue) => field.onChange(newValue || '')}
                       disabled={isSubmitting || !meta?.religions?.length}
-                    >
-                      {(meta?.religions ?? []).map((religion) => (
-                        <MenuItem key={religion} value={religion}>
-                          {religion}
-                        </MenuItem>
-                      ))}
-                    </TextField>
+                      renderInput={(params) => (
+                        <TextField
+                          {...params}
+                          label="Religion"
+                          error={Boolean(errors.religion)}
+                          helperText={errors.religion?.message}
+                        />
+                      )}
+                    />
                   )}
                 />
               </Grid>
@@ -1743,21 +1751,20 @@ export default function EmployeesPage() {
                   name="marital_status"
                   control={control}
                   render={({ field }) => (
-                    <TextField
-                      {...field}
-                      select
-                      label="Marital Status"
-                      fullWidth
-                      error={Boolean(errors.marital_status)}
-                      helperText={errors.marital_status?.message}
+                    <Autocomplete
+                      options={meta?.maritalStatuses ?? []}
+                      value={field.value || null}
+                      onChange={(_, newValue) => field.onChange(newValue || '')}
                       disabled={isSubmitting || !meta?.maritalStatuses?.length}
-                    >
-                      {(meta?.maritalStatuses ?? []).map((status) => (
-                        <MenuItem key={status} value={status}>
-                          {status}
-                        </MenuItem>
-                      ))}
-                    </TextField>
+                      renderInput={(params) => (
+                        <TextField
+                          {...params}
+                          label="Marital Status"
+                          error={Boolean(errors.marital_status)}
+                          helperText={errors.marital_status?.message}
+                        />
+                      )}
+                    />
                   )}
                 />
               </Grid>
@@ -1834,21 +1841,20 @@ export default function EmployeesPage() {
                   name="blood_group"
                   control={control}
                   render={({ field }) => (
-                    <TextField
-                      {...field}
-                      select
-                      label="Blood Group"
-                      fullWidth
-                      error={Boolean(errors.blood_group)}
-                      helperText={errors.blood_group?.message}
+                    <Autocomplete
+                      options={meta?.bloodGroups ?? []}
+                      value={field.value || null}
+                      onChange={(_, newValue) => field.onChange(newValue || '')}
                       disabled={isSubmitting || !meta?.bloodGroups?.length}
-                    >
-                      {(meta?.bloodGroups ?? []).map((group) => (
-                        <MenuItem key={group} value={group}>
-                          {group}
-                        </MenuItem>
-                      ))}
-                    </TextField>
+                      renderInput={(params) => (
+                        <TextField
+                          {...params}
+                          label="Blood Group"
+                          error={Boolean(errors.blood_group)}
+                          helperText={errors.blood_group?.message}
+                        />
+                      )}
+                    />
                   )}
                 />
               </Grid>
@@ -1933,21 +1939,20 @@ export default function EmployeesPage() {
                   name="permanent_address_district"
                   control={control}
                   render={({ field }) => (
-                    <TextField
-                      {...field}
-                      select
-                      label="District"
-                      fullWidth
-                      error={Boolean(errors.permanent_address_district)}
-                      helperText={errors.permanent_address_district?.message}
+                    <Autocomplete
+                      options={meta?.districts ?? []}
+                      value={field.value || null}
+                      onChange={(_, newValue) => field.onChange(newValue || '')}
                       disabled={isSubmitting || !meta?.districts?.length}
-                    >
-                      {(meta?.districts ?? []).map((district) => (
-                        <MenuItem key={district} value={district}>
-                          {district}
-                        </MenuItem>
-                      ))}
-                    </TextField>
+                      renderInput={(params) => (
+                        <TextField
+                          {...params}
+                          label="District"
+                          error={Boolean(errors.permanent_address_district)}
+                          helperText={errors.permanent_address_district?.message}
+                        />
+                      )}
+                    />
                   )}
                 />
               </Grid>
@@ -1956,21 +1961,20 @@ export default function EmployeesPage() {
                   name="permanent_address_division"
                   control={control}
                   render={({ field }) => (
-                    <TextField
-                      {...field}
-                      select
-                      label="Division"
-                      fullWidth
-                      error={Boolean(errors.permanent_address_division)}
-                      helperText={errors.permanent_address_division?.message}
+                    <Autocomplete
+                      options={meta?.divisions ?? []}
+                      value={field.value || null}
+                      onChange={(_, newValue) => field.onChange(newValue || '')}
                       disabled={isSubmitting || !meta?.divisions?.length}
-                    >
-                      {(meta?.divisions ?? []).map((division) => (
-                        <MenuItem key={division} value={division}>
-                          {division}
-                        </MenuItem>
-                      ))}
-                    </TextField>
+                      renderInput={(params) => (
+                        <TextField
+                          {...params}
+                          label="Division"
+                          error={Boolean(errors.permanent_address_division)}
+                          helperText={errors.permanent_address_division?.message}
+                        />
+                      )}
+                    />
                   )}
                 />
               </Grid>
