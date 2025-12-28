@@ -158,7 +158,10 @@ export default function Screen4OfferConfiguration({ data, onChange, errors }: Sc
   const loadProductGroups = async () => {
     setLoading(true);
     try {
+      console.log('Loading products for segments:', data.productSegments);
       const groups = await offersApi.getProductsGroupedByCategory(data.productSegments);
+      console.log('Loaded product groups:', groups.length, 'categories');
+      groups.forEach(g => console.log(`  - ${g.category.name} (${g.category.product_segment}): ${g.products.length} products`));
       setProductGroups(groups);
       if (groups.length > 0 && !expandedCategory) {
         setExpandedCategory(groups[0].category._id);
@@ -1509,6 +1512,10 @@ export default function Screen4OfferConfiguration({ data, onChange, errors }: Sc
               <Typography variant="body2" color="text.secondary" mb={2}>
                 Select which products this BOGO applies to. Leave empty to apply to all products.
               </Typography>
+              <Alert severity="info" sx={{ mb: 2 }}>
+                Showing products for selected segments: <strong>{data.productSegments.join(', ')}</strong>
+                {productGroups.length === 0 && ' (No products found - check Screen 1)'}
+              </Alert>
               
               <Stack spacing={2} mb={2}>
                 {(data.offerConfig.buyProducts || []).map((bogoProduct, index) => {
