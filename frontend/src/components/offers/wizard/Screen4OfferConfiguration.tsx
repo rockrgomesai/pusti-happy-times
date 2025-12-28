@@ -1554,6 +1554,50 @@ export default function Screen4OfferConfiguration({ data, onChange, errors }: Sc
               >
                 Add Product
               </Button>
+
+              {/* Product Selection Accordion */}
+              {expandedCategory && productGroups.length > 0 && (
+                <Box sx={{ mt: 2 }}>
+                  {productGroups.map((group) => (
+                    <Accordion
+                      key={group.category._id}
+                      expanded={expandedCategory === group.category._id}
+                      onChange={(_, isExpanded) => setExpandedCategory(isExpanded ? group.category._id : false)}
+                    >
+                      <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                        <Typography variant="body2" fontWeight={500}>
+                          {group.category.name} ({group.products.length} products)
+                        </Typography>
+                      </AccordionSummary>
+                      <AccordionDetails>
+                        <List dense>
+                          {group.products.map((product) => {
+                            const isBuyProduct = data.offerConfig.buyProducts?.some(bp => bp.productId === product._id);
+                            
+                            return (
+                              <ListItem key={product._id}>
+                                <ListItemText
+                                  primary={`${product.sku} - ${product.bangla_name || product.name}`}
+                                  secondary={`${product.unit} • ৳${product.db_price || product.trade_price || 0}`}
+                                />
+                                <Button
+                                  size="small"
+                                  variant={isBuyProduct ? "contained" : "outlined"}
+                                  color={isBuyProduct ? "success" : "primary"}
+                                  onClick={() => handleAddBuyProduct(product._id)}
+                                  disabled={isBuyProduct}
+                                >
+                                  {isBuyProduct ? '✓ Added' : 'Add'}
+                                </Button>
+                              </ListItem>
+                            );
+                          })}
+                        </List>
+                      </AccordionDetails>
+                    </Accordion>
+                  ))}
+                </Box>
+              )}
             </Paper>
           </Stack>
         );
