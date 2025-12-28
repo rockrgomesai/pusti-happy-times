@@ -47,6 +47,7 @@ export default function CollectionActions({
     if (["approved", "cancelled"].includes(collection.approval_status)) return false;
     
     // Check if payment is currently with this role
+    if (userRole === "Distributor" && collection.approval_status === "pending") return true;
     if (userRole === "ASM" && collection.approval_status === "forwarded_to_area_manager") return true;
     if (userRole === "RSM" && collection.approval_status === "forwarded_to_regional_manager") return true;
     if (userRole === "Sales Admin" && 
@@ -69,6 +70,7 @@ export default function CollectionActions({
     if (["approved", "cancelled"].includes(collection.approval_status)) return false;
     
     // Only current handler can cancel
+    if (userRole === "Distributor" && collection.approval_status === "pending") return true;
     if (userRole === "ASM" && collection.approval_status === "forwarded_to_area_manager") return true;
     if (userRole === "RSM" && collection.approval_status === "forwarded_to_regional_manager") return true;
     if (userRole === "Sales Admin" && 
@@ -86,7 +88,7 @@ export default function CollectionActions({
 
   const getNextRole = (): string => {
     const nextRoles: Record<string, string> = {
-      pending: "RSM",
+      pending: "ASM",
       forwarded_to_area_manager: "RSM",
       forwarded_to_regional_manager: "Sales Admin",
       forwarded_to_zonal_manager_and_sales_admin: "Order Management",

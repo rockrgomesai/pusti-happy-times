@@ -529,7 +529,7 @@ router.post(
         returned_to_sales_admin: "Sales Admin", // After return from Order Mgmt or Finance
         forwarded_to_order_management: "Order Management",
         forwarded_to_finance: "Finance",
-        pending: "ASM",
+        pending: "Distributor",
       };
 
       const currentRole = roleMapping[collection.approval_status];
@@ -544,6 +544,9 @@ router.post(
       let nextStatus, nextRole;
       switch (collection.approval_status) {
         case "pending":
+          nextStatus = "forwarded_to_area_manager";
+          nextRole = "ASM";
+          break;
         case "forwarded_to_area_manager":
           nextStatus = "forwarded_to_regional_manager";
           nextRole = "RSM";
