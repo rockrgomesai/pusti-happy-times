@@ -1546,57 +1546,72 @@ export default function Screen4OfferConfiguration({ data, onChange, errors }: Sc
                 })}
               </Stack>
 
-              <Button
-                startIcon={<AddIcon />}
-                onClick={() => setExpandedCategory(productGroups[0]?.category._id || false)}
-                variant="outlined"
-                fullWidth
-              >
-                Add Product
-              </Button>
-
               {/* Product Selection Accordion */}
-              {expandedCategory && productGroups.length > 0 && (
-                <Box sx={{ mt: 2 }}>
-                  {productGroups.map((group) => (
-                    <Accordion
-                      key={group.category._id}
-                      expanded={expandedCategory === group.category._id}
-                      onChange={(_, isExpanded) => setExpandedCategory(isExpanded ? group.category._id : false)}
-                    >
-                      <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                        <Typography variant="body2" fontWeight={500}>
-                          {group.category.name} ({group.products.length} products)
-                        </Typography>
-                      </AccordionSummary>
-                      <AccordionDetails>
-                        <List dense>
-                          {group.products.map((product) => {
-                            const isBuyProduct = data.offerConfig.buyProducts?.some(bp => bp.productId === product._id);
-                            
-                            return (
-                              <ListItem key={product._id}>
-                                <ListItemText
-                                  primary={`${product.sku} - ${product.bangla_name || product.name}`}
-                                  secondary={`${product.unit} • ৳${product.db_price || product.trade_price || 0}`}
-                                />
-                                <Button
-                                  size="small"
-                                  variant={isBuyProduct ? "contained" : "outlined"}
-                                  color={isBuyProduct ? "success" : "primary"}
-                                  onClick={() => handleAddBuyProduct(product._id)}
-                                  disabled={isBuyProduct}
-                                >
-                                  {isBuyProduct ? '✓ Added' : 'Add'}
-                                </Button>
-                              </ListItem>
-                            );
-                          })}
-                        </List>
-                      </AccordionDetails>
-                    </Accordion>
-                  ))}
-                </Box>
+              {productGroups.length > 0 && (
+                <Stack spacing={1} sx={{ mt: 2 }}>
+                  {productGroups.map((group) => {
+                    const addedCount = group.products.filter(p => 
+                      data.offerConfig.buyProducts?.some(bp => bp.productId === p._id)
+                    ).length;
+
+                    return (
+                      <Accordion
+                        key={group.category._id}
+                        expanded={expandedCategory === group.category._id}
+                        onChange={(_, isExpanded) => setExpandedCategory(isExpanded ? group.category._id : false)}
+                        sx={{ '&:before': { display: 'none' } }}
+                      >
+                        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
+                            <Typography variant="body2" fontWeight={500} sx={{ flex: 1 }}>
+                              {group.category.name}
+                            </Typography>
+                            <Chip 
+                              label={`${addedCount}/${group.products.length}`}
+                              size="small"
+                              color={addedCount > 0 ? "success" : "default"}
+                              sx={{ fontSize: '0.7rem' }}
+                            />
+                            <Chip
+                              label={group.category.product_segment}
+                              size="small"
+                              color={group.category.product_segment === 'BIS' ? 'primary' : 'secondary'}
+                              sx={{ fontSize: '0.7rem' }}
+                            />
+                          </Box>
+                        </AccordionSummary>
+                        <AccordionDetails>
+                          <List dense sx={{ bgcolor: 'background.paper', borderRadius: 1 }}>
+                            {group.products.map((product) => {
+                              const isBuyProduct = data.offerConfig.buyProducts?.some(bp => bp.productId === product._id);
+                              
+                              return (
+                                <ListItem key={product._id}>
+                                  <ListItemText
+                                    primary={product.sku}
+                                    secondary={`${product.unit}${product.bangla_name ? ` • ${product.bangla_name}` : ''}${product.db_price ? ` • ৳${product.db_price}` : ''}`}
+                                    primaryTypographyProps={{ fontSize: '0.875rem', fontWeight: 500 }}
+                                    secondaryTypographyProps={{ fontSize: '0.75rem' }}
+                                  />
+                                  <Button
+                                    size="small"
+                                    variant={isBuyProduct ? "contained" : "outlined"}
+                                    color={isBuyProduct ? "success" : "primary"}
+                                    onClick={() => handleAddBuyProduct(product._id)}
+                                    disabled={isBuyProduct}
+                                    sx={{ fontSize: '0.7rem', minWidth: 100 }}
+                                  >
+                                    {isBuyProduct ? '✓ Added' : 'Add to BOGO'}
+                                  </Button>
+                                </ListItem>
+                              );
+                            })}
+                          </List>
+                        </AccordionDetails>
+                      </Accordion>
+                    );
+                  })}
+                </Stack>
               )}
             </Paper>
           </Stack>
