@@ -21,6 +21,16 @@ export const territoriesApi = {
     return response.data.data;
   },
 
+  // Bulk fetch children territories for multiple parents in a single query - PERFORMANT
+  getChildren: async (parentIds: string[], childType: 'region' | 'area' | 'db_point') => {
+    if (parentIds.length === 0) return [];
+    const response = await api.post<{ success: boolean; data: Territory[] }>(`${BASE_URL}/territories/children`, {
+      parentIds,
+      childType
+    });
+    return response.data.data;
+  },
+
   // Get all descendant territories in single query - PERFORMANT
   getDescendants: async (parentIds: string[], startLevel: number) => {
     const response = await api.post<{

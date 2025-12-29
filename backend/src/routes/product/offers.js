@@ -96,6 +96,58 @@ router.get("/territories", requireApiPermission("offers:read"), async (req, res)
 });
 
 /**
+ * POST /product/offers/territories/children
+ * Get direct children territories for given parent IDs - PERFORMANT bulk fetch
+ * This replaces N sequential queries with a single optimized query
+ */
+router.post(
+  "/territories/children",
+  requireApiPermission("offers:read"),
+  [
+    body("parentIds").isArray({ min: 1 }).withMessage("At least one parent ID required"),
+    body("parentIds.*").isMongoId().withMessage("Invalid parent ID"),
+    body("childType")
+      .isIn(["region", "area", "db_point"])
+      .withMessage("Invalid child type"),
+  ],
+  async (req, res) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({
+          success: false,
+          errors: errors.array(),
+        });
+      }
+
+      const { parentIds, childType } = req.body;
+
+      // Single efficient query: Find all children with parent_id in the provided array
+      const children = await Territory.find({
+        parent_id: { $in: parentIds },
+        type: childType,
+        active: true,
+      })
+        .select("_id name code bangla_name type level parent_id ancestors")
+        .sort({ name: 1 })
+        .lean();
+
+      res.json({
+        success: true,
+        data: children,
+      });
+    } catch (error) {
+      console.error("Error fetching children territories:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to fetch children territories",
+        error: error.message,
+      });
+    }
+  }
+);
+
+/**
  * POST /product/offers/territories/descendants
  * Get all descendant territories for given parent IDs - PERFORMANT bulk fetch
  * This is used for auto-cascade selection in offer wizard

@@ -228,11 +228,8 @@ const Screen2TerritoryDistributor = forwardRef<Screen2Handle, Screen2Props>(({
   const loadRegionsForZones = async (zoneIds: string[]) => {
     setLoading(prev => ({ ...prev, regions: true }));
     try {
-      const allRegions: Territory[] = [];
-      for (const zoneId of zoneIds) {
-        const regionsData = await territoriesApi.getByType('region', zoneId);
-        allRegions.push(...regionsData);
-      }
+      // Use bulk API to fetch all regions in a single query - PERFORMANT
+      const allRegions = await territoriesApi.getChildren(zoneIds, 'region');
       setRegions(allRegions);
     } catch (error) {
       console.error('Failed to load regions:', error);
@@ -244,11 +241,8 @@ const Screen2TerritoryDistributor = forwardRef<Screen2Handle, Screen2Props>(({
   const loadAreasForRegions = async (regionIds: string[]) => {
     setLoading(prev => ({ ...prev, areas: true }));
     try {
-      const allAreas: Territory[] = [];
-      for (const regionId of regionIds) {
-        const areasData = await territoriesApi.getByType('area', regionId);
-        allAreas.push(...areasData);
-      }
+      // Use bulk API to fetch all areas in a single query - PERFORMANT
+      const allAreas = await territoriesApi.getChildren(regionIds, 'area');
       setAreas(allAreas);
     } catch (error) {
       console.error('Failed to load areas:', error);
@@ -260,11 +254,8 @@ const Screen2TerritoryDistributor = forwardRef<Screen2Handle, Screen2Props>(({
   const loadDbPointsForAreas = async (areaIds: string[]) => {
     setLoading(prev => ({ ...prev, dbPoints: true }));
     try {
-      const allDbPoints: Territory[] = [];
-      for (const areaId of areaIds) {
-        const dbPointsData = await territoriesApi.getByType('db_point', areaId);
-        allDbPoints.push(...dbPointsData);
-      }
+      // Use bulk API to fetch all db_points in a single query - PERFORMANT
+      const allDbPoints = await territoriesApi.getChildren(areaIds, 'db_point');
       setDbPoints(allDbPoints);
     } catch (error) {
       console.error('Failed to load db points:', error);

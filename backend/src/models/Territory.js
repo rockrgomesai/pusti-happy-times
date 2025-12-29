@@ -89,11 +89,14 @@ const territorySchema = new mongoose.Schema(
 territorySchema.statics.TERRITORY_TYPES = TERRITORY_TYPES;
 territorySchema.statics.LEVEL_MAP = LEVEL_MAP;
 
+// Indexes for optimal query performance
 territorySchema.index({ type: 1, level: 1 });
 territorySchema.index({ name: 1, type: 1 }, { unique: true });
 territorySchema.index({ parent_id: 1, name: 1 });
 territorySchema.index({ ancestors: 1 });
 territorySchema.index({ active: 1 });
+// Compound index for bulk children queries - optimizes parent_id + type + active queries
+territorySchema.index({ parent_id: 1, type: 1, active: 1 });
 
 territorySchema.pre("validate", async function (next) {
   try {
