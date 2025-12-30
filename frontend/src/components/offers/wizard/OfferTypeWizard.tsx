@@ -695,16 +695,7 @@ export default function OfferWizard({
           
           <Box sx={{ flex: 1 }} />
           
-          {activeStep === steps.length - 1 ? (
-            <Button
-              variant="contained"
-              onClick={handleSave}
-              startIcon={<SaveIcon />}
-              size={isMobile ? 'medium' : 'large'}
-            >
-              Save Offer
-            </Button>
-          ) : (
+          {activeStep < steps.length - 1 && (
             <Button
               variant="contained"
               onClick={handleNext}

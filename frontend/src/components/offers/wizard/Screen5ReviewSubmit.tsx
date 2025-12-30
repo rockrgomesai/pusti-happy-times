@@ -663,7 +663,20 @@ export default function Screen5ReviewSubmit({ data, onStepChange, onSubmit, mode
                     Selected Products
                   </Typography>
                   <Chip
-                    label={`${data.offerConfig.selectedProducts?.length || 0} products`}
+                    label={`${(() => {
+                      // Calculate product count based on offer type
+                      const config = data.offerConfig;
+                      if (config.buyProducts?.length) {
+                        return config.buyProducts.length;
+                      }
+                      if (config.qualifierProducts?.length) {
+                        return config.qualifierProducts.length + (config.rewardProducts?.length || 0);
+                      }
+                      if (config.skuDiscounts?.length) {
+                        return config.skuDiscounts.length;
+                      }
+                      return config.selectedProducts?.length || 0;
+                    })()} products`}
                     size="small"
                     color="primary"
                     variant="outlined"
