@@ -221,12 +221,7 @@ export default function OfferWizard({
   const screen2Ref = useRef<Screen2Handle>(null);
 
   const updateWizardData = (data: Partial<WizardState>) => {
-    console.log('Wizard updateWizardData called with:', data);
-    setWizardData(prev => {
-      const newData = { ...prev, ...data };
-      console.log('New wizardData:', newData);
-      return newData;
-    });
+    setWizardData(prev => ({ ...prev, ...data }));
     // Clear errors for updated fields
     const updatedFields = Object.keys(data);
     setErrors(prev => {
@@ -347,21 +342,14 @@ export default function OfferWizard({
     // Validate type-specific configuration
     switch (wizardData.selectedOfferType) {
       case 'BOGO':
-        console.log('BOGO Validation - buyQuantity:', config.buyQuantity, typeof config.buyQuantity);
-        console.log('BOGO Validation - getQuantity:', config.getQuantity, typeof config.getQuantity);
-        console.log('BOGO Validation - discountPercentage:', config.discountPercentage, typeof config.discountPercentage);
-        
         if (!config.buyQuantity || config.buyQuantity <= 0) {
           newErrors.buyQuantity = 'Buy quantity is required';
-          console.log('BOGO Validation Failed: buyQuantity');
         }
         if (!config.getQuantity || config.getQuantity <= 0) {
           newErrors.getQuantity = 'Get quantity is required';
-          console.log('BOGO Validation Failed: getQuantity');
         }
         if (config.discountPercentage === undefined || config.discountPercentage === null || config.discountPercentage < 0 || config.discountPercentage > 100) {
           newErrors.discountPercentage = 'Discount percentage must be between 0 and 100';
-          console.log('BOGO Validation Failed: discountPercentage');
         }
         break;
       case 'FLAT_DISCOUNT_PCT':
@@ -397,9 +385,6 @@ export default function OfferWizard({
     }
     
     setErrors(newErrors);
-    console.log('Validation errors:', newErrors);
-    console.log('Number of errors:', Object.keys(newErrors).length);
-    
     if (Object.keys(newErrors).length > 0) {
       toast.error('Please fill all required configuration fields');
       return false;
@@ -497,7 +482,86 @@ export default function OfferWizard({
         return (
           <Screen3OfferTypeSelection
             selectedOfferType={wizardData.selectedOfferType}
-            onSelectOfferType={(code) => updateWizardData({ selectedOfferType: code })}
+            onSelectOfferType={(code) => {
+              // Initialize offer config with default values based on offer type
+              const defaultConfigs: Record<string, any> = {
+                BOGO: {
+                  buyQuantity: 1,
+                  getQuantity: 1,
+                  discountPercentage: 100,
+                  buyProducts: []
+                },
+                FLAT_DISCOUNT_PCT: {
+                  discountPercentage: 0,
+                  selectedProducts: []
+                },
+                FLAT_DISCOUNT_AMT: {
+                  discountAmount: 0,
+                  selectedProducts: []
+                },
+                DISCOUNT_SLAB_PCT: {
+                  slabs: [],
+                  selectedProducts: []
+                },
+                DISCOUNT_SLAB_AMT: {
+                  slabs: [],
+                  selectedProducts: []
+                },
+                FREE_PRODUCT: {
+                  buyProducts: [],
+                  getProducts: []
+                },
+                BUNDLE_OFFER: {
+                  buyProducts: [],
+                  bundlePrice: 0
+                },
+                SKU_DISCOUNT_AMOUNT: {
+                  skuDiscounts: []
+                },
+                BOGO_DIFFERENT_SKU: {
+                  qualifierProducts: [],
+                  rewardProducts: [],
+                  qualifierLogic: 'OR',
+                  distributionMode: 'all',
+                  allowRepetition: false,
+                  maxRewardSets: 1
+                },
+                CASHBACK: {
+                  cashbackPercentage: 0,
+                  maxCashback: 0,
+                  selectedProducts: []
+                },
+                VOLUME_DISCOUNT: {
+                  volumeTiers: [],
+                  selectedProducts: []
+                },
+                LOYALTY_POINTS: {
+                  pointsPerUnit: 0,
+                  pointsValue: 0,
+                  selectedProducts: []
+                },
+                FLASH_SALE: {
+                  discountPercentage: 0,
+                  stockLimit: 0,
+                  orderLimit: 0,
+                  selectedProducts: []
+                },
+                CROSS_CATEGORY: {
+                  minTriggerAmount: 0,
+                  triggerCategories: [],
+                  rewardCategories: [],
+                  rewardDiscountPercentage: 0
+                },
+                FIRST_ORDER: {
+                  discountPercentage: 0
+                }
+              };
+
+              updateWizardData({ 
+                selectedOfferType: code,
+                offerConfig: defaultConfigs[code] || { selectedProducts: [] }
+              });
+            }}
           />
         );
       case 3:
