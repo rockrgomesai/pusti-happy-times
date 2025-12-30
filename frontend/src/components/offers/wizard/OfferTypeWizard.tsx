@@ -342,14 +342,21 @@ export default function OfferWizard({
     // Validate type-specific configuration
     switch (wizardData.selectedOfferType) {
       case 'BOGO':
+        console.log('BOGO Validation - buyQuantity:', config.buyQuantity, typeof config.buyQuantity);
+        console.log('BOGO Validation - getQuantity:', config.getQuantity, typeof config.getQuantity);
+        console.log('BOGO Validation - discountPercentage:', config.discountPercentage, typeof config.discountPercentage);
+        
         if (!config.buyQuantity || config.buyQuantity <= 0) {
           newErrors.buyQuantity = 'Buy quantity is required';
+          console.log('BOGO Validation Failed: buyQuantity');
         }
         if (!config.getQuantity || config.getQuantity <= 0) {
           newErrors.getQuantity = 'Get quantity is required';
+          console.log('BOGO Validation Failed: getQuantity');
         }
         if (config.discountPercentage === undefined || config.discountPercentage === null || config.discountPercentage < 0 || config.discountPercentage > 100) {
           newErrors.discountPercentage = 'Discount percentage must be between 0 and 100';
+          console.log('BOGO Validation Failed: discountPercentage');
         }
         break;
       case 'FLAT_DISCOUNT_PCT':
@@ -385,6 +392,9 @@ export default function OfferWizard({
     }
     
     setErrors(newErrors);
+    console.log('Validation errors:', newErrors);
+    console.log('Number of errors:', Object.keys(newErrors).length);
+    
     if (Object.keys(newErrors).length > 0) {
       toast.error('Please fill all required configuration fields');
       return false;
