@@ -147,7 +147,7 @@ export default function Screen5ReviewSubmit({ data, onStepChange, onSubmit, mode
         config: data.offerConfig,
         
         // Status
-        status: 'draft'
+        status: 'Draft'
       };
 
       console.log('=== SUBMITTING OFFER ===');
