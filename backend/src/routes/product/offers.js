@@ -561,7 +561,7 @@ router.post(
       }),
     body("status")
       .optional()
-      .isIn(["draft", "active", "paused", "expired", "completed"])
+      .isIn(["Draft", "Active", "Paused", "Expired", "Completed"])
       .withMessage("Invalid status"),
   ],
   async (req, res) => {
@@ -686,7 +686,7 @@ router.get(
   [
     query("status")
       .optional()
-      .isIn(["draft", "active", "paused", "expired", "completed"])
+      .isIn(["Draft", "Active", "Paused", "Expired", "Completed"])
       .withMessage("Invalid status filter"),
     query("offer_type")
       .optional()
@@ -909,7 +909,7 @@ router.put(
     body("end_date").optional().isISO8601().withMessage("Invalid end date"),
     body("status")
       .optional()
-      .isIn(["draft", "active", "paused", "expired", "completed"])
+      .isIn(["Draft", "Active", "Paused", "Expired", "Completed"])
       .withMessage("Invalid status"),
   ],
   async (req, res) => {
