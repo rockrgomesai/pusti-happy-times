@@ -174,11 +174,15 @@ export default function Screen4OfferConfiguration({ data, onChange, errors }: Sc
   };
 
   const updateConfig = (updates: Partial<Screen4Props['data']['offerConfig']>) => {
+    console.log('Screen4 updateConfig called with:', updates);
+    console.log('Current offerConfig:', data.offerConfig);
+    const newConfig = {
+      ...data.offerConfig,
+      ...updates
+    };
+    console.log('New offerConfig:', newConfig);
     onChange({
-      offerConfig: {
-        ...data.offerConfig,
-        ...updates
-      }
+      offerConfig: newConfig
     });
   };
 

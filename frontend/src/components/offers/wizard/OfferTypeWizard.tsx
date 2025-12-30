@@ -221,7 +221,12 @@ export default function OfferWizard({
   const screen2Ref = useRef<Screen2Handle>(null);
 
   const updateWizardData = (data: Partial<WizardState>) => {
-    setWizardData(prev => ({ ...prev, ...data }));
+    console.log('Wizard updateWizardData called with:', data);
+    setWizardData(prev => {
+      const newData = { ...prev, ...data };
+      console.log('New wizardData:', newData);
+      return newData;
+    });
     // Clear errors for updated fields
     const updatedFields = Object.keys(data);
     setErrors(prev => {
