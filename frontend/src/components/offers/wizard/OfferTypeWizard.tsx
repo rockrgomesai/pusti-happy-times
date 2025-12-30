@@ -274,8 +274,63 @@ export default function OfferWizard({
     const newErrors: Record<string, string> = {};
     const config = wizardData.offerConfig;
     
-    // Validate product selection (required for most offer types except FIRST_ORDER)
-    if (wizardData.selectedOfferType !== 'FIRST_ORDER') {
+    // Validate product selection - different offer types use different fields
+    const offerType = wizardData.selectedOfferType;
+    
+    // Skip product validation for FIRST_ORDER
+    if (offerType === 'FIRST_ORDER') {
+      // No product validation needed
+    }
+    // BOGO uses buyProducts
+    else if (offerType === 'BOGO') {
+      if (!config.buyProducts || config.buyProducts.length === 0) {
+        newErrors.selectedProducts = 'Select at least one product for BOGO';
+        toast.error('Please select at least one product for BOGO');
+        setErrors(newErrors);
+        return false;
+      }
+    }
+    // FREE_PRODUCT and BUNDLE_OFFER use buyProducts
+    else if (offerType === 'FREE_PRODUCT' || offerType === 'BUNDLE_OFFER') {
+      if (!config.buyProducts || config.buyProducts.length === 0) {
+        newErrors.selectedProducts = 'Select buy products';
+        toast.error('Please add at least one buy product');
+        setErrors(newErrors);
+        return false;
+      }
+      if (offerType === 'FREE_PRODUCT' && (!config.getProducts || config.getProducts.length === 0)) {
+        newErrors.selectedProducts = 'Select free products';
+        toast.error('Please add at least one free product');
+        setErrors(newErrors);
+        return false;
+      }
+    }
+    // BOGO_DIFFERENT_SKU uses qualifierProducts and rewardProducts
+    else if (offerType === 'BOGO_DIFFERENT_SKU') {
+      if (!config.qualifierProducts || config.qualifierProducts.length === 0) {
+        newErrors.selectedProducts = 'Select qualifier products';
+        toast.error('Please add at least one qualifier product (Buy)');
+        setErrors(newErrors);
+        return false;
+      }
+      if (!config.rewardProducts || config.rewardProducts.length === 0) {
+        newErrors.selectedProducts = 'Select reward products';
+        toast.error('Please add at least one reward product (Get)');
+        setErrors(newErrors);
+        return false;
+      }
+    }
+    // SKU_DISCOUNT_AMOUNT uses skuDiscounts
+    else if (offerType === 'SKU_DISCOUNT_AMOUNT') {
+      if (!config.skuDiscounts || config.skuDiscounts.length === 0) {
+        newErrors.selectedProducts = 'Add at least one SKU discount';
+        toast.error('Please add at least one SKU discount');
+        setErrors(newErrors);
+        return false;
+      }
+    }
+    // Most other offer types use selectedProducts
+    else {
       if (!config.selectedProducts || config.selectedProducts.length === 0) {
         newErrors.selectedProducts = 'Select at least one product';
         toast.error('Please select at least one product');
@@ -286,6 +341,17 @@ export default function OfferWizard({
     
     // Validate type-specific configuration
     switch (wizardData.selectedOfferType) {
+      case 'BOGO':
+        if (!config.buyQuantity || config.buyQuantity <= 0) {
+          newErrors.buyQuantity = 'Buy quantity is required';
+        }
+        if (!config.getQuantity || config.getQuantity <= 0) {
+          newErrors.getQuantity = 'Get quantity is required';
+        }
+        if (config.discountPercentage === undefined || config.discountPercentage === null || config.discountPercentage < 0 || config.discountPercentage > 100) {
+          newErrors.discountPercentage = 'Discount percentage must be between 0 and 100';
+        }
+        break;
       case 'FLAT_DISCOUNT_PCT':
         if (!config.discountPercentage || config.discountPercentage <= 0) {
           newErrors.discountPercentage = 'Discount percentage is required';
