@@ -501,12 +501,13 @@ router.delete("/:id", authenticate, requireApiPermission("collection:delete"), a
 
 /**
  * POST /ordermanagement/collections/:id/forward
- * Forward collection to next approver
+ * Forward/Submit collection to next approver
+ * - Distributors use collection:submit for pending → ASM
+ * - Other roles use collection:forward for subsequent approvals
  */
 router.post(
   "/:id/forward",
   authenticate,
-  requireApiPermission("collection:forward"),
   async (req, res) => {
     try {
       const { user } = req;
@@ -538,6 +539,27 @@ router.post(
           success: false,
           message: `Only ${currentRole} can forward this collection at this stage`,
         });
+      }
+
+      // Check permissions based on status
+      if (collection.approval_status === "pending") {
+        // Distributors need collection:submit permission
+        const hasSubmitPermission = user.permissions?.includes("collection:submit");
+        if (!hasSubmitPermission) {
+          return res.status(403).json({
+            success: false,
+            message: "API access denied - Missing collection:submit permission",
+          });
+        }
+      } else {
+        // Other roles need collection:forward permission
+        const hasForwardPermission = user.permissions?.includes("collection:forward");
+        if (!hasForwardPermission) {
+          return res.status(403).json({
+            success: false,
+            message: "API access denied - Missing collection:forward permission",
+          });
+        }
       }
 
       // Determine next status and role

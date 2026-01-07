@@ -87,6 +87,14 @@ const userSchema = new mongoose.Schema(
       index: true,
     },
 
+    // DSR reference (only for DSR users with user_type === 'distributor')
+    dsr_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "DSR",
+      default: null,
+      index: true,
+    },
+
     // Token version for logout all devices feature
     tokenVersion: {
       type: Number,
@@ -154,11 +162,17 @@ userSchema.pre("validate", function (next) {
     if (this.employee_id) {
       return next(new Error("Distributor users cannot have employee_id"));
     }
+    // Note: dsr_id is optional (only for DSR users, not main distributor users)
   }
 
   // Ensure user cannot be both employee and distributor
   if (this.employee_id && this.distributor_id) {
     return next(new Error("User cannot be both employee and distributor"));
+  }
+
+  // Ensure DSR users have distributor type
+  if (this.dsr_id && this.user_type !== "distributor") {
+    return next(new Error("DSR users must have user_type 'distributor'"));
   }
 
   next();

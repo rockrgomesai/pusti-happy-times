@@ -57,6 +57,7 @@ const offerReceiveItemsRoutes = require("./offers/receiveItems");
 const distributionRoutes = require("./distribution");
 const distributorPortalRoutes = require("./distributor");
 const dashboardRoutes = require("./dashboard");
+const dsrRoutes = require("./dsrs");
 
 const router = express.Router();
 
@@ -306,6 +307,14 @@ router.use("/territories", territoryRoutes);
  * @access  Private (authenticated users)
  */
 router.use("/distributors", distributorRoutes);
+
+/**
+ * DSR Management Routes
+ * @route   /api/dsrs/*
+ * @desc    Distributor Sales Representative CRUD operations
+ * @access  Private (authenticated users with proper permissions)
+ */
+router.use("/dsrs", dsrRoutes);
 
 /**
  * Dashboard Routes
