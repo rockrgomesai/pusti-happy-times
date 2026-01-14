@@ -146,15 +146,22 @@ interface Distributor {
 }
 
 const distributorFormSchema = z.object({
-  name: z.string().trim().min(2, 'Distributor name is required'),
+  name: z.string().trim().min(1, 'Distributor name is required').min(2, 'Distributor name must be at least 2 characters'),
   db_point_id: z.string().trim().optional(),
-  product_segment: z.array(z.string()).min(1, 'Select at least one segment'),
+  product_segment: z.array(z.string()).min(1, 'Product segment is required'),
   skus_exclude: z.array(z.string()).optional(),
   distributor_type: z.string().trim().min(1, 'Distributor type is required'),
   erp_id: z.string().optional(),
-  mobile: z.string().optional(),
-  credit_limit: z.string().min(1),
-  bank_guarantee: z.string().min(1),
+  mobile: z
+    .string()
+    .optional()
+    .or(z.literal(''))
+    .refine(
+      (val) => !val || /^(\+88)?01[3-9]\d{8}$/.test(val),
+      'Invalid mobile number format (e.g., 01XXXXXXXXX)'
+    ),
+  credit_limit: z.string().min(1, 'Credit limit is required'),
+  bank_guarantee: z.string().min(1, 'Bank guarantee is required'),
   delivery_depot_id: z.string().optional(),
   computer: z.enum(BINARY_CHOICES),
   printer: z.enum(BINARY_CHOICES),
@@ -163,8 +170,15 @@ const distributorFormSchema = z.object({
   registration_date: z.string().optional(),
   emergency_contact: z.string().optional(),
   emergency_relation: z.string().optional(),
-  emergency_mobile: z.string().optional(),
-  unit: z.string().trim().min(1),
+  emergency_mobile: z
+    .string()
+    .optional()
+    .or(z.literal(''))
+    .refine(
+      (val) => !val || /^(\+88)?01[3-9]\d{8}$/.test(val),
+      'Invalid mobile number format (e.g., 01XXXXXXXXX)'
+    ),
+  unit: z.string().trim().min(1, 'Unit is required'),
   latitude: z.string().optional(),
   longitude: z.string().optional(),
   address: z.string().optional(),
@@ -1325,7 +1339,7 @@ const DistributorsPage: React.FC = () => {
 
       <Dialog open={openDialog} onClose={handleDialogClose} maxWidth="md" fullWidth>
         <DialogTitle>{editingDistributor ? 'Edit Distributor' : 'Add Distributor'}</DialogTitle>
-        <form onSubmit={handleSubmit(submitDistributor)}>
+        <form onSubmit={handleSubmit(submitDistributor)} noValidate>
           <DialogContent dividers>
             <Stack spacing={3}>
               {metadataLoading && (
@@ -1359,6 +1373,7 @@ const DistributorsPage: React.FC = () => {
                         label="Distributor Name"
                         fullWidth
                         required
+                        disabled={isSubmitting}
                         error={Boolean(errors.name)}
                         helperText={errors.name?.message}
                       />
@@ -1520,7 +1535,8 @@ const DistributorsPage: React.FC = () => {
                         {...field}
                         label="Mobile"
                         fullWidth
-                        placeholder="+8801XXXXXX"
+                        placeholder="01XXXXXXXXX or +8801XXXXXXXXX"
+                        disabled={isSubmitting}
                         error={Boolean(errors.mobile)}
                         helperText={errors.mobile?.message}
                       />
@@ -1536,7 +1552,9 @@ const DistributorsPage: React.FC = () => {
                         {...field}
                         label="Credit Limit"
                         fullWidth
+                        required
                         inputMode="decimal"
+                        disabled={isSubmitting}
                         error={Boolean(errors.credit_limit)}
                         helperText={errors.credit_limit?.message}
                       />
@@ -1552,7 +1570,9 @@ const DistributorsPage: React.FC = () => {
                         {...field}
                         label="Bank Guarantee"
                         fullWidth
+                        required
                         inputMode="decimal"
+                        disabled={isSubmitting}
                         error={Boolean(errors.bank_guarantee)}
                         helperText={errors.bank_guarantee?.message}
                       />
@@ -1710,7 +1730,7 @@ const DistributorsPage: React.FC = () => {
                         {...field}
                         label="Emergency Mobile"
                         fullWidth
-                        placeholder="+8801XXXXXX"
+                        placeholder="01XXXXXXXXX or +8801XXXXXXXXX"
                         inputMode="tel"
                         error={Boolean(errors.emergency_mobile)}
                         helperText={errors.emergency_mobile?.message}

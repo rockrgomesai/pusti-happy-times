@@ -66,7 +66,7 @@ import type { ExportColumn } from '@/lib/exportUtils';
 import { formatDateForExport } from '@/lib/exportUtils';
 import { calculateTableMinWidth } from '@/lib/tableUtils';
 
-const GENDER_OPTIONS = ['Male', 'Female', 'Other'] as const;
+const GENDER_OPTIONS = ['male', 'female', 'other'] as const;
 const BLOOD_GROUP_OPTIONS = ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'] as const;
 
 type Order = 'asc' | 'desc';
@@ -84,8 +84,8 @@ type DSRColumnId =
 
 interface DistributorRef {
   _id: string;
-  distributor_name: string;
-  distributor_code: string;
+  name: string;
+  erp_id?: number | string | null;
 }
 
 interface UserRef {
@@ -136,33 +136,61 @@ interface DistributorOption {
   code: string;
 }
 
-const dsrFormSchema = z.object({
-  name: z.string().trim().min(2, 'Name must be at least 2 characters'),
-  distributor_id: z.string().trim().min(1, 'Distributor is required'),
-  mobile: z.string().trim().min(11, 'Valid mobile number required'),
-  email: z.string().email().optional().or(z.literal('')),
-  nid_number: z.string().optional(),
-  date_of_birth: z.string().optional(),
-  gender: z.enum(['Male', 'Female', 'Other', '']).optional(),
-  blood_group: z.string().optional(),
-  present_address_street: z.string().optional(),
-  present_address_city: z.string().optional(),
-  present_address_district: z.string().optional(),
-  present_address_postal_code: z.string().optional(),
-  permanent_address_street: z.string().optional(),
-  permanent_address_city: z.string().optional(),
-  permanent_address_district: z.string().optional(),
-  permanent_address_postal_code: z.string().optional(),
-  joining_date: z.string().optional(),
-  emergency_contact_name: z.string().optional(),
-  emergency_contact_relation: z.string().optional(),
-  emergency_contact_mobile: z.string().optional(),
-  notes: z.string().optional(),
-  active: z.boolean(),
-  create_user_account: z.boolean().optional(),
-  username: z.string().optional(),
-  password: z.string().optional(),
-});
+const dsrFormSchema = z
+  .object({
+    name: z.string().trim().min(1, 'Name is required').min(2, 'Name must be at least 2 characters'),
+    distributor_id: z.string().trim().min(1, 'Distributor is required'),
+    mobile: z
+      .string()
+      .trim()
+      .min(1, 'Mobile is required')
+      .regex(/^(\+88)?01[3-9]\d{8}$/, 'Invalid mobile number format (e.g., 01XXXXXXXXX)'),
+    email: z.string().email('Invalid email address').optional().or(z.literal('')),
+    nid_number: z.string().trim().min(1, 'NID number is required'),
+    date_of_birth: z.string().optional(),
+    gender: z.enum(['male', 'female', 'other'], {
+      errorMap: () => ({ message: 'Gender is required' }),
+    }),
+    blood_group: z.string().min(1, 'Blood group is required'),
+    present_address_street: z.string().optional(),
+    present_address_city: z.string().optional(),
+    present_address_district: z.string().optional(),
+    present_address_postal_code: z.string().optional(),
+    permanent_address_street: z.string().optional(),
+    permanent_address_city: z.string().optional(),
+    permanent_address_district: z.string().optional(),
+    permanent_address_postal_code: z.string().optional(),
+    joining_date: z.string().optional(),
+    emergency_contact_name: z.string().optional(),
+    emergency_contact_relation: z.string().optional(),
+    emergency_contact_mobile: z
+      .string()
+      .optional()
+      .or(z.literal(''))
+      .refine(
+        (val) => !val || /^(\+88)?01[3-9]\d{8}$/.test(val),
+        'Invalid mobile number format (e.g., 01XXXXXXXXX)'
+      ),
+    notes: z.string().optional(),
+    active: z.boolean(),
+    create_user_account: z.boolean().optional(),
+    username: z.string().optional(),
+    password: z.string().optional(),
+  })
+  .refine(
+    (data) => !data.create_user_account || (data.username && data.username.trim().length >= 3),
+    {
+      message: 'Username is required and must be at least 3 characters when creating user account',
+      path: ['username'],
+    }
+  )
+  .refine(
+    (data) => !data.create_user_account || (data.password && data.password.length >= 6),
+    {
+      message: 'Password is required and must be at least 6 characters when creating user account',
+      path: ['password'],
+    }
+  );
 
 type DSRFormData = z.infer<typeof dsrFormSchema>;
 
@@ -184,7 +212,7 @@ const DEFAULT_FORM_VALUES: DSRFormData = {
   email: '',
   nid_number: '',
   date_of_birth: '',
-  gender: '',
+  gender: '' as any,
   blood_group: '',
   present_address_street: '',
   present_address_city: '',
@@ -306,8 +334,8 @@ const fetchDistributors = async (): Promise<DistributorOption[]> => {
         const value = extractId(record._id);
         if (!value) return null;
 
-        const label = typeof record.distributor_name === 'string' ? record.distributor_name : 'Distributor';
-        const code = typeof record.distributor_code === 'string' ? record.distributor_code : '';
+        const label = typeof record.name === 'string' ? record.name : 'Distributor';
+        const code = typeof record.erp_id === 'string' ? record.erp_id : (typeof record.erp_id === 'number' ? String(record.erp_id) : '');
         return { value, label, code } satisfies DistributorOption;
       })
       .filter((entry): entry is DistributorOption => Boolean(entry));
@@ -337,8 +365,8 @@ const filterDSRs = (
       dsr.name,
       dsr.dsr_code,
       dsr.mobile,
-      dsr.distributor_id.distributor_name ?? '',
-      dsr.distributor_id.distributor_code ?? '',
+      dsr.distributor_id.name ?? '',
+      String(dsr.distributor_id.erp_id ?? ''),
       dsr.email ?? '',
     ]
       .join(' ')
@@ -356,7 +384,7 @@ const sortDSRs = (dsrs: DSR[], orderBy: DSRColumnId, order: Order) => {
       case 'name':
         return dsr.name.toLowerCase();
       case 'distributor':
-        return dsr.distributor_id.distributor_name.toLowerCase();
+        return dsr.distributor_id.name.toLowerCase();
       case 'mobile':
         return dsr.mobile.toLowerCase();
       case 'employment_status':
@@ -712,9 +740,9 @@ const DSRsPage: React.FC = () => {
         sortable: true,
         renderCell: (dsr: DSR) => (
           <Box>
-            <Typography variant="body2">{dsr.distributor_id.distributor_name}</Typography>
+            <Typography variant="body2">{dsr.distributor_id.name}</Typography>
             <Typography variant="caption" color="text.secondary">
-              {dsr.distributor_id.distributor_code}
+              {dsr.distributor_id.erp_id ?? ''}
             </Typography>
           </Box>
         ),
@@ -834,8 +862,8 @@ const DSRsPage: React.FC = () => {
     () => [
       { header: 'DSR Code', accessor: (row) => row.dsr_code },
       { header: 'Name', accessor: (row) => row.name },
-      { header: 'Distributor', accessor: (row) => row.distributor_id.distributor_name },
-      { header: 'Distributor Code', accessor: (row) => row.distributor_id.distributor_code },
+      { header: 'Distributor', accessor: (row) => row.distributor_id.name },
+      { header: 'Distributor ERP ID', accessor: (row) => String(row.distributor_id.erp_id ?? '') },
       { header: 'Mobile', accessor: (row) => row.mobile },
       { header: 'Email', accessor: (row) => row.email ?? '' },
       { header: 'Employment Status', accessor: (row) => row.employment_status },
@@ -861,7 +889,7 @@ const DSRsPage: React.FC = () => {
                     Code: {dsr.dsr_code}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Distributor: {dsr.distributor_id.distributor_name}
+                    Distributor: {dsr.distributor_id.name}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
                     Mobile: {dsr.mobile}
@@ -1178,7 +1206,7 @@ const DSRsPage: React.FC = () => {
 
       <Dialog open={openDialog} onClose={handleDialogClose} maxWidth="lg" fullWidth>
         <DialogTitle>{editingDSR ? 'Edit DSR' : 'Add DSR'}</DialogTitle>
-        <form onSubmit={handleSubmit(submitDSR)}>
+        <form onSubmit={handleSubmit(submitDSR)} noValidate>
           <DialogContent dividers>
             <Stack spacing={3}>
               {metadataLoading && <Alert severity="info">Loading distributor data...</Alert>}
@@ -1212,6 +1240,7 @@ const DSRsPage: React.FC = () => {
                         label="Name"
                         fullWidth
                         required
+                        disabled={isSubmitting}
                         error={Boolean(errors.name)}
                         helperText={errors.name?.message}
                       />
@@ -1254,7 +1283,8 @@ const DSRsPage: React.FC = () => {
                         label="Mobile"
                         fullWidth
                         required
-                        placeholder="+8801XXXXXX"
+                        placeholder="01XXXXXXXXX or +8801XXXXXXXXX"
+                        disabled={isSubmitting}
                         error={Boolean(errors.mobile)}
                         helperText={errors.mobile?.message}
                       />
@@ -1281,7 +1311,17 @@ const DSRsPage: React.FC = () => {
                   <Controller
                     name="nid_number"
                     control={control}
-                    render={({ field }) => <TextField {...field} label="NID Number" fullWidth />}
+                    render={({ field }) => (
+                      <TextField
+                        {...field}
+                        label="NID Number"
+                        fullWidth
+                        required
+                        disabled={isSubmitting}
+                        error={Boolean(errors.nid_number)}
+                        helperText={errors.nid_number?.message}
+                      />
+                    )}
                   />
                 </Box>
                 <Box sx={{ minWidth: 0 }}>
@@ -1300,34 +1340,35 @@ const DSRsPage: React.FC = () => {
                   />
                 </Box>
                 <Box sx={{ minWidth: 0 }}>
-                  <FormControl fullWidth>
+                  <FormControl fullWidth required error={Boolean(errors.gender)}>
                     <InputLabel id="gender-label">Gender</InputLabel>
                     <Controller
                       name="gender"
                       control={control}
                       render={({ field }) => (
-                        <Select {...field} labelId="gender-label" label="Gender">
+                        <Select {...field} labelId="gender-label" label="Gender" disabled={isSubmitting}>
                           <MenuItem value="">
                             <em>None</em>
                           </MenuItem>
                           {GENDER_OPTIONS.map((gender) => (
                             <MenuItem key={gender} value={gender}>
-                              {gender}
+                              {gender.charAt(0).toUpperCase() + gender.slice(1)}
                             </MenuItem>
                           ))}
                         </Select>
                       )}
                     />
+                    {errors.gender && <FormHelperText>{errors.gender?.message}</FormHelperText>}
                   </FormControl>
                 </Box>
                 <Box sx={{ minWidth: 0 }}>
-                  <FormControl fullWidth>
+                  <FormControl fullWidth required error={Boolean(errors.blood_group)}>
                     <InputLabel id="blood-label">Blood Group</InputLabel>
                     <Controller
                       name="blood_group"
                       control={control}
                       render={({ field }) => (
-                        <Select {...field} labelId="blood-label" label="Blood Group">
+                        <Select {...field} labelId="blood-label" label="Blood Group" disabled={isSubmitting}>
                           <MenuItem value="">
                             <em>None</em>
                           </MenuItem>
@@ -1339,6 +1380,7 @@ const DSRsPage: React.FC = () => {
                         </Select>
                       )}
                     />
+                    {errors.blood_group && <FormHelperText>{errors.blood_group?.message}</FormHelperText>}
                   </FormControl>
                 </Box>
                 <Box sx={{ minWidth: 0 }}>
@@ -1351,6 +1393,7 @@ const DSRsPage: React.FC = () => {
                         type="date"
                         label="Joining Date"
                         fullWidth
+                        disabled={isSubmitting}
                         InputLabelProps={{ shrink: true }}
                       />
                     )}
@@ -1475,7 +1518,7 @@ const DSRsPage: React.FC = () => {
                   <Controller
                     name="emergency_contact_mobile"
                     control={control}
-                    render={({ field }) => <TextField {...field} label="Mobile" fullWidth placeholder="+8801XXXXXX" />}
+                    render={({ field }) => <TextField {...field} label="Mobile" fullWidth placeholder="01XXXXXXXXX or +8801XXXXXXXXX" />}
                   />
                 </Box>
               </Box>
@@ -1549,7 +1592,16 @@ const DSRsPage: React.FC = () => {
                         name="username"
                         control={control}
                         render={({ field }) => (
-                          <TextField {...field} label="Username" fullWidth required={createUserAccount} />
+                          <TextField
+                            {...field}
+                            label="Username"
+                            fullWidth
+                            required={createUserAccount}
+                            disabled={isSubmitting}
+                            error={Boolean(errors.username)}
+                            helperText={errors.username?.message}
+                            inputProps={{ style: { textTransform: 'none' } }}
+                          />
                         )}
                       />
                     </Box>
@@ -1564,6 +1616,9 @@ const DSRsPage: React.FC = () => {
                             label="Password"
                             fullWidth
                             required={createUserAccount}
+                            disabled={isSubmitting}
+                            error={Boolean(errors.password)}
+                            helperText={errors.password?.message}
                           />
                         )}
                       />

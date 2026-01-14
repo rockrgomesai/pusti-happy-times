@@ -66,7 +66,7 @@ router.get("/", authenticate, requireApiPermission("dsr:read"), async (req, res)
     // Execute query
     const [dsrs, total] = await Promise.all([
       DSR.find(query)
-        .populate("distributor_id", "distributor_name distributor_code")
+        .populate("distributor_id", "name erp_id")
         .populate("user_id", "username email active")
         .populate("created_by", "username")
         .populate("updated_by", "username")
@@ -107,7 +107,7 @@ router.get("/:id", authenticate, requireApiPermission("dsr:read"), async (req, r
     const { id } = req.params;
 
     const dsr = await DSR.findById(id)
-      .populate("distributor_id", "distributor_name distributor_code db_point_id")
+      .populate("distributor_id", "name erp_id db_point_id")
       .populate("user_id", "username email active")
       .populate("created_by", "username")
       .populate("updated_by", "username")
@@ -197,7 +197,7 @@ router.post("/", authenticate, requireApiPermission("dsr:create"), async (req, r
     }
 
     // Generate DSR code
-    const dsr_code = await DSR.generateDsrCode(distributor.distributor_code);
+    const dsr_code = await DSR.generateDsrCode(distributor.erp_id || distributor._id.toString().slice(-6));
 
     // Create DSR
     const dsrData = {
@@ -271,7 +271,7 @@ router.post("/", authenticate, requireApiPermission("dsr:create"), async (req, r
 
     // Fetch populated DSR
     const populatedDsr = await DSR.findById(dsr._id)
-      .populate("distributor_id", "distributor_name distributor_code")
+      .populate("distributor_id", "name erp_id")
       .populate("user_id", "username email active")
       .lean();
 
@@ -366,7 +366,7 @@ router.put("/:id", authenticate, requireApiPermission("dsr:update"), async (req,
     }
 
     const updatedDsr = await DSR.findById(dsr._id)
-      .populate("distributor_id", "distributor_name distributor_code")
+      .populate("distributor_id", "name erp_id")
       .populate("user_id", "username email active")
       .lean();
 
@@ -522,7 +522,7 @@ router.post("/:id/create-user", authenticate, requireApiPermission("dsr:create_u
     await dsr.save();
 
     const updatedDsr = await DSR.findById(dsr._id)
-      .populate("distributor_id", "distributor_name distributor_code")
+      .populate("distributor_id", "name erp_id")
       .populate("user_id", "username email active")
       .lean();
 

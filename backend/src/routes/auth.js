@@ -124,8 +124,8 @@ router.post("/login", loginValidation, async (req, res) => {
     const { username, password } = req.body;
     console.log("🔍 Looking up user:", username);
 
-    // Find user by username and include password, populate employee/distributor
-    const user = await User.findOne({ username })
+    // Find user by username (case-insensitive) and include password, populate employee/distributor
+    const user = await User.findOne({ username: new RegExp(`^${username}$`, 'i') })
       .select("+password")
       .populate("role_id")
       .populate("employee_id")
