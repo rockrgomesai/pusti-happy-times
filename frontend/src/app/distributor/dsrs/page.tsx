@@ -65,6 +65,7 @@ import ColumnVisibilityMenu from '@/components/common/ColumnVisibilityMenu';
 import type { ExportColumn } from '@/lib/exportUtils';
 import { formatDateForExport } from '@/lib/exportUtils';
 import { calculateTableMinWidth } from '@/lib/tableUtils';
+import { useAuth } from '@/contexts/AuthContext';
 
 const GENDER_OPTIONS = ['male', 'female', 'other'] as const;
 const BLOOD_GROUP_OPTIONS = ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'] as const;
@@ -426,6 +427,7 @@ const sortDSRs = (dsrs: DSR[], orderBy: DSRColumnId, order: Order) => {
 };
 
 const DSRsPage: React.FC = () => {
+  const { user } = useAuth();
   const [dsrs, setDsrs] = useState<DSR[]>([]);
   const [loading, setLoading] = useState(true);
   const [metadataLoading, setMetadataLoading] = useState(false);
@@ -441,8 +443,18 @@ const DSRsPage: React.FC = () => {
   const [order, setOrder] = useState<Order>('asc');
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
-  const [visibleColumnIds, setVisibleColumnIds] = useState<DSRColumnId[]>(DEFAULT_VISIBLE_COLUMNS);
-  const [persistedColumnIds, setPersistedColumnIds] = useState<DSRColumnId[]>(DEFAULT_VISIBLE_COLUMNS);
+  // Check if user is a distributor (not admin)
+  const isDistributorUser = user?.role?.role === 'Distributor';
+  const userDistributorId = user?.distributor_id;
+
+  // Filter default columns for distributor users (hide 'distributor' column)
+  const defaultColumns = useMemo(
+    () => (isDistributorUser ? DEFAULT_VISIBLE_COLUMNS.filter((col) => col !== 'distributor') : DEFAULT_VISIBLE_COLUMNS),
+    [isDistributorUser],
+  );
+
+  const [visibleColumnIds, setVisibleColumnIds] = useState<DSRColumnId[]>(defaultColumns);
+  const [persistedColumnIds, setPersistedColumnIds] = useState<DSRColumnId[]>(defaultColumns);
   const columnStateHydratedRef = useRef(false);
   const [distributorOptions, setDistributorOptions] = useState<DistributorOption[]>([]);
   const [formError, setFormError] = useState<string | null>(null);
@@ -494,8 +506,9 @@ const DSRsPage: React.FC = () => {
         if (stored) {
           const parsed = JSON.parse(stored);
           if (Array.isArray(parsed)) {
+            // Filter stored columns to only include those allowed for current user role
             const sanitized = parsed.filter((id: unknown): id is DSRColumnId =>
-              typeof id === 'string' && DEFAULT_VISIBLE_COLUMNS.includes(id as DSRColumnId));
+              typeof id === 'string' && defaultColumns.includes(id as DSRColumnId));
             if (sanitized.length) {
               setVisibleColumnIds(sanitized);
               setPersistedColumnIds(sanitized);
@@ -506,20 +519,20 @@ const DSRsPage: React.FC = () => {
       } catch (error) {
         console.warn('Failed to load DSR column preferences', error);
       }
-      setVisibleColumnIds(DEFAULT_VISIBLE_COLUMNS);
-      setPersistedColumnIds(DEFAULT_VISIBLE_COLUMNS);
+      setVisibleColumnIds(defaultColumns);
+      setPersistedColumnIds(defaultColumns);
       return;
     }
 
     setVisibleColumnIds((previous) => {
-      const sanitized = previous.filter((id) => DEFAULT_VISIBLE_COLUMNS.includes(id));
-      return sanitized.length ? sanitized : DEFAULT_VISIBLE_COLUMNS;
+      const sanitized = previous.filter((id) => defaultColumns.includes(id));
+      return sanitized.length ? sanitized : defaultColumns;
     });
     setPersistedColumnIds((previous) => {
-      const sanitized = previous.filter((id) => DEFAULT_VISIBLE_COLUMNS.includes(id));
-      return sanitized.length ? sanitized : DEFAULT_VISIBLE_COLUMNS;
+      const sanitized = previous.filter((id) => defaultColumns.includes(id));
+      return sanitized.length ? sanitized : defaultColumns;
     });
-  }, []);
+  }, [defaultColumns]);
 
   const columnSelectionChanged = useMemo(() => {
     if (visibleColumnIds.length !== persistedColumnIds.length) {
@@ -530,9 +543,9 @@ const DSRsPage: React.FC = () => {
   }, [persistedColumnIds, visibleColumnIds]);
 
   const handleSaveColumnSelection = useCallback(() => {
-    const sanitized = visibleColumnIds.filter((id) => DEFAULT_VISIBLE_COLUMNS.includes(id));
-    setVisibleColumnIds(sanitized.length ? sanitized : DEFAULT_VISIBLE_COLUMNS);
-    setPersistedColumnIds(sanitized.length ? sanitized : DEFAULT_VISIBLE_COLUMNS);
+    const sanitized = visibleColumnIds.filter((id) => defaultColumns.includes(id));
+    setVisibleColumnIds(sanitized.length ? sanitized : defaultColumns);
+    setPersistedColumnIds(sanitized.length ? sanitized : defaultColumns);
     try {
       window.localStorage.setItem(STORAGE_KEY_VISIBLE_COLUMNS, JSON.stringify(sanitized));
       toast.success('Column preferences saved');
@@ -540,7 +553,7 @@ const DSRsPage: React.FC = () => {
       console.warn('Failed to persist DSR column preferences', error);
       toast.error('Unable to persist column selection');
     }
-  }, [visibleColumnIds]);
+  }, [visibleColumnIds, defaultColumns]);
 
   const handleRequestSort = useCallback(
     (property: DSRColumnId) => {
@@ -570,9 +583,16 @@ const DSRsPage: React.FC = () => {
 
   const handleAddDSR = useCallback(() => {
     setEditingDSR(null);
-    reset(DEFAULT_FORM_VALUES);
+    const initialValues = { ...DEFAULT_FORM_VALUES };
+    
+    // If user is a distributor, pre-populate their distributor ID
+    if (isDistributorUser && userDistributorId) {
+      initialValues.distributor_id = userDistributorId;
+    }
+    
+    reset(initialValues);
     setOpenDialog(true);
-  }, [reset]);
+  }, [reset, isDistributorUser, userDistributorId]);
 
   const handleEditDSR = useCallback(
     (dsr: DSR) => {
@@ -850,12 +870,14 @@ const DSRsPage: React.FC = () => {
 
   const columnVisibilityOptions = useMemo(
     () =>
-      dsrColumns.map((column) => ({
-        id: column.id,
-        label: column.label,
-        alwaysVisible: column.alwaysVisible,
-      })),
-    [dsrColumns],
+      dsrColumns
+        .filter((column) => !isDistributorUser || column.id !== 'distributor') // Hide distributor column for distributor users
+        .map((column) => ({
+          id: column.id,
+          label: column.label,
+          alwaysVisible: column.alwaysVisible,
+        })),
+    [dsrColumns, isDistributorUser],
   );
 
   const dsrExportColumns = useMemo<ExportColumn<DSR>[]>(
@@ -1247,32 +1269,34 @@ const DSRsPage: React.FC = () => {
                     )}
                   />
                 </Box>
-                <Box sx={{ minWidth: 0 }}>
-                  <FormControl fullWidth error={Boolean(errors.distributor_id)}>
-                    <InputLabel id="distributor-label">Distributor *</InputLabel>
-                    <Controller
-                      name="distributor_id"
-                      control={control}
-                      render={({ field }) => (
-                        <Select
-                          {...field}
-                          labelId="distributor-label"
-                          label="Distributor *"
-                          disabled={isEditMode}
-                          value={field.value}
-                          onChange={(event: SelectChangeEvent<string>) => field.onChange(event.target.value)}
-                        >
-                          {distributorOptions.map((option) => (
-                            <MenuItem key={option.value} value={option.value}>
-                              {option.label}
-                            </MenuItem>
-                          ))}
-                        </Select>
-                      )}
-                    />
-                    <FormHelperText>{errors.distributor_id?.message}</FormHelperText>
-                  </FormControl>
-                </Box>
+                {!isDistributorUser && (
+                  <Box sx={{ minWidth: 0 }}>
+                    <FormControl fullWidth error={Boolean(errors.distributor_id)}>
+                      <InputLabel id="distributor-label">Distributor *</InputLabel>
+                      <Controller
+                        name="distributor_id"
+                        control={control}
+                        render={({ field }) => (
+                          <Select
+                            {...field}
+                            labelId="distributor-label"
+                            label="Distributor *"
+                            disabled={isEditMode}
+                            value={field.value}
+                            onChange={(event: SelectChangeEvent<string>) => field.onChange(event.target.value)}
+                          >
+                            {distributorOptions.map((option) => (
+                              <MenuItem key={option.value} value={option.value}>
+                                {option.label}
+                              </MenuItem>
+                            ))}
+                          </Select>
+                        )}
+                      />
+                      <FormHelperText>{errors.distributor_id?.message}</FormHelperText>
+                    </FormControl>
+                  </Box>
+                )}
                 <Box sx={{ minWidth: 0 }}>
                   <Controller
                     name="mobile"
