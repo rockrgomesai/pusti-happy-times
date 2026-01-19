@@ -77,6 +77,7 @@ interface Category {
   name: string;
   parent_id: string | null;
   product_segment: ProductSegment | string;
+  image_url?: string | null;
   active: boolean;
   created_at: string;
   created_by?: ActorInfo | string | null;
@@ -127,6 +128,7 @@ const categorySchema = z
     name: z.string().trim().min(2, 'Category name must be at least 2 characters').max(120),
     parent_id: z.string().optional(),
     product_segment: z.string().optional(),
+    image_url: z.string().trim().max(500, 'Image URL must not exceed 500 characters').optional().or(z.literal('')),
     active: z.boolean(),
   })
   .superRefine((data, ctx) => {
@@ -180,6 +182,7 @@ export default function CategoriesPage() {
       name: '',
       parent_id: '',
       product_segment: 'BIS',
+      image_url: '',
       active: true,
     },
   });
@@ -409,6 +412,7 @@ export default function CategoriesPage() {
         product_segment: category.parent_id
           ? categoriesById.get(category.parent_id)?.product_segment ?? category.product_segment
           : category.product_segment,
+        image_url: category.image_url ?? '',
         active: category.active,
       });
       setOpenDialog(true);
@@ -418,7 +422,7 @@ export default function CategoriesPage() {
 
   const handleAddCategory = useCallback(() => {
     setEditingCategory(null);
-    reset({ name: '', parent_id: '', product_segment: 'BIS', active: true });
+    reset({ name: '', parent_id: '', product_segment: 'BIS', image_url: '', active: true });
     setOpenDialog(true);
   }, [reset]);
 
@@ -658,6 +662,21 @@ export default function CategoriesPage() {
           return (
             <Grid size={{ xs: 12, sm: 6, md: 4 }} key={category._id}>
               <Card>
+                {category.image_url && (
+                  <Box
+                    component="img"
+                    src={category.image_url}
+                    alt={category.name}
+                    sx={{
+                      width: '100%',
+                      height: 140,
+                      objectFit: 'cover',
+                    }}
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).style.display = 'none';
+                    }}
+                  />
+                )}
                 <CardContent>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                     <Typography variant="h6" component="h2">
@@ -982,6 +1001,24 @@ export default function CategoriesPage() {
                     </MenuItem>
                   ))}
                 </TextField>
+              )}
+            />
+
+            <Controller
+              name="image_url"
+              control={control}
+              render={({ field }) => (
+                <TextField
+                  {...field}
+                  value={field.value ?? ''}
+                  onChange={(event) => field.onChange(event.target.value)}
+                  label="Image URL (Optional)"
+                  fullWidth
+                  margin="normal"
+                  error={!!errors.image_url}
+                  helperText={errors.image_url?.message || 'Provide a URL to an image for this category'}
+                  placeholder="https://example.com/category-image.jpg"
+                />
               )}
             />
 

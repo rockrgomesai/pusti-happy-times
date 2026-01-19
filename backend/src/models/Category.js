@@ -38,6 +38,11 @@ const categorySchema = new mongoose.Schema(
       index: true,
       set: normalizeProductSegment,
     },
+    image_url: {
+      type: String,
+      trim: true,
+      default: null,
+    },
     active: {
       type: Boolean,
       default: true,

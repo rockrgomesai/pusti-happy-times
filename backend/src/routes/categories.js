@@ -96,6 +96,11 @@ const createCategoryValidation = [
       if (typeof value === "boolean") return true;
       throw new Error("Active must be a boolean value");
     }),
+  body("image_url")
+    .optional({ values: "falsy" })
+    .trim()
+    .isLength({ max: 500 })
+    .withMessage("Image URL must not exceed 500 characters"),
 ];
 
 const updateCategoryValidation = [
@@ -130,6 +135,11 @@ const updateCategoryValidation = [
       if (typeof value === "boolean") return true;
       throw new Error("Active must be a boolean value");
     }),
+  body("image_url")
+    .optional({ values: "falsy" })
+    .trim()
+    .isLength({ max: 500 })
+    .withMessage("Image URL must not exceed 500 characters"),
 ];
 
 const idValidation = [param("id").isMongoId().withMessage("Invalid category id")];
