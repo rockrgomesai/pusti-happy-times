@@ -160,6 +160,8 @@ export default function CategoriesPage() {
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [categoryToDelete, setCategoryToDelete] = useState<string | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   const [orderBy, setOrderBy] = useState<OrderableKeys>('name');
   const [order, setOrder] = useState<Order>('asc');
@@ -354,6 +356,7 @@ export default function CategoriesPage() {
 
     const payload: Record<string, unknown> = {
       name: formData.name.trim(),
+      image_url: formData.image_url?.trim() || null,
       active: formData.active,
     };
 
@@ -377,12 +380,58 @@ export default function CategoriesPage() {
 
       setOpenDialog(false);
       setEditingCategory(null);
-      reset({ name: '', parent_id: '', product_segment: 'BIS', active: true });
+      setImagePreview(null);
+      reset({ name: '', parent_id: '', product_segment: 'BIS', image_url: '', active: true });
       loadCategories();
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to save category';
       toast.error(errorMessage);
     }
+  };
+
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file');
+      return;
+    }
+
+    // Validate file size (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image size must be less than 5MB');
+      return;
+    }
+
+    setUploadingImage(true);
+
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
+
+      const response = await api.post('/categories/upload-image', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      const imagePath = response.data.data.path;
+      setValue('image_url', imagePath);
+      setImagePreview(imagePath);
+      toast.success('Image uploaded successfully');
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to upload image';
+      toast.error(errorMessage);
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setValue('image_url', '');
+    setImagePreview(null);
   };
 
   const handleDeleteCategory = async () => {
@@ -415,6 +464,7 @@ export default function CategoriesPage() {
         image_url: category.image_url ?? '',
         active: category.active,
       });
+      setImagePreview(category.image_url ?? null);
       setOpenDialog(true);
     },
     [categoriesById, reset]
@@ -422,9 +472,17 @@ export default function CategoriesPage() {
 
   const handleAddCategory = useCallback(() => {
     setEditingCategory(null);
+    setImagePreview(null);
     reset({ name: '', parent_id: '', product_segment: 'BIS', image_url: '', active: true });
     setOpenDialog(true);
   }, [reset]);
+
+  const handleCloseDialog = () => {
+    setOpenDialog(false);
+    setEditingCategory(null);
+    setImagePreview(null);
+    reset({ name: '', parent_id: '', product_segment: 'BIS', image_url: '', active: true });
+  };
 
   const categoryColumns = useMemo<CategoryColumnDefinition[]>(
     () => [
@@ -836,12 +894,6 @@ export default function CategoriesPage() {
     </TableContainer>
   );
 
-  const handleCloseDialog = () => {
-    setOpenDialog(false);
-    setEditingCategory(null);
-    reset({ name: '', parent_id: '', product_segment: 'BIS', active: true });
-  };
-
   return (
     <Box sx={{ p: 3 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
@@ -1004,23 +1056,54 @@ export default function CategoriesPage() {
               )}
             />
 
-            <Controller
-              name="image_url"
-              control={control}
-              render={({ field }) => (
-                <TextField
-                  {...field}
-                  value={field.value ?? ''}
-                  onChange={(event) => field.onChange(event.target.value)}
-                  label="Image URL (Optional)"
+            <Box sx={{ mt: 2, mb: 1 }}>
+              <Typography variant="subtitle2" gutterBottom>
+                Category Image (Optional)
+              </Typography>
+              {imagePreview ? (
+                <Box>
+                  <Box
+                    component="img"
+                    src={imagePreview}
+                    alt="Category preview"
+                    sx={{
+                      width: '100%',
+                      maxHeight: 200,
+                      objectFit: 'cover',
+                      borderRadius: 1,
+                      mb: 1,
+                    }}
+                  />
+                  <Button
+                    variant="outlined"
+                    color="error"
+                    size="small"
+                    onClick={handleRemoveImage}
+                    fullWidth
+                  >
+                    Remove Image
+                  </Button>
+                </Box>
+              ) : (
+                <Button
+                  variant="outlined"
+                  component="label"
                   fullWidth
-                  margin="normal"
-                  error={!!errors.image_url}
-                  helperText={errors.image_url?.message || 'Provide a URL to an image for this category'}
-                  placeholder="https://example.com/category-image.jpg"
-                />
+                  disabled={uploadingImage}
+                >
+                  {uploadingImage ? 'Uploading...' : 'Upload Image'}
+                  <input
+                    type="file"
+                    hidden
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                  />
+                </Button>
               )}
-            />
+              <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                Supported: JPG, PNG, GIF (Max 5MB)
+              </Typography>
+            </Box>
 
             <Controller
               name="product_segment"

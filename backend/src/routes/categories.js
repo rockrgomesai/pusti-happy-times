@@ -6,11 +6,52 @@
 const express = require("express");
 const { body, param, validationResult } = require("express-validator");
 const mongoose = require("mongoose");
+const path = require("path");
+const fs = require("fs");
+const crypto = require("crypto");
+const multer = require("multer");
 
 const { Category } = require("../models");
-const { authenticate, requireApiPermission } = require("../middleware/auth");
+const { authenticate, requireApiPermission, checkApiPermission } = require("../middleware/auth");
 
 const router = express.Router();
+
+const PRODUCT_SEGMENTS = Category.PRODUCT_SEGMENTS || ["BEV", "BIS"];
+const IMAGE_UPLOAD_DIR = path.join(__dirname, "../../public/images/categories");
+
+const ensureImageDirectory = () => {
+  if (!fs.existsSync(IMAGE_UPLOAD_DIR)) {
+    fs.mkdirSync(IMAGE_UPLOAD_DIR, { recursive: true });
+  }
+};
+
+ensureImageDirectory();
+
+const imageStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => {
+    ensureImageDirectory();
+    cb(null, IMAGE_UPLOAD_DIR);
+  },
+  filename: (_req, file, cb) => {
+    const extension = path.extname(file.originalname) || "";
+    const randomToken = crypto.randomBytes(8).toString("hex");
+    const filename = `category-${Date.now()}-${randomToken}${extension}`;
+    cb(null, filename);
+  },
+});
+
+const imageUpload = multer({
+  storage: imageStorage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+  fileFilter: (_req, file, cb) => {
+    if (!file.mimetype.startsWith("image/")) {
+      const error = new Error("Only image files are allowed");
+      error.statusCode = 400;
+      return cb(error);
+    }
+    cb(null, true);
+  },
+});
 
 const PRODUCT_SEGMENTS = Category.PRODUCT_SEGMENTS || ["BEV", "BIS"];
 
@@ -171,6 +212,73 @@ const createsCycle = async (categoryId, proposedParentId) => {
 };
 
 router.use(authenticate);
+
+/**
+ * POST /api/categories/upload-image
+ * Upload category image
+ */
+router.post("/upload-image", async (req, res) => {
+  try {
+    // Check permissions
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        message: "Authentication required",
+      });
+    }
+
+    const [canCreate, canUpdate] = await Promise.all([
+      checkApiPermission(req.user, "categories:create"),
+      checkApiPermission(req.user, "categories:update"),
+    ]);
+
+    if (!canCreate && !canUpdate) {
+      return res.status(403).json({
+        success: false,
+        message: "API access denied",
+        permission: "categories:create|categories:update",
+      });
+    }
+
+    // Handle upload
+    const singleUpload = imageUpload.single("image");
+
+    singleUpload(req, res, (err) => {
+      if (err) {
+        const status = err.statusCode || (err instanceof multer.MulterError ? 400 : 500);
+        return res.status(status).json({
+          success: false,
+          message: err.message || "Failed to upload image",
+        });
+      }
+
+      if (!req.file) {
+        return res.status(400).json({
+          success: false,
+          message: "No image provided for upload",
+        });
+      }
+
+      const relativePath = `/images/categories/${req.file.filename}`;
+
+      res.status(201).json({
+        success: true,
+        message: "Image uploaded successfully",
+        data: {
+          path: relativePath,
+          filename: req.file.filename,
+          size: req.file.size,
+        },
+      });
+    });
+  } catch (error) {
+    console.error("Category image upload error", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to upload category image",
+    });
+  }
+});
 
 /**
  * GET /api/categories
