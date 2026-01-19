@@ -230,25 +230,36 @@ router.post(
         chalanItem.damage_qty_pcs = receivedItem.damage_qty_pcs || 0;
         chalanItem.damage_reason = receivedItem.damage_reason || "";
 
-        // Update distributor stock (upsert)
-        await models.DistributorStock.findOneAndUpdate(
-          { distributor_id: distributorId, sku: receivedItem.sku },
-          {
-            $inc: { qty: receivedQty },
-            $set: {
-              last_received_at: new Date(),
-              last_chalan_id: chalan._id,
-            },
-          },
-          { upsert: true, session }
-        );
+        // Get current product price (db_price for distributor pricing)
+        const product = await models.Product.findOne({ sku: receivedItem.sku })
+          .select("db_price trade_price")
+          .session(session);
+        const unitPrice = product ? parseFloat(product.db_price || product.trade_price || 0) : 0;
+
+        // Update distributor stock using FIFO method (upsert)
+        if (receivedQty > 0) {
+          let distributorStock = await models.DistributorStock.findOne({
+            distributor_id: distributorId,
+            sku: receivedItem.sku,
+          }).session(session);
+
+          if (!distributorStock) {
+            // Create new stock record
+            distributorStock = new models.DistributorStock({
+              distributor_id: distributorId,
+              sku: receivedItem.sku,
+              qty: 0,
+              batches: [],
+            });
+          }
+
+          // Add stock using FIFO method with current price
+          distributorStock.addStockFIFO(receivedQty, unitPrice, chalan._id, chalan.chalan_no);
+          await distributorStock.save({ session });
+        }
 
         // Calculate damage amount for ledger adjustment
         if (damageQty > 0) {
-          const product = await models.Product.findOne({ sku: receivedItem.sku })
-            .select("dp_price")
-            .session(session);
-          const unitPrice = product ? parseFloat(product.dp_price || 0) : 0;
           const damageAmount = damageQty * unitPrice;
           totalDamageAmount += damageAmount;
 
