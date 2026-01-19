@@ -4,10 +4,12 @@
  * This script migrates existing distributor stock from simple quantity tracking
  * to FIFO (First-In-First-Out) batch tracking with price history.
  * 
- * Usage: node migrate-distributor-stock-to-fifo.js
+ * Usage (from project root): cd backend && node ../migrate-distributor-stock-to-fifo.js
+ * Or (from backend folder): node ../migrate-distributor-stock-to-fifo.js
  */
 
-require("dotenv").config({ path: "./backend/.env" });
+const path = require("path");
+require("dotenv").config({ path: path.join(__dirname, "backend", ".env") });
 const mongoose = require("mongoose");
 
 // Connect to MongoDB
@@ -24,9 +26,9 @@ const connectDB = async () => {
   }
 };
 
-// Import models
-const DistributorStock = require("./backend/src/models/DistributorStock");
-const Product = require("./backend/src/models/Product");
+// Import models (paths work from both root and backend folder)
+const DistributorStock = require(path.join(__dirname, "backend/src/models/DistributorStock"));
+const Product = require(path.join(__dirname, "backend/src/models/Product"));
 
 const migrateDistributorStock = async () => {
   console.log("\n🔄 Starting DistributorStock FIFO Migration...\n");
