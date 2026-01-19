@@ -53,8 +53,6 @@ const imageUpload = multer({
   },
 });
 
-const PRODUCT_SEGMENTS = Category.PRODUCT_SEGMENTS || ["BEV", "BIS"];
-
 const normalizeSegment = (value) => {
   if (!value) return value;
   const upper = String(value).trim().toUpperCase();
