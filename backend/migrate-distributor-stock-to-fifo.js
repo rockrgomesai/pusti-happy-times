@@ -32,11 +32,8 @@ const migrateDistributorStock = async () => {
   console.log("\n🔄 Starting DistributorStock FIFO Migration...\n");
 
   try {
-    const session = await mongoose.startSession();
-    session.startTransaction();
-
-    // Get all distributor stock records
-    const stockRecords = await DistributorStock.find({}).session(session);
+    // Get all distributor stock records (no session - works with standalone MongoDB)
+    const stockRecords = await DistributorStock.find({});
     console.log(`📊 Found ${stockRecords.length} stock records to migrate\n`);
 
     let migrated = 0;
@@ -62,7 +59,7 @@ const migrateDistributorStock = async () => {
         }
 
         // Get current product price
-        const product = await Product.findOne({ sku: stock.sku }).session(session);
+        const product = await Product.findOne({ sku: stock.sku });
         if (!product) {
           console.log(`⚠️  Warning: Product not found for SKU ${stock.sku}, using price 0`);
         }
@@ -86,7 +83,7 @@ const migrateDistributorStock = async () => {
         // Update stock with batch
         stock.batches = [batch];
 
-        await stock.save({ session });
+        await stock.save();
 
         console.log(
           `✅ Migrated ${stock.sku} - Qty: ${currentQty}, Price: ${unitPrice}, Batch ID: ${batch.batch_id}`
@@ -97,9 +94,6 @@ const migrateDistributorStock = async () => {
         errors++;
       }
     }
-
-    await session.commitTransaction();
-    session.endSession();
 
     console.log("\n" + "=".repeat(60));
     console.log("📈 MIGRATION SUMMARY");
