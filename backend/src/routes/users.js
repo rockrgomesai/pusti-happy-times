@@ -16,6 +16,7 @@
 const express = require("express");
 const mongoose = require("mongoose");
 const { body, validationResult, param } = require("express-validator");
+const bcrypt = require("bcryptjs");
 const { User, Role } = require("../models");
 const { authenticate, requireApiPermission } = require("../middleware/auth");
 
@@ -81,6 +82,11 @@ const userUpdateValidation = [
     .isEmail()
     .withMessage("Please provide a valid email address")
     .normalizeEmail(),
+
+  body("password")
+    .optional()
+    .custom((value) => !value || value.length >= 6)
+    .withMessage("Password must be at least 6 characters long if provided"),
 
   body("role_id").optional().isMongoId().withMessage("Invalid role ID format"),
 
@@ -328,7 +334,7 @@ router.put(
   handleValidationErrors,
   async (req, res) => {
     try {
-      const { username, email, role_id, user_type, employee_id, distributor_id, active } = req.body;
+      const { username, email, password, role_id, user_type, employee_id, distributor_id, active } = req.body;
       const currentUserId = getCurrentUserId(req);
 
       // Check if user exists
@@ -351,6 +357,13 @@ router.put(
       if (user_type !== undefined) updateData.user_type = user_type;
       if (employee_id !== undefined) updateData.employee_id = employee_id;
       if (distributor_id !== undefined) updateData.distributor_id = distributor_id;
+      
+      // Hash password if provided
+      if (password !== undefined && password.length > 0) {
+        const saltRounds = 10;
+        updateData.password = await bcrypt.hash(password, saltRounds);
+      }
+      
       if (role_id !== undefined) {
         // Verify role exists
         const role = await Role.findById(role_id);

@@ -102,6 +102,17 @@ const segmentLabelMap: Record<ProductSegment, string> = {
   BEV: 'Beverage (BEV)',
 };
 
+const getImageUrl = (imagePath: string | null | undefined): string | null => {
+  if (!imagePath) return null;
+  if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+    return imagePath;
+  }
+  // Construct full URL with API base (remove /api/v1 from the end if present)
+  let apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+  apiBase = apiBase.replace(/\/api\/v1\/?$/, '');
+  return `${apiBase}${imagePath}`;
+};
+
 const formatActor = (actor?: ActorInfo | string | null) => {
   if (!actor) return '-';
   if (typeof actor === 'string') return actor;
@@ -360,12 +371,30 @@ export default function CategoriesPage() {
       active: formData.active,
     };
 
-    if (parentId) {
-      payload.parent_id = parentId;
+    // Only include parent_id if creating new category or if it actually changed
+    if (editingCategory) {
+      // For editing: only send parent_id if it's different from current value
+      const currentParentId = editingCategory.parent_id ?? '';
+      if (parentId !== currentParentId) {
+        if (parentId) {
+          payload.parent_id = parentId;
+        } else {
+          payload.parent_id = null;
+          if (productSegment) {
+            payload.product_segment = productSegment;
+          }
+        }
+      }
+      // If parent hasn't changed, don't include it in payload at all
     } else {
-      payload.parent_id = null;
-      if (productSegment) {
-        payload.product_segment = productSegment;
+      // For new category: always include parent_id
+      if (parentId) {
+        payload.parent_id = parentId;
+      } else {
+        payload.parent_id = null;
+        if (productSegment) {
+          payload.product_segment = productSegment;
+        }
       }
     }
 
@@ -378,11 +407,14 @@ export default function CategoriesPage() {
         toast.success('Category created successfully');
       }
 
+      // Close dialog and reset state before reloading
       setOpenDialog(false);
       setEditingCategory(null);
       setImagePreview(null);
       reset({ name: '', parent_id: '', product_segment: 'BIS', image_url: '', active: true });
-      loadCategories();
+      
+      // Reload categories to get fresh data
+      await loadCategories();
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to save category';
       toast.error(errorMessage);
@@ -464,6 +496,7 @@ export default function CategoriesPage() {
         image_url: category.image_url ?? '',
         active: category.active,
       });
+      // Set the relative path for preview (getImageUrl will add the base URL when displaying)
       setImagePreview(category.image_url ?? null);
       setOpenDialog(true);
     },
@@ -495,6 +528,31 @@ export default function CategoriesPage() {
             {category.name}
           </Typography>
         ),
+      },
+      {
+        id: 'image',
+        label: 'Image',
+        renderCell: (category) => {
+          const imageUrl = getImageUrl(category.image_url);
+          return imageUrl ? (
+            <Box
+              component="img"
+              src={imageUrl}
+              alt={category.name}
+              sx={{
+                width: 50,
+                height: 50,
+                objectFit: 'cover',
+                borderRadius: 1,
+              }}
+              onError={(e) => {
+                (e.target as HTMLImageElement).style.display = 'none';
+              }}
+            />
+          ) : (
+            <Typography variant="body2" color="text.secondary">-</Typography>
+          );
+        },
       },
       {
         id: 'product_segment',
@@ -720,27 +778,46 @@ export default function CategoriesPage() {
           return (
             <Grid size={{ xs: 12, sm: 6, md: 4 }} key={category._id}>
               <Card>
-                {category.image_url && (
-                  <Box
-                    component="img"
-                    src={category.image_url}
-                    alt={category.name}
-                    sx={{
-                      width: '100%',
-                      height: 140,
-                      objectFit: 'cover',
-                    }}
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).style.display = 'none';
-                    }}
-                  />
-                )}
                 <CardContent>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                    <Typography variant="h6" component="h2">
-                      {category.name}
-                    </Typography>
-                    {renderStatusChip(category.active)}
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.5 }}>
+                    {category.image_url ? (
+                      <Box
+                        component="img"
+                        src={getImageUrl(category.image_url) || ''}
+                        alt={category.name}
+                        sx={{
+                          width: 48,
+                          height: 48,
+                          objectFit: 'cover',
+                          borderRadius: 1,
+                          flexShrink: 0,
+                        }}
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).style.display = 'none';
+                        }}
+                      />
+                    ) : (
+                      <Box
+                        sx={{
+                          width: 48,
+                          height: 48,
+                          borderRadius: 1,
+                          bgcolor: 'action.selected',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          flexShrink: 0,
+                        }}
+                      >
+                        <CategoryIcon sx={{ color: 'action.active' }} />
+                      </Box>
+                    )}
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Typography variant="h6" component="h2" noWrap>
+                        {category.name}
+                      </Typography>
+                      {renderStatusChip(category.active)}
+                    </Box>
                   </Box>
                   <Typography variant="body2" color="text.secondary">
                     Segment: {getSegmentDisplay(category.product_segment)}
@@ -1064,7 +1141,7 @@ export default function CategoriesPage() {
                 <Box>
                   <Box
                     component="img"
-                    src={imagePreview}
+                    src={getImageUrl(imagePreview) || ''}
                     alt="Category preview"
                     sx={{
                       width: '100%',

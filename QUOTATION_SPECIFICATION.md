@@ -25,12 +25,13 @@ This document presents a comprehensive quotation for a fully functional **Sales 
 
 A complete, production-ready **MERN Stack ERP Application** featuring:
 - **Modern Technology Stack:** Node.js, Express.js, MongoDB, Redis, Next.js 14, TypeScript, Material-UI
-- **Comprehensive Module Coverage:** 10+ integrated business modules
+- **Comprehensive Module Coverage:** 20+ integrated business modules (12 Primary + 9 Secondary Sales)
 - **Scalable Architecture:** Microservices-ready, containerized deployment
 - **Role-Based Access Control:** Multi-level permission system
 - **Real-Time Capabilities:** Socket.IO notifications, live updates
 - **Mobile-First Design:** Responsive UI optimized for all devices
 - **Production-Grade:** Docker deployment, database migrations, seed data
+- **Extensive Reporting:** 80+ report types across all modules
 
 ---
 
@@ -402,6 +403,312 @@ A complete, production-ready **MERN Stack ERP Application** featuring:
 
 ---
 
+#### Module 12: Primary Sales Reporting & Analytics
+**Delivered Features:**
+
+**A. Sales Performance Reports**
+
+**Order Reports:**
+- Demand Order Summary (all statuses)
+- Pending Orders Report (awaiting approval)
+- Approved Orders Report (ready for scheduling)
+- Rejected Orders Report (with rejection reasons)
+- Scheduled Orders Report (with delivery dates)
+- Order Status Tracking Report
+- Order Amendment History
+- Order Cancellation Report
+- Distributor-wise Order Summary
+- Product-wise Order Summary
+- Category-wise Order Analysis
+- Territory-wise Order Distribution
+- Time-series Order Trends
+
+**Approval Workflow Reports:**
+- ASM Pending Approvals
+- RSM Pending Approvals
+- Approval Turnaround Time
+- Approval vs Rejection Ratio
+- Approval History by Authority
+- Delegated Approvals Tracking
+- Approval Comments Analysis
+
+**Scheduling Reports:**
+- Schedule vs Demand Analysis
+- Progressive Scheduling Status
+- Bundle Scheduling Report (BOGO/Bundle offers)
+- Facility-wise Delivery Schedule
+- Schedule Fulfillment Rate
+- Scheduled vs Delivered Variance
+- Multi-iteration Delivery Tracking
+- Rescheduling History
+
+**B. Offer Performance Reports**
+
+**Offer Utilization:**
+- Active Offers Summary
+- Offer Acceptance Rate by Distributor
+- Offer-linked Orders Report
+- Offer Type Performance (BOGO, Bundle, Discount, etc.)
+- Offer Expiry Tracking
+- Offer vs Non-offer Sales Comparison
+- Bundle Offer Redemption Report
+- Discount Slab Utilization
+- Free Product Distribution
+- Offer ROI Analysis
+
+**Offer Analytics:**
+- Top Performing Offers
+- Distributor Offer Preferences
+- Seasonal Offer Trends
+- Offer Impact on Sales Volume
+- Offer Cost vs Revenue Analysis
+- Category-wise Offer Performance
+- Territory-wise Offer Adoption
+
+**C. Collection & Finance Reports**
+
+**Collection Reports:**
+- Daily Collection Summary
+- Collection by Payment Method (Cash, Bank, Cheque)
+- Distributor-wise Collection Status
+- Pending Collections Report
+- Collection Approval Status
+- Bank-wise Deposit Summary
+- Cheque Tracking Report
+- Collection vs Target Achievement
+- Territory-wise Collection Performance
+- Collection Aging Analysis
+
+**Customer Ledger Reports:**
+- Distributor Account Summary
+- Outstanding Balance Report
+- Credit Limit Utilization
+- Overdue Payments Report
+- Payment History by Distributor
+- Ledger Reconciliation Report
+- Transaction Detail Report (Debit/Credit)
+- Running Balance Statement
+- Credit Note Summary
+- Debit Note Summary
+- Account Aging (30/60/90+ days)
+
+**D. Inventory Reports**
+
+**Stock Reports:**
+- Factory Inventory Summary
+- Depot Stock Levels
+- Distributor Stock Report
+- Product-wise Stock Status
+- Category-wise Inventory
+- Facility-wise Stock Position
+- Low Stock Alerts Report
+- Overstock Analysis
+- Stock Movement Report
+- Stock Turnover Ratio
+
+**Transfer & Movement Reports:**
+- Production to Store Shipments
+- Inter-depot Transfer Summary
+- Stock Transfer Status
+- In-transit Inventory Report
+- Received vs Sent Reconciliation
+- Transfer Approval Status
+- Load Sheet Summary
+- Delivery Chalan Report
+- Stock Variance Analysis
+
+**Requisition Reports:**
+- Depot Requisition Summary
+- Pending Requisitions
+- Approved Requisitions
+- Requisition Fulfillment Status
+- Requisition Scheduling Report
+- Requisition Approval Turnaround
+- Product-wise Demand Analysis
+- Seasonal Requisition Trends
+
+**E. Distributor Performance Reports**
+
+**Sales Performance:**
+- Distributor Sales Summary
+- Territory-wise Distributor Ranking
+- Top Performing Distributors
+- Underperforming Distributors Alert
+- Distributor Growth Analysis
+- Year-over-Year Comparison
+- Month-over-Month Trends
+- Product Mix by Distributor
+- Category Performance by Distributor
+
+**Activity Reports:**
+- Order Frequency Report
+- Order Value Trends
+- Product Variety Analysis
+- New vs Repeat Orders
+- Seasonal Buying Patterns
+- Credit Days Utilization
+- Payment Punctuality Score
+- Stock Velocity by Distributor
+
+**F. Territory & Sales Reports**
+
+**Territory Analysis:**
+- Zone-wise Sales Summary
+- Region-wise Performance
+- Area-wise Distribution
+- DB Point Sales Analysis
+- Territory Growth Rate
+- Market Penetration Report
+- Territory-wise Product Mix
+- Comparative Territory Performance
+
+**Sales Team Reports:**
+- ASM Performance Dashboard
+- RSM Territory Overview
+- Sales Officer Activity Report
+- Territory Coverage Analysis
+- Sales Target vs Achievement
+- Commission Calculation Report
+
+**G. Product & Category Reports**
+
+**Product Performance:**
+- Top Selling Products
+- Slow Moving Items
+- Product-wise Revenue Analysis
+- SKU Performance Report
+- Brand-wise Sales Summary
+- New Product Adoption Rate
+- Product Lifecycle Analysis
+- Product Return Rate
+- Damaged Product Report
+
+**Category Analysis:**
+- Category-wise Contribution
+- Segment Performance (BIS/BEV)
+- Category Growth Trends
+- Cross-category Analysis
+- Category Profitability
+- Category Market Share
+
+**H. Executive & MIS Reports**
+
+**Executive Dashboard Reports:**
+- Daily Sales Summary
+- Weekly Performance Overview
+- Monthly Business Review
+- Quarterly Trend Analysis
+- Year-to-Date Performance
+- Sales Forecast vs Actual
+- Key Performance Indicators (KPIs)
+- Exception Reports (unusual patterns)
+
+**MIS Reports:**
+- Comprehensive Sales Report
+- Integrated Financial Summary
+- Inventory Position Report
+- Collection Efficiency Report
+- Order Fulfillment Metrics
+- Customer Satisfaction Metrics
+- Operational Efficiency Report
+- Comparative Analysis (YoY, MoM)
+
+**I. Compliance & Audit Reports**
+
+**Audit Reports:**
+- Transaction Audit Trail
+- User Activity Log
+- Data Modification History
+- Approval Chain Verification
+- System Access Report
+- Role-wise Access Summary
+- Failed Login Attempts
+- Session History Report
+
+**Compliance Reports:**
+- Tax Calculation Summary
+- Invoice Register
+- Chalan Register
+- Payment Receipt Register
+- Credit Note Register
+- Regulatory Compliance Report
+
+**J. Custom & Ad-hoc Reports**
+
+**Report Builder Features:**
+- Custom report creation
+- Dynamic field selection
+- Multi-level filtering
+- Grouping and aggregation
+- Calculated fields
+- Export to multiple formats (Excel, PDF, CSV)
+- Scheduled report generation
+- Email report distribution
+- Report templates library
+- Save and share custom reports
+
+**K. Analytical Reports**
+
+**Trend Analysis:**
+- Sales Trend Analysis
+- Seasonal Pattern Recognition
+- Growth Rate Calculation
+- Moving Averages
+- Forecast vs Actual Variance
+- Anomaly Detection
+
+**Comparative Analysis:**
+- Period-over-Period Comparison
+- Territory Comparison
+- Distributor Benchmarking
+- Product Comparison
+- Category Comparison
+- Budget vs Actual Analysis
+
+**Technical Components:**
+- Report model with metadata storage
+- Advanced aggregation pipelines
+- Report generation engine
+- Scheduled report service
+- Report caching system (Redis)
+- Export service (Excel, PDF, CSV)
+- Email notification service
+- Report template engine
+- Data visualization library (Chart.js, Recharts)
+- Report builder UI
+- Dashboard widgets
+- Filter and parameter management
+- Report access control
+- Report audit logging
+
+**Report Features:**
+- Real-time data refresh
+- Historical data access
+- Drill-down capabilities
+- Drill-through to details
+- Interactive charts and graphs
+- Pivot table functionality
+- Data export options
+- Print-friendly formats
+- Mobile-responsive views
+- Scheduled automated reports
+- Email subscriptions
+- Report sharing
+- Bookmark favorite reports
+- Report version control
+
+**Performance Optimization:**
+- Pre-aggregated data marts
+- Incremental data refresh
+- Report caching
+- Lazy loading for large datasets
+- Pagination for detailed reports
+- Background report generation
+- Query optimization
+- Index strategy for reporting
+
+---
+
 ### 2.2 Cross-Cutting Features
 
 #### Security & Compliance
@@ -466,7 +773,7 @@ A complete, production-ready **MERN Stack ERP Application** featuring:
 
 ### 2.3 Database Schema
 
-**Delivered Collections:** (30+ collections)
+**Delivered Collections:** (50+ collections)
 - Authentication: users, roles, apipermissions, pagepermissions, sidebarmenuitem
 - Master Data: products, brands, categories, territories, employees, designations, facilities, transports, banks
 - Distributor: distributors, distributorstocks
@@ -476,6 +783,8 @@ A complete, production-ready **MERN Stack ERP Application** featuring:
 - Inventory: productionsendtostores, factorystoreinventories, inventoryrequisitions, requisitionschedulings, depottransfers, loadsheets, deliverychalan
 - Finance: customerledger
 - System: notifications
+- Reports: reporttemplates, reportschedules (Primary Sales)
+- Secondary Sales: secondaryorders, outletcoverage, deliveryrecords, imsentries, productreturns, userlocations, tmrclosings, productsurveys, distributoraudits, stocktransfers, attendance, payroll, allowances, journeyplans, userfeedback
 
 **Schema Features:**
 - Proper indexing for performance
@@ -623,7 +932,7 @@ frontend/
 - Soft delete capability
 - Data validation at schema level
 
-**Total Collections:** 30+
+**Total Collections:** 50+
 **Estimated Data Volume:** Scalable to millions of documents
 **Backup Strategy:** Automated daily backups
 
@@ -1012,11 +1321,11 @@ The following are NOT included in this quotation:
 
 ### 11.1 Functional Criteria
 
-- ✅ All 10+ modules fully functional
+- ✅ All 20+ modules fully functional (12 Primary + 9 Secondary Sales)
 - ✅ Role-based access working correctly
 - ✅ All workflows (approval, scheduling, etc.) operational
 - ✅ Real-time notifications functioning
-- ✅ Reports and dashboards displaying correct data
+- ✅ Reports and dashboards displaying correct data (80+ report types)
 - ✅ Mobile responsive on all devices
 - ✅ Data validation working on all forms
 - ✅ Integration between modules seamless
@@ -1138,7 +1447,8 @@ The following are NOT included in this quotation:
 | Finance | 6 | 4 | 10 | 1 |
 | Dashboard | 8 | 2 | 8 | 0 |
 | Notifications | 5 | 1 | 6 | 1 |
-| **TOTAL** | **107+** | **72+** | **222+** | **34** |
+| Primary Reports | 50+ | 8+ | 25+ | 2 |
+| **TOTAL** | **172+** | **88+** | **277+** | **37** |
 
 ### Appendix B: Technology Dependencies
 
@@ -1181,9 +1491,9 @@ date-fns, recharts, @emotion/react,
 ### Appendix D: Database Statistics
 
 **Current Database Metrics:**
-- Collections: 34
-- Indexes: 80+
-- Relationships: 50+
+- Collections: 50+
+- Indexes: 120+
+- Relationships: 75+
 - Seed Data Records: 500+
 - Documentation Files: 40+
 
@@ -1217,6 +1527,812 @@ Designation: _______________________________
 Signature: _______________________________
 
 Date: _______________________________
+
+---
+
+## 16. SECONDARY SALES SYSTEM MODULES
+
+### 16.1 Overview
+
+The Secondary Sales System extends the primary sales management to track product movement from distributors to retail outlets (Point of Sale). This module focuses on field force automation, outlet coverage, order tracking, and comprehensive analytics for distributor-to-retail operations.
+
+**Key Stakeholders:**
+- Sales Officers (SO) / Sales Representatives (SR)
+- Distributor Sales Representatives (DSR)
+- Area Sales Managers (ASM)
+- Regional Sales Managers (RSM)
+- Zonal Heads (ZH)
+- Distributors (DB)
+- Retail Outlets/POS (Point of Sale)
+
+---
+
+#### Module 13: Secondary Order Processing System
+**Delivered Features:**
+
+**A. Outlet Visit & Coverage**
+- GPS-based outlet proximity detection
+- Shop open/closed status tracking
+- Brand coverage tracking (TK Group products at outlets)
+- Product availability marking
+- Coverage submission and history
+- Previous status modification capability
+- Minimum distance validation for order placement
+
+**B. Order Placement Workflow**
+- Two-option order workflow:
+  - YES: Place order
+  - NO: Record reasons (configurable via master settings)
+- Manual order entry (from physical memo)
+- System-based direct order creation
+- Order summary input:
+  - Line number (total SKUs)
+  - Total categories
+  - Total amount
+  - Number of memos
+  - Number of visited outlets
+  - Selected route
+
+**C. Offline Order Capability**
+- Mobile app offline functionality (iOS/Android)
+- Local database storage (SQLite)
+- Background synchronization scheduler
+- Auto-sync to online storage
+- Local data cleanup post-sync
+- Products retrieved from local DB
+
+**D. Order Amendment**
+- Order modification by SO or authorized users
+- SKU-based item changes:
+  - Quantity adjustments
+  - Delivery date modification
+  - Line item deletion
+- Filter by outlet/POS
+- Amendment history tracking
+
+**E. Automated Calculations**
+- CCP (Category Call Productivity) = Total categories / Total memos
+- LPC (Line Per Call) = Total SKUs / Total memos
+- Strike Rate % calculation
+- Productive call % = (Memos/Visited outlets) × 100
+
+**Technical Components:**
+- SecondaryOrder, OutletCoverage, OrderMemo models
+- GPS location tracking (lat/lon)
+- SQLite for offline mobile storage
+- Background sync service
+- Order calculation engine
+- Frontend order creation interface (web + mobile)
+- Order amendment UI
+- Offline-first mobile architecture
+
+---
+
+#### Module 14: Product Delivery & IMS (Inventory Management System)
+**Delivered Features:**
+
+**A. Delivery Workflow**
+- DSR delivery recording
+- Partial, full, or remaining item delivery
+- Delivery date tracking
+- Delivery personnel tracking
+- Delivery narration/notes
+- Date-wise delivery summary
+
+**B. IMS Entry**
+- Date selection (default: current date)
+- Date range intervals
+- Total days calculation
+- Mobile app delivery updates
+- IMS/OTC summary entry:
+  - Line number/SKU count
+  - Number of categories
+  - Total price
+  - Total memos
+  - Number of visited outlets
+  - Selected route
+
+**C. Admin Controls**
+- **Delete IMS:**
+  - By selected SR and POS
+  - By selected date
+  - By SKU
+- **Edit IMS:**
+  - Select sales officer
+  - Select POS
+  - Modify products and quantities
+  - Submit changes
+- **Create Order (Admin):**
+  - When SO cannot create order
+  - Select SO, route, and DSR
+  - Input SKU-wise data:
+    - Secondary sales quantity
+    - Free products for DB (adjustment)
+    - Free product pieces
+  - Number of memos and line items
+
+**D. Inventory Update**
+- Auto-update on delivery confirmation
+- Stock reconciliation
+- Quantity verification
+- Delivery vs order variance tracking
+
+**Technical Components:**
+- DeliveryRecord, IMSEntry models
+- Delivery calculation engine
+- Admin management interfaces
+- Mobile delivery recording UI
+- Stock update triggers
+- Variance reporting
+
+---
+
+#### Module 15: Product Return Management
+**Delivered Features:**
+
+**A. Return Eligibility & Criteria**
+- Configurable return reasons (master settings):
+  - Damaged goods
+  - Defective products
+  - Customer dissatisfaction
+  - Expiry date issues
+- Return time frame configuration
+- Shipping and restocking costs
+- Return approval workflow
+
+**B. Return Process**
+- Return criteria selection
+- Product collection from retailers
+- DSR-initiated returns
+- Return to depot/inventory
+- Order update with defect products
+- Product replacement tracking
+- Higher authority notification
+
+**C. Product Handling**
+- Distributor replacement at shop/POS
+- Defective product collection
+- Factory return workflow:
+  - System approval request
+  - Audit team verification
+  - Approved collection to factory
+  - Company decision: replace or refund
+
+**D. Financial Adjustment**
+- Finance department verification
+- Root cause analysis
+- Balance adjustment for eligible cases
+- Shop owner notification
+- Amount deposit to customer ledger
+- Alternative: Distributor sells products then adjusts money
+
+**Technical Components:**
+- ProductReturn, ReturnApproval models
+- Return workflow engine
+- Approval chain implementation
+- Finance integration
+- Audit tracking
+- Replacement vs refund logic
+- Frontend return management UI
+
+---
+
+#### Module 16: User Movement Tracking
+**Delivered Features:**
+
+**A. GPS-Based Tracking**
+- Real-time SO location tracking
+- Longitude and latitude collection
+- Movement path rendering
+- POS-to-POS navigation tracking
+- Graphical movement line display
+
+**B. Web-Based Tracking**
+- Browser Geolocation API integration
+- GPS access request with user consent
+- Random position storage
+- Authorized user map view
+- Live position updates
+
+**C. Mobile App Tracking**
+- iOS/Android position tracking
+- User position display
+- Assigned SO positions visualization
+- Real-time movement rendering
+- Route adherence monitoring
+
+**Technical Components:**
+- UserLocation, GPSTrack models
+- Geolocation API integration
+- Map rendering (Google Maps)
+- Real-time position updates (Socket.IO)
+- Mobile GPS services
+- Location history storage
+- Route visualization UI
+
+---
+
+#### Module 17: TMR (This Month Report) / Month Closing
+**Delivered Features:**
+
+**A. Month Closing Process**
+- Freeze sales of selected month
+- Calculate opening balance for next month
+- Prevent modification after closing
+- Sales data finalization
+
+**B. TMR Data Management**
+- Product category selection
+- Opening quantity tracking
+- Product SKU management
+- Total received amount
+- Total free quantity by SKU
+- Adjustment of received products
+- Free amount adjustments
+- Free items exclusion from sold items
+- Sold items tracking for target month
+- Free items offered during selling
+
+**C. TMR Deletion**
+- Delete by nationwide
+- Delete by zone/division
+- Delete by region
+- Delete by area
+- Delete by selected distributor
+
+**D. TMR Modification**
+- Modify TMR sales data if required
+- Only applicable for DB's sales
+- Cannot perform TMR for current month
+- Historical data corrections
+
+**E. Closing Area Options**
+- Nationwide closing
+- Zone/division specific
+- Region specific
+- Area specific
+- Selected distributor
+
+**Technical Components:**
+- TMRClosing, MonthlyBalance models
+- Month freeze mechanism
+- Opening balance calculation
+- Sales finalization workflow
+- Multi-level closing options
+- Deletion and modification controls
+- Frontend TMR management UI
+
+---
+
+#### Module 18: Audit & Survey System
+**Delivered Features:**
+
+**A. Product Survey**
+- Competitor product tracking
+- Area and date selection
+- Route selection
+- POS selection
+- Competitor SKU availability
+- Multi-competitor comparison
+- Route-based survey conduct
+
+**B. Price Survey**
+- Competitor price comparison
+- Area and date selection
+- Route selection
+- Competitor price input for each SKU
+- Multi-competitor price tracking
+
+**C. Delivery Memo Audit**
+- TK Group product pricing
+- Outlet-wise category coverage audit
+- Product categories sold from outlet
+- Competitor categories at outlet
+- Product presence status
+- Coverage summary for route
+- Duration-based category coverage
+- Coverage comparison and growth analysis
+- Date range-based summary
+- SR visiting status
+- Category-wise coverage ratio for area
+
+**D. Distributor Audit**
+
+**Stock Survey:**
+- Select dealer/distributor on specific date
+- Physical vs system stock comparison
+- Product-wise quantity verification
+
+**Document Availability Check:**
+- ROI availability
+- Attendance sheet
+- Route chart
+- Sales and stock register
+- Boolean data via master settings
+
+**Logistic Support Audit:**
+- Smartphone availability
+- Laptop
+- Printer
+- Number of sales officers
+- Stock space sufficiency
+- Number of drivers
+- All managed via master settings
+
+**Product Complaints Tracking:**
+- SKU-wise complaint tracking:
+  - Damaged items
+  - Expired items
+  - Other issues
+- Date-based tracking
+- Comments/remarks field
+
+**Investment Status:**
+- Investment amount for floor stock
+- Undelivered quantity
+- Payment in transit (cash, bank, market credit)
+- Status managed via master settings
+
+**Sales Officer Activity Audit:**
+- Dress code maintenance
+- Attitude assessment (positive/negative)
+- Physical violence involvement
+- Loyalty evaluation
+- Relationship maintenance
+- Professional equipment
+- Dynamic activities via master settings
+
+**Technical Components:**
+- ProductSurvey, PriceSurvey, DistributorAudit models
+- Audit form builder
+- Competitor data models
+- Survey scheduling
+- Audit report generation
+- Master settings configuration
+- Mobile audit interfaces
+
+---
+
+#### Module 19: Stock Management & Transfer System
+**Delivered Features:**
+
+**A. Stock Transfer**
+- Distributor-to-distributor transfers
+- Source distributor selection
+- Receiving DB selection
+- Transfer schedule/date
+- Transfer reasons
+- SKU-based transfer
+- Single item or all items transfer
+
+**B. TMR Transfer**
+- Source DB selection
+- Target DB selection
+- TMR data transfer
+- Balance adjustments
+
+**C. Sales Transfer**
+- Source SO selection
+- Target SO selection
+- Sales order transfer
+- Full month or partial transfer
+- Sales data migration
+
+**D. Sales Modification**
+- Select SO
+- Select date interval
+- Modify sales data
+- Submit changes
+- Audit trail
+
+**E. Target Transfer**
+- Source SO selection
+- Target SO selection
+- Sales target transfer
+- Target reallocation
+
+**F. Target New SKU**
+- Select product item/SKU
+- Add SKU to all existing targets
+- Automatic target distribution
+
+**Technical Components:**
+- StockTransfer, TMRTransfer, SalesTransfer models
+- Transfer workflow engine
+- Target management system
+- Balance calculation
+- Audit logging
+- Frontend transfer interfaces
+
+---
+
+#### Module 20: Attendance & Payroll System
+**Delivered Features:**
+
+**A. Attendance Management**
+- Employee types covered:
+  - SO (Sales Officer)
+  - ASM (Area Sales Manager)
+  - RSM (Regional Sales Manager)
+  - Zonal/Divisional Head
+  - Administrator (Head office employees)
+
+**Attendance Process:**
+- Current date attendance only
+- Employee selection
+- Status options:
+  - P: Present
+  - A: Absent
+  - L: Leave
+  - R: Region
+- System login required
+- Attendance marking interface
+
+**B. Payroll Management**
+
+**Salary Calculation:**
+- Maximum allowed leave days per month
+- Allowed late presents (max 3 per month)
+- Basic salary
+- All allowances
+- Deductions for excess absences/leaves
+- Monthly payroll generation
+
+**Allowance Management:**
+
+**PJP (Permanent Journey Plan):**
+- Advance sharing
+- Detail level traveling:
+  - 1st half (9am-12pm)
+  - 2nd half (2pm-7pm)
+- Information tracking:
+  - DB name
+  - Market
+  - Serial number
+- Accessible by all stakeholders
+- Approval process
+- Revised journey plan facility
+
+**Journey Details:**
+- Date of travel
+- From/To locations
+- Mode of transportation
+- Amount of money
+- Purpose
+- Multiple item addition
+- Auto-calculation of monthly totals
+- Google Maps cross-check
+
+**Allowance Categories:**
+- Visit categories:
+  - Base
+  - Ex-Base
+  - Night Stay
+- TA (Travel Allowance)
+- DA (Daily Allowance)
+- Entertainment
+- Hotel allowance
+- Fuel
+- Others
+
+**Payroll for SO (National):**
+- Zone, Region, Area
+- SO ID, Name
+- DB ID, Name
+- Total Days of Month
+- W/D, Leave, Absent, LWP
+- Total Days of Payment
+- Approved TA/DA
+- Total Amount
+- Miscellaneous Expense
+- Payable Amount
+
+**Technical Components:**
+- Attendance, Payroll, Allowance, JourneyPlan models
+- Attendance marking system
+- Payroll calculation engine
+- Allowance approval workflow
+- Journey plan tracker
+- Google Maps integration for verification
+- Salary slip generation
+- Frontend attendance and payroll interfaces
+
+---
+
+#### Module 21: User Feedback System
+**Delivered Features:**
+
+- End-user feedback submission
+- Feedback categories:
+  - Product quality
+  - Policies
+  - Communication
+  - Delivery services
+  - Sales-related matters
+- Authorized user review interface
+- Demand-based planning
+- Feedback categorization
+- Response tracking
+- Action item generation
+
+**Technical Components:**
+- UserFeedback model
+- Feedback submission interface (web + mobile)
+- Review dashboard
+- Categorization system
+- Analytics on feedback trends
+- Action tracking
+
+---
+
+### 16.2 Secondary Sales Analytics & Reporting
+
+The Secondary Sales System includes 30+ comprehensive report categories:
+
+**Dashboard Reports:**
+- Current Status Dashboard:
+  - Sales TP (Trade Price)
+  - Order TP
+  - Visited routes, POS, ordered outlets
+  - Active manpower (ZH, RH, AH, DB, SO, DSR)
+  - Active SKUs
+  - Total active POS
+  - Active routes
+- Secondary Sales Section (3-month trend)
+- Primary Sales tracking
+- Collection achievement
+- Distribution stock by category
+- Live dashboard with real-time updates
+
+**KPI Reports:**
+- Daily Target (sales amount, sold amount)
+- Monthly Target (target vs achieved)
+- Today KPI (Target POS, Visited %, Strike rate %, LPC, CCP)
+- KPI By Route (productive call %, working hours)
+- Monthly KPI (achievement %, time pass %)
+- Time Pass Report by category
+
+**Order & Delivery Reports:**
+- Order Summary (SKU-wise, date-range)
+- Delivery Summary (quantity, amount)
+- Damage Summary
+- Order vs Execution Report
+- Manual Order & Delivery by Route
+- Order by SKU
+- Daily Order Summary
+- Productivity Report
+- Outlet Visit Status
+
+**Commission Reports:**
+- SD (Super Distributor) Commission
+- Sales Commission
+- CD (Commission Distributor) Commission
+- Commission calculation by category and product
+
+**Sales Analysis Reports:**
+- Order List (customizable columns, CSV download)
+- SO Schedule (day-of-week based)
+- Order View and Memo
+- Summary by SKU
+- Raw Order Data
+- Raw Data Sales/IMS
+- Top SKUs (Top 10)
+- SO Movement Report (with Google Maps)
+
+**Performance Reports:**
+- Route Wise KPI
+- SO Wise KPI
+- DB Category Wise KPI
+- Region Wise KPI
+- Area Wise KPI
+- Delivery Status Report
+- Reason Summary
+- Outlet Wise SKU Category Order
+
+**Target vs Achievement Reports:**
+- Target Details (SO-wise, SKU-wise)
+- Area Based Target Details
+- Target Summary & Achievement
+- Target Summary By Distributor
+- SKU Wise Target vs Achievement
+- Category Summary
+- Brand Summary
+- Landing Target Reports
+- Target Yet Not Set
+- Total Sales & Collection Summary
+
+**TMR Reports:**
+- Product Wise Rate In Year-Month
+- Negative Check
+- National Report (Dealer wise, SKU wise)
+- Two Month Sales Comparison & Growth
+- Year to Year Sales Comparison
+- 6 Month SKU Sales
+
+**Collection & Incentive Reports:**
+- Distributor's Daily Collection
+- Nationwide Incentive (SO, TSO, RSM)
+- Yearly Achievement
+- Yearly Achievement (Exclusive SR)
+
+**MIS Reports:**
+- Category Wise Update (Time Pass)
+- Regular Report (extensive)
+- Daily Summary (DO, Secondary, Delivery)
+- Monthly Report (Day Wise)
+- Statistical Reports by distribution, territory
+- Voucher Summary
+- Trade Program
+- Competitor's Information
+
+**Attendance & Payroll Reports:**
+- Daily/Weekly/Monthly attendance
+- Attendance Modification
+- Leave Reports
+- Leave Modification
+- Distributor's Orders
+
+**Outlet Reports:**
+- POS Information (Search Outlet)
+- Route-wise outlet quantity
+- Zone-wise outlet order/delivery
+- Promotional Reports
+- Outlet-wise coverage
+
+**Technical Components:**
+- Advanced MongoDB aggregation pipelines
+- Report caching with Redis
+- Scheduled report generation
+- Excel/CSV export capabilities
+- PDF generation
+- Customizable report templates
+- Date range filtering
+- Multi-level filtering (National → Zone → Region → Area → Route → Outlet)
+- Real-time vs historical data toggle
+
+---
+
+### 16.3 Technical Specifications - Secondary Sales
+
+**Mobile Applications:**
+- **Platform:** iOS and Android
+- **Technology:** Native apps with offline capability
+- **Local Storage:** SQLite for offline data
+- **Synchronization:** Background sync service
+- **GPS Integration:** Real-time location tracking
+- **Camera Integration:** Photo capture for audits
+- **Push Notifications:** Order updates, approvals
+
+**Additional Backend Components:**
+- GPS tracking service
+- Background sync scheduler
+- Offline data queue manager
+- Report generation service
+- Commission calculation engine
+- TMR closing service
+- Audit form builder
+
+**Additional Frontend Components:**
+- Mobile-first responsive design
+- Offline-capable PWA features
+- Map integration (Google Maps)
+- Route visualization
+- GPS tracking displays
+- Mobile order entry forms
+- Photo upload interfaces
+
+**Database Extensions:**
+- SecondaryOrder collection
+- OutletCoverage collection
+- DeliveryRecord collection
+- IMSEntry collection
+- ProductReturn collection
+- UserLocation collection
+- TMRClosing collection
+- ProductSurvey, PriceSurvey collections
+- DistributorAudit collection
+- StockTransfer collection
+- Attendance collection
+- Payroll collection
+- Allowance collection
+- JourneyPlan collection
+- UserFeedback collection
+
+**Estimated Additional Collections:** 15+
+
+---
+
+### 16.4 Integration Points
+
+**Primary to Secondary Sales:**
+- Distributor stock from primary delivery chalans
+- Product master data synchronization
+- Territory and route assignments
+- Distributor accounts and credit limits
+
+**Secondary to Finance:**
+- Customer ledger updates from deliveries
+- Collection recording
+- Commission calculations
+- Payroll integration
+
+**Real-Time Features:**
+- GPS location updates
+- Live dashboard metrics
+- Order status notifications
+- Delivery tracking
+- Stock level alerts
+
+---
+
+### 16.5 Mobile Application Features
+
+**iOS & Android Apps Include:**
+- Offline order placement
+- GPS-based outlet proximity detection
+- Photo capture for audits
+- Delivery recording
+- Attendance marking
+- Journey plan submission
+- Return product recording
+- Real-time synchronization
+- Background data sync
+- Local data storage (SQLite)
+- Push notifications
+- Biometric authentication support
+
+---
+
+### 16.6 Success Metrics - Secondary Sales
+
+**Operational Metrics:**
+- Daily outlet coverage %
+- Order vs delivery variance
+- Strike rate % (memos/visits)
+- Category Call Productivity (CCP)
+- Line Per Call (LPC)
+- Time pass % (sales update timeliness)
+
+**Performance Metrics:**
+- Target achievement %
+- Secondary sales growth
+- Collection efficiency
+- Return rate %
+- Distributor stock turnover
+- SO productivity
+
+**Quality Metrics:**
+- Data accuracy %
+- Sync success rate
+- GPS accuracy
+- Order amendment rate
+- Audit compliance %
+
+---
+
+### 16.7 Deliverables - Secondary Sales Extension
+
+**Additional Source Code:**
+- Mobile applications (iOS & Android)
+- Offline sync service
+- GPS tracking service
+- Report generation engine
+- Commission calculation module
+
+**Additional Documentation:**
+- Mobile app user guides
+- Field force training materials
+- GPS tracking setup guide
+- Report catalog
+- Commission configuration guide
+- TMR closing procedures
+
+**Training Materials:**
+- SO mobile app training (2 hours)
+- DSR delivery recording (1 hour)
+- ASM/RSM approval workflow (1 hour)
+- Admin audit system (2 hours)
+- Report generation training (2 hours)
 
 ---
 

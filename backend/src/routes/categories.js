@@ -406,6 +406,7 @@ router.post(
         name,
         parent_id: parentDoc ? parentDoc._id : null,
         product_segment: productSegment,
+        image_url: req.body.image_url ? req.body.image_url.trim() : null,
         active,
         created_at: now,
         updated_at: now,
@@ -472,6 +473,10 @@ router.put(
 
       if (typeof req.body.active !== "undefined") {
         updates.active = req.body.active;
+      }
+
+      if (typeof req.body.image_url !== "undefined") {
+        updates.image_url = req.body.image_url ? req.body.image_url.trim() : null;
       }
 
       const parentFieldProvided = Object.prototype.hasOwnProperty.call(
