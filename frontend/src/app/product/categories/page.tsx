@@ -107,11 +107,12 @@ const getImageUrl = (imagePath: string | null | undefined): string | null => {
   if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
     return imagePath;
   }
-  // Images are served from backend root, not under /api
-  // Extract base URL without /api/v1 suffix
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
-  const baseUrl = apiUrl.replace(/\/api\/v1\/?$/, '');
-  return `${baseUrl}${imagePath}`;
+  // Images are served from backend root, not under /api path
+  // Use dedicated backend URL for static files, or derive from API URL
+  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || '';
+  
+  // If no dedicated backend URL, just use relative path (works when frontend and backend behind same nginx)
+  return backendUrl ? `${backendUrl}${imagePath}` : imagePath;
 };
 
 const formatActor = (actor?: ActorInfo | string | null) => {
