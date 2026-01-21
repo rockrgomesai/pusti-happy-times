@@ -49,7 +49,7 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'react-hot-toast';
-import api from '@/lib/api';
+import api, { API_ORIGIN_URL } from '@/lib/api';
 import ExportMenu from '@/components/common/ExportMenu';
 import ColumnVisibilityMenu from '@/components/common/ColumnVisibilityMenu';
 import { ExportColumn, formatDateForExport } from '@/lib/exportUtils';
@@ -108,11 +108,10 @@ const getImageUrl = (imagePath: string | null | undefined): string | null => {
     return imagePath;
   }
   // Images are served from backend root, not under /api path
-  // Use dedicated backend URL for static files, or derive from API URL
-  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || '';
-  
-  // If no dedicated backend URL, just use relative path (works when frontend and backend behind same nginx)
-  return backendUrl ? `${backendUrl}${imagePath}` : imagePath;
+  // Use API_ORIGIN_URL for development or just return path for production
+  const fullUrl = API_ORIGIN_URL ? `${API_ORIGIN_URL}${imagePath}` : imagePath;
+  console.log('Image URL:', { imagePath, API_ORIGIN_URL, fullUrl });
+  return fullUrl;
 };
 
 const formatActor = (actor?: ActorInfo | string | null) => {
@@ -452,6 +451,7 @@ export default function CategoriesPage() {
       });
 
       const imagePath = response.data.data.path;
+      console.log('Image uploaded:', { imagePath, response: response.data });
       setValue('image_url', imagePath);
       setImagePreview(imagePath);
       toast.success('Image uploaded successfully');
