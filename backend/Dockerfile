@@ -32,8 +32,8 @@ COPY --from=builder /app/node_modules ./node_modules
 # Copy application source code
 COPY . .
 
-# Create logs directory and set permissions
-RUN mkdir -p logs && \
+# Create logs and upload directories and set permissions
+RUN mkdir -p logs public/uploads public/images/categories && \
     chown -R nextjs:nodejs /app
 
 # Switch to non-root user

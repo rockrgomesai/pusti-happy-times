@@ -64,6 +64,9 @@ services:
       - MONGODB_URI=mongodb://admin:password123@mongodb:27017/pusti_happy_times?authSource=admin
       - REDIS_URL=redis://redis:6379
       - JWT_SECRET=your-super-secret-jwt-key-change-in-production
+    volumes:
+      - backend_uploads:/app/public/uploads
+      - backend_images:/app/public/images
     depends_on:
       - mongodb
       - redis
@@ -92,6 +95,10 @@ volumes:
   mongodb_data:
     driver: local
   redis_data:
+    driver: local
+  backend_uploads:
+    driver: local
+  backend_images:
     driver: local
 
 # Custom network for service communication

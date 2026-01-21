@@ -107,10 +107,11 @@ const getImageUrl = (imagePath: string | null | undefined): string | null => {
   if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
     return imagePath;
   }
-  // Construct full URL with API base (remove /api/v1 from the end if present)
-  let apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-  apiBase = apiBase.replace(/\/api\/v1\/?$/, '');
-  return `${apiBase}${imagePath}`;
+  // Images are served from backend root, not under /api
+  // Extract base URL without /api/v1 suffix
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
+  const baseUrl = apiUrl.replace(/\/api\/v1\/?$/, '');
+  return `${baseUrl}${imagePath}`;
 };
 
 const formatActor = (actor?: ActorInfo | string | null) => {
