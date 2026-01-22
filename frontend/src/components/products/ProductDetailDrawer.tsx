@@ -241,7 +241,7 @@ export const ProductDetailDrawer: React.FC<ProductDetailDrawerProps> = ({
                 Weight / Piece
               </Typography>
               <Typography variant="body1" sx={{ fontWeight: 600 }}>
-                {wt_pcs} kg
+                {wt_pcs} gm
               </Typography>
             </Box>
             <Box>
