@@ -282,53 +282,49 @@ router.post("/upload-image", async (req, res) => {
  * GET /api/categories
  * Fetch categories with optional active/segment/parent filters.
  */
-router.get(
-  "/",
-  requireApiPermission("categories:read"),
-  async (req, res) => {
-    try {
-      const filter = {};
+router.get("/", requireApiPermission("categories:read"), async (req, res) => {
+  try {
+    const filter = {};
 
-      if (typeof req.query.active !== "undefined") {
-        if (req.query.active === "true" || req.query.active === true) {
-          filter.active = true;
-        } else if (req.query.active === "false" || req.query.active === false) {
-          filter.active = false;
-        }
+    if (typeof req.query.active !== "undefined") {
+      if (req.query.active === "true" || req.query.active === true) {
+        filter.active = true;
+      } else if (req.query.active === "false" || req.query.active === false) {
+        filter.active = false;
       }
-
-      if (req.query.segment) {
-        const segment = normalizeSegment(req.query.segment);
-        if (!PRODUCT_SEGMENTS.includes(segment)) {
-          return res.status(400).json({
-            success: false,
-            message: "segment must be BEV or BIS",
-          });
-        }
-        filter.product_segment = segment;
-      }
-
-      if (req.query.parent_id) {
-        if (!mongoose.Types.ObjectId.isValid(req.query.parent_id)) {
-          return res.status(400).json({
-            success: false,
-            message: "Invalid parent category id",
-          });
-        }
-        filter.parent_id = req.query.parent_id;
-      }
-
-      const categories = await Category.find(filter).sort({ name: 1 }).lean();
-      return res.json({ success: true, data: categories });
-    } catch (error) {
-      console.error("Error fetching categories", error);
-      return res.status(500).json({
-        success: false,
-        message: "Error fetching categories",
-      });
     }
+
+    if (req.query.segment) {
+      const segment = normalizeSegment(req.query.segment);
+      if (!PRODUCT_SEGMENTS.includes(segment)) {
+        return res.status(400).json({
+          success: false,
+          message: "segment must be BEV or BIS",
+        });
+      }
+      filter.product_segment = segment;
+    }
+
+    if (req.query.parent_id) {
+      if (!mongoose.Types.ObjectId.isValid(req.query.parent_id)) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid parent category id",
+        });
+      }
+      filter.parent_id = req.query.parent_id;
+    }
+
+    const categories = await Category.find(filter).sort({ name: 1 }).lean();
+    return res.json({ success: true, data: categories });
+  } catch (error) {
+    console.error("Error fetching categories", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error fetching categories",
+    });
   }
-);
+});
 
 /**
  * GET /api/categories/:id
@@ -479,10 +475,7 @@ router.put(
         updates.image_url = req.body.image_url ? req.body.image_url.trim() : null;
       }
 
-      const parentFieldProvided = Object.prototype.hasOwnProperty.call(
-        req.body,
-        "parent_id"
-      );
+      const parentFieldProvided = Object.prototype.hasOwnProperty.call(req.body, "parent_id");
       let parentChanged = false;
       let newParentDoc = null;
 
@@ -516,9 +509,7 @@ router.put(
             });
           }
 
-          const existingParentId = category.parent_id
-            ? category.parent_id.toString()
-            : null;
+          const existingParentId = category.parent_id ? category.parent_id.toString() : null;
           parentChanged = existingParentId !== newParentDoc._id.toString();
           updates.parent_id = newParentDoc._id;
         }
@@ -621,9 +612,7 @@ router.delete(
       if (children.length) {
         let newSegment = null;
         if (category.parent_id) {
-          const parentDoc = await Category.findById(category.parent_id).select(
-            "product_segment"
-          );
+          const parentDoc = await Category.findById(category.parent_id).select("product_segment");
           if (parentDoc) {
             newSegment = parentDoc.product_segment;
           }

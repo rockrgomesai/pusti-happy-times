@@ -101,10 +101,10 @@ DistributorStockSchema.index({ distributor_id: 1, qty: -1 });
  */
 DistributorStockSchema.methods.addStockFIFO = function (quantity, unitPrice, chalanId, chalanNo) {
   const batch = {
-    batch_id: `${new Date().toISOString().replace(/[-:T.Z]/g, "").substring(0, 14)}-${Math.random()
-      .toString(36)
-      .substring(2, 7)
-      .toUpperCase()}`,
+    batch_id: `${new Date()
+      .toISOString()
+      .replace(/[-:T.Z]/g, "")
+      .substring(0, 14)}-${Math.random().toString(36).substring(2, 7).toUpperCase()}`,
     qty: quantity,
     unit_price: unitPrice,
     received_at: new Date(),

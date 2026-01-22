@@ -1,19 +1,20 @@
 # QUOTATION SPECIFICATION
+
 ## Pusti Happy Times - Sales Management ERP System
 
 ---
 
 ## DOCUMENT INFORMATION
 
-| Field | Details |
-|-------|---------|
-| **Project Name** | Pusti Happy Times Sales Management ERP |
-| **Client** | TK Group, Bangladesh |
-| **Document Type** | Technical & Commercial Quotation |
-| **Document Version** | 1.0 |
-| **Quotation Date** | January 19, 2026 |
-| **Valid Until** | March 19, 2026 (60 Days) |
-| **Prepared By** | Development Team |
+| Field                | Details                                |
+| -------------------- | -------------------------------------- |
+| **Project Name**     | Pusti Happy Times Sales Management ERP |
+| **Client**           | TK Group, Bangladesh                   |
+| **Document Type**    | Technical & Commercial Quotation       |
+| **Document Version** | 1.0                                    |
+| **Quotation Date**   | January 19, 2026                       |
+| **Valid Until**      | March 19, 2026 (60 Days)               |
+| **Prepared By**      | Development Team                       |
 
 ---
 
@@ -24,6 +25,7 @@ This document presents a comprehensive quotation for a fully functional **Sales 
 ### 1.1 System Overview
 
 A complete, production-ready **MERN Stack ERP Application** featuring:
+
 - **Modern Technology Stack:** Node.js, Express.js, MongoDB, Redis, Next.js 14, TypeScript, Material-UI
 - **Comprehensive Module Coverage:** 20+ integrated business modules (12 Primary + 9 Secondary Sales)
 - **Scalable Architecture:** Microservices-ready, containerized deployment
@@ -40,7 +42,9 @@ A complete, production-ready **MERN Stack ERP Application** featuring:
 ### 2.1 Core Application Modules
 
 #### Module 1: Authentication & Authorization System
+
 **Delivered Features:**
+
 - JWT-based authentication with refresh token mechanism
 - Multi-device session management with token versioning
 - Role-Based Access Control (RBAC) with granular permissions
@@ -52,6 +56,7 @@ A complete, production-ready **MERN Stack ERP Application** featuring:
 - "Logout All Devices" functionality
 
 **Technical Components:**
+
 - User, Role, ApiPermission, PagePermission models
 - Auth middleware with Redis caching
 - Frontend auth context and protected routes
@@ -60,9 +65,11 @@ A complete, production-ready **MERN Stack ERP Application** featuring:
 ---
 
 #### Module 2: Master Data Management
+
 **Delivered Features:**
 
 **A. Product Management**
+
 - Product master with SKU, brand, category management
 - Multi-category support
 - Product variants and attributes
@@ -71,6 +78,7 @@ A complete, production-ready **MERN Stack ERP Application** featuring:
 - Active/inactive product status
 
 **B. Territory Management**
+
 - 4-level hierarchical structure: Zone → Region → Area → DB Point
 - Tree-based territory navigation (React Arborist)
 - Territory assignment to sales officers
@@ -78,6 +86,7 @@ A complete, production-ready **MERN Stack ERP Application** featuring:
 - Territory-based performance tracking
 
 **C. Human Resources**
+
 - Employee master data management
 - Designation management
 - Employee-facility assignment
@@ -86,6 +95,7 @@ A complete, production-ready **MERN Stack ERP Application** featuring:
 - Employee validation system
 
 **D. Facility Management**
+
 - Unified facility management (Factory, Depot)
 - Product segment assignment to facilities
 - Facility-employee assignment
@@ -93,16 +103,19 @@ A complete, production-ready **MERN Stack ERP Application** featuring:
 - Facility status management
 
 **E. Transport Management**
+
 - Transport vehicle master data
 - Vehicle assignment to deliveries
 - Transport vendor management
 
 **F. Financial Master Data**
+
 - Bank master data
 - Bangladesh bank directory
 - Payment method configuration
 
 **Technical Components:**
+
 - Product, Brand, Category, Territory, Employee, Designation, Facility, Transport, Bank models
 - CRUD APIs for all master data
 - Frontend management pages with Material-UI
@@ -112,7 +125,9 @@ A complete, production-ready **MERN Stack ERP Application** featuring:
 ---
 
 #### Module 3: Distributor Management
+
 **Delivered Features:**
+
 - Distributor master data management
 - Territory assignment (DB Point level)
 - Product segment assignment to distributors
@@ -124,6 +139,7 @@ A complete, production-ready **MERN Stack ERP Application** featuring:
 - Distributor performance analytics
 
 **Technical Components:**
+
 - Distributor, DistributorStock models
 - Admin APIs (`/api/v1/distributors/*`)
 - Distributor portal APIs (`/api/v1/distributor/*`)
@@ -133,9 +149,11 @@ A complete, production-ready **MERN Stack ERP Application** featuring:
 ---
 
 #### Module 4: Offer Management System
+
 **Delivered Features:**
 
 **Offer Types Implemented:**
+
 - **BOGO** - Buy One Get One
 - **BUNDLE_OFFER** - Multi-SKU bundle deals
 - **FLAT_DISCOUNT_PCT** - Flat percentage discount
@@ -146,6 +164,7 @@ A complete, production-ready **MERN Stack ERP Application** featuring:
 - **FREE_PRODUCT** - Threshold-based free products
 
 **Offer Workflow:**
+
 - Offer creation and configuration
 - Distributor eligibility management
 - Offer send workflow (push offers to distributors)
@@ -157,6 +176,7 @@ A complete, production-ready **MERN Stack ERP Application** featuring:
 - Offer performance tracking
 
 **Technical Components:**
+
 - Offer, OfferSend, OfferReceive models
 - Complex offer calculation engine
 - Offer validation middleware
@@ -167,9 +187,11 @@ A complete, production-ready **MERN Stack ERP Application** featuring:
 ---
 
 #### Module 5: Order Management (Primary Sales)
+
 **Delivered Features:**
 
 **A. Demand Order (DO) Management**
+
 - Distributor-initiated order creation
 - Multi-product order support
 - Offer linking to order items
@@ -180,6 +202,7 @@ A complete, production-ready **MERN Stack ERP Application** featuring:
 - Order cancellation workflow
 
 **B. Approval Workflow**
+
 - Two-level approval chain:
   - ASM (Area Sales Manager) approval
   - RSM (Regional Sales Manager) approval
@@ -189,6 +212,7 @@ A complete, production-ready **MERN Stack ERP Application** featuring:
 - Email/notification on approval actions
 
 **C. Scheduling System**
+
 - Progressive scheduling (split deliveries)
 - Bundle-based scheduling for BOGO/BUNDLE offers
 - Quantity-based scheduling for discount offers
@@ -199,6 +223,7 @@ A complete, production-ready **MERN Stack ERP Application** featuring:
 - Schedule history tracking
 
 **Technical Components:**
+
 - DemandOrder model with embedded scheduling
 - Approval workflow engine
 - Progressive scheduling algorithm
@@ -211,7 +236,9 @@ A complete, production-ready **MERN Stack ERP Application** featuring:
 ---
 
 #### Module 6: Distribution Management
+
 **Delivered Features:**
+
 - Depot-level distribution dashboard
 - Approved demand order listing
 - Progressive scheduling interface
@@ -224,6 +251,7 @@ A complete, production-ready **MERN Stack ERP Application** featuring:
 - Schedule modification capabilities
 
 **Technical Components:**
+
 - Distribution scheduling APIs
 - Frontend distribution pages
 - Schedule validation middleware
@@ -233,9 +261,11 @@ A complete, production-ready **MERN Stack ERP Application** featuring:
 ---
 
 #### Module 7: Payment Collection System
+
 **Delivered Features:**
 
 **Collection Workflow:**
+
 - Payment recording from distributors
 - Multiple payment methods:
   - Cash
@@ -249,6 +279,7 @@ A complete, production-ready **MERN Stack ERP Application** featuring:
 - Payment history tracking
 
 **Collection Features:**
+
 - Collection amount validation
 - Bank/cheque details capture
 - Attachment support (payment proof)
@@ -258,6 +289,7 @@ A complete, production-ready **MERN Stack ERP Application** featuring:
 - Collection reporting
 
 **Technical Components:**
+
 - Collection model with payment details
 - Approval workflow engine
 - Customer ledger integration
@@ -268,9 +300,11 @@ A complete, production-ready **MERN Stack ERP Application** featuring:
 ---
 
 #### Module 8: Inventory Management System
+
 **Delivered Features:**
 
 **A. Production to Store**
+
 - Factory to depot shipment creation
 - Production send workflow
 - Depot receipt and verification
@@ -279,6 +313,7 @@ A complete, production-ready **MERN Stack ERP Application** featuring:
 - Received quantity reconciliation
 
 **B. Requisition System**
+
 - Depot-initiated requisition creation
 - Multi-product requisition support
 - Approval workflow (Production Manager)
@@ -291,6 +326,7 @@ A complete, production-ready **MERN Stack ERP Application** featuring:
 - Complete audit trail
 
 **C. Depot Transfer System**
+
 - Inter-depot transfer requests
 - Transfer approval workflow
 - Load sheet generation
@@ -300,6 +336,7 @@ A complete, production-ready **MERN Stack ERP Application** featuring:
 - Transfer history and reporting
 
 **D. Local Stock Management**
+
 - Real-time inventory tracking
 - Batch number tracking
 - Rack/bin location management
@@ -310,6 +347,7 @@ A complete, production-ready **MERN Stack ERP Application** featuring:
 - Stock reporting by facility
 
 **Technical Components:**
+
 - ProductionSendToStore, FactoryStoreInventory, InventoryRequisition, RequisitionScheduling, DepotTransfer, LoadSheet, DeliveryChalan models
 - Inventory transaction engine
 - Stock calculation algorithms
@@ -321,9 +359,11 @@ A complete, production-ready **MERN Stack ERP Application** featuring:
 ---
 
 #### Module 9: Finance Management
+
 **Delivered Features:**
 
 **Customer Ledger System:**
+
 - Distributor account management
 - Transaction recording:
   - Orders (debit)
@@ -338,6 +378,7 @@ A complete, production-ready **MERN Stack ERP Application** featuring:
 - Ledger reports and analytics
 
 **Technical Components:**
+
 - CustomerLedger model
 - Ledger transaction engine
 - Balance calculation algorithms
@@ -349,7 +390,9 @@ A complete, production-ready **MERN Stack ERP Application** featuring:
 ---
 
 #### Module 10: Dashboard & Analytics
+
 **Delivered Features:**
+
 - Role-based dashboard widgets
 - Real-time KPI display
 - Performance metrics:
@@ -367,6 +410,7 @@ A complete, production-ready **MERN Stack ERP Application** featuring:
 - Drill-down capabilities
 
 **Technical Components:**
+
 - Dashboard API with role-based filtering
 - Frontend dashboard with dynamic widgets
 - Chart.js integration
@@ -377,7 +421,9 @@ A complete, production-ready **MERN Stack ERP Application** featuring:
 ---
 
 #### Module 11: Notification System
+
 **Delivered Features:**
+
 - Real-time push notifications
 - Socket.IO integration
 - Notification bell with badge counter
@@ -394,6 +440,7 @@ A complete, production-ready **MERN Stack ERP Application** featuring:
 - Browser notifications (PWA)
 
 **Technical Components:**
+
 - Notification model
 - Socket.IO server setup
 - Frontend SocketContext
@@ -404,11 +451,13 @@ A complete, production-ready **MERN Stack ERP Application** featuring:
 ---
 
 #### Module 12: Primary Sales Reporting & Analytics
+
 **Delivered Features:**
 
 **A. Sales Performance Reports**
 
 **Order Reports:**
+
 - Demand Order Summary (all statuses)
 - Pending Orders Report (awaiting approval)
 - Approved Orders Report (ready for scheduling)
@@ -424,6 +473,7 @@ A complete, production-ready **MERN Stack ERP Application** featuring:
 - Time-series Order Trends
 
 **Approval Workflow Reports:**
+
 - ASM Pending Approvals
 - RSM Pending Approvals
 - Approval Turnaround Time
@@ -433,6 +483,7 @@ A complete, production-ready **MERN Stack ERP Application** featuring:
 - Approval Comments Analysis
 
 **Scheduling Reports:**
+
 - Schedule vs Demand Analysis
 - Progressive Scheduling Status
 - Bundle Scheduling Report (BOGO/Bundle offers)
@@ -445,6 +496,7 @@ A complete, production-ready **MERN Stack ERP Application** featuring:
 **B. Offer Performance Reports**
 
 **Offer Utilization:**
+
 - Active Offers Summary
 - Offer Acceptance Rate by Distributor
 - Offer-linked Orders Report
@@ -457,6 +509,7 @@ A complete, production-ready **MERN Stack ERP Application** featuring:
 - Offer ROI Analysis
 
 **Offer Analytics:**
+
 - Top Performing Offers
 - Distributor Offer Preferences
 - Seasonal Offer Trends
@@ -468,6 +521,7 @@ A complete, production-ready **MERN Stack ERP Application** featuring:
 **C. Collection & Finance Reports**
 
 **Collection Reports:**
+
 - Daily Collection Summary
 - Collection by Payment Method (Cash, Bank, Cheque)
 - Distributor-wise Collection Status
@@ -480,6 +534,7 @@ A complete, production-ready **MERN Stack ERP Application** featuring:
 - Collection Aging Analysis
 
 **Customer Ledger Reports:**
+
 - Distributor Account Summary
 - Outstanding Balance Report
 - Credit Limit Utilization
@@ -495,6 +550,7 @@ A complete, production-ready **MERN Stack ERP Application** featuring:
 **D. Inventory Reports**
 
 **Stock Reports:**
+
 - Factory Inventory Summary
 - Depot Stock Levels
 - Distributor Stock Report
@@ -507,6 +563,7 @@ A complete, production-ready **MERN Stack ERP Application** featuring:
 - Stock Turnover Ratio
 
 **Transfer & Movement Reports:**
+
 - Production to Store Shipments
 - Inter-depot Transfer Summary
 - Stock Transfer Status
@@ -518,6 +575,7 @@ A complete, production-ready **MERN Stack ERP Application** featuring:
 - Stock Variance Analysis
 
 **Requisition Reports:**
+
 - Depot Requisition Summary
 - Pending Requisitions
 - Approved Requisitions
@@ -530,6 +588,7 @@ A complete, production-ready **MERN Stack ERP Application** featuring:
 **E. Distributor Performance Reports**
 
 **Sales Performance:**
+
 - Distributor Sales Summary
 - Territory-wise Distributor Ranking
 - Top Performing Distributors
@@ -541,6 +600,7 @@ A complete, production-ready **MERN Stack ERP Application** featuring:
 - Category Performance by Distributor
 
 **Activity Reports:**
+
 - Order Frequency Report
 - Order Value Trends
 - Product Variety Analysis
@@ -553,6 +613,7 @@ A complete, production-ready **MERN Stack ERP Application** featuring:
 **F. Territory & Sales Reports**
 
 **Territory Analysis:**
+
 - Zone-wise Sales Summary
 - Region-wise Performance
 - Area-wise Distribution
@@ -563,6 +624,7 @@ A complete, production-ready **MERN Stack ERP Application** featuring:
 - Comparative Territory Performance
 
 **Sales Team Reports:**
+
 - ASM Performance Dashboard
 - RSM Territory Overview
 - Sales Officer Activity Report
@@ -573,6 +635,7 @@ A complete, production-ready **MERN Stack ERP Application** featuring:
 **G. Product & Category Reports**
 
 **Product Performance:**
+
 - Top Selling Products
 - Slow Moving Items
 - Product-wise Revenue Analysis
@@ -584,6 +647,7 @@ A complete, production-ready **MERN Stack ERP Application** featuring:
 - Damaged Product Report
 
 **Category Analysis:**
+
 - Category-wise Contribution
 - Segment Performance (BIS/BEV)
 - Category Growth Trends
@@ -594,6 +658,7 @@ A complete, production-ready **MERN Stack ERP Application** featuring:
 **H. Executive & MIS Reports**
 
 **Executive Dashboard Reports:**
+
 - Daily Sales Summary
 - Weekly Performance Overview
 - Monthly Business Review
@@ -604,6 +669,7 @@ A complete, production-ready **MERN Stack ERP Application** featuring:
 - Exception Reports (unusual patterns)
 
 **MIS Reports:**
+
 - Comprehensive Sales Report
 - Integrated Financial Summary
 - Inventory Position Report
@@ -616,6 +682,7 @@ A complete, production-ready **MERN Stack ERP Application** featuring:
 **I. Compliance & Audit Reports**
 
 **Audit Reports:**
+
 - Transaction Audit Trail
 - User Activity Log
 - Data Modification History
@@ -626,6 +693,7 @@ A complete, production-ready **MERN Stack ERP Application** featuring:
 - Session History Report
 
 **Compliance Reports:**
+
 - Tax Calculation Summary
 - Invoice Register
 - Chalan Register
@@ -636,6 +704,7 @@ A complete, production-ready **MERN Stack ERP Application** featuring:
 **J. Custom & Ad-hoc Reports**
 
 **Report Builder Features:**
+
 - Custom report creation
 - Dynamic field selection
 - Multi-level filtering
@@ -650,6 +719,7 @@ A complete, production-ready **MERN Stack ERP Application** featuring:
 **K. Analytical Reports**
 
 **Trend Analysis:**
+
 - Sales Trend Analysis
 - Seasonal Pattern Recognition
 - Growth Rate Calculation
@@ -658,6 +728,7 @@ A complete, production-ready **MERN Stack ERP Application** featuring:
 - Anomaly Detection
 
 **Comparative Analysis:**
+
 - Period-over-Period Comparison
 - Territory Comparison
 - Distributor Benchmarking
@@ -666,6 +737,7 @@ A complete, production-ready **MERN Stack ERP Application** featuring:
 - Budget vs Actual Analysis
 
 **Technical Components:**
+
 - Report model with metadata storage
 - Advanced aggregation pipelines
 - Report generation engine
@@ -682,6 +754,7 @@ A complete, production-ready **MERN Stack ERP Application** featuring:
 - Report audit logging
 
 **Report Features:**
+
 - Real-time data refresh
 - Historical data access
 - Drill-down capabilities
@@ -698,6 +771,7 @@ A complete, production-ready **MERN Stack ERP Application** featuring:
 - Report version control
 
 **Performance Optimization:**
+
 - Pre-aggregated data marts
 - Incremental data refresh
 - Report caching
@@ -712,6 +786,7 @@ A complete, production-ready **MERN Stack ERP Application** featuring:
 ### 2.2 Cross-Cutting Features
 
 #### Security & Compliance
+
 - JWT authentication with refresh tokens
 - Password hashing (bcrypt)
 - Role-based access control (RBAC)
@@ -725,6 +800,7 @@ A complete, production-ready **MERN Stack ERP Application** featuring:
 - Token versioning for device management
 
 #### API Architecture
+
 - RESTful API design
 - Versioned APIs (`/api/v1/`)
 - Consistent response format
@@ -736,6 +812,7 @@ A complete, production-ready **MERN Stack ERP Application** featuring:
 - Bulk operations support
 
 #### Frontend Architecture
+
 - Next.js 14 App Router
 - TypeScript for type safety
 - Material-UI component library
@@ -749,6 +826,7 @@ A complete, production-ready **MERN Stack ERP Application** featuring:
 - Form validation (React Hook Form)
 
 #### Performance Optimization
+
 - Redis caching
 - Database indexing
 - Query optimization
@@ -759,6 +837,7 @@ A complete, production-ready **MERN Stack ERP Application** featuring:
 - MongoDB aggregation pipelines
 
 #### Developer Experience
+
 - ESLint configuration
 - Prettier formatting
 - Environment variable management
@@ -774,6 +853,7 @@ A complete, production-ready **MERN Stack ERP Application** featuring:
 ### 2.3 Database Schema
 
 **Delivered Collections:** (50+ collections)
+
 - Authentication: users, roles, apipermissions, pagepermissions, sidebarmenuitem
 - Master Data: products, brands, categories, territories, employees, designations, facilities, transports, banks
 - Distributor: distributors, distributorstocks
@@ -787,6 +867,7 @@ A complete, production-ready **MERN Stack ERP Application** featuring:
 - Secondary Sales: secondaryorders, outletcoverage, deliveryrecords, imsentries, productreturns, userlocations, tmrclosings, productsurveys, distributoraudits, stocktransfers, attendance, payroll, allowances, journeyplans, userfeedback
 
 **Schema Features:**
+
 - Proper indexing for performance
 - Referential integrity
 - Audit fields (created_at, updated_at, created_by, updated_by)
@@ -799,6 +880,7 @@ A complete, production-ready **MERN Stack ERP Application** featuring:
 ### 2.4 Deployment Package
 
 **Delivered Components:**
+
 - Complete source code (backend + frontend)
 - Docker configuration:
   - `docker-compose.yml` (production)
@@ -823,6 +905,7 @@ A complete, production-ready **MERN Stack ERP Application** featuring:
 ### 2.5 Documentation Delivered
 
 **Technical Documentation:**
+
 - MODULES_OVERVIEW.md - Complete module reference
 - BRD.md - Business Requirements Document
 - DATABASE_SCHEMA.md - Schema documentation
@@ -833,6 +916,7 @@ A complete, production-ready **MERN Stack ERP Application** featuring:
 - DATABASE_DEPLOYMENT_GUIDE.md - Database setup
 
 **Module-Specific Documentation:**
+
 - AUTH_IMPLEMENTATION_GUIDE.md
 - DEMAND_ORDERS_IMPLEMENTATION.md
 - DISTRIBUTION_SCHEDULING_COMPLETE.md
@@ -844,6 +928,7 @@ A complete, production-ready **MERN Stack ERP Application** featuring:
 - And 20+ more implementation guides
 
 **Operations Documentation:**
+
 - GIT_MULTI_DEVICE_WORKFLOW_GUIDE.md
 - SEED_DATA_SUMMARY.md
 - DSR_PRODUCTION_DEPLOYMENT.md
@@ -855,6 +940,7 @@ A complete, production-ready **MERN Stack ERP Application** featuring:
 ### 3.1 Technology Stack
 
 **Backend:**
+
 - **Runtime:** Node.js (v18+)
 - **Framework:** Express.js
 - **Database:** MongoDB (v6.0+)
@@ -867,6 +953,7 @@ A complete, production-ready **MERN Stack ERP Application** featuring:
 - **Utilities:** Moment.js, Lodash
 
 **Frontend:**
+
 - **Framework:** Next.js 14 (React 18)
 - **Language:** TypeScript
 - **UI Library:** Material-UI (MUI v5)
@@ -879,6 +966,7 @@ A complete, production-ready **MERN Stack ERP Application** featuring:
 - **Date Handling:** date-fns
 
 **DevOps:**
+
 - **Containerization:** Docker, Docker Compose
 - **Process Management:** PM2 (optional)
 - **Web Server:** Nginx (production)
@@ -890,6 +978,7 @@ A complete, production-ready **MERN Stack ERP Application** featuring:
 **Architecture Pattern:** Monolithic with modular design (microservices-ready)
 
 **Backend Structure:**
+
 ```
 backend/
 ├── src/
@@ -906,6 +995,7 @@ backend/
 ```
 
 **Frontend Structure:**
+
 ```
 frontend/
 ├── src/
@@ -925,6 +1015,7 @@ frontend/
 **Database:** MongoDB (NoSQL Document Database)
 
 **Design Principles:**
+
 - Document-oriented schema
 - Embedded vs referenced data (hybrid approach)
 - Proper indexing for query performance
@@ -939,6 +1030,7 @@ frontend/
 ### 3.4 Performance Characteristics
 
 **Expected Performance:**
+
 - API Response Time: < 200ms (average)
 - Page Load Time: < 2 seconds (first load)
 - Concurrent Users: 500+ (with current infrastructure)
@@ -946,6 +1038,7 @@ frontend/
 - Real-time Notification Latency: < 100ms
 
 **Scalability:**
+
 - Horizontal scaling ready (stateless backend)
 - MongoDB sharding support
 - Redis clustering support
@@ -972,18 +1065,21 @@ frontend/
 ### 3.6 Browser & Device Compatibility
 
 **Browsers:**
+
 - Chrome (latest 2 versions)
 - Firefox (latest 2 versions)
 - Safari (latest 2 versions)
 - Edge (latest 2 versions)
 
 **Devices:**
+
 - Desktop (1920px+)
 - Laptop (1366px - 1920px)
 - Tablet (768px - 1365px)
 - Mobile (320px - 767px)
 
 **Progressive Web App (PWA) Ready:**
+
 - Installable on mobile devices
 - Offline capability (service worker ready)
 - Push notifications
@@ -1061,6 +1157,7 @@ frontend/
 ### 5.1 Testing Performed
 
 **Manual Testing:**
+
 - Functional testing for all modules
 - Integration testing across modules
 - User acceptance testing (UAT)
@@ -1069,6 +1166,7 @@ frontend/
 - Performance testing
 
 **Test Coverage:**
+
 - Authentication flows
 - CRUD operations for all modules
 - Approval workflows
@@ -1104,12 +1202,14 @@ frontend/
 ### 6.2 Training Recommendations
 
 **End User Training:**
+
 - Role-based training sessions (2-3 hours per role)
 - Hands-on practice with test data
 - User manual walkthrough
 - Q&A sessions
 
 **Admin Training:**
+
 - System administration (4 hours)
 - User management
 - Master data setup
@@ -1117,6 +1217,7 @@ frontend/
 - Troubleshooting basics
 
 **Technical Training:**
+
 - System architecture overview (2 hours)
 - Deployment procedures (2 hours)
 - Database management (2 hours)
@@ -1126,12 +1227,14 @@ frontend/
 ### 6.3 Support Options
 
 **Post-Deployment Support:**
+
 - Bug fixes (critical issues)
 - Technical assistance
 - Remote support
 - Email/phone support
 
 **Maintenance Options:**
+
 - Monthly maintenance retainer
 - Annual maintenance contract
 - On-demand support hours
@@ -1146,6 +1249,7 @@ frontend/
 **Current Status:** ✅ COMPLETE (Production Ready)
 
 **Development Timeline:**
+
 - Project Start: October 2025
 - Development Phase: October 2025 - January 2026
 - Testing Phase: December 2025 - January 2026
@@ -1156,14 +1260,14 @@ frontend/
 
 ### 7.2 Deployment Timeline (Estimated)
 
-| Phase | Duration | Activities |
-|-------|----------|------------|
-| Infrastructure Setup | 1-2 days | Server setup, Docker installation, database setup |
-| Application Deployment | 1 day | Deploy code, configure environment, SSL setup |
-| Data Migration | 1-2 days | Import master data, seed initial data |
-| Testing | 2-3 days | UAT, integration testing, performance testing |
-| Training | 3-5 days | User training, admin training |
-| Go-Live | 1 day | Production launch, monitoring |
+| Phase                  | Duration | Activities                                        |
+| ---------------------- | -------- | ------------------------------------------------- |
+| Infrastructure Setup   | 1-2 days | Server setup, Docker installation, database setup |
+| Application Deployment | 1 day    | Deploy code, configure environment, SSL setup     |
+| Data Migration         | 1-2 days | Import master data, seed initial data             |
+| Testing                | 2-3 days | UAT, integration testing, performance testing     |
+| Training               | 3-5 days | User training, admin training                     |
+| Go-Live                | 1 day    | Production launch, monitoring                     |
 
 **Total Deployment Time:** 9-14 days
 
@@ -1196,6 +1300,7 @@ frontend/
 ### 8.3 Exclusions
 
 The following are NOT included in this quotation:
+
 - Custom hardware procurement
 - Network infrastructure setup
 - Third-party service subscriptions (SMS, email services)
@@ -1214,6 +1319,7 @@ The following are NOT included in this quotation:
 ### 9.1 Pricing Structure
 
 **Option 1: One-Time Purchase**
+
 - Complete system delivery
 - Source code ownership transfer
 - All documentation
@@ -1221,6 +1327,7 @@ The following are NOT included in this quotation:
 - Installation and deployment assistance
 
 **Option 2: Licensing Model**
+
 - Annual license fee
 - Hosted solution (cloud)
 - Regular updates and enhancements
@@ -1230,19 +1337,22 @@ The following are NOT included in this quotation:
 ### 9.2 Payment Terms
 
 **Milestone-Based Payment:**
-- Upon contract signing: ___%
-- Upon deployment: ___%
-- Upon UAT completion: ___%
-- Upon go-live: ___%
+
+- Upon contract signing: \_\_\_%
+- Upon deployment: \_\_\_%
+- Upon UAT completion: \_\_\_%
+- Upon go-live: \_\_\_%
 
 **Or**
 
 **Single Payment:**
+
 - Upon delivery and acceptance
 
 ### 9.3 Additional Services (Optional)
 
 **Annual Maintenance Contract (AMC):**
+
 - Bug fixes and patches
 - Security updates
 - Performance optimization
@@ -1252,6 +1362,7 @@ The following are NOT included in this quotation:
 - Backup management
 
 **Enhancement Services:**
+
 - New feature development (quoted separately)
 - Custom report development
 - Integration with third-party systems
@@ -1259,12 +1370,14 @@ The following are NOT included in this quotation:
 - Advanced analytics and BI
 
 **Training Services:**
+
 - On-site training (per day)
 - Online training sessions
 - Custom training materials
 - Train-the-trainer programs
 
 **Support Packages:**
+
 - Bronze: Email support (24-48 hours response)
 - Silver: Email + Phone support (8-12 hours response)
 - Gold: Priority support (4-6 hours response)
@@ -1275,6 +1388,7 @@ The following are NOT included in this quotation:
 ## 10. DELIVERABLES CHECKLIST
 
 ### ✅ Source Code
+
 - [ ] Backend application (Node.js/Express)
 - [ ] Frontend application (Next.js/TypeScript)
 - [ ] Database schemas and models
@@ -1282,6 +1396,7 @@ The following are NOT included in this quotation:
 - [ ] Migration scripts
 
 ### ✅ Configuration Files
+
 - [ ] Docker Compose files
 - [ ] Environment configuration templates
 - [ ] Nginx configuration
@@ -1289,6 +1404,7 @@ The following are NOT included in this quotation:
 - [ ] Redis configuration
 
 ### ✅ Documentation
+
 - [ ] Business Requirements Document (BRD)
 - [ ] Technical Documentation (40+ files)
 - [ ] API Documentation
@@ -1298,6 +1414,7 @@ The following are NOT included in this quotation:
 - [ ] Admin Guide
 
 ### ✅ Deployment Support
+
 - [ ] Installation assistance
 - [ ] Initial configuration
 - [ ] Database setup
@@ -1305,12 +1422,14 @@ The following are NOT included in this quotation:
 - [ ] Performance tuning
 
 ### ✅ Training Materials
+
 - [ ] Training guides
 - [ ] Video tutorials (if applicable)
 - [ ] Quick reference cards
 - [ ] FAQ documentation
 
 ### ✅ Post-Deployment
+
 - [ ] 30 days bug-fix support
 - [ ] Knowledge transfer sessions
 - [ ] System handover documentation
@@ -1358,7 +1477,7 @@ The following are NOT included in this quotation:
 
 **Option B:** Developer retains IP, client receives perpetual license to use.
 
-*(To be decided based on commercial agreement)*
+_(To be decided based on commercial agreement)_
 
 ### 12.2 Warranty
 
@@ -1417,14 +1536,17 @@ The following are NOT included in this quotation:
 ## 14. CONTACT INFORMATION
 
 **For Technical Queries:**
+
 - Email: [technical-team@domain.com]
 - Phone: [+xxx-xxxx-xxxx]
 
 **For Commercial Queries:**
+
 - Email: [sales@domain.com]
 - Phone: [+xxx-xxxx-xxxx]
 
 **For Support:**
+
 - Email: [support@domain.com]
 - Phone: [+xxx-xxxx-xxxx]
 
@@ -1434,42 +1556,45 @@ The following are NOT included in this quotation:
 
 ### Appendix A: Module Feature Matrix
 
-| Module | Features Implemented | Frontend Pages | API Endpoints | Database Collections |
-|--------|---------------------|----------------|---------------|---------------------|
-| Authentication | 6 | 3 | 8 | 5 |
-| Master Data | 15+ | 12+ | 40+ | 12 |
-| Distributors | 8 | 6 | 15 | 2 |
-| Offers | 10 | 8 | 25 | 3 |
-| Orders | 12 | 10 | 30 | 1 |
-| Distribution | 8 | 5 | 12 | 0 (uses Orders) |
-| Collections | 9 | 6 | 18 | 1 |
-| Inventory | 20+ | 15+ | 50+ | 8 |
-| Finance | 6 | 4 | 10 | 1 |
-| Dashboard | 8 | 2 | 8 | 0 |
-| Notifications | 5 | 1 | 6 | 1 |
-| Primary Reports | 50+ | 8+ | 25+ | 2 |
-| **TOTAL** | **172+** | **88+** | **277+** | **37** |
+| Module          | Features Implemented | Frontend Pages | API Endpoints | Database Collections |
+| --------------- | -------------------- | -------------- | ------------- | -------------------- |
+| Authentication  | 6                    | 3              | 8             | 5                    |
+| Master Data     | 15+                  | 12+            | 40+           | 12                   |
+| Distributors    | 8                    | 6              | 15            | 2                    |
+| Offers          | 10                   | 8              | 25            | 3                    |
+| Orders          | 12                   | 10             | 30            | 1                    |
+| Distribution    | 8                    | 5              | 12            | 0 (uses Orders)      |
+| Collections     | 9                    | 6              | 18            | 1                    |
+| Inventory       | 20+                  | 15+            | 50+           | 8                    |
+| Finance         | 6                    | 4              | 10            | 1                    |
+| Dashboard       | 8                    | 2              | 8             | 0                    |
+| Notifications   | 5                    | 1              | 6             | 1                    |
+| Primary Reports | 50+                  | 8+             | 25+           | 2                    |
+| **TOTAL**       | **172+**             | **88+**        | **277+**      | **37**               |
 
 ### Appendix B: Technology Dependencies
 
 **Backend Dependencies:**
+
 ```
-express, mongoose, jsonwebtoken, bcrypt, joi, 
-socket.io, redis, cors, helmet, morgan, 
+express, mongoose, jsonwebtoken, bcrypt, joi,
+socket.io, redis, cors, helmet, morgan,
 dotenv, moment, lodash, multer, compression
 ```
 
 **Frontend Dependencies:**
+
 ```
-next, react, typescript, @mui/material, 
-axios, socket.io-client, react-hook-form, 
-date-fns, recharts, @emotion/react, 
+next, react, typescript, @mui/material,
+axios, socket.io-client, react-hook-form,
+date-fns, recharts, @emotion/react,
 @emotion/styled
 ```
 
 ### Appendix C: Server Requirements
 
 **Minimum Production Server:**
+
 - OS: Ubuntu 20.04+ / CentOS 8+ / Windows Server 2019+
 - CPU: 4 cores (2.5 GHz+)
 - RAM: 8 GB
@@ -1479,6 +1604,7 @@ date-fns, recharts, @emotion/react,
 - Docker Compose 2.0+
 
 **Recommended Production Server:**
+
 - OS: Ubuntu 22.04 LTS
 - CPU: 8 cores (3.0 GHz+)
 - RAM: 16 GB
@@ -1491,6 +1617,7 @@ date-fns, recharts, @emotion/react,
 ### Appendix D: Database Statistics
 
 **Current Database Metrics:**
+
 - Collections: 50+
 - Indexes: 120+
 - Relationships: 75+
@@ -1520,13 +1647,13 @@ Project: Pusti Happy Times Sales Management ERP
 
 Authorized Signatory:
 
-Name: _______________________________
+Name: **************\_\_\_**************
 
-Designation: _______________________________
+Designation: **************\_\_\_**************
 
-Signature: _______________________________
+Signature: **************\_\_\_**************
 
-Date: _______________________________
+Date: **************\_\_\_**************
 
 ---
 
@@ -1537,6 +1664,7 @@ Date: _______________________________
 The Secondary Sales System extends the primary sales management to track product movement from distributors to retail outlets (Point of Sale). This module focuses on field force automation, outlet coverage, order tracking, and comprehensive analytics for distributor-to-retail operations.
 
 **Key Stakeholders:**
+
 - Sales Officers (SO) / Sales Representatives (SR)
 - Distributor Sales Representatives (DSR)
 - Area Sales Managers (ASM)
@@ -1548,9 +1676,11 @@ The Secondary Sales System extends the primary sales management to track product
 ---
 
 #### Module 13: Secondary Order Processing System
+
 **Delivered Features:**
 
 **A. Outlet Visit & Coverage**
+
 - GPS-based outlet proximity detection
 - Shop open/closed status tracking
 - Brand coverage tracking (TK Group products at outlets)
@@ -1560,6 +1690,7 @@ The Secondary Sales System extends the primary sales management to track product
 - Minimum distance validation for order placement
 
 **B. Order Placement Workflow**
+
 - Two-option order workflow:
   - YES: Place order
   - NO: Record reasons (configurable via master settings)
@@ -1574,6 +1705,7 @@ The Secondary Sales System extends the primary sales management to track product
   - Selected route
 
 **C. Offline Order Capability**
+
 - Mobile app offline functionality (iOS/Android)
 - Local database storage (SQLite)
 - Background synchronization scheduler
@@ -1582,6 +1714,7 @@ The Secondary Sales System extends the primary sales management to track product
 - Products retrieved from local DB
 
 **D. Order Amendment**
+
 - Order modification by SO or authorized users
 - SKU-based item changes:
   - Quantity adjustments
@@ -1591,12 +1724,14 @@ The Secondary Sales System extends the primary sales management to track product
 - Amendment history tracking
 
 **E. Automated Calculations**
+
 - CCP (Category Call Productivity) = Total categories / Total memos
 - LPC (Line Per Call) = Total SKUs / Total memos
 - Strike Rate % calculation
 - Productive call % = (Memos/Visited outlets) × 100
 
 **Technical Components:**
+
 - SecondaryOrder, OutletCoverage, OrderMemo models
 - GPS location tracking (lat/lon)
 - SQLite for offline mobile storage
@@ -1609,9 +1744,11 @@ The Secondary Sales System extends the primary sales management to track product
 ---
 
 #### Module 14: Product Delivery & IMS (Inventory Management System)
+
 **Delivered Features:**
 
 **A. Delivery Workflow**
+
 - DSR delivery recording
 - Partial, full, or remaining item delivery
 - Delivery date tracking
@@ -1620,6 +1757,7 @@ The Secondary Sales System extends the primary sales management to track product
 - Date-wise delivery summary
 
 **B. IMS Entry**
+
 - Date selection (default: current date)
 - Date range intervals
 - Total days calculation
@@ -1633,6 +1771,7 @@ The Secondary Sales System extends the primary sales management to track product
   - Selected route
 
 **C. Admin Controls**
+
 - **Delete IMS:**
   - By selected SR and POS
   - By selected date
@@ -1652,12 +1791,14 @@ The Secondary Sales System extends the primary sales management to track product
   - Number of memos and line items
 
 **D. Inventory Update**
+
 - Auto-update on delivery confirmation
 - Stock reconciliation
 - Quantity verification
 - Delivery vs order variance tracking
 
 **Technical Components:**
+
 - DeliveryRecord, IMSEntry models
 - Delivery calculation engine
 - Admin management interfaces
@@ -1668,9 +1809,11 @@ The Secondary Sales System extends the primary sales management to track product
 ---
 
 #### Module 15: Product Return Management
+
 **Delivered Features:**
 
 **A. Return Eligibility & Criteria**
+
 - Configurable return reasons (master settings):
   - Damaged goods
   - Defective products
@@ -1681,6 +1824,7 @@ The Secondary Sales System extends the primary sales management to track product
 - Return approval workflow
 
 **B. Return Process**
+
 - Return criteria selection
 - Product collection from retailers
 - DSR-initiated returns
@@ -1690,6 +1834,7 @@ The Secondary Sales System extends the primary sales management to track product
 - Higher authority notification
 
 **C. Product Handling**
+
 - Distributor replacement at shop/POS
 - Defective product collection
 - Factory return workflow:
@@ -1699,6 +1844,7 @@ The Secondary Sales System extends the primary sales management to track product
   - Company decision: replace or refund
 
 **D. Financial Adjustment**
+
 - Finance department verification
 - Root cause analysis
 - Balance adjustment for eligible cases
@@ -1707,6 +1853,7 @@ The Secondary Sales System extends the primary sales management to track product
 - Alternative: Distributor sells products then adjusts money
 
 **Technical Components:**
+
 - ProductReturn, ReturnApproval models
 - Return workflow engine
 - Approval chain implementation
@@ -1718,9 +1865,11 @@ The Secondary Sales System extends the primary sales management to track product
 ---
 
 #### Module 16: User Movement Tracking
+
 **Delivered Features:**
 
 **A. GPS-Based Tracking**
+
 - Real-time SO location tracking
 - Longitude and latitude collection
 - Movement path rendering
@@ -1728,6 +1877,7 @@ The Secondary Sales System extends the primary sales management to track product
 - Graphical movement line display
 
 **B. Web-Based Tracking**
+
 - Browser Geolocation API integration
 - GPS access request with user consent
 - Random position storage
@@ -1735,6 +1885,7 @@ The Secondary Sales System extends the primary sales management to track product
 - Live position updates
 
 **C. Mobile App Tracking**
+
 - iOS/Android position tracking
 - User position display
 - Assigned SO positions visualization
@@ -1742,6 +1893,7 @@ The Secondary Sales System extends the primary sales management to track product
 - Route adherence monitoring
 
 **Technical Components:**
+
 - UserLocation, GPSTrack models
 - Geolocation API integration
 - Map rendering (Google Maps)
@@ -1753,15 +1905,18 @@ The Secondary Sales System extends the primary sales management to track product
 ---
 
 #### Module 17: TMR (This Month Report) / Month Closing
+
 **Delivered Features:**
 
 **A. Month Closing Process**
+
 - Freeze sales of selected month
 - Calculate opening balance for next month
 - Prevent modification after closing
 - Sales data finalization
 
 **B. TMR Data Management**
+
 - Product category selection
 - Opening quantity tracking
 - Product SKU management
@@ -1774,6 +1929,7 @@ The Secondary Sales System extends the primary sales management to track product
 - Free items offered during selling
 
 **C. TMR Deletion**
+
 - Delete by nationwide
 - Delete by zone/division
 - Delete by region
@@ -1781,12 +1937,14 @@ The Secondary Sales System extends the primary sales management to track product
 - Delete by selected distributor
 
 **D. TMR Modification**
+
 - Modify TMR sales data if required
 - Only applicable for DB's sales
 - Cannot perform TMR for current month
 - Historical data corrections
 
 **E. Closing Area Options**
+
 - Nationwide closing
 - Zone/division specific
 - Region specific
@@ -1794,6 +1952,7 @@ The Secondary Sales System extends the primary sales management to track product
 - Selected distributor
 
 **Technical Components:**
+
 - TMRClosing, MonthlyBalance models
 - Month freeze mechanism
 - Opening balance calculation
@@ -1805,9 +1964,11 @@ The Secondary Sales System extends the primary sales management to track product
 ---
 
 #### Module 18: Audit & Survey System
+
 **Delivered Features:**
 
 **A. Product Survey**
+
 - Competitor product tracking
 - Area and date selection
 - Route selection
@@ -1817,6 +1978,7 @@ The Secondary Sales System extends the primary sales management to track product
 - Route-based survey conduct
 
 **B. Price Survey**
+
 - Competitor price comparison
 - Area and date selection
 - Route selection
@@ -1824,6 +1986,7 @@ The Secondary Sales System extends the primary sales management to track product
 - Multi-competitor price tracking
 
 **C. Delivery Memo Audit**
+
 - TK Group product pricing
 - Outlet-wise category coverage audit
 - Product categories sold from outlet
@@ -1839,11 +2002,13 @@ The Secondary Sales System extends the primary sales management to track product
 **D. Distributor Audit**
 
 **Stock Survey:**
+
 - Select dealer/distributor on specific date
 - Physical vs system stock comparison
 - Product-wise quantity verification
 
 **Document Availability Check:**
+
 - ROI availability
 - Attendance sheet
 - Route chart
@@ -1851,6 +2016,7 @@ The Secondary Sales System extends the primary sales management to track product
 - Boolean data via master settings
 
 **Logistic Support Audit:**
+
 - Smartphone availability
 - Laptop
 - Printer
@@ -1860,6 +2026,7 @@ The Secondary Sales System extends the primary sales management to track product
 - All managed via master settings
 
 **Product Complaints Tracking:**
+
 - SKU-wise complaint tracking:
   - Damaged items
   - Expired items
@@ -1868,12 +2035,14 @@ The Secondary Sales System extends the primary sales management to track product
 - Comments/remarks field
 
 **Investment Status:**
+
 - Investment amount for floor stock
 - Undelivered quantity
 - Payment in transit (cash, bank, market credit)
 - Status managed via master settings
 
 **Sales Officer Activity Audit:**
+
 - Dress code maintenance
 - Attitude assessment (positive/negative)
 - Physical violence involvement
@@ -1883,6 +2052,7 @@ The Secondary Sales System extends the primary sales management to track product
 - Dynamic activities via master settings
 
 **Technical Components:**
+
 - ProductSurvey, PriceSurvey, DistributorAudit models
 - Audit form builder
 - Competitor data models
@@ -1894,9 +2064,11 @@ The Secondary Sales System extends the primary sales management to track product
 ---
 
 #### Module 19: Stock Management & Transfer System
+
 **Delivered Features:**
 
 **A. Stock Transfer**
+
 - Distributor-to-distributor transfers
 - Source distributor selection
 - Receiving DB selection
@@ -1906,12 +2078,14 @@ The Secondary Sales System extends the primary sales management to track product
 - Single item or all items transfer
 
 **B. TMR Transfer**
+
 - Source DB selection
 - Target DB selection
 - TMR data transfer
 - Balance adjustments
 
 **C. Sales Transfer**
+
 - Source SO selection
 - Target SO selection
 - Sales order transfer
@@ -1919,6 +2093,7 @@ The Secondary Sales System extends the primary sales management to track product
 - Sales data migration
 
 **D. Sales Modification**
+
 - Select SO
 - Select date interval
 - Modify sales data
@@ -1926,17 +2101,20 @@ The Secondary Sales System extends the primary sales management to track product
 - Audit trail
 
 **E. Target Transfer**
+
 - Source SO selection
 - Target SO selection
 - Sales target transfer
 - Target reallocation
 
 **F. Target New SKU**
+
 - Select product item/SKU
 - Add SKU to all existing targets
 - Automatic target distribution
 
 **Technical Components:**
+
 - StockTransfer, TMRTransfer, SalesTransfer models
 - Transfer workflow engine
 - Target management system
@@ -1947,9 +2125,11 @@ The Secondary Sales System extends the primary sales management to track product
 ---
 
 #### Module 20: Attendance & Payroll System
+
 **Delivered Features:**
 
 **A. Attendance Management**
+
 - Employee types covered:
   - SO (Sales Officer)
   - ASM (Area Sales Manager)
@@ -1958,6 +2138,7 @@ The Secondary Sales System extends the primary sales management to track product
   - Administrator (Head office employees)
 
 **Attendance Process:**
+
 - Current date attendance only
 - Employee selection
 - Status options:
@@ -1971,6 +2152,7 @@ The Secondary Sales System extends the primary sales management to track product
 **B. Payroll Management**
 
 **Salary Calculation:**
+
 - Maximum allowed leave days per month
 - Allowed late presents (max 3 per month)
 - Basic salary
@@ -1981,6 +2163,7 @@ The Secondary Sales System extends the primary sales management to track product
 **Allowance Management:**
 
 **PJP (Permanent Journey Plan):**
+
 - Advance sharing
 - Detail level traveling:
   - 1st half (9am-12pm)
@@ -1994,6 +2177,7 @@ The Secondary Sales System extends the primary sales management to track product
 - Revised journey plan facility
 
 **Journey Details:**
+
 - Date of travel
 - From/To locations
 - Mode of transportation
@@ -2004,6 +2188,7 @@ The Secondary Sales System extends the primary sales management to track product
 - Google Maps cross-check
 
 **Allowance Categories:**
+
 - Visit categories:
   - Base
   - Ex-Base
@@ -2016,6 +2201,7 @@ The Secondary Sales System extends the primary sales management to track product
 - Others
 
 **Payroll for SO (National):**
+
 - Zone, Region, Area
 - SO ID, Name
 - DB ID, Name
@@ -2028,6 +2214,7 @@ The Secondary Sales System extends the primary sales management to track product
 - Payable Amount
 
 **Technical Components:**
+
 - Attendance, Payroll, Allowance, JourneyPlan models
 - Attendance marking system
 - Payroll calculation engine
@@ -2040,6 +2227,7 @@ The Secondary Sales System extends the primary sales management to track product
 ---
 
 #### Module 21: User Feedback System
+
 **Delivered Features:**
 
 - End-user feedback submission
@@ -2056,6 +2244,7 @@ The Secondary Sales System extends the primary sales management to track product
 - Action item generation
 
 **Technical Components:**
+
 - UserFeedback model
 - Feedback submission interface (web + mobile)
 - Review dashboard
@@ -2070,6 +2259,7 @@ The Secondary Sales System extends the primary sales management to track product
 The Secondary Sales System includes 30+ comprehensive report categories:
 
 **Dashboard Reports:**
+
 - Current Status Dashboard:
   - Sales TP (Trade Price)
   - Order TP
@@ -2085,6 +2275,7 @@ The Secondary Sales System includes 30+ comprehensive report categories:
 - Live dashboard with real-time updates
 
 **KPI Reports:**
+
 - Daily Target (sales amount, sold amount)
 - Monthly Target (target vs achieved)
 - Today KPI (Target POS, Visited %, Strike rate %, LPC, CCP)
@@ -2093,6 +2284,7 @@ The Secondary Sales System includes 30+ comprehensive report categories:
 - Time Pass Report by category
 
 **Order & Delivery Reports:**
+
 - Order Summary (SKU-wise, date-range)
 - Delivery Summary (quantity, amount)
 - Damage Summary
@@ -2104,12 +2296,14 @@ The Secondary Sales System includes 30+ comprehensive report categories:
 - Outlet Visit Status
 
 **Commission Reports:**
+
 - SD (Super Distributor) Commission
 - Sales Commission
 - CD (Commission Distributor) Commission
 - Commission calculation by category and product
 
 **Sales Analysis Reports:**
+
 - Order List (customizable columns, CSV download)
 - SO Schedule (day-of-week based)
 - Order View and Memo
@@ -2120,6 +2314,7 @@ The Secondary Sales System includes 30+ comprehensive report categories:
 - SO Movement Report (with Google Maps)
 
 **Performance Reports:**
+
 - Route Wise KPI
 - SO Wise KPI
 - DB Category Wise KPI
@@ -2130,6 +2325,7 @@ The Secondary Sales System includes 30+ comprehensive report categories:
 - Outlet Wise SKU Category Order
 
 **Target vs Achievement Reports:**
+
 - Target Details (SO-wise, SKU-wise)
 - Area Based Target Details
 - Target Summary & Achievement
@@ -2142,6 +2338,7 @@ The Secondary Sales System includes 30+ comprehensive report categories:
 - Total Sales & Collection Summary
 
 **TMR Reports:**
+
 - Product Wise Rate In Year-Month
 - Negative Check
 - National Report (Dealer wise, SKU wise)
@@ -2150,12 +2347,14 @@ The Secondary Sales System includes 30+ comprehensive report categories:
 - 6 Month SKU Sales
 
 **Collection & Incentive Reports:**
+
 - Distributor's Daily Collection
 - Nationwide Incentive (SO, TSO, RSM)
 - Yearly Achievement
 - Yearly Achievement (Exclusive SR)
 
 **MIS Reports:**
+
 - Category Wise Update (Time Pass)
 - Regular Report (extensive)
 - Daily Summary (DO, Secondary, Delivery)
@@ -2166,6 +2365,7 @@ The Secondary Sales System includes 30+ comprehensive report categories:
 - Competitor's Information
 
 **Attendance & Payroll Reports:**
+
 - Daily/Weekly/Monthly attendance
 - Attendance Modification
 - Leave Reports
@@ -2173,6 +2373,7 @@ The Secondary Sales System includes 30+ comprehensive report categories:
 - Distributor's Orders
 
 **Outlet Reports:**
+
 - POS Information (Search Outlet)
 - Route-wise outlet quantity
 - Zone-wise outlet order/delivery
@@ -2180,6 +2381,7 @@ The Secondary Sales System includes 30+ comprehensive report categories:
 - Outlet-wise coverage
 
 **Technical Components:**
+
 - Advanced MongoDB aggregation pipelines
 - Report caching with Redis
 - Scheduled report generation
@@ -2195,6 +2397,7 @@ The Secondary Sales System includes 30+ comprehensive report categories:
 ### 16.3 Technical Specifications - Secondary Sales
 
 **Mobile Applications:**
+
 - **Platform:** iOS and Android
 - **Technology:** Native apps with offline capability
 - **Local Storage:** SQLite for offline data
@@ -2204,6 +2407,7 @@ The Secondary Sales System includes 30+ comprehensive report categories:
 - **Push Notifications:** Order updates, approvals
 
 **Additional Backend Components:**
+
 - GPS tracking service
 - Background sync scheduler
 - Offline data queue manager
@@ -2213,6 +2417,7 @@ The Secondary Sales System includes 30+ comprehensive report categories:
 - Audit form builder
 
 **Additional Frontend Components:**
+
 - Mobile-first responsive design
 - Offline-capable PWA features
 - Map integration (Google Maps)
@@ -2222,6 +2427,7 @@ The Secondary Sales System includes 30+ comprehensive report categories:
 - Photo upload interfaces
 
 **Database Extensions:**
+
 - SecondaryOrder collection
 - OutletCoverage collection
 - DeliveryRecord collection
@@ -2245,18 +2451,21 @@ The Secondary Sales System includes 30+ comprehensive report categories:
 ### 16.4 Integration Points
 
 **Primary to Secondary Sales:**
+
 - Distributor stock from primary delivery chalans
 - Product master data synchronization
 - Territory and route assignments
 - Distributor accounts and credit limits
 
 **Secondary to Finance:**
+
 - Customer ledger updates from deliveries
 - Collection recording
 - Commission calculations
 - Payroll integration
 
 **Real-Time Features:**
+
 - GPS location updates
 - Live dashboard metrics
 - Order status notifications
@@ -2268,6 +2477,7 @@ The Secondary Sales System includes 30+ comprehensive report categories:
 ### 16.5 Mobile Application Features
 
 **iOS & Android Apps Include:**
+
 - Offline order placement
 - GPS-based outlet proximity detection
 - Photo capture for audits
@@ -2286,6 +2496,7 @@ The Secondary Sales System includes 30+ comprehensive report categories:
 ### 16.6 Success Metrics - Secondary Sales
 
 **Operational Metrics:**
+
 - Daily outlet coverage %
 - Order vs delivery variance
 - Strike rate % (memos/visits)
@@ -2294,6 +2505,7 @@ The Secondary Sales System includes 30+ comprehensive report categories:
 - Time pass % (sales update timeliness)
 
 **Performance Metrics:**
+
 - Target achievement %
 - Secondary sales growth
 - Collection efficiency
@@ -2302,6 +2514,7 @@ The Secondary Sales System includes 30+ comprehensive report categories:
 - SO productivity
 
 **Quality Metrics:**
+
 - Data accuracy %
 - Sync success rate
 - GPS accuracy
@@ -2313,6 +2526,7 @@ The Secondary Sales System includes 30+ comprehensive report categories:
 ### 16.7 Deliverables - Secondary Sales Extension
 
 **Additional Source Code:**
+
 - Mobile applications (iOS & Android)
 - Offline sync service
 - GPS tracking service
@@ -2320,6 +2534,7 @@ The Secondary Sales System includes 30+ comprehensive report categories:
 - Commission calculation module
 
 **Additional Documentation:**
+
 - Mobile app user guides
 - Field force training materials
 - GPS tracking setup guide
@@ -2328,6 +2543,7 @@ The Secondary Sales System includes 30+ comprehensive report categories:
 - TMR closing procedures
 
 **Training Materials:**
+
 - SO mobile app training (2 hours)
 - DSR delivery recording (1 hour)
 - ASM/RSM approval workflow (1 hour)

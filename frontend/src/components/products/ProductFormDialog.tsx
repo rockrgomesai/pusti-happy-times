@@ -849,7 +849,7 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
                   render={({ field }) => (
                     <TextField
                       {...field}
-                      label="Weight per Piece (kg)"
+                      label="Weight per Piece (Gram)"
                       type="number"
                       fullWidth
                       error={Boolean(errors.wt_pcs)}

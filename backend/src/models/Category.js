@@ -79,10 +79,7 @@ categorySchema.index({ name: 1 }, { unique: true, name: "idx_category_name_uniqu
 categorySchema.index({ parent_id: 1 }, { name: "idx_category_parent_id", sparse: true });
 categorySchema.index({ product_segment: 1 }, { name: "idx_category_product_segment" });
 categorySchema.index({ active: 1 }, { name: "idx_category_active" });
-categorySchema.index(
-  { product_segment: 1, active: 1 },
-  { name: "idx_category_segment_active" }
-);
+categorySchema.index({ product_segment: 1, active: 1 }, { name: "idx_category_segment_active" });
 categorySchema.index({ created_at: -1 }, { name: "idx_category_created_at_desc" });
 
 categorySchema.statics.PRODUCT_SEGMENTS = PRODUCT_SEGMENTS;

@@ -15,12 +15,14 @@ This document describes the implementation of FIFO (First-In-First-Out) inventor
 ## 🎯 BUSINESS REQUIREMENT
 
 **Problem:**
+
 - Product prices change over time (db_price in Product model)
 - Distributors receive stock at different prices on different dates
 - When distributors sell products, we need to know the actual cost (FIFO method)
 - Previous system only tracked aggregate quantity without price history
 
 **Solution:**
+
 - Implement FIFO batch tracking
 - Store price at the time of receipt for each batch
 - Automatically calculate COGS when stock is reduced
@@ -57,6 +59,7 @@ This document describes the implementation of FIFO (First-In-First-Out) inventor
 ```
 
 #### Batch ID Format:
+
 ```
 YYYYMMDD-HHMMSS-XXXXX
 Example: 20260119-143022-AB3F9
@@ -71,6 +74,7 @@ Example: 20260119-143022-AB3F9
 Adds new stock batch with current price.
 
 **Parameters:**
+
 - `quantity` (Number): Quantity to add
 - `unitPrice` (Number): Current product price (from Product.db_price)
 - `chalanId` (ObjectId): Delivery chalan reference
@@ -79,13 +83,15 @@ Adds new stock batch with current price.
 **Returns:** Created batch object
 
 **Example:**
+
 ```javascript
 const stock = await DistributorStock.findOne({ distributor_id, sku });
-stock.addStockFIFO(100, 25.50, chalanId, 'CHN-2026-001');
+stock.addStockFIFO(100, 25.5, chalanId, "CHN-2026-001");
 await stock.save();
 ```
 
 **Behavior:**
+
 - Creates new batch with unique ID
 - Adds batch to batches array
 - Updates total quantity
@@ -98,9 +104,11 @@ await stock.save();
 Reduces stock using FIFO method (oldest batches first).
 
 **Parameters:**
+
 - `quantityToReduce` (Number): Quantity to remove
 
 **Returns:**
+
 ```javascript
 {
   success: Boolean,
@@ -119,6 +127,7 @@ Reduces stock using FIFO method (oldest batches first).
 ```
 
 **Example:**
+
 ```javascript
 const stock = await DistributorStock.findOne({ distributor_id, sku });
 const result = stock.reduceStockFIFO(50);
@@ -131,6 +140,7 @@ if (result.success) {
 ```
 
 **Behavior:**
+
 - Sorts batches by received_at (oldest first)
 - Deducts from oldest batches first
 - Calculates weighted COGS
@@ -149,6 +159,7 @@ Calculates weighted average unit price of current stock.
 **Returns:** Number (weighted average unit price)
 
 **Example:**
+
 ```javascript
 const stock = await DistributorStock.findOne({ distributor_id, sku });
 const avgCost = stock.getWeightedAverageCost();
@@ -156,6 +167,7 @@ console.log(`Average cost per unit: ${avgCost}`);
 ```
 
 **Use Cases:**
+
 - Inventory valuation reports
 - Profit margin calculations
 - Budget forecasting
@@ -169,12 +181,14 @@ console.log(`Average cost per unit: ${avgCost}`);
 **File:** `backend/src/routes/distributor/chalans.js` (Line ~234)
 
 **Changes:**
+
 - Fetch current product price (db_price or trade_price)
 - Create/find distributor stock record
 - Use `addStockFIFO()` method instead of simple increment
 - Store price at time of receipt
 
 **Code:**
+
 ```javascript
 // Get current product price
 const product = await models.Product.findOne({ sku }).select("db_price trade_price");
@@ -206,9 +220,9 @@ if (result.success) {
   // Record COGS for profit calculation
   const revenue = soldQuantity * sellingPrice;
   const profit = revenue - result.costOfGoodsSold;
-  
+
   await stock.save();
-  
+
   // Create sales transaction with COGS
   await SecondarySales.create({
     distributor_id,
@@ -217,7 +231,7 @@ if (result.success) {
     revenue,
     cogs: result.costOfGoodsSold,
     profit,
-    batches_used: result.batchesUsed
+    batches_used: result.batchesUsed,
   });
 }
 ```
@@ -229,11 +243,13 @@ if (result.success) {
 ### Scenario:
 
 **Stock Receipts:**
+
 1. Jan 1: Receive 100 units @ $20/unit (Batch A)
 2. Jan 10: Receive 150 units @ $22/unit (Batch B)
 3. Jan 20: Receive 80 units @ $24/unit (Batch C)
 
 **Current Stock:**
+
 ```javascript
 {
   qty: 330,
@@ -248,11 +264,13 @@ if (result.success) {
 **Sale: 180 units**
 
 **FIFO Calculation:**
+
 1. Use 100 units from Batch A @ $20 = $2,000
 2. Use 80 units from Batch B @ $22 = $1,760
 3. **Total COGS = $3,760**
 
 **Remaining Stock:**
+
 ```javascript
 {
   qty: 150,
@@ -274,6 +292,7 @@ if (result.success) {
 **Purpose:** Convert existing stock records to FIFO format
 
 **What it does:**
+
 1. Finds all DistributorStock records
 2. For each record with quantity > 0:
    - Gets current product price
@@ -282,11 +301,13 @@ if (result.success) {
    - Saves updated record
 
 **How to run:**
+
 ```bash
 node migrate-distributor-stock-to-fifo.js
 ```
 
 **Output:**
+
 ```
 ✅ Successfully migrated: 250
 ⏭️  Skipped (already migrated or zero qty): 45
@@ -295,6 +316,7 @@ node migrate-distributor-stock-to-fifo.js
 ```
 
 **Important:**
+
 - Run ONCE before deploying new code
 - Backs up data in transaction
 - Skips records already migrated
@@ -307,17 +329,19 @@ node migrate-distributor-stock-to-fifo.js
 ### Test Cases
 
 #### 1. Add Stock (Different Prices)
-```javascript
-const stock = new DistributorStock({ distributor_id, sku: 'SKU001', qty: 0 });
 
-stock.addStockFIFO(100, 20, chalan1, 'CHN-001');
-stock.addStockFIFO(150, 22, chalan2, 'CHN-002');
+```javascript
+const stock = new DistributorStock({ distributor_id, sku: "SKU001", qty: 0 });
+
+stock.addStockFIFO(100, 20, chalan1, "CHN-001");
+stock.addStockFIFO(150, 22, chalan2, "CHN-002");
 
 console.log(stock.qty); // 250
 console.log(stock.batches.length); // 2
 ```
 
 #### 2. Reduce Stock (FIFO)
+
 ```javascript
 const result = stock.reduceStockFIFO(120);
 
@@ -329,6 +353,7 @@ console.log(stock.batches.length); // 1
 ```
 
 #### 3. Insufficient Stock
+
 ```javascript
 const result = stock.reduceStockFIFO(200);
 
@@ -337,6 +362,7 @@ console.log(result.message); // "Insufficient stock..."
 ```
 
 #### 4. Weighted Average
+
 ```javascript
 // Stock: 100@20, 150@22
 const avg = stock.getWeightedAverageCost();
@@ -348,6 +374,7 @@ console.log(avg); // 21.2 ((100*20 + 150*22) / 250)
 ## 📈 REPORTING QUERIES
 
 ### 1. Stock Valuation Report
+
 ```javascript
 const stockValuation = await DistributorStock.aggregate([
   { $match: { distributor_id: ObjectId(distributorId) } },
@@ -362,18 +389,19 @@ const stockValuation = await DistributorStock.aggregate([
           in: {
             $add: [
               "$$value",
-              { $multiply: [{ $toDouble: "$$this.qty" }, { $toDouble: "$$this.unit_price" }] }
-            ]
-          }
-        }
-      }
-    }
+              { $multiply: [{ $toDouble: "$$this.qty" }, { $toDouble: "$$this.unit_price" }] },
+            ],
+          },
+        },
+      },
+    },
   },
-  { $group: { _id: null, total_qty: { $sum: "$qty" }, total_value: { $sum: "$total_value" } } }
+  { $group: { _id: null, total_qty: { $sum: "$qty" }, total_value: { $sum: "$total_value" } } },
 ]);
 ```
 
 ### 2. Batch Age Analysis
+
 ```javascript
 const batchAge = await DistributorStock.aggregate([
   { $unwind: "$batches" },
@@ -383,19 +411,20 @@ const batchAge = await DistributorStock.aggregate([
       batch_id: "$batches.batch_id",
       qty: "$batches.qty",
       age_days: {
-        $divide: [{ $subtract: [new Date(), "$batches.received_at"] }, 1000 * 60 * 60 * 24]
-      }
-    }
+        $divide: [{ $subtract: [new Date(), "$batches.received_at"] }, 1000 * 60 * 60 * 24],
+      },
+    },
   },
   { $match: { age_days: { $gt: 30 } } }, // Batches older than 30 days
-  { $sort: { age_days: -1 } }
+  { $sort: { age_days: -1 } },
 ]);
 ```
 
 ### 3. Price History Report
+
 ```javascript
 const priceHistory = await DistributorStock.aggregate([
-  { $match: { sku: 'SKU001' } },
+  { $match: { sku: "SKU001" } },
   { $unwind: "$batches" },
   {
     $project: {
@@ -403,10 +432,10 @@ const priceHistory = await DistributorStock.aggregate([
       qty: "$batches.qty",
       unit_price: "$batches.unit_price",
       received_at: "$batches.received_at",
-      chalan_no: "$batches.chalan_no"
-    }
+      chalan_no: "$batches.chalan_no",
+    },
   },
-  { $sort: { received_at: -1 } }
+  { $sort: { received_at: -1 } },
 ]);
 ```
 
@@ -415,23 +444,28 @@ const priceHistory = await DistributorStock.aggregate([
 ## ⚠️ IMPORTANT NOTES
 
 ### Price Source Priority
+
 When receiving stock, price is fetched in this order:
+
 1. `Product.db_price` (Distributor price)
 2. `Product.trade_price` (Fallback)
 3. `0` (if product not found - logged as warning)
 
 ### Transaction Safety
+
 - All stock updates use MongoDB sessions
 - FIFO operations are atomic
 - Failed transactions rollback completely
 
 ### Performance Considerations
+
 - Batches array grows over time
 - Consider archiving old batches (future enhancement)
 - Indexed on `received_at` for FIFO sorting
 - Aggregate queries may need optimization for large datasets
 
 ### Data Integrity
+
 - Total `qty` field maintained for quick access
 - Automatically synchronized when using provided methods
 - Direct MongoDB updates should be avoided
@@ -441,7 +475,9 @@ When receiving stock, price is fetched in this order:
 ## 🔮 FUTURE ENHANCEMENTS
 
 ### 1. Batch Archiving
+
 Archive batches older than X days to separate collection:
+
 ```javascript
 {
   distributor_id,
@@ -452,7 +488,9 @@ Archive batches older than X days to separate collection:
 ```
 
 ### 2. Lot/Serial Number Tracking
+
 Add lot numbers for enhanced traceability:
+
 ```javascript
 {
   batch_id: String,
@@ -463,7 +501,9 @@ Add lot numbers for enhanced traceability:
 ```
 
 ### 3. Expiry Date Tracking
+
 Track expiry dates for FEFO (First-Expired-First-Out):
+
 ```javascript
 {
   batch_id: String,
@@ -473,7 +513,9 @@ Track expiry dates for FEFO (First-Expired-First-Out):
 ```
 
 ### 4. Multi-Currency Support
+
 Support different currencies for imports:
+
 ```javascript
 {
   batch_id: String,
@@ -488,6 +530,7 @@ Support different currencies for imports:
 ## 📞 SUPPORT
 
 For questions or issues related to FIFO implementation:
+
 - Review this documentation
 - Check migration script logs
 - Test with small datasets first

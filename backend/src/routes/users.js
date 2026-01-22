@@ -334,7 +334,8 @@ router.put(
   handleValidationErrors,
   async (req, res) => {
     try {
-      const { username, email, password, role_id, user_type, employee_id, distributor_id, active } = req.body;
+      const { username, email, password, role_id, user_type, employee_id, distributor_id, active } =
+        req.body;
       const currentUserId = getCurrentUserId(req);
 
       // Check if user exists
@@ -357,13 +358,13 @@ router.put(
       if (user_type !== undefined) updateData.user_type = user_type;
       if (employee_id !== undefined) updateData.employee_id = employee_id;
       if (distributor_id !== undefined) updateData.distributor_id = distributor_id;
-      
+
       // Hash password if provided
       if (password !== undefined && password.length > 0) {
         const saltRounds = 10;
         updateData.password = await bcrypt.hash(password, saltRounds);
       }
-      
+
       if (role_id !== undefined) {
         // Verify role exists
         const role = await Role.findById(role_id);

@@ -1,21 +1,23 @@
 # TECHNICAL SPECIFICATION DOCUMENT
+
 ## Pusti Happy Times - Sales Management ERP System
+
 ### Primary & Secondary Sales Management Platform
 
 ---
 
 ## DOCUMENT CONTROL
 
-| Field | Details |
-|-------|---------|
-| **Project Name** | Pusti Happy Times Sales Management ERP |
-| **Client** | TK Group, Bangladesh |
-| **Document Type** | Technical Specification |
-| **Version** | 1.0 |
-| **Date** | January 21, 2026 |
-| **Status** | Final |
-| **Prepared By** | Development Team |
-| **Approved By** | Technical Architect |
+| Field             | Details                                |
+| ----------------- | -------------------------------------- |
+| **Project Name**  | Pusti Happy Times Sales Management ERP |
+| **Client**        | TK Group, Bangladesh                   |
+| **Document Type** | Technical Specification                |
+| **Version**       | 1.0                                    |
+| **Date**          | January 21, 2026                       |
+| **Status**        | Final                                  |
+| **Prepared By**   | Development Team                       |
+| **Approved By**   | Technical Architect                    |
 
 ---
 
@@ -48,6 +50,7 @@ This document provides comprehensive technical specifications for the Pusti Happ
 ### 1.2 Scope
 
 The technical specification covers:
+
 - **Primary Sales System:** 12 integrated modules
 - **Secondary Sales System:** 9 integrated modules
 - **Cross-cutting Concerns:** Security, performance, scalability
@@ -65,6 +68,7 @@ The technical specification covers:
 **Architecture Type:** Monolithic with modular design (microservices-ready)
 
 **Key Components:**
+
 - **Backend API:** Node.js + Express.js
 - **Frontend Application:** Next.js 14 + TypeScript
 - **Database:** MongoDB (NoSQL)
@@ -251,12 +255,13 @@ backend/
 #### 2.3.1 Backend Patterns
 
 **1. Model-Route-Controller (MRC) Pattern**
+
 ```javascript
 // Model Layer (Mongoose Schema)
 const demandOrderSchema = new mongoose.Schema({...});
 
 // Route Layer (Express Router)
-router.post('/demand-orders', authenticate, requirePermission, 
+router.post('/demand-orders', authenticate, requirePermission,
   demandOrderController.create);
 
 // Controller Layer (Business Logic)
@@ -266,16 +271,19 @@ async function create(req, res) {
 ```
 
 **2. Middleware Chain Pattern**
+
 ```javascript
-router.post('/orders',
-  authenticate,           // JWT verification
-  requireApiPermission,   // Permission check
-  validateInput,          // Input validation
-  orderController.create  // Business logic
+router.post(
+  "/orders",
+  authenticate, // JWT verification
+  requireApiPermission, // Permission check
+  validateInput, // Input validation
+  orderController.create // Business logic
 );
 ```
 
 **3. Service Layer Pattern**
+
 ```javascript
 // Reusable business logic
 class OfferEngine {
@@ -286,6 +294,7 @@ class OfferEngine {
 ```
 
 **4. Repository Pattern** (for complex queries)
+
 ```javascript
 class OrderRepository {
   async findPendingOrders(filters) {...}
@@ -296,6 +305,7 @@ class OrderRepository {
 #### 2.3.2 Frontend Patterns
 
 **1. Container-Presenter Pattern**
+
 ```typescript
 // Container (Logic)
 function OrdersContainer() {
@@ -311,18 +321,20 @@ function OrdersView({ orders }) {
 ```
 
 **2. Custom Hooks Pattern**
+
 ```typescript
 function useOrders() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(false);
-  
+
   const fetchOrders = async () => {...};
-  
+
   return { orders, loading, fetchOrders };
 }
 ```
 
 **3. Context API for Global State**
+
 ```typescript
 const AuthContext = createContext();
 
@@ -345,8 +357,9 @@ function AuthProvider({ children }) {
 #### 3.1.1 Core Framework
 
 **Node.js (v18.x LTS)**
+
 - **Purpose:** Server-side runtime
-- **Justification:** 
+- **Justification:**
   - High performance for I/O operations
   - Large ecosystem (npm)
   - JavaScript across full stack
@@ -354,6 +367,7 @@ function AuthProvider({ children }) {
 - **Version:** 18.x LTS (Long Term Support)
 
 **Express.js (v4.x)**
+
 - **Purpose:** Web application framework
 - **Justification:**
   - Minimal and flexible
@@ -369,6 +383,7 @@ function AuthProvider({ children }) {
 #### 3.1.2 Database & Cache
 
 **MongoDB (v6.0+)**
+
 - **Purpose:** Primary database
 - **Justification:**
   - Document-oriented (flexible schema)
@@ -388,6 +403,7 @@ function AuthProvider({ children }) {
   ```
 
 **Mongoose (v7.x)**
+
 - **Purpose:** ODM (Object Data Modeling)
 - **Features:**
   - Schema validation
@@ -397,6 +413,7 @@ function AuthProvider({ children }) {
   - Query building
 
 **Redis (v7.0+)**
+
 - **Purpose:** In-memory cache & session store
 - **Use Cases:**
   - Session management
@@ -418,6 +435,7 @@ function AuthProvider({ children }) {
 #### 3.1.3 Authentication & Security
 
 **jsonwebtoken (JWT)**
+
 - **Purpose:** Token-based authentication
 - **Token Types:**
   - Access Token (15 min expiry)
@@ -433,6 +451,7 @@ function AuthProvider({ children }) {
   ```
 
 **bcryptjs**
+
 - **Purpose:** Password hashing
 - **Configuration:**
   - Salt rounds: 10
@@ -444,6 +463,7 @@ function AuthProvider({ children }) {
   ```
 
 **helmet**
+
 - **Purpose:** HTTP security headers
 - **Headers Set:**
   - Content-Security-Policy
@@ -453,6 +473,7 @@ function AuthProvider({ children }) {
   - Strict-Transport-Security
 
 **cors**
+
 - **Purpose:** Cross-Origin Resource Sharing
 - **Configuration:**
   ```javascript
@@ -466,6 +487,7 @@ function AuthProvider({ children }) {
 #### 3.1.4 Validation & File Handling
 
 **Joi**
+
 - **Purpose:** Schema validation
 - **Use Cases:**
   - Request body validation
@@ -473,6 +495,7 @@ function AuthProvider({ children }) {
   - Environment variable validation
 
 **Multer**
+
 - **Purpose:** File upload handling
 - **Configuration:**
   ```javascript
@@ -496,6 +519,7 @@ function AuthProvider({ children }) {
 #### 3.1.5 Real-time Communication
 
 **Socket.IO (v4.x)**
+
 - **Purpose:** Real-time bidirectional communication
 - **Features:**
   - WebSocket with fallback
@@ -513,6 +537,7 @@ function AuthProvider({ children }) {
 #### 3.2.1 Core Framework
 
 **Next.js 14**
+
 - **Purpose:** React framework with SSR/SSG
 - **Key Features:**
   - App Router (new routing system)
@@ -529,6 +554,7 @@ function AuthProvider({ children }) {
   - Production-ready
 
 **React 18**
+
 - **Purpose:** UI library
 - **Key Features:**
   - Concurrent rendering
@@ -538,6 +564,7 @@ function AuthProvider({ children }) {
   - Hooks API
 
 **TypeScript (v5.x)**
+
 - **Purpose:** Type safety
 - **Benefits:**
   - Early error detection
@@ -571,6 +598,7 @@ function AuthProvider({ children }) {
 #### 3.2.2 UI Framework
 
 **Material-UI (MUI v5)**
+
 - **Purpose:** Component library
 - **Components Used:**
   - Layout: Box, Container, Grid, Stack
@@ -583,22 +611,24 @@ function AuthProvider({ children }) {
   ```typescript
   const theme = createTheme({
     palette: {
-      primary: { main: '#1976d2' },
-      secondary: { main: '#dc004e' }
+      primary: { main: "#1976d2" },
+      secondary: { main: "#dc004e" },
     },
     typography: {
-      fontFamily: 'Roboto, Arial, sans-serif'
-    }
+      fontFamily: "Roboto, Arial, sans-serif",
+    },
   });
   ```
 
 **@emotion/react & @emotion/styled**
+
 - **Purpose:** CSS-in-JS styling
 - **Used by:** Material-UI
 
 #### 3.2.3 State Management
 
 **React Context API**
+
 - **Purpose:** Global state management
 - **Contexts:**
   - AuthContext (user authentication)
@@ -607,6 +637,7 @@ function AuthProvider({ children }) {
   - ThemeContext (UI theme)
 
 **React Hook Form**
+
 - **Purpose:** Form management
 - **Features:**
   - Performance optimized
@@ -615,12 +646,17 @@ function AuthProvider({ children }) {
   - TypeScript support
 - **Usage:**
   ```typescript
-  const { register, handleSubmit, formState: { errors } } = useForm();
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm();
   ```
 
 #### 3.2.4 HTTP & Real-time
 
 **Axios**
+
 - **Purpose:** HTTP client
 - **Features:**
   - Promise-based
@@ -628,24 +664,25 @@ function AuthProvider({ children }) {
   - Automatic JSON transformation
   - Request cancellation
 - **Configuration:**
+
   ```typescript
   const api = axios.create({
     baseURL: process.env.NEXT_PUBLIC_API_URL,
     timeout: 10000,
-    headers: { 'Content-Type': 'application/json' }
+    headers: { "Content-Type": "application/json" },
   });
-  
+
   // Request interceptor (add auth token)
-  api.interceptors.request.use(config => {
-    const token = localStorage.getItem('token');
+  api.interceptors.request.use((config) => {
+    const token = localStorage.getItem("token");
     if (token) config.headers.Authorization = `Bearer ${token}`;
     return config;
   });
-  
+
   // Response interceptor (handle errors)
   api.interceptors.response.use(
-    response => response,
-    error => {
+    (response) => response,
+    (error) => {
       if (error.response?.status === 401) {
         // Handle unauthorized
       }
@@ -655,20 +692,22 @@ function AuthProvider({ children }) {
   ```
 
 **Socket.IO Client**
+
 - **Purpose:** Real-time communication
 - **Connection:**
   ```typescript
   const socket = io(process.env.NEXT_PUBLIC_API_URL, {
-    auth: { token: localStorage.getItem('token') },
+    auth: { token: localStorage.getItem("token") },
     reconnection: true,
     reconnectionDelay: 1000,
-    reconnectionAttempts: 5
+    reconnectionAttempts: 5,
   });
   ```
 
 #### 3.2.5 Data Visualization
 
 **Chart.js**
+
 - **Purpose:** Charts and graphs
 - **Chart Types:**
   - Line charts (trends)
@@ -677,6 +716,7 @@ function AuthProvider({ children }) {
   - Doughnut charts (percentages)
 
 **Recharts**
+
 - **Purpose:** React charting library
 - **Features:**
   - Composable charts
@@ -686,6 +726,7 @@ function AuthProvider({ children }) {
 #### 3.2.6 Utilities
 
 **date-fns**
+
 - **Purpose:** Date manipulation
 - **Functions:**
   - format, parse
@@ -694,6 +735,7 @@ function AuthProvider({ children }) {
   - Locale support
 
 **react-hot-toast**
+
 - **Purpose:** Toast notifications
 - **Features:**
   - Customizable
@@ -705,6 +747,7 @@ function AuthProvider({ children }) {
 #### 3.3.1 Containerization
 
 **Docker**
+
 - **Purpose:** Container platform
 - **Images:**
   - node:18-alpine (backend)
@@ -713,25 +756,26 @@ function AuthProvider({ children }) {
   - redis:7.0-alpine (cache)
 
 **Docker Compose**
+
 - **Purpose:** Multi-container orchestration
 - **Services:**
   ```yaml
-  version: '3.8'
+  version: "3.8"
   services:
     backend:
       build: ./backend
       ports: ["5000:5000"]
       depends_on: [mongodb, redis]
-      
+
     frontend:
       build: ./frontend
       ports: ["3000:3000"]
       depends_on: [backend]
-      
+
     mongodb:
       image: mongo:6.0
       volumes: [mongodb_data:/data/db]
-      
+
     redis:
       image: redis:7.0-alpine
       volumes: [redis_data:/data]
@@ -740,17 +784,19 @@ function AuthProvider({ children }) {
 #### 3.3.2 Web Server
 
 **Nginx**
+
 - **Purpose:** Reverse proxy, load balancer
 - **Configuration:**
+
   ```nginx
   upstream backend {
     server backend:5000;
   }
-  
+
   server {
     listen 80;
     server_name example.com;
-    
+
     location /api {
       proxy_pass http://backend;
       proxy_http_version 1.1;
@@ -759,7 +805,7 @@ function AuthProvider({ children }) {
       proxy_set_header Host $host;
       proxy_cache_bypass $http_upgrade;
     }
-    
+
     location / {
       proxy_pass http://frontend:3000;
     }
@@ -769,6 +815,7 @@ function AuthProvider({ children }) {
 #### 3.3.3 Process Management
 
 **PM2 (Optional)**
+
 - **Purpose:** Node.js process manager
 - **Features:**
   - Auto-restart on crash
@@ -779,10 +826,12 @@ function AuthProvider({ children }) {
 ### 3.4 Development Tools
 
 **ESLint**
+
 - **Purpose:** JavaScript linting
 - **Rules:** Airbnb style guide
 
 **Prettier**
+
 - **Purpose:** Code formatting
 - **Configuration:**
   ```json
@@ -795,6 +844,7 @@ function AuthProvider({ children }) {
   ```
 
 **Nodemon**
+
 - **Purpose:** Auto-restart on file changes (development)
 
 ---
@@ -806,6 +856,7 @@ function AuthProvider({ children }) {
 **Database Type:** MongoDB (NoSQL Document Database)
 
 **Design Principles:**
+
 1. **Document-Oriented:** Related data embedded in documents
 2. **Hybrid Approach:** Mix of embedded and referenced data
 3. **Denormalization:** Strategic duplication for performance
@@ -818,6 +869,7 @@ function AuthProvider({ children }) {
 **Total Collections:** 50+
 
 **Categories:**
+
 - **Authentication & Authorization:** 5 collections
 - **Master Data:** 12 collections
 - **Distributor Management:** 2 collections
@@ -834,6 +886,7 @@ function AuthProvider({ children }) {
 #### 4.3.1 Authentication Schemas
 
 **users Collection:**
+
 ```javascript
 {
   _id: ObjectId,
@@ -863,6 +916,7 @@ db.users.createIndex({ distributor_id: 1 }, { sparse: true });
 ```
 
 **roles Collection:**
+
 ```javascript
 {
   _id: ObjectId,
@@ -881,6 +935,7 @@ db.roles.createIndex({ active: 1 });
 ```
 
 **apipermissions Collection:**
+
 ```javascript
 {
   _id: ObjectId,
@@ -901,6 +956,7 @@ db.apipermissions.createIndex({ category: 1 });
 ```
 
 **rolesapipermissions Collection (Many-to-Many):**
+
 ```javascript
 {
   _id: ObjectId,
@@ -916,6 +972,7 @@ db.rolesapipermissions.createIndex({ role_id: 1 });
 ```
 
 **sidebarmenuitem Collection:**
+
 ```javascript
 {
   _id: ObjectId,
@@ -940,6 +997,7 @@ db.sidebarmenuitem.createIndex({ roles: 1 });
 #### 4.3.2 Master Data Schemas
 
 **products Collection:**
+
 ```javascript
 {
   _id: ObjectId,
@@ -970,6 +1028,7 @@ db.products.createIndex({ segment: 1 });
 ```
 
 **territories Collection:**
+
 ```javascript
 {
   _id: ObjectId,
@@ -995,6 +1054,7 @@ db.territories.createIndex({ level: 1, parent_id: 1, active: 1 });
 ```
 
 **employees Collection:**
+
 ```javascript
 {
   _id: ObjectId,
@@ -1022,6 +1082,7 @@ db.employees.createIndex({ territory_id: 1 });
 ```
 
 **facilities Collection:**
+
 ```javascript
 {
   _id: ObjectId,
@@ -1052,6 +1113,7 @@ db.facilities.createIndex({ segments: 1 });
 #### 4.3.3 Distributor Schema
 
 **distributors Collection:**
+
 ```javascript
 {
   _id: ObjectId,
@@ -1086,6 +1148,7 @@ db.distributors.createIndex({ segment: 1 });
 ```
 
 **distributorstocks Collection:**
+
 ```javascript
 {
   _id: ObjectId,
@@ -1105,32 +1168,33 @@ db.distributorstocks.createIndex({ product_id: 1 });
 #### 4.3.4 Offers Schema
 
 **offers Collection:**
+
 ```javascript
 {
   _id: ObjectId,
   offer_code: String (unique, indexed),
   offer_name: String (indexed),
-  offer_type: String (enum: ['BOGO', 'BUNDLE_OFFER', 'FLAT_DISCOUNT_PCT', 
-    'FLAT_DISCOUNT_AMT', 'DISCOUNT_SLAB_PCT', 'DISCOUNT_SLAB_AMT', 
+  offer_type: String (enum: ['BOGO', 'BUNDLE_OFFER', 'FLAT_DISCOUNT_PCT',
+    'FLAT_DISCOUNT_AMT', 'DISCOUNT_SLAB_PCT', 'DISCOUNT_SLAB_AMT',
     'VOLUME_DISCOUNT', 'FREE_PRODUCT'], indexed),
-  
+
   // BOGO specific
   buy_product_id: ObjectId (ref: products),
   buy_quantity: Number,
   get_product_id: ObjectId (ref: products),
   get_quantity: Number,
-  
+
   // Bundle specific
   bundle_items: [{
     product_id: ObjectId (ref: products),
     quantity: Number
   }],
   bundle_price: Number,
-  
+
   // Discount specific
   discount_percentage: Number,
   discount_amount: Number,
-  
+
   // Slab specific
   slabs: [{
     min_quantity: Number,
@@ -1138,13 +1202,13 @@ db.distributorstocks.createIndex({ product_id: 1 });
     discount_percentage: Number,
     discount_amount: Number
   }],
-  
+
   // Free product specific
   threshold_product_id: ObjectId (ref: products),
   threshold_quantity: Number,
   free_product_id: ObjectId (ref: products),
   free_quantity: Number,
-  
+
   start_date: Date (indexed),
   end_date: Date (indexed),
   active: Boolean (indexed),
@@ -1158,16 +1222,17 @@ db.distributorstocks.createIndex({ product_id: 1 });
 db.offers.createIndex({ offer_code: 1 }, { unique: true });
 db.offers.createIndex({ offer_type: 1, active: 1 });
 db.offers.createIndex({ start_date: 1, end_date: 1 });
-db.offers.createIndex({ 
-  active: 1, 
-  start_date: 1, 
-  end_date: 1 
-}, { 
-  name: 'active_offers_date_range' 
+db.offers.createIndex({
+  active: 1,
+  start_date: 1,
+  end_date: 1
+}, {
+  name: 'active_offers_date_range'
 });
 ```
 
 **offersends Collection:**
+
 ```javascript
 {
   _id: ObjectId,
@@ -1186,6 +1251,7 @@ db.offersends.createIndex({ sent_date: -1 });
 ```
 
 **offerreceives Collection:**
+
 ```javascript
 {
   _id: ObjectId,
@@ -1206,13 +1272,14 @@ db.offerreceives.createIndex({ distributor_id: 1, status: 1 });
 #### 4.3.5 Demand Orders Schema
 
 **demandorders Collection:**
+
 ```javascript
 {
   _id: ObjectId,
   order_number: String (unique, indexed),
   distributor_id: ObjectId (ref: distributors, indexed),
   db_point_id: ObjectId (ref: territories, indexed),
-  
+
   items: [{
     _id: ObjectId (auto-generated),
     product_id: ObjectId (ref: products),
@@ -1222,12 +1289,12 @@ db.offerreceives.createIndex({ distributor_id: 1, status: 1 });
     bundle_id: String (nullable, for BOGO/Bundle tracking),
     total_amount: Number
   }],
-  
+
   total_amount: Number,
-  
-  status: String (enum: ['DRAFT', 'SUBMITTED', 'ASM_APPROVED', 'RSM_APPROVED', 
+
+  status: String (enum: ['DRAFT', 'SUBMITTED', 'ASM_APPROVED', 'RSM_APPROVED',
     'REJECTED', 'SCHEDULED', 'COMPLETED'], indexed),
-  
+
   // Approval tracking
   submitted_at: Date,
   asm_approved_by: ObjectId (ref: users),
@@ -1237,7 +1304,7 @@ db.offerreceives.createIndex({ distributor_id: 1, status: 1 });
   rejection_reason: String,
   rejected_by: ObjectId (ref: users),
   rejected_at: Date,
-  
+
   // Embedded scheduling
   schedules: [{
     _id: ObjectId (auto-generated),
@@ -1252,7 +1319,7 @@ db.offerreceives.createIndex({ distributor_id: 1, status: 1 });
     scheduled_by: ObjectId (ref: users),
     scheduled_at: Date
   }],
-  
+
   created_at: Date (indexed),
   created_by: ObjectId (ref: users),
   updated_at: Date,
@@ -1268,18 +1335,19 @@ db.demandorders.createIndex({ 'items.product_id': 1 });
 db.demandorders.createIndex({ 'schedules.facility_id': 1, 'schedules.status': 1 });
 
 // Compound index for approval queries
-db.demandorders.createIndex({ 
-  status: 1, 
-  db_point_id: 1, 
-  created_at: -1 
-}, { 
-  name: 'approval_workflow_index' 
+db.demandorders.createIndex({
+  status: 1,
+  db_point_id: 1,
+  created_at: -1
+}, {
+  name: 'approval_workflow_index'
 });
 ```
 
 #### 4.3.6 Collections & Finance Schemas
 
 **collections Collection:**
+
 ```javascript
 {
   _id: ObjectId,
@@ -1287,30 +1355,30 @@ db.demandorders.createIndex({
   distributor_id: ObjectId (ref: distributors, indexed),
   collection_date: Date (indexed),
   amount: Number,
-  
+
   payment_method: String (enum: ['CASH', 'BANK_TRANSFER', 'CHEQUE'], indexed),
-  
+
   // Bank transfer details
   bank_id: ObjectId (ref: banks, nullable),
   transaction_reference: String,
-  
+
   // Cheque details
   cheque_number: String,
   cheque_date: Date,
   cheque_bank: String,
-  
+
   attachment_url: String,
-  
+
   status: String (enum: ['PENDING', 'APPROVED', 'REJECTED', 'RETURNED'], indexed),
   approved_by: ObjectId (ref: users),
   approved_at: Date,
   rejection_reason: String,
-  
+
   // Locking mechanism
   locked: Boolean (default: false),
   locked_by: ObjectId (ref: users),
   locked_at: Date,
-  
+
   created_at: Date,
   created_by: ObjectId (ref: users),
   updated_at: Date,
@@ -1326,6 +1394,7 @@ db.collections.createIndex({ locked: 1, status: 1 });
 ```
 
 **customerledger Collection:**
+
 ```javascript
 {
   _id: ObjectId,
@@ -1348,18 +1417,19 @@ db.customerledger.createIndex({ transaction_type: 1 });
 db.customerledger.createIndex({ reference_id: 1 });
 
 // Compound index for ledger queries
-db.customerledger.createIndex({ 
-  distributor_id: 1, 
-  transaction_date: -1, 
-  _id: -1 
-}, { 
-  name: 'ledger_query_index' 
+db.customerledger.createIndex({
+  distributor_id: 1,
+  transaction_date: -1,
+  _id: -1
+}, {
+  name: 'ledger_query_index'
 });
 ```
 
 #### 4.3.7 Inventory Schemas
 
 **factorystoreinventories Collection:**
+
 ```javascript
 {
   _id: ObjectId,
@@ -1382,6 +1452,7 @@ db.factorystoreinventories.createIndex({ batch_number: 1 });
 ```
 
 **inventoryrequisitions Collection:**
+
 ```javascript
 {
   _id: ObjectId,
@@ -1411,6 +1482,7 @@ db.inventoryrequisitions.createIndex({ created_at: -1 });
 #### 4.4.1 Secondary Orders
 
 **secondaryorders Collection:**
+
 ```javascript
 {
   _id: ObjectId,
@@ -1419,30 +1491,30 @@ db.inventoryrequisitions.createIndex({ created_at: -1 });
   dsr_id: ObjectId (ref: distributors),
   pos_id: ObjectId (ref: outlets, indexed),
   route_id: ObjectId (ref: routes),
-  
+
   items: [{
     product_id: ObjectId (ref: products),
     quantity: Number,
     unit_price: Number,
     total_amount: Number
   }],
-  
+
   total_amount: Number,
   total_categories: Number,
   line_number: Number,
   memo_count: Number,
-  
+
   order_date: Date (indexed),
   delivery_date: Date,
-  
+
   status: String (enum: ['PENDING', 'DELIVERED', 'CANCELLED'], indexed),
-  
+
   // GPS tracking
   gps_location: {
     type: { type: String, enum: ['Point'], default: 'Point' },
     coordinates: [Number] // [longitude, latitude]
   },
-  
+
   created_at: Date,
   created_by: ObjectId (ref: users),
   updated_at: Date,
@@ -1460,6 +1532,7 @@ db.secondaryorders.createIndex({ gps_location: '2dsphere' });
 #### 4.4.2 User Movement Tracking
 
 **userlocations Collection:**
+
 ```javascript
 {
   _id: ObjectId,
@@ -1485,82 +1558,92 @@ db.userlocations.createIndex({ timestamp: 1 }, { expireAfterSeconds: 2592000 });
 #### 4.5.1 Index Types
 
 **1. Single Field Indexes**
-- Primary key (_id): automatic
+
+- Primary key (\_id): automatic
 - Unique constraints: username, email, order_number
 - Query optimization: status, active, created_at
 
 **2. Compound Indexes**
+
 - Multi-field queries: { distributor_id: 1, created_at: -1 }
 - Approval workflows: { status: 1, db_point_id: 1, created_at: -1 }
-- Ledger queries: { distributor_id: 1, transaction_date: -1, _id: -1 }
+- Ledger queries: { distributor_id: 1, transaction_date: -1, \_id: -1 }
 
 **3. Text Indexes**
+
 - Full-text search: name, description fields
 - Example: db.products.createIndex({ name: 'text', description: 'text' })
 
 **4. Geospatial Indexes**
+
 - GPS tracking: { location: '2dsphere' }
 - Proximity queries for outlet visits
 
 **5. TTL Indexes**
+
 - Auto-deletion: user sessions, temporary logs
 - Example: { timestamp: 1 }, { expireAfterSeconds: 86400 }
 
 #### 4.5.2 Index Monitoring
 
 **Query Performance:**
+
 ```javascript
 // Explain plan
-db.demandorders.find({ status: 'SUBMITTED' }).explain('executionStats');
+db.demandorders.find({ status: "SUBMITTED" }).explain("executionStats");
 
 // Index usage stats
 db.demandorders.aggregate([{ $indexStats: {} }]);
 ```
 
 **Index Maintenance:**
+
 ```javascript
 // Rebuild indexes
 db.demandorders.reIndex();
 
 // Remove unused index
-db.demandorders.dropIndex('old_index_name');
+db.demandorders.dropIndex("old_index_name");
 ```
 
 ### 4.6 Data Validation
 
 **Schema-Level Validation (Mongoose):**
+
 ```javascript
 const demandOrderSchema = new mongoose.Schema({
   order_number: {
     type: String,
-    required: [true, 'Order number is required'],
+    required: [true, "Order number is required"],
     unique: true,
-    match: [/^DO-\d{6}$/, 'Invalid order number format']
+    match: [/^DO-\d{6}$/, "Invalid order number format"],
   },
   total_amount: {
     type: Number,
     required: true,
-    min: [0, 'Amount cannot be negative']
+    min: [0, "Amount cannot be negative"],
   },
   status: {
     type: String,
     enum: {
-      values: ['DRAFT', 'SUBMITTED', 'ASM_APPROVED', 'RSM_APPROVED', 'REJECTED'],
-      message: '{VALUE} is not a valid status'
-    }
-  }
+      values: ["DRAFT", "SUBMITTED", "ASM_APPROVED", "RSM_APPROVED", "REJECTED"],
+      message: "{VALUE} is not a valid status",
+    },
+  },
 });
 ```
 
 ### 4.7 Data Migration & Seeding
 
 **Migration Scripts:**
+
 - create-indexes.js
 - seed-master-data.js
 - seed-test-users.js
 - migrate-v1-to-v2.js
 
 **Seed Data Categories:**
+
 - Roles & Permissions (5 roles, 50+ permissions)
 - Territories (4-level hierarchy)
 - Products (100+ SKUs)
@@ -1596,10 +1679,13 @@ Accept: application/json
 #### 5.2.2 Standard Response Format
 
 **Success Response:**
+
 ```json
 {
   "success": true,
-  "data": { /* resource data */ },
+  "data": {
+    /* resource data */
+  },
   "message": "Operation successful",
   "pagination": {
     "currentPage": 1,
@@ -1611,6 +1697,7 @@ Accept: application/json
 ```
 
 **Error Response:**
+
 ```json
 {
   "success": false,
@@ -1630,6 +1717,7 @@ Accept: application/json
 #### 5.3.1 Authentication APIs
 
 **POST /api/v1/auth/login**
+
 ```javascript
 // Request
 {
@@ -1655,6 +1743,7 @@ Accept: application/json
 ```
 
 **POST /api/v1/auth/refresh-token**
+
 ```javascript
 // Request
 {
@@ -1672,6 +1761,7 @@ Accept: application/json
 ```
 
 **POST /api/v1/auth/logout**
+
 ```javascript
 // Request (with Bearer token)
 {}
@@ -1684,6 +1774,7 @@ Accept: application/json
 ```
 
 **POST /api/v1/auth/logout-all-devices**
+
 ```javascript
 // Request (with Bearer token)
 {}
@@ -1696,6 +1787,7 @@ Accept: application/json
 ```
 
 **POST /api/v1/auth/change-password**
+
 ```javascript
 // Request
 {
@@ -1713,6 +1805,7 @@ Accept: application/json
 #### 5.3.2 User Management APIs
 
 **GET /api/v1/users**
+
 ```javascript
 // Query Parameters
 ?page=1&limit=10&sort=username&search=admin&role=Super Admin
@@ -1740,6 +1833,7 @@ Accept: application/json
 ```
 
 **GET /api/v1/users/:id**
+
 ```javascript
 // Response (200)
 {
@@ -1757,6 +1851,7 @@ Accept: application/json
 ```
 
 **POST /api/v1/users**
+
 ```javascript
 // Request
 {
@@ -1778,6 +1873,7 @@ Accept: application/json
 ```
 
 **PUT /api/v1/users/:id**
+
 ```javascript
 // Request
 {
@@ -1797,6 +1893,7 @@ Accept: application/json
 ```
 
 **DELETE /api/v1/users/:id**
+
 ```javascript
 // Response (200)
 {
@@ -1808,6 +1905,7 @@ Accept: application/json
 #### 5.3.3 Product APIs
 
 **GET /api/v1/products**
+
 ```javascript
 // Query Parameters
 ?page=1&limit=20&search=chips&brand=lays&segment=BIS&active=true
@@ -1832,6 +1930,7 @@ Accept: application/json
 ```
 
 **POST /api/v1/products**
+
 ```javascript
 // Request
 {
@@ -1860,6 +1959,7 @@ Accept: application/json
 #### 5.3.4 Demand Order APIs
 
 **GET /api/v1/demand-orders**
+
 ```javascript
 // Query Parameters
 ?status=SUBMITTED&distributor=dist_id&from_date=2026-01-01&to_date=2026-01-31
@@ -1889,6 +1989,7 @@ Accept: application/json
 ```
 
 **POST /api/v1/demand-orders**
+
 ```javascript
 // Request
 {
@@ -1912,6 +2013,7 @@ Accept: application/json
 ```
 
 **PUT /api/v1/demand-orders/:id/submit**
+
 ```javascript
 // Response (200)
 {
@@ -1922,6 +2024,7 @@ Accept: application/json
 ```
 
 **PUT /api/v1/demand-orders/:id/approve**
+
 ```javascript
 // Request
 {
@@ -1938,6 +2041,7 @@ Accept: application/json
 ```
 
 **PUT /api/v1/demand-orders/:id/reject**
+
 ```javascript
 // Request
 {
@@ -1953,6 +2057,7 @@ Accept: application/json
 ```
 
 **POST /api/v1/demand-orders/:id/schedule**
+
 ```javascript
 // Request
 {
@@ -1977,6 +2082,7 @@ Accept: application/json
 #### 5.3.5 Collection APIs
 
 **GET /api/v1/collections**
+
 ```javascript
 // Query Parameters
 ?status=PENDING&distributor=dist_id&from_date=2026-01-01
@@ -1999,6 +2105,7 @@ Accept: application/json
 ```
 
 **POST /api/v1/collections**
+
 ```javascript
 // Request
 {
@@ -2019,6 +2126,7 @@ Accept: application/json
 ```
 
 **POST /api/v1/collections/upload-image**
+
 ```javascript
 // Request (multipart/form-data)
 {
@@ -2036,41 +2144,42 @@ Accept: application/json
 
 ### 5.4 Error Codes
 
-| HTTP Status | Error Code | Description |
-|-------------|------------|-------------|
-| 400 | BAD_REQUEST | Invalid request format or parameters |
-| 401 | UNAUTHORIZED | Missing or invalid authentication token |
-| 403 | FORBIDDEN | Insufficient permissions |
-| 404 | NOT_FOUND | Resource not found |
-| 409 | CONFLICT | Resource conflict (duplicate) |
-| 422 | VALIDATION_ERROR | Input validation failed |
-| 429 | RATE_LIMIT_EXCEEDED | Too many requests |
-| 500 | INTERNAL_ERROR | Server error |
-| 503 | SERVICE_UNAVAILABLE | Service temporarily unavailable |
+| HTTP Status | Error Code          | Description                             |
+| ----------- | ------------------- | --------------------------------------- |
+| 400         | BAD_REQUEST         | Invalid request format or parameters    |
+| 401         | UNAUTHORIZED        | Missing or invalid authentication token |
+| 403         | FORBIDDEN           | Insufficient permissions                |
+| 404         | NOT_FOUND           | Resource not found                      |
+| 409         | CONFLICT            | Resource conflict (duplicate)           |
+| 422         | VALIDATION_ERROR    | Input validation failed                 |
+| 429         | RATE_LIMIT_EXCEEDED | Too many requests                       |
+| 500         | INTERNAL_ERROR      | Server error                            |
+| 503         | SERVICE_UNAVAILABLE | Service temporarily unavailable         |
 
 ### 5.5 Rate Limiting
 
 **Configuration:**
+
 ```javascript
-const rateLimit = require('express-rate-limit');
+const rateLimit = require("express-rate-limit");
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100, // limit each IP to 100 requests per windowMs
-  message: 'Too many requests from this IP, please try again later'
+  message: "Too many requests from this IP, please try again later",
 });
 
 // Apply to all routes
-app.use('/api/', limiter);
+app.use("/api/", limiter);
 
 // Strict limiter for authentication
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 5, // 5 attempts per 15 minutes
-  skipSuccessfulRequests: true
+  skipSuccessfulRequests: true,
 });
 
-app.use('/api/v1/auth/login', authLimiter);
+app.use("/api/v1/auth/login", authLimiter);
 ```
 
 ### 5.6 API Documentation
@@ -2078,6 +2187,7 @@ app.use('/api/v1/auth/login', authLimiter);
 **Tool:** Postman Collection + Swagger/OpenAPI (optional)
 
 **Documentation Includes:**
+
 - Endpoint descriptions
 - Request/response examples
 - Authentication requirements
@@ -2094,6 +2204,7 @@ app.use('/api/v1/auth/login', authLimiter);
 #### 6.1.1 JWT Token Structure
 
 **Access Token:**
+
 ```javascript
 {
   header: {
@@ -2113,6 +2224,7 @@ app.use('/api/v1/auth/login', authLimiter);
 ```
 
 **Refresh Token:**
+
 ```javascript
 {
   header: {
@@ -2138,21 +2250,21 @@ const generateTokens = (user) => {
       id: user._id,
       username: user.username,
       role: user.role_id,
-      tokenVersion: user.tokenVersion
+      tokenVersion: user.tokenVersion,
     },
     process.env.JWT_SECRET,
-    { expiresIn: '15m' }
+    { expiresIn: "15m" }
   );
-  
+
   const refreshToken = jwt.sign(
     {
       id: user._id,
-      tokenVersion: user.tokenVersion
+      tokenVersion: user.tokenVersion,
     },
     process.env.JWT_REFRESH_SECRET,
-    { expiresIn: '7d' }
+    { expiresIn: "7d" }
   );
-  
+
   return { accessToken, refreshToken };
 };
 ```
@@ -2164,64 +2276,61 @@ const authenticate = async (req, res, next) => {
   try {
     // Extract token
     const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
       return res.status(401).json({
         success: false,
-        message: 'No token provided'
+        message: "No token provided",
       });
     }
-    
+
     const token = authHeader.substring(7);
-    
+
     // Verify token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    
+
     // Check Redis cache first
     const cacheKey = `user:${decoded.id}`;
     let user = await redis.get(cacheKey);
-    
+
     if (!user) {
       // Fetch from database
-      user = await User.findById(decoded.id)
-        .populate('role_id')
-        .lean();
-      
+      user = await User.findById(decoded.id).populate("role_id").lean();
+
       if (!user) {
         return res.status(401).json({
           success: false,
-          message: 'User not found'
+          message: "User not found",
         });
       }
-      
+
       // Cache for 5 minutes
       await redis.setex(cacheKey, 300, JSON.stringify(user));
     } else {
       user = JSON.parse(user);
     }
-    
+
     // Verify token version (for logout all devices)
     if (user.tokenVersion !== decoded.tokenVersion) {
       return res.status(401).json({
         success: false,
-        message: 'Token expired'
+        message: "Token expired",
       });
     }
-    
+
     // Attach user to request
     req.user = user;
     next();
-    
   } catch (error) {
-    if (error.name === 'TokenExpiredError') {
+    if (error.name === "TokenExpiredError") {
       return res.status(401).json({
         success: false,
-        message: 'Token expired'
+        message: "Token expired",
       });
     }
-    
+
     return res.status(401).json({
       success: false,
-      message: 'Invalid token'
+      message: "Invalid token",
     });
   }
 };
@@ -2233,39 +2342,38 @@ const authenticate = async (req, res, next) => {
 const refreshTokens = async (req, res) => {
   try {
     const { refreshToken } = req.body;
-    
+
     if (!refreshToken) {
       return res.status(401).json({
         success: false,
-        message: 'Refresh token required'
+        message: "Refresh token required",
       });
     }
-    
+
     // Verify refresh token
     const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
-    
+
     // Fetch user
     const user = await User.findById(decoded.id);
-    
+
     if (!user || user.tokenVersion !== decoded.tokenVersion) {
       return res.status(401).json({
         success: false,
-        message: 'Invalid refresh token'
+        message: "Invalid refresh token",
       });
     }
-    
+
     // Generate new tokens
     const tokens = generateTokens(user);
-    
+
     res.json({
       success: true,
-      data: tokens
+      data: tokens,
     });
-    
   } catch (error) {
     res.status(401).json({
       success: false,
-      message: 'Invalid refresh token'
+      message: "Invalid refresh token",
     });
   }
 };
@@ -2276,55 +2384,51 @@ const refreshTokens = async (req, res) => {
 #### 6.2.1 Role-Based Access Control (RBAC)
 
 **Permission Check Middleware:**
+
 ```javascript
 const requireApiPermission = (permissionCode) => {
   return async (req, res, next) => {
     try {
       const userRole = req.user.role_id;
-      
+
       // Check cache first
       const cacheKey = `permissions:${userRole._id}`;
       let permissions = await redis.get(cacheKey);
-      
+
       if (!permissions) {
         // Fetch from database
         const rolePermissions = await RoleApiPermission.find({
-          role_id: userRole._id
-        }).populate('api_permission_id');
-        
-        permissions = rolePermissions.map(rp => rp.api_permission_id.code);
-        
+          role_id: userRole._id,
+        }).populate("api_permission_id");
+
+        permissions = rolePermissions.map((rp) => rp.api_permission_id.code);
+
         // Cache for 10 minutes
         await redis.setex(cacheKey, 600, JSON.stringify(permissions));
       } else {
         permissions = JSON.parse(permissions);
       }
-      
+
       // Check permission
       if (!permissions.includes(permissionCode)) {
         return res.status(403).json({
           success: false,
-          message: 'Insufficient permissions'
+          message: "Insufficient permissions",
         });
       }
-      
+
       next();
-      
     } catch (error) {
       res.status(500).json({
         success: false,
-        message: 'Error checking permissions'
+        message: "Error checking permissions",
       });
     }
   };
 };
 
 // Usage
-router.get('/users', 
-  authenticate, 
-  requireApiPermission('users:read'), 
-  userController.getAll
-);
+router.get("/users", authenticate, requireApiPermission("users:read"), userController.getAll);
 ```
 
 ### 6.3 Password Security
@@ -2332,14 +2436,14 @@ router.get('/users',
 #### 6.3.1 Password Hashing
 
 ```javascript
-const bcrypt = require('bcryptjs');
+const bcrypt = require("bcryptjs");
 
 // Pre-save hook (Mongoose)
-userSchema.pre('save', async function(next) {
-  if (!this.isModified('password')) {
+userSchema.pre("save", async function (next) {
+  if (!this.isModified("password")) {
     return next();
   }
-  
+
   try {
     const saltRounds = 10;
     this.password = await bcrypt.hash(this.password, saltRounds);
@@ -2350,7 +2454,7 @@ userSchema.pre('save', async function(next) {
 });
 
 // Password comparison method
-userSchema.methods.comparePassword = async function(candidatePassword) {
+userSchema.methods.comparePassword = async function (candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
 };
 ```
@@ -2358,6 +2462,7 @@ userSchema.methods.comparePassword = async function(candidatePassword) {
 #### 6.3.2 Password Policy
 
 **Requirements:**
+
 - Minimum length: 6 characters
 - Must contain: letters and numbers (recommended)
 - Password history: Not implemented (can be added)
@@ -2368,26 +2473,28 @@ userSchema.methods.comparePassword = async function(candidatePassword) {
 #### 6.4.1 In-Transit Encryption
 
 **HTTPS/TLS:**
+
 - All API communications over HTTPS
 - TLS 1.2+ required
 - SSL certificate from trusted CA
 
 **Nginx SSL Configuration:**
+
 ```nginx
 server {
     listen 443 ssl http2;
     server_name api.example.com;
-    
+
     ssl_certificate /etc/ssl/certs/cert.pem;
     ssl_certificate_key /etc/ssl/private/key.pem;
-    
+
     ssl_protocols TLSv1.2 TLSv1.3;
     ssl_ciphers HIGH:!aNULL:!MD5;
     ssl_prefer_server_ciphers on;
-    
+
     # HSTS
     add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
-    
+
     # Other security headers
     add_header X-Frame-Options "SAMEORIGIN" always;
     add_header X-Content-Type-Options "nosniff" always;
@@ -2398,10 +2505,12 @@ server {
 #### 6.4.2 At-Rest Encryption
 
 **MongoDB Encryption:**
+
 - MongoDB Atlas: Encryption at rest enabled
 - Self-hosted: Encrypted filesystem (LUKS, dm-crypt)
 
 **Environment Variables:**
+
 - Sensitive data in .env files
 - .env files excluded from version control (.gitignore)
 - Production secrets in environment/secret management systems
@@ -2411,31 +2520,23 @@ server {
 #### 6.5.1 Request Validation (Joi)
 
 ```javascript
-const { body, validationResult } = require('express-validator');
+const { body, validationResult } = require("express-validator");
 
 const userCreateValidation = [
-  body('username')
+  body("username")
     .trim()
     .notEmpty()
-    .withMessage('Username is required')
+    .withMessage("Username is required")
     .isLength({ min: 3, max: 30 })
-    .withMessage('Username must be 3-30 characters')
+    .withMessage("Username must be 3-30 characters")
     .matches(/^[a-zA-Z0-9_-]+$/)
-    .withMessage('Username can only contain letters, numbers, underscores, and hyphens'),
-  
-  body('email')
-    .trim()
-    .isEmail()
-    .withMessage('Invalid email address')
-    .normalizeEmail(),
-  
-  body('password')
-    .isLength({ min: 6 })
-    .withMessage('Password must be at least 6 characters'),
-  
-  body('role_id')
-    .isMongoId()
-    .withMessage('Invalid role ID')
+    .withMessage("Username can only contain letters, numbers, underscores, and hyphens"),
+
+  body("email").trim().isEmail().withMessage("Invalid email address").normalizeEmail(),
+
+  body("password").isLength({ min: 6 }).withMessage("Password must be at least 6 characters"),
+
+  body("role_id").isMongoId().withMessage("Invalid role ID"),
 ];
 
 const handleValidationErrors = (req, res, next) => {
@@ -2443,16 +2544,17 @@ const handleValidationErrors = (req, res, next) => {
   if (!errors.isEmpty()) {
     return res.status(400).json({
       success: false,
-      message: 'Validation error',
-      errors: errors.array()
+      message: "Validation error",
+      errors: errors.array(),
     });
   }
   next();
 };
 
-router.post('/users',
+router.post(
+  "/users",
   authenticate,
-  requireApiPermission('users:create'),
+  requireApiPermission("users:create"),
   userCreateValidation,
   handleValidationErrors,
   userController.create
@@ -2462,32 +2564,35 @@ router.post('/users',
 #### 6.5.2 XSS Protection
 
 **helmet Middleware:**
-```javascript
-const helmet = require('helmet');
 
-app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
-      imgSrc: ["'self'", 'data:', 'https:'],
-      connectSrc: ["'self'"],
-      fontSrc: ["'self'"],
-      objectSrc: ["'none'"],
-      mediaSrc: ["'self'"],
-      frameSrc: ["'none'"]
-    }
-  },
-  hsts: {
-    maxAge: 31536000,
-    includeSubDomains: true,
-    preload: true
-  },
-  noSniff: true,
-  xssFilter: true,
-  referrerPolicy: { policy: 'same-origin' }
-}));
+```javascript
+const helmet = require("helmet");
+
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        imgSrc: ["'self'", "data:", "https:"],
+        connectSrc: ["'self'"],
+        fontSrc: ["'self'"],
+        objectSrc: ["'none'"],
+        mediaSrc: ["'self'"],
+        frameSrc: ["'none'"],
+      },
+    },
+    hsts: {
+      maxAge: 31536000,
+      includeSubDomains: true,
+      preload: true,
+    },
+    noSniff: true,
+    xssFilter: true,
+    referrerPolicy: { policy: "same-origin" },
+  })
+);
 ```
 
 ### 6.6 Security Headers
@@ -2495,10 +2600,10 @@ app.use(helmet({
 ```javascript
 // Custom headers middleware
 app.use((req, res, next) => {
-  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
-  res.setHeader('X-Content-Type-Options', 'nosniff');
-  res.setHeader('X-XSS-Protection', '1; mode=block');
-  res.setHeader('Referrer-Policy', 'same-origin');
+  res.setHeader("X-Frame-Options", "SAMEORIGIN");
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("X-XSS-Protection", "1; mode=block");
+  res.setHeader("Referrer-Policy", "same-origin");
   next();
 });
 ```
@@ -2506,25 +2611,25 @@ app.use((req, res, next) => {
 ### 6.7 CORS Configuration
 
 ```javascript
-const cors = require('cors');
+const cors = require("cors");
 
 const corsOptions = {
   origin: function (origin, callback) {
-    const allowedOrigins = process.env.ALLOWED_ORIGINS.split(',');
-    
+    const allowedOrigins = process.env.ALLOWED_ORIGINS.split(",");
+
     // Allow requests with no origin (mobile apps, Postman)
     if (!origin) return callback(null, true);
-    
+
     if (allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
     } else {
-      callback(new Error('Not allowed by CORS'));
+      callback(new Error("Not allowed by CORS"));
     }
   },
   credentials: true,
   optionsSuccessStatus: 200,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+  allowedHeaders: ["Content-Type", "Authorization"],
 };
 
 app.use(cors(corsOptions));
@@ -2533,6 +2638,7 @@ app.use(cors(corsOptions));
 ### 6.8 SQL/NoSQL Injection Prevention
 
 **Mongoose Protection:**
+
 ```javascript
 // Mongoose automatically sanitizes queries
 // Avoid using $where operator with user input
@@ -2542,38 +2648,42 @@ const users = await User.find({ username: req.query.username });
 
 // Unsafe (avoid)
 const users = await User.find({
-  $where: `this.username == '${req.query.username}'`
+  $where: `this.username == '${req.query.username}'`,
 });
 
 // Additional sanitization
-const mongoSanitize = require('express-mongo-sanitize');
+const mongoSanitize = require("express-mongo-sanitize");
 app.use(mongoSanitize());
 ```
 
 ### 6.9 Session Security
 
 **Redis Session Store:**
-```javascript
-const session = require('express-session');
-const RedisStore = require('connect-redis')(session);
 
-app.use(session({
-  store: new RedisStore({ client: redisClient }),
-  secret: process.env.SESSION_SECRET,
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    secure: process.env.NODE_ENV === 'production', // HTTPS only in production
-    httpOnly: true, // Prevents JavaScript access
-    maxAge: 24 * 60 * 60 * 1000, // 24 hours
-    sameSite: 'strict' // CSRF protection
-  }
-}));
+```javascript
+const session = require("express-session");
+const RedisStore = require("connect-redis")(session);
+
+app.use(
+  session({
+    store: new RedisStore({ client: redisClient }),
+    secret: process.env.SESSION_SECRET,
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: process.env.NODE_ENV === "production", // HTTPS only in production
+      httpOnly: true, // Prevents JavaScript access
+      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      sameSite: "strict", // CSRF protection
+    },
+  })
+);
 ```
 
 ### 6.10 Audit Logging
 
 **Audit Trail:**
+
 ```javascript
 // Middleware to log all API requests
 const auditLogger = (req, res, next) => {
@@ -2582,20 +2692,21 @@ const auditLogger = (req, res, next) => {
     user: req.user ? req.user._id : null,
     action: `${req.method} ${req.path}`,
     ip: req.ip,
-    userAgent: req.get('user-agent'),
-    body: req.method !== 'GET' ? req.body : null
+    userAgent: req.get("user-agent"),
+    body: req.method !== "GET" ? req.body : null,
   };
-  
+
   // Log to file or database
-  logger.info('API Request', auditLog);
-  
+  logger.info("API Request", auditLog);
+
   next();
 };
 
-app.use('/api/', authenticate, auditLogger);
+app.use("/api/", authenticate, auditLogger);
 ```
 
 **Database Audit Fields:**
+
 - created_by: User who created the record
 - created_at: Timestamp of creation
 - updated_by: User who last updated the record

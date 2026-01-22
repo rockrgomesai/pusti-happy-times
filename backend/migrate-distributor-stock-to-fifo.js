@@ -1,9 +1,9 @@
 /**
  * Migration Script: Convert DistributorStock to FIFO Batches
- * 
+ *
  * This script migrates existing distributor stock from simple quantity tracking
  * to FIFO (First-In-First-Out) batch tracking with price history.
- * 
+ *
  * Usage: cd backend && node migrate-distributor-stock-to-fifo.js
  */
 
@@ -69,10 +69,10 @@ const migrateDistributorStock = async () => {
         // Create a single batch for existing stock
         // Since we don't have historical data, we create one batch with current quantity
         const batch = {
-          batch_id: `MIGRATION-${new Date().toISOString().replace(/[-:T.Z]/g, "").substring(0, 14)}-${Math.random()
-            .toString(36)
-            .substring(2, 7)
-            .toUpperCase()}`,
+          batch_id: `MIGRATION-${new Date()
+            .toISOString()
+            .replace(/[-:T.Z]/g, "")
+            .substring(0, 14)}-${Math.random().toString(36).substring(2, 7).toUpperCase()}`,
           qty: currentQty,
           unit_price: unitPrice,
           received_at: stock.last_received_at || stock.createdAt || new Date(),

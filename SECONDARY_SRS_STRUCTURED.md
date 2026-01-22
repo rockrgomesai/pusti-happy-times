@@ -1,7 +1,9 @@
 # Secondary Software Requirement Specification (SRS)
+
 ## Pusti ERP System - Complete Documentation
 
 **Document Information:**
+
 - **Title:** Software Requirement Specification (SRS)
 - **Client:** TK Group
 - **Vendor:** TechKnowGram Limited
@@ -30,6 +32,7 @@
 ### 1.1 Purpose
 
 The purpose of this document is to build an online system for TK Group that will manage:
+
 - Different types of roles and their associated users
 - Flow of products from factory to depot and then to distributor
 - Finally distribution to targeted outlets
@@ -47,6 +50,7 @@ The project scope includes the development of the following components:
 4. **RESTful Web API Service** - Centralized backend service
 
 **Key Features:**
+
 - Centralized database system accessible only through RESTFul web API
 - User management for authorized system operators
 - Order management according to different routes
@@ -60,6 +64,7 @@ The project scope includes the development of the following components:
 ### 1.3 Target Users
 
 The Pusti project is directed toward:
+
 - Owners of small to large outlets
 - Stock managers responsible for maintaining sufficient goods in retail or manufacturing business
 - Sales officers and field staff
@@ -71,30 +76,30 @@ The Pusti project is directed toward:
 
 ## 2. Definitions & Abbreviations
 
-| Term | Definition |
-|------|------------|
-| **DB** | Distributor - Partner of TK group (not a direct employee) |
-| **AH** | Area Head - Monitors activities of SO |
-| **ZH** | Zonal Head |
-| **RH** | Regional Head |
+| Term      | Definition                                                                             |
+| --------- | -------------------------------------------------------------------------------------- |
+| **DB**    | Distributor - Partner of TK group (not a direct employee)                              |
+| **AH**    | Area Head - Monitors activities of SO                                                  |
+| **ZH**    | Zonal Head                                                                             |
+| **RH**    | Regional Head                                                                          |
 | **SO/SR** | Sales Officer/Sales Representative - Direct employee under area, monitors distributors |
-| **TMR** | This Month Revenue |
-| **DSR** | Distributor Sales Representative |
-| **DP** | Distributor Price |
-| **TP** | Trade Price |
-| **SRS** | Software Requirement Specification |
-| **SD** | Super Distributor |
-| **SIO** | Sales Information Office |
-| **HOS** | Head Of Sales |
-| **CCP** | Category Call Productivity |
-| **LPC** | Line Per Call |
-| **S/R** | Strike Rate |
-| **CD** | Commission Distributor |
-| **MT** | Metric Ton |
-| **CTN** | Carton |
-| **OTC** | Over The Counter - Irregular sales |
-| **SKU** | Stock Keeping Unit - Individual product item |
-| **POS** | Point of Sale - Retail outlet |
+| **TMR**   | This Month Revenue                                                                     |
+| **DSR**   | Distributor Sales Representative                                                       |
+| **DP**    | Distributor Price                                                                      |
+| **TP**    | Trade Price                                                                            |
+| **SRS**   | Software Requirement Specification                                                     |
+| **SD**    | Super Distributor                                                                      |
+| **SIO**   | Sales Information Office                                                               |
+| **HOS**   | Head Of Sales                                                                          |
+| **CCP**   | Category Call Productivity                                                             |
+| **LPC**   | Line Per Call                                                                          |
+| **S/R**   | Strike Rate                                                                            |
+| **CD**    | Commission Distributor                                                                 |
+| **MT**    | Metric Ton                                                                             |
+| **CTN**   | Carton                                                                                 |
+| **OTC**   | Over The Counter - Irregular sales                                                     |
+| **SKU**   | Stock Keeping Unit - Individual product item                                           |
+| **POS**   | Point of Sale - Retail outlet                                                          |
 
 ---
 
@@ -148,6 +153,7 @@ The system consists of four main logical components:
 Secondary sales orders are orders placed by Sales Officers (SO) during their visits to outlets/POS.
 
 #### General Steps:
+
 1. SO physically visits the outlets
 2. Records if any order is placed
 3. Lists all required SKUs
@@ -157,6 +163,7 @@ Secondary sales orders are orders placed by Sales Officers (SO) during their vis
 #### Order Collection Process (2-Step):
 
 **Step 1: Outlet Status & Coverage**
+
 - Mark whether outlet is open or closed
 - If open, perform outlet coverage:
   - Check which TK Group products are present
@@ -164,6 +171,7 @@ Secondary sales orders are orders placed by Sales Officers (SO) during their vis
   - Submit coverage data
 
 **Step 2: Order Placement**
+
 - Two options:
   - **YES**: Place an order
   - **NO**: No order required (select reasons)
@@ -179,6 +187,7 @@ Secondary sales orders are orders placed by Sales Officers (SO) during their vis
 Outlet coverage tracks available TK Group product brands at visiting shops.
 
 **Process:**
+
 1. SO visits the shop by finding the outlet
 2. System finds minimum distance based on latitude/longitude
 3. When close enough, enables sales order button
@@ -193,6 +202,7 @@ Outlet coverage tracks available TK Group product brands at visiting shops.
 After outlet coverage, two options:
 
 #### 4.4.1 No Order
+
 - SO clicks on NO option
 - Screen shows predefined reasons (from master settings)
 - SO selects one or more reasons
@@ -201,6 +211,7 @@ After outlet coverage, two options:
 #### 4.4.2 Place Order
 
 **Manual Order:**
+
 - User creates paper-based memo with:
   - Line number (total SKUs)
   - Total categories
@@ -208,6 +219,7 @@ After outlet coverage, two options:
 - User inputs same information into system
 
 **System-Based Order:**
+
 - SO creates order directly in system
 - Inputs:
   - SKU
@@ -216,6 +228,7 @@ After outlet coverage, two options:
   - Total price
 
 **Offline Order:**
+
 - User logs in via iOS/Android app
 - Places order while offline
 - Products retrieved from local DB (SQLite)
@@ -226,6 +239,7 @@ After outlet coverage, two options:
 ### 4.5 Order Amendment
 
 SO or authorized users can modify secondary sales orders:
+
 - Select the order for modification
 - Change SKU-based items:
   - Number of items
@@ -236,6 +250,7 @@ SO or authorized users can modify secondary sales orders:
 ### 4.6 Outlet Summary
 
 Date range-wise information:
+
 - Specific outlet sales order history (in Tk.)
 - Specific outlet delivery history (in Tk.)
 - SKU-wise sales order history (order qty, order amount)
@@ -244,6 +259,7 @@ Date range-wise information:
 ### 4.7 Order Placement (Summary Input)
 
 If SO creates manual order, summary input is required:
+
 - Line number/number of SKUs from memo
 - Number of categories
 - Total price
@@ -252,6 +268,7 @@ If SO creates manual order, summary input is required:
 - Selected route
 
 **System Calculations:**
+
 - CCP = (No. of total categories / total number of memos)
 - LPC = (Total SKUs / Total number of memos)
 
@@ -260,13 +277,16 @@ If SO creates manual order, summary input is required:
 DSR collects memos and order summary, loads vehicles, and delivers to outlets.
 
 #### Update Inventory
+
 After delivery, update:
+
 - Number of products delivered
 - Delivery date
 - Who delivered
 - Delivery narration
 
 #### Delivery Confirmation (IMS Entry)
+
 - Select date (default: current date)
 - From/to date for intervals
 - Delivery can be: partial, full, or remaining items
@@ -285,20 +305,26 @@ After delivery, update:
   - Selected route
 
 #### Delete IMS
+
 Admin can delete secondary sales:
+
 - By selected SR and POS
 - By selected date
 - By SKU
 
 #### Edit IMS
+
 Admin can edit IMS:
+
 - Select sales officer
 - Select POS
 - Modify products and items
 - Submit
 
 #### Create Order
+
 If SO cannot create order, admin can:
+
 - Select SO, route, and DSR
 - Input SKU-wise:
   - Secondary sales quantity
@@ -310,13 +336,16 @@ If SO cannot create order, admin can:
 ### 4.9 Product Return Management
 
 #### Return Eligibility Criteria
+
 Criteria for product returns:
+
 - Damaged goods
 - Defective products
 - Dissatisfaction with product
 - Managed via master settings
 
 #### Return Product Process
+
 1. Select eligible criteria for return
 2. Set time frame
 3. Maintain shipping and restocking costs
@@ -327,6 +356,7 @@ Criteria for product returns:
 #### Return and Adjustment
 
 **Product Adjustment:**
+
 - DB collects and returns to depot/inventory
 - Update orders with defect products
 - Track product replacements
@@ -339,6 +369,7 @@ Criteria for product returns:
   - Company decides: replace or provide equivalent money
 
 **Financial Adjustment:**
+
 - Finance department verifies root causes
 - For eligible cases, adjust balances
 - Notify shop owner
@@ -348,7 +379,9 @@ Criteria for product returns:
 ### 4.10 User Movement Tracking
 
 #### Navigation
+
 System tracks SO movement from POS to POS:
+
 - Collects longitude and latitude
 - User opens application
 - System shows assigned SO positions
@@ -357,7 +390,9 @@ System tracks SO movement from POS to POS:
 - View position on iOS/Android screen
 
 #### Using Website
+
 For devices with built-in GPS:
+
 - Website requests GPS access via browser's Geolocation API
 - With user consent, retrieves latitude/longitude
 - Stores information randomly
@@ -368,7 +403,9 @@ For devices with built-in GPS:
 TMR closing freezes sales of selected month and calculates opening balance for next month. After closing, no modification is allowed.
 
 #### Closing Operation
+
 Authorized users can manipulate TMR data:
+
 - Select product category
 - Opening quantity of target month
 - Product SKU
@@ -390,6 +427,7 @@ Authorized users can manipulate TMR data:
 - Only applicable for DB's sales
 
 #### Closing Area Options
+
 - Nationwide
 - By zone/division
 - By region
@@ -399,7 +437,9 @@ Authorized users can manipulate TMR data:
 ### 4.12 Audit & Survey
 
 #### Product Survey
+
 Survey on different products from competitors:
+
 1. Select area on specific date
 2. Select route
 3. Select POS
@@ -408,14 +448,18 @@ Survey on different products from competitors:
 6. Conduct by POS in selected route
 
 #### Price Survey
+
 Price comparison with competitors:
+
 1. Select area on specific date
 2. Select route
 3. Form populates with competitors for each SKU
 4. Input prices of all competitors
 
 #### Delivery Memo Audit
+
 Information to cover:
+
 - Price of selected TK Group products
 - Outlet-wise category coverage audit
 - Product category generally sold from outlet
@@ -431,12 +475,14 @@ Information to cover:
 #### Distributor Audit
 
 **Stock Survey:**
+
 - Select dealer/distributor on specific date
 - Input number of available products (physical vs system)
 - Product-wise quantity
 
 **Document Availability:**
 Check available documents:
+
 - ROI
 - Attendance sheet
 - Route chart
@@ -445,6 +491,7 @@ Check available documents:
 
 **Logistic Support:**
 Audit items (managed via master settings):
+
 - Smartphone (available/not)
 - Laptop
 - Printer
@@ -453,6 +500,7 @@ Audit items (managed via master settings):
 - Number of drivers
 
 **Product Complaints:**
+
 - Track SKU-wise:
   - Damaged items
   - Expired items
@@ -461,6 +509,7 @@ Audit items (managed via master settings):
 
 **Investment Status:**
 For selected distributor on selected date:
+
 - Investment amount for floor stock
 - Undelivered quantity
 - Payment in transit (cash, bank, market credit)
@@ -468,6 +517,7 @@ For selected distributor on selected date:
 
 **Sales Officer Activity:**
 Dynamic activities via master settings:
+
 - Dress code maintenance
 - Attitude (positive/negative)
 - Physical violence involvement
@@ -478,7 +528,9 @@ Dynamic activities via master settings:
 ### 4.13 Stock Management
 
 #### Stock Transfer
+
 Transfer stocks between distributors:
+
 - Select source distributor
 - Select receiving DB
 - Transfer schedule/date
@@ -486,34 +538,40 @@ Transfer stocks between distributors:
 - Can transfer by SKU, single item, or all
 
 #### TMR Transfer
+
 - Select source DB
 - Select target DB
 - Transfer TMR
 
 #### Transfer Sales
+
 - Select source SO
 - Select target SO
 - Transfer sales orders
 - Full month or partial transfer
 
 #### Modify Sales
+
 - Select SO
 - Select date interval
 - Modify data
 - Submit changes
 
 #### Transfer Target
+
 - Select source SO
 - Select target SO
 - Transfer sales targets
 
 #### Target New SKU
+
 - Select product item/SKU
 - Add SKU to all targets
 
 ### 4.14 Attendance
 
 Manage attendance for:
+
 - SO
 - ASM
 - RSM
@@ -521,6 +579,7 @@ Manage attendance for:
 - Administrator (head office employees)
 
 **Process:**
+
 - Login to system
 - Move to associated screen
 - Select employee
@@ -534,13 +593,17 @@ Manage attendance for:
 ### 4.15 Payroll
 
 #### Salary
+
 HR generates payroll considering:
+
 - Maximum allowed leave days for the month
 - Allowed late presents (max 3 per month)
 - Basic salary and all allowances
 
 #### Allowance
+
 Manage various allowances:
+
 - PJP (Permanent Journey Plan) shared in advance
 - Detail level traveling for 1st half (9am-12pm) and 2nd half (2pm-7pm)
 - Information: DB name, Market, Serial number
@@ -566,6 +629,7 @@ Manage various allowances:
   - Others
 
 **For SO (National):**
+
 - Zone, Region, Area
 - SO ID, Name
 - DB ID, Name
@@ -580,6 +644,7 @@ Manage various allowances:
 ### 4.16 User Feedback
 
 End users can send feedback on:
+
 - Product quality
 - Policies
 - Communication
@@ -593,6 +658,7 @@ Authorized users review feedback and make plans based on demand.
 ## 5. Modules Overview
 
 ### 5.1 Inventory Management
+
 - Form management
 - Data registration
 - TMR entry
@@ -601,6 +667,7 @@ Authorized users review feedback and make plans based on demand.
 - Zone-wise posting
 
 ### 5.2 Secondary Order Processing
+
 - Order collection
 - Place order
 - Upload summary
@@ -610,23 +677,28 @@ Authorized users review feedback and make plans based on demand.
 - Display summarized data
 
 ### 5.3 User Movement
+
 - Website-based tracking
 - Mobile application-based tracking
 
 ### 5.4 Order Collection
+
 - Place order
 - Upload summary
 
 ### 5.5 Outlet Product Delivery
+
 - Update inventory
 - Upload delivery
 - Display summarized data
 
 ### 5.6 Master Settings
+
 - Configure system parameters
 - Manage master data
 
 ### 5.7 Product Delivery Tracking
+
 - Real-time tracking
 - Delivery status monitoring
 
@@ -637,6 +709,7 @@ Authorized users review feedback and make plans based on demand.
 ### 6.1 Dashboard
 
 #### Current Status
+
 - Sales TP
 - Order TP
 - Number of visited:
@@ -655,6 +728,7 @@ Authorized users review feedback and make plans based on demand.
 - Number of active routes
 
 #### Secondary Sales Section
+
 - Time pass % of current month
 - Last 3 months bar chart (total secondary sales)
 - Tabular representation:
@@ -670,18 +744,22 @@ Authorized users review feedback and make plans based on demand.
   - Achievement %
 
 #### Primary Sales
+
 - Target DP of month
 - Sales DP
 - Achievement %
 
 #### Collection
+
 - Target total
 - Total month collection
 - Achievement %
 - Time pass %
 
 #### Distribution Stock
+
 Category-wise current month stock:
+
 - Category name
 - Stock in pieces
 - Stock in MT
@@ -690,6 +768,7 @@ Category-wise current month stock:
 ### 6.2 Sales Dashboard
 
 Features:
+
 - Secondary sales amount by date range
 - Filter by: Zones, Regions, Areas, SO, DB
 - Collections
@@ -701,6 +780,7 @@ Features:
 ### 6.3 Live Dashboard
 
 By date range:
+
 - Secondary sales amount
 - Distribution collection
 - Received product by distributor
@@ -713,16 +793,21 @@ By date range:
 Mobile application dashboard sections:
 
 #### Target
+
 **Daily Target:**
+
 - Target sales amount
 - Already sold amount of day
 
 **Monthly Target:**
+
 - Target sales for month
 - Already sold amount
 
 #### Today KPI
+
 Cumulative SO data:
+
 - Target POS
 - Visited POS
 - Visited outlet %
@@ -741,6 +826,7 @@ Cumulative SO data:
 - Absent SOs today
 
 #### KPI By Route
+
 - Select from/to date
 - Select areas and distributor
 - Generate reports showing:
@@ -754,6 +840,7 @@ Cumulative SO data:
 - Time pass/sales update % for selected route
 
 #### Monthly KPI
+
 - Select target month
 - Generate reports:
   - Total sales target in TP
@@ -768,7 +855,9 @@ Cumulative SO data:
 - Filter by selected month/date range
 
 #### Time Pass Report
+
 By category:
+
 - Category name
 - Target amount TP
 - Sold amount TP
@@ -780,6 +869,7 @@ By category:
 ### 6.5 Order Summary
 
 For SO to review:
+
 - Product information:
   - Category, SKU
   - Number of memos
@@ -792,6 +882,7 @@ For SO to review:
 ### 6.6 Delivery Summary
 
 For SO:
+
 - Product category
 - SKU
 - Delivered quantity
@@ -802,6 +893,7 @@ For SO:
 ### 6.7 Damage Summary
 
 For SO:
+
 - Product category
 - SKU
 - Delivered quantity
@@ -812,6 +904,7 @@ For SO:
 ### 6.8 POS Information (Search Outlet)
 
 Display outlet/POS information:
+
 - Outlet number, name
 - Address details
 - Owner information
@@ -822,6 +915,7 @@ Display outlet/POS information:
 ### 6.9 Order vs. Execution Report
 
 Information:
+
 - Category
 - Target in TP (SR) / DP (distributor)
 - Till date order
@@ -850,7 +944,9 @@ Information:
 ### 6.11 Manual Order & Delivery Summary
 
 #### Orders by Route
+
 Information:
+
 - Division, Region, Zone, Distributor, Route name
 - Routes visited
 - Scheduled outlet
@@ -870,7 +966,9 @@ Information:
 - Limited view in mobile, full view in web
 
 #### Delivery By Route
+
 Information:
+
 - Division, Region, Zone, Distributor, Route
 - Revenue in DP/TP
 - Delivered: Memos, Lines, Categories, CCP, LPC
@@ -879,7 +977,9 @@ Information:
 - Limited mobile view, full web view
 
 #### Order by SKU
+
 Information:
+
 - Division, Region, Zone, Route, Category, Product ID
 - SKU Name, Order Qty, Revenue[DP/TP]
 - SO, SO Mobile
@@ -887,14 +987,18 @@ Information:
 - Excel/PDF download
 
 #### Delivery by SKU
+
 Information:
+
 - Route, Category, Product ID, SKU Name
 - Order Qty, Revenue[DP/TP], SO
 - Filter by SO, date interval
 - Excel download
 
 #### Daily Order Summary
+
 Information:
+
 - Division, Region, Zone, DB Name
 - SO/SR ID, Name, Route
 - Visits/Route, Schedule Outlet
@@ -908,12 +1012,14 @@ Information:
 ### 6.12 Productivity Report
 
 Information (same as Daily Order Summary):
+
 - Filter by selected date or all dates
 - Excel download
 
 ### 6.13 Outlet Visit Status
 
 Information:
+
 - Division, Region, Zone, Distributor, SO Name
 - Route, Outlet, Order Status
 - Unvisited outlets report
@@ -923,7 +1029,9 @@ Information:
 ### 6.14 Commission Reports
 
 #### SD Commission
+
 Information:
+
 - DB Code, Division, Region, Zone
 - Super Distributor name
 - Lifting amounts by product type
@@ -934,7 +1042,9 @@ Information:
 - Settings-based commission (category, product)
 
 #### Sales Commission
+
 Information:
+
 - Division, Region, Zone, Distributor
 - Employee ID, Name, Designation, Joining Date
 - Contribution %
@@ -945,12 +1055,15 @@ Information:
 - Remarks
 
 #### CD Commission
+
 Information (similar to SD Commission):
+
 - Filter by product, in taka, in percentage
 
 ### 6.15 Sales Order Reports
 
 #### Order List
+
 - Orders by route
 - Filter by date range, day
 - Customizable columns
@@ -965,24 +1078,31 @@ Information (similar to SD Commission):
 - Outlet-wise SKU and category
 
 #### SO Schedule
+
 Download schedules by day of week:
+
 - Sat, Sun, Mon, Tue, Wed, Thu, Fri
 
 #### Order View and Memo
+
 Summary information:
+
 - Zone, Area, DB, Route, SR, Outlet Name
 - Sales Order Amount-TP
 - Filter by Route, Keyword, Date
 - Detailed summary by Category, SKU, quantities, amounts
 
 #### Summary by SKU
+
 - SKU-based on specific date/interval
 - Filter by region, area, zone, route, outlet
 - Raw data download
 - Filter by dates
 
 #### Sales Order Summary and SKU Wise Report
+
 Comprehensive information:
+
 - Zone to Outlet details
 - Order and delivery quantities/amounts
 - Multiple filtering options
@@ -990,6 +1110,7 @@ Comprehensive information:
 - Date-wise SKU details
 
 #### Raw Order Data
+
 - Outlet-wise cumulative orders by SKU
 - Date interval-based orders
 - Sales officer-wise: Memos, quantities, values
@@ -1001,6 +1122,7 @@ Comprehensive information:
 ### 6.16 Raw Data Sales/IMS
 
 Delivery report types:
+
 - Sales Type=1: OTC Sales
 - Sales Type=0: Memo to memo sales/IMS input
 - Distributor and SO wise sales (filter by dates)
@@ -1031,6 +1153,7 @@ Delivery report types:
 ### 6.20 SO Movement Report
 
 Information:
+
 - Outlet name, SO information
 - Start/end time at outlet
 - Duration to place order
@@ -1043,7 +1166,9 @@ Information:
 ### 6.21 Sales Order Summary Reports
 
 #### Route Wise KPI
+
 Comprehensive route performance data including:
+
 - Zone to Route details
 - Total outlets, visited, memo counts
 - Call productivity, achievement %
@@ -1052,15 +1177,19 @@ Comprehensive route performance data including:
 - Sales/Delivery amounts, variance
 
 #### SO Wise KPI
+
 Detailed SO performance metrics
 
 #### DB Category Wise KPI
+
 Category performance by distributor
 
 #### Region Wise KPI
+
 Regional performance summary
 
 #### Area Wise KPI
+
 Area performance summary
 
 ### 6.22 Delivery Status Report
@@ -1085,12 +1214,15 @@ Area performance summary
 ### 6.25 MIS Report
 
 #### Category Wise Update (Time Pass)
+
 - Secondary sales on selected date
 - For: Division, Region, Zone, Route, Distributor, SO, AH
 - Interval based
 
 #### Regular Report
+
 Extensive reporting including:
+
 - SR-wise daily secondary sales
 - Secondary sales summary
 - Category-wise achievement
@@ -1103,7 +1235,9 @@ Extensive reporting including:
 - Sales and collection summary
 
 #### Daily Summary (DO, Secondary and Delivery)
+
 Daily summary by category:
+
 - Filter by: National, Zone, Region, Area, Date
 - Information includes:
   - Target vs Secondary (Monthly target, Sales MT, Achievement %)
@@ -1116,6 +1250,7 @@ Daily summary by category:
   - Weighted averages
 
 #### Monthly Report (Day Wise)
+
 - Monthly sales summary for DB, SDB, SO
 - By SKU, Category, Route
 - Daily sales for each day of month
@@ -1125,16 +1260,20 @@ Daily summary by category:
 ### 6.26 Statistical Reports
 
 #### Distribution
+
 - Report for selected month
 - Filter by: Zone, Region, Area, Distributor, SO
 
 #### Distributor Details
+
 - Date interval details
 - Zone-wise summary
 - Filter by: Area, Region, Zone, Route
 
 #### Distributor Wise Product
+
 Comprehensive distributor product reports including:
+
 - Delivered orders summary
 - SKU information
 - Live data
@@ -1143,6 +1282,7 @@ Comprehensive distributor product reports including:
 - Dashboard for Bank, Region, Territory
 
 #### Outlet Information
+
 - Filter by: Division, Region, Zone/Area, Route, Creation date
 - Nationwide checking
 - Excel/CSV download
@@ -1151,31 +1291,38 @@ Comprehensive distributor product reports including:
 - New outlets by duration
 
 #### Voucher Summary
+
 - Live data access
 - Filter by date/range
 - Sales orders, collection data, received products
 
 #### Trade Program
+
 - By program details
 - Excel/CSV download
 
 #### Distributor's Claimed Report
+
 - Offer date range
 - Sales date range
 
 #### Drive Product
+
 - By selected month
 - Excel/CSV download
 
 #### Competitor's Information
+
 - By selected month
 - By distributor or all
 - Excel/CSV download
 
 #### Package or Gift Booking
+
 - Specific date interval
 
 #### Assessment & Tour
+
 - Date-wise for head office
 - Assessment on selected dates/intervals
 - User-wise tour reports
@@ -1186,28 +1333,33 @@ Comprehensive distributor product reports including:
 ### 6.27 TMR Report
 
 #### Product Wise Rate In Year-Month
+
 - Product-wise monthly for specific year
 - Information: Brand, Product ID, Name, TP, DP
 - Filter by: TP, DP, Product/Category ID
 
 #### Negative Check
+
 - Secondary sales for negative stock check
 - Information: Region, Territory, Dealer, Category, SKU
 - Opening, Receive, Adjust, Stock, Sales, Floor Stock
 - For specific month/year
 
 #### National Report (Dealer wise details)
+
 - Nationwide for selected dealers
 - Month-specific for selected year
 - Comprehensive stock information
 - Filter by: DB, Region, Zone, Area, Months
 
 #### National Report (SKU Wise Summary)
+
 - Nationwide SKU summary for month
 - Stock information by SKU
 - Filter by: Month, Region, Zone, Area
 
 #### Within Two Month Sales Comparison & Growth
+
 - Two months comparison
 - Quantity and value
 - % Growth (Qty/Value)
@@ -1215,11 +1367,13 @@ Comprehensive distributor product reports including:
 - Year to year SKU
 
 #### Year to Year Sales Comparison - Total Value
+
 - From/to year
 - Nationwide, SKU wise
 - Monthly breakdown (Jan-Dec) with totals
 
 #### 6 Month SKU Sales
+
 - SKU-based nationwide/regional/zonal/route
 - Last 6 months from today
 - Information: Product, Category, SKU, monthly data
@@ -1228,6 +1382,7 @@ Comprehensive distributor product reports including:
 ### 6.28 Target vs. Achievement Reports
 
 #### Target Details
+
 - SO-wise target details
 - SKU details
 - Filter by: area, zone, region, route
@@ -1236,75 +1391,91 @@ Comprehensive distributor product reports including:
 - Information: Zone, Area, Distributor, SR/SO, Status, Category, SKU, Qty, Amount
 
 #### Area Based Target Details
+
 - Area-based with SKUs
 - TP and DP filtering
 - Information: Zone, Area, Category, SKU, Qty, Amount(TP)
 
 #### Target Summary & Achievement
+
 - SO-wise report
 - Filter by: area, region, zone
 - Comprehensive data: Target/Sales amounts (EDP/ETP), PC, TLS, LPC, CCP
 
 #### Target Summary By Distributor
+
 - All or selected distributors
 - Specific month/year
 - Information: Zone, Area, Distributor, Amount-EDP
 
 #### SKU Wise Target vs Achievement
+
 - Distributor-wise
 - SO target and achievement
 - Filter by: Region, Zone, Area, Route, DB, Nationwide, Category, Date range
 - Primary and secondary sales
 
 #### SKU Summary
+
 Detailed SKU information:
+
 - Target/Sales quantities and amounts
 - Various metrics (Pcs, CTN, MT, DP, TP, FREE)
 - Variance, Achievement %, Contribution %
 
 #### Category Summary
+
 Category-wise summary with similar metrics as SKU
 
 #### Brand Summary
+
 Brand-wise summary with comprehensive metrics
 
 #### Distributor SKU Wise Target vs Achievement - Landing Target
+
 - Filter by: Category, Region, Zone, Area, Route, SKU, Territory
 - Include distributors without targets
 - Brand/SKU/Category summaries
 - Landing target information
 
 #### SKU Wise Target vs Achievement (SO)
+
 - SO report by SKUs
 - Filter by: Zone, Region, Route, Month
 - Single/multiple products
 
 #### Target Yet Not Set
+
 - SOs without targets
 - Month-specific
 - Information: AH Name/Mobile, SR/SO Name, Area
 
 #### Total Sales & Collection Summary
+
 - By: SO, TSO, DSM
 - Date range based
 
 #### Distributor Target Primary
+
 - Nationwide primary target
 - Month-specific
 - Information: Region, Area, Dealer, Products
 - Total primary sales
 
 #### Target Achievement By All Dealers
+
 - Nationwide dealer achievement
 - Filter by dealer
 - For selected month
 
 #### Target Achievement - Territory
+
 - Selected month
 - Primary achieved target
 - Territory-wise
 
 #### Target achievement - Region
+
 - Selected month
 - Primary achieved target
 - Region-wise
@@ -1312,7 +1483,9 @@ Brand-wise summary with comprehensive metrics
 ### 6.29 Collection & Incentive Report
 
 #### Distributor's Daily Collection
+
 Information:
+
 - Region
 - Primary target
 - Day-wise collection
@@ -1325,6 +1498,7 @@ Information:
 - Territory-based dealer summary
 
 #### Nationwide Incentive
+
 - All or selected dealers
 - Selected month
 - For: SO, TSO, RSM (selected or all)
@@ -1332,19 +1506,23 @@ Information:
 - Salary range based
 
 #### Yearly Achievement
+
 - For SO
 - By selected year
 
 #### Yearly Achievement (Exclusive SR)
+
 - For exclusive SOs with special criteria
 - By selected year
 
 ### 6.30 Attendance & Payroll Reports
 
 For: SO, DH, AH, ZH, RH
+
 - Specific date or interval based
 
 #### Attendance
+
 - Daily by selected/all zones
 - Specific date based
 - Excel/CSV download
@@ -1353,21 +1531,25 @@ For: SO, DH, AH, ZH, RH
 - Raw data based
 
 #### Attendance Modification
+
 - Modify, Delete reports
 - Filter by: zone, region, area
 - Specific or date range modification
 
 #### Leave
+
 - Daily, monthly, weekly, interval-based
 - Designation-wise for selected/specific date
 - Raw data
 
 #### Leave Modification
+
 - For inconsistent records
 - Filter by designation
 - Date-based modification
 
 #### Distributor's Orders
+
 Comprehensive distributor order reports with filtering and status tracking
 
 ---
@@ -1379,30 +1561,37 @@ Comprehensive distributor order reports with filtering and status tracking
 #### Software Interfaces
 
 **Front-end:**
+
 - Angular (TypeScript-based, free and open-source single-page web application framework)
 - Latest version
 
 **Backend:**
+
 - Oracle database
 - Microservice-based development
 - Java Spring Boot
 
 **Operating System:**
+
 - Windows (chosen for best support and user-friendliness)
 - Also compatible with: Linux, Mac
 
 #### Communication Interface
+
 - Supports all web browsers compatible with CGI, HTML & JavaScript
 
 ### 7.2 Architecture
 
 #### System Components
+
 1. **Frontend Web Application** - React-based
 2. **WEB API** - Laravel-based
 3. **Mobile Application** - Android (loads response web pages using webview)
 
 #### Development Methodology
+
 **Agile Framework using Scrum Method:**
+
 1. Enlist all features
 2. Split into modules and sub-modules
 3. Set priority on modules
@@ -1419,6 +1608,7 @@ Comprehensive distributor order reports with filtering and status tracking
 ### 8.1 E-R Diagram
 
 **Major Entities:**
+
 - AH (Area Head)
 - RH (Regional Head)
 - ZH (Zonal Head)
@@ -1427,23 +1617,27 @@ Comprehensive distributor order reports with filtering and status tracking
 - DB (Distributor)
 
 **Properties/Attributes:**
+
 - Attributes belong to entity properties
 - Used to identify entities
 - Establish relationships with other entities
 - Connect entities and represent meaningful dependencies
 
 **Order Management System:**
+
 - Entities connected through relationships
 - Meaningful dependencies among entities
 
 ### 8.2 Normalization
 
 **Objective:**
+
 - Reduce redundancy (store information only once)
 - Prevent wastage of storage space
 - Reduce total data size
 
 **Approach:**
+
 - Design tables to deal with single theme
 - Handle three kinds of modification anomalies
 - Formulate first, second, and third normal forms (3NF)
@@ -1453,6 +1647,7 @@ Comprehensive distributor order reports with filtering and status tracking
 ### 8.3 Web Application
 
 **Key Features:**
+
 - Main component communicating with API system
 - All database operations via API
 - Token-based authentication for security
@@ -1468,6 +1663,7 @@ Comprehensive distributor order reports with filtering and status tracking
 ### 8.5 Memory Management
 
 **Framework:**
+
 - Rich Laravel Frame for API development
 - Releases unnecessary consumption
 - Optimizes system performance
@@ -1480,6 +1676,7 @@ Comprehensive distributor order reports with filtering and status tracking
 ## Appendix
 
 ### Product Development Cycle
+
 - Agile/Scrum methodology
 - Sprint-based development
 - Continuous customer feedback
@@ -1488,6 +1685,7 @@ Comprehensive distributor order reports with filtering and status tracking
 ### Contact Information
 
 **TechKnowGram Limited**
+
 - Address: 5/9 Block B, Suite B1, Lalmatia, Dhaka 1207, Bangladesh
 - Phone: +88 02 55008199
 - Mobile: +88 01819250309
@@ -1495,6 +1693,7 @@ Comprehensive distributor order reports with filtering and status tracking
 - Website: www.TechKnowGram.com
 
 **Document Prepared By:**
+
 - AKM Ahmedul Islam BABU
 - Founder & CEO | TechKnowGram Limited
 - Phone: +88 02 550 08199
@@ -1510,4 +1709,4 @@ Comprehensive distributor order reports with filtering and status tracking
 
 ---
 
-*End of Document*
+_End of Document_
