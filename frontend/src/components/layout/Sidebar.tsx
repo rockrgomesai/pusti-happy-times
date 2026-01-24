@@ -72,6 +72,9 @@ import {
   Domain,
   LocalAtm,
   AccountCircle,
+  Route as RouteIcon,
+  Sitemap,
+  BarChart,
 } from '@mui/icons-material';
 import { useRouter, usePathname } from 'next/navigation';
 import { apiClient } from '@/lib/api';
@@ -187,6 +190,11 @@ const iconMap: Record<string, typeof Dashboard> = {
   
   // Sales & Territories
   FaMapMarkedAlt: Map, // Territories - Map with markers
+  
+  // Routes & Outlets
+  FaRoute: RouteIcon, // Routes - Route/path icon
+  FaSitemap: Sitemap, // Outlet channels - Hierarchical structure
+  FaChartBar: BarChart, // Market sizes - Bar chart
   
   // Distributors & Stores
   FaStore: Storefront, // Distributors - Store front with awning (UNIQUE)
