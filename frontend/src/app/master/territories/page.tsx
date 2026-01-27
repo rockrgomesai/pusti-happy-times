@@ -284,7 +284,7 @@ export default function TerritoriesPage() {
       setLoading(true);
       const response = await api.get('/territories', {
         params: {
-          limit: 200,
+          limit: 100000,
           includeInactive: true,
           sortBy: 'level',
           sortOrder: 'asc',
