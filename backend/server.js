@@ -123,16 +123,16 @@ const corsOptions = {
     // Allow requests with no origin (mobile apps, Postman, etc.)
     if (!origin) return callback(null, true);
 
-    const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(",") || [
-      "http://localhost:3000",
-      "http://localhost:3001",
-    ];
+    const allowedOrigins = process.env.ALLOWED_ORIGINS
+      ? process.env.ALLOWED_ORIGINS.split(",").map((o) => o.trim())
+      : ["http://localhost:3000", "http://localhost:3001"];
 
-    console.log("🌐 CORS check - Origin:", origin, "Allowed:", allowedOrigins.includes(origin));
+    console.log("🌐 CORS check - Origin:", origin, "Allowed Origins:", allowedOrigins);
 
-    if (allowedOrigins.indexOf(origin) !== -1) {
+    if (allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
+      console.log("❌ CORS rejected origin:", origin);
       callback(new Error("Not allowed by CORS"));
     }
   },

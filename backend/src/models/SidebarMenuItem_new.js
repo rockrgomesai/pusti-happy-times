@@ -24,10 +24,15 @@ const sidebarMenuItemSchema = new mongoose.Schema(
     },
 
     // URL path for navigation (matches database schema)
+    // Null for parent menus that only serve as containers
     href: {
       type: String,
-      required: [true, "Menu href is required"],
+      required: function() {
+        // href is required only if is_submenu is false (i.e., not a parent menu)
+        return !this.is_submenu;
+      },
       trim: true,
+      default: null,
     },
 
     // Menu order for display (matches database schema)

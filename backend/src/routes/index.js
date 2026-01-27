@@ -58,6 +58,9 @@ const distributionRoutes = require("./distribution");
 const distributorPortalRoutes = require("./distributor");
 const dashboardRoutes = require("./dashboard");
 const dsrRoutes = require("./dsrs");
+const outletTypesRoutes = require("./outletTypes");
+const outletChannelsRoutes = require("./outletChannels");
+const outletMarketSizesRoutes = require("./outletMarketSizes");
 
 const router = express.Router();
 
@@ -251,6 +254,30 @@ router.use("/categories", categoryRoutes);
 router.use("/product/products", productRoutes);
 router.use("/products", productRoutes);
 router.use("/product/offers", offersRoutes);
+
+/**
+ * Outlet Types Routes
+ * @route   /api/outlet-types/*
+ * @desc    Outlet type classification management
+ * @access  Private (authenticated users)
+ */
+router.use("/outlet-types", outletTypesRoutes);
+
+/**
+ * Outlet Channels Routes
+ * @route   /api/outlet-channels/*
+ * @desc    Outlet channel classification management
+ * @access  Private (authenticated users)
+ */
+router.use("/outlet-channels", outletChannelsRoutes);
+
+/**
+ * Outlet Market Sizes Routes
+ * @route   /api/outlet-market-sizes/*
+ * @desc    Outlet market size management with category reference
+ * @access  Private (authenticated users)
+ */
+router.use("/outlet-market-sizes", outletMarketSizesRoutes);
 
 /**
  * Facility Management Routes (Unified Depots & Factories)

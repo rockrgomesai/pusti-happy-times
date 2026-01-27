@@ -239,8 +239,8 @@ const listValidation = [
   query("page").optional().isInt({ min: 1 }).withMessage("Page must be a positive integer").toInt(),
   query("limit")
     .optional()
-    .isInt({ min: 1, max: 200 })
-    .withMessage("Limit must be between 1 and 200")
+    .isInt()
+    .withMessage("Limit must be an integer")
     .toInt(),
   query("sortBy").optional().isIn(SORTABLE_FIELDS).withMessage("Invalid sort field"),
   query("sortOrder").optional().isIn(["asc", "desc"]).withMessage("Invalid sort order"),

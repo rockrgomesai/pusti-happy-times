@@ -73,7 +73,7 @@ import {
   LocalAtm,
   AccountCircle,
   Route as RouteIcon,
-  Sitemap,
+  AccountTree,
   BarChart,
 } from '@mui/icons-material';
 import { useRouter, usePathname } from 'next/navigation';
@@ -193,7 +193,7 @@ const iconMap: Record<string, typeof Dashboard> = {
   
   // Routes & Outlets
   FaRoute: RouteIcon, // Routes - Route/path icon
-  FaSitemap: Sitemap, // Outlet channels - Hierarchical structure
+  FaSitemap: AccountTree, // Outlet channels - Hierarchical structure
   FaChartBar: BarChart, // Market sizes - Bar chart
   
   // Distributors & Stores
@@ -261,10 +261,13 @@ export function Sidebar({ onItemClick }: SidebarProps) {
       
       // Fetch from API
       const response = await apiClient.get<MenuApiResponse>('/menu-items/user-menu');
+      console.log('📋 Menu API Response:', response);
       if (response?.success && Array.isArray(response.data)) {
         // Transform database structure to frontend structure
         const rawItems = response.data as RawMenuItem[];
+        console.log('📋 Raw menu items:', rawItems);
         const transformedItems = transformDatabaseMenuItems(rawItems);
+        console.log('📋 Transformed menu items:', transformedItems);
         setMenuItems(transformedItems);
       } else {
         console.error('Failed to fetch menu items: Invalid response format');
