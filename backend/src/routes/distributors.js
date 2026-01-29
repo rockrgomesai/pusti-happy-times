@@ -249,11 +249,19 @@ router.get(
       .custom((value) => DISTRIBUTOR_TYPES.includes(value))
       .withMessage("Invalid distributor type"),
     query("active").optional().isBoolean().withMessage("Active flag must be boolean"),
+    query("db_point_id")
+      .optional()
+      .custom((value) => mongoose.Types.ObjectId.isValid(value))
+      .withMessage("DB Point ID must be a valid ObjectId"),
+    query("area_id")
+      .optional()
+      .custom((value) => mongoose.Types.ObjectId.isValid(value))
+      .withMessage("Area ID must be a valid ObjectId"),
   ],
   handleValidationErrors,
   async (req, res) => {
     try {
-      const { search, segment, type, active, limit = 50, offset = 0 } = req.query;
+      const { search, segment, type, active, db_point_id, area_id, limit = 50, offset = 0 } = req.query;
 
       const queryBuilder = {};
 
@@ -267,6 +275,35 @@ router.get(
 
       if (type) {
         queryBuilder.distributor_type = type;
+      }
+
+      // Filter by DB Point
+      if (db_point_id) {
+        queryBuilder.db_point_id = db_point_id;
+      }
+
+      // Filter by Area (find all DB Points in the area, then find distributors)
+      if (area_id && !db_point_id) {
+        const dbPoints = await Territory.find({ 
+          parent_id: area_id, 
+          type: 'db_point', 
+          active: true 
+        }).select('_id').lean();
+        
+        if (dbPoints.length > 0) {
+          queryBuilder.db_point_id = { $in: dbPoints.map(dp => dp._id) };
+        } else {
+          // No DB Points in this area, return empty result
+          return res.json({
+            success: true,
+            data: [],
+            meta: {
+              total: 0,
+              limit: parseInt(limit, 10),
+              offset: parseInt(offset, 10),
+            },
+          });
+        }
       }
 
       if (search) {

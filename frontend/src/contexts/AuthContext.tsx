@@ -56,6 +56,7 @@ interface AuthContextType {
     newPassword: string;
     confirmPassword: string;
   }) => Promise<void>;
+  hasPermission: (permission: string) => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -238,6 +239,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
+  const hasPermission = (permission: string): boolean => {
+    if (!user || !user.permissions) return false;
+    return user.permissions.includes(permission);
+  };
+
   const value: AuthContextType = {
     user,
     isLoading,
@@ -245,6 +251,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     login,
     logout,
     changePassword,
+    hasPermission,
   };
 
   return (

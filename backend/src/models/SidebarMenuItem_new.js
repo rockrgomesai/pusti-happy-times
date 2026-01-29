@@ -27,7 +27,7 @@ const sidebarMenuItemSchema = new mongoose.Schema(
     // Null for parent menus that only serve as containers
     href: {
       type: String,
-      required: function() {
+      required: function () {
         // href is required only if is_submenu is false (i.e., not a parent menu)
         return !this.is_submenu;
       },
@@ -130,8 +130,7 @@ sidebarMenuItemSchema.statics.getHierarchicalMenu = async function () {
 
     return parentItems.map((parent) => {
       const children = allItems.filter(
-        (item) =>
-          item.parent_id && item.parent_id.toString() === parent._id.toString()
+        (item) => item.parent_id && item.parent_id.toString() === parent._id.toString()
       );
       return {
         ...parent.toObject(),

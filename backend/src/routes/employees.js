@@ -49,7 +49,7 @@ const parseNullableDate = (value) => {
 
 const basePaginationValidation = [
   query("page").optional().isInt({ min: 1 }).toInt(),
-  query("limit").optional().isInt({ min: 1, max: 500 }).toInt(),
+  query("limit").optional().isInt().toInt(),
   query("search").optional().isLength({ max: 200 }).trim(),
   query("sort").optional().isIn(["name", "employee_id", "date_birth", "created_at"]),
   query("order").optional().isIn(["asc", "desc"]),

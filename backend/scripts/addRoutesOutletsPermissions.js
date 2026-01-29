@@ -42,7 +42,7 @@ async function addRoutesOutletsPermissions() {
 
     for (const permission of newPermissions) {
       let existing = await ApiPermission.findOne({ api_permissions: permission });
-      
+
       if (existing) {
         console.log(`   ✓ Permission already exists: ${permission}`);
         createdPermissions.push(existing);

@@ -309,7 +309,7 @@ const fetchDistributors = async (): Promise<Distributor[]> => {
   try {
     const response = await api.get('/distributors', {
       params: {
-        limit: 500,
+        limit: 100000,
         includeInactive: true,
       },
     });
@@ -375,7 +375,7 @@ const fetchDbPoints = async (): Promise<TerritoryOption[]> => {
     const response = await api.get('/territories', {
       params: {
         type: 'db_point',
-        limit: 200,
+        limit: 100000,
         includeInactive: true,
       },
     });
@@ -412,7 +412,7 @@ const fetchDepots = async (): Promise<DepotOption[]> => {
   try {
     const response = await api.get('/facilities/depots', {
       params: {
-        limit: 200,
+        limit: 100000,
       },
     });
 
@@ -440,7 +440,7 @@ const fetchProducts = async (): Promise<ProductOption[]> => {
   try {
     const response = await api.get('/products', {
       params: {
-        limit: 200,
+        limit: 100000,
       },
     });
 

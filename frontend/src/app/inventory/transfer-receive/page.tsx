@@ -78,7 +78,7 @@ export default function TransferReceivePage() {
         params: {
           direction: "received",
           status: "Pending,Partially-Received",
-          limit: 100,
+          limit: 100000,
         },
       });
       setPendingTransfers(response.data.data || []);

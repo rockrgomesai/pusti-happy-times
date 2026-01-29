@@ -148,7 +148,7 @@ export default function LocalStockPage() {
         };
       }>('/inventory/factory-to-store/transactions', {
         product_id: productId,
-        limit: 100,
+        limit: 100000,
         page: 1,
       });
 

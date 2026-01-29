@@ -222,7 +222,11 @@ const listValidation = [
     .isInt({ min: 0, max: 3 })
     .withMessage("Level must be between 0 and 3")
     .toInt(),
-  query("type").optional().isIn(TERRITORY_TYPES).withMessage("Invalid territory type"),
+  query("type")
+    .optional()
+    .customSanitizer((value) => value ? value.toLowerCase() : value)
+    .isIn(TERRITORY_TYPES)
+    .withMessage("Invalid territory type"),
   query("parentId")
     .optional()
     .custom((value) => {
@@ -237,11 +241,7 @@ const listValidation = [
     .withMessage("includeInactive must be boolean")
     .toBoolean(),
   query("page").optional().isInt({ min: 1 }).withMessage("Page must be a positive integer").toInt(),
-  query("limit")
-    .optional()
-    .isInt()
-    .withMessage("Limit must be an integer")
-    .toInt(),
+  query("limit").optional().isInt().withMessage("Limit must be an integer").toInt(),
   query("sortBy").optional().isIn(SORTABLE_FIELDS).withMessage("Invalid sort field"),
   query("sortOrder").optional().isIn(["asc", "desc"]).withMessage("Invalid sort order"),
   query("search").optional().trim().isLength({ max: 160 }).withMessage("Search term is too long"),

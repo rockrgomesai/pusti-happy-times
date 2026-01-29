@@ -345,7 +345,7 @@ router.get(
   requireApiPermission("products:read"),
   [
     query("page").optional().isInt({ min: 1 }).toInt(),
-    query("limit").optional().isInt({ min: 1, max: 200 }).toInt(),
+    query("limit").optional().isInt().toInt(),
     query("product_type").optional().isIn(Product.PRODUCT_TYPES),
     query("brand_id")
       .optional()

@@ -270,7 +270,7 @@ const fetchDSRs = async (): Promise<DSR[]> => {
   try {
     const response = await api.get('/dsrs', {
       params: {
-        limit: 500,
+        limit: 100000,
       },
     });
 
@@ -321,7 +321,7 @@ const fetchDistributors = async (): Promise<DistributorOption[]> => {
   try {
     const response = await api.get('/distributors', {
       params: {
-        limit: 500,
+        limit: 100000,
         active: true,
       },
     });

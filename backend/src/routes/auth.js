@@ -501,6 +501,23 @@ router.get("/me", authenticate, async (req, res) => {
     // User is already loaded by authenticate middleware
     const userData = req.user.getSafeProfile();
 
+    // Load user's permissions from role
+    const { RoleApiPermission } = require("../models/JunctionTables");
+    const { ApiPermission } = require("../models/Permission");
+    
+    const rolePerms = await RoleApiPermission.find({ role_id: req.user.role_id._id })
+      .populate('api_permission_id');
+    
+    // Filter out null/invalid references and extract permission strings
+    const permissions = rolePerms
+      .filter(rp => rp.api_permission_id && rp.api_permission_id.api_permissions)
+      .map(rp => rp.api_permission_id.api_permissions);
+
+    // Disable caching for this endpoint so browser always gets fresh permissions
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+
     res.json({
       success: true,
       data: {
@@ -510,6 +527,7 @@ router.get("/me", authenticate, async (req, res) => {
             id: req.user.role_id._id,
             role: req.user.role_id.role,
           },
+          permissions, // Add permissions array
           context: req.userContext || {}, // Include context from token
         },
       },

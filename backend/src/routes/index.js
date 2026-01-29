@@ -61,6 +61,8 @@ const dsrRoutes = require("./dsrs");
 const outletTypesRoutes = require("./outletTypes");
 const outletChannelsRoutes = require("./outletChannels");
 const outletMarketSizesRoutes = require("./outletMarketSizes");
+const routeRoutes = require("./routes");
+const outletsRoutes = require("./outlets");
 
 const router = express.Router();
 
@@ -278,6 +280,22 @@ router.use("/outlet-channels", outletChannelsRoutes);
  * @access  Private (authenticated users)
  */
 router.use("/outlet-market-sizes", outletMarketSizesRoutes);
+
+/**
+ * Route Management Routes
+ * @route   /api/routes/*
+ * @desc    Sales route management with SR assignments and KPI tracking
+ * @access  Private (authenticated users)
+ */
+router.use("/routes", routeRoutes);
+
+/**
+ * Outlets Management Routes
+ * @route   /api/outlets/*
+ * @desc    Retail outlet/POS CRUD operations and management
+ * @access  Private (authenticated users)
+ */
+router.use("/outlets", outletsRoutes);
 
 /**
  * Facility Management Routes (Unified Depots & Factories)

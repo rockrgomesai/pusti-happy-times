@@ -479,7 +479,7 @@ export default function EmployeesPage() {
       setLoading(true);
       const response = await api.get('/employees', {
         params: {
-          limit: 500,
+          limit: 100000,
         },
       });
 

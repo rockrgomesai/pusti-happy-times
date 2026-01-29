@@ -208,7 +208,7 @@ const ProductsPage: React.FC = () => {
       setMetadataLoading(true);
       const [brandResponse, categoryResponse, depotResponse] = await Promise.allSettled([
         api.get('/brands', { params: { limit: 200 } }),
-        api.get('/categories', { params: { limit: 200, active: true } }),
+        api.get('/categories', { params: { limit: 100000, active: true } }),
         api.get('/facilities/depots'),
       ]);
 

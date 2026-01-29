@@ -235,7 +235,7 @@ export default function CustomerLedgerPage() {
       const response = await api.get('/distributors', {
         params: { 
           active: true, 
-          limit: 50,
+          limit: 100000,
           search: searchTerm || undefined,
         },
       });
