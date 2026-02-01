@@ -32,6 +32,7 @@ const designationRoutes = require("./designationRoutes");
 const employeeRoutes = require("./employees");
 const productRoutes = require("./product/products");
 const offersRoutes = require("./product/offers");
+const secondaryOffersRoutes = require("./product/secondaryOffers");
 const territoryRoutes = require("./territories");
 const distributorRoutes = require("./distributors");
 const notificationRoutes = require("./notifications");
@@ -256,6 +257,7 @@ router.use("/categories", categoryRoutes);
 router.use("/product/products", productRoutes);
 router.use("/products", productRoutes);
 router.use("/product/offers", offersRoutes);
+router.use("/product/secondaryoffers", secondaryOffersRoutes);
 
 /**
  * Outlet Types Routes

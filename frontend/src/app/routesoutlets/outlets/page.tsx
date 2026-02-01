@@ -79,8 +79,14 @@ const outletSchema = z.object({
   outlet_channel_id: z.string().min(1, 'Outlet channel is required'),
   address: z.string().optional(),
   address_bangla: z.string().optional(),
-  lati: z.number().min(-90).max(90).optional().or(z.literal('')),
-  longi: z.number().min(-180).max(180).optional().or(z.literal('')),
+  lati: z.preprocess(
+    (val) => (val === '' || val === null || val === undefined ? undefined : Number(val)),
+    z.number().min(-90).max(90).optional()
+  ),
+  longi: z.preprocess(
+    (val) => (val === '' || val === null || val === undefined ? undefined : Number(val)),
+    z.number().min(-180).max(180).optional()
+  ),
   contact_person: z.string().optional(),
   mobile: z
     .string()
@@ -168,7 +174,7 @@ export default function OutletsPage() {
           outletTypesApi.list({ active: 'true', limit: 100 }),
           outletChannelsApi.list({ active: 'true', limit: 100 }),
         ]);
-        setRoutes(routesData.data || []);
+        setRoutes(routesData.routes || []);
         setOutletTypes(typesData.data || []);
         setOutletChannels(channelsData.data || []);
       } catch (error) {

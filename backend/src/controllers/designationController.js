@@ -1,10 +1,10 @@
 /**
  * Designations Controller
  * Pusti Happy Times - Designation Management API Controller
- * 
+ *
  * This controller handles all CRUD operations for job designations,
  * including creation, retrieval, updates, and soft deletion.
- * 
+ *
  * Features:
  * - Full CRUD operations with validation
  * - Pagination and search functionality
@@ -13,8 +13,8 @@
  * - Error handling and response formatting
  */
 
-const Designation = require('../models/Designation');
-const { validationResult } = require('express-validator');
+const Designation = require("../models/Designation");
+const { validationResult } = require("express-validator");
 
 const NAME_PATTERN = /^[a-zA-Z0-9\s\-\.\,\&']+$/;
 
@@ -29,8 +29,8 @@ const handleValidationErrors = (req, res) => {
   if (!errors.isEmpty()) {
     return res.status(400).json({
       success: false,
-      message: 'Validation failed',
-      errors: errors.array()
+      message: "Validation failed",
+      errors: errors.array(),
     });
   }
   return false;
@@ -45,37 +45,36 @@ const getAllDesignations = async (req, res) => {
     const {
       page = 1,
       limit = 10,
-      search = '',
-      sortBy = 'name',
-      sortOrder = 'asc',
-      includeInactive = 'false'
+      search = "",
+      sortBy = "name",
+      sortOrder = "asc",
+      includeInactive = "false",
     } = req.query;
 
     // Convert string parameters to appropriate types
     const options = {
       page: parseInt(page),
-      limit: Math.min(parseInt(limit), 100), // Cap at 100 items per page
+      limit: parseInt(limit), // No cap - support large datasets
       search: search.trim(),
       sortBy,
       sortOrder,
-      includeInactive: includeInactive === 'true'
+      includeInactive: includeInactive === "true",
     };
 
     const result = await Designation.getPaginated(options);
 
     res.status(200).json({
       success: true,
-      message: 'Designations retrieved successfully',
+      message: "Designations retrieved successfully",
       data: result.data,
-      pagination: result.pagination
+      pagination: result.pagination,
     });
-
   } catch (error) {
-    console.error('❌ Error getting designations:', error);
+    console.error("❌ Error getting designations:", error);
     res.status(500).json({
       success: false,
-      message: 'Failed to retrieve designations',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      message: "Failed to retrieve designations",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }
 };
@@ -90,21 +89,20 @@ const getActiveDesignations = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: 'Active designations retrieved successfully',
-      data: designations.map(designation => ({
+      message: "Active designations retrieved successfully",
+      data: designations.map((designation) => ({
         id: designation._id,
         name: designation.name,
         createdAt: designation.createdAt,
-        updatedAt: designation.updatedAt
-      }))
+        updatedAt: designation.updatedAt,
+      })),
     });
-
   } catch (error) {
-    console.error('❌ Error getting active designations:', error);
+    console.error("❌ Error getting active designations:", error);
     res.status(500).json({
       success: false,
-      message: 'Failed to retrieve active designations',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      message: "Failed to retrieve active designations",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }
 };
@@ -118,36 +116,35 @@ const getDesignationById = async (req, res) => {
     const { id } = req.params;
 
     const designation = await Designation.findById(id)
-      .populate('createdBy', 'username')
-      .populate('updatedBy', 'username');
+      .populate("createdBy", "username")
+      .populate("updatedBy", "username");
 
     if (!designation) {
       return res.status(404).json({
         success: false,
-        message: 'Designation not found'
+        message: "Designation not found",
       });
     }
 
     res.status(200).json({
       success: true,
-      message: 'Designation retrieved successfully',
-      data: designation
+      message: "Designation retrieved successfully",
+      data: designation,
     });
-
   } catch (error) {
-    console.error('❌ Error getting designation by ID:', error);
-    
-    if (error.name === 'CastError') {
+    console.error("❌ Error getting designation by ID:", error);
+
+    if (error.name === "CastError") {
       return res.status(400).json({
         success: false,
-        message: 'Invalid designation ID format'
+        message: "Invalid designation ID format",
       });
     }
 
     res.status(500).json({
       success: false,
-      message: 'Failed to retrieve designation',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      message: "Failed to retrieve designation",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }
 };
@@ -169,7 +166,7 @@ const createDesignation = async (req, res) => {
     if (nameExists) {
       return res.status(409).json({
         success: false,
-        message: 'Designation name already exists'
+        message: "Designation name already exists",
       });
     }
 
@@ -177,41 +174,40 @@ const createDesignation = async (req, res) => {
     const designation = new Designation({
       name: name.trim(),
       createdBy: userId,
-      updatedBy: userId
+      updatedBy: userId,
     });
 
     const savedDesignation = await designation.save();
 
     // Populate user references for response
     await savedDesignation.populate([
-      { path: 'createdBy', select: 'username' },
-      { path: 'updatedBy', select: 'username' }
+      { path: "createdBy", select: "username" },
+      { path: "updatedBy", select: "username" },
     ]);
 
     res.status(201).json({
       success: true,
-      message: 'Designation created successfully',
-      data: savedDesignation
+      message: "Designation created successfully",
+      data: savedDesignation,
     });
-
   } catch (error) {
-    console.error('❌ Error creating designation:', error);
+    console.error("❌ Error creating designation:", error);
 
-    if (error.name === 'ValidationError') {
+    if (error.name === "ValidationError") {
       return res.status(400).json({
         success: false,
-        message: 'Validation failed',
-        errors: Object.values(error.errors).map(err => ({
+        message: "Validation failed",
+        errors: Object.values(error.errors).map((err) => ({
           field: err.path,
-          message: err.message
-        }))
+          message: err.message,
+        })),
       });
     }
 
     res.status(500).json({
       success: false,
-      message: 'Failed to create designation',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      message: "Failed to create designation",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }
 };
@@ -234,7 +230,7 @@ const updateDesignation = async (req, res) => {
     if (!designation) {
       return res.status(404).json({
         success: false,
-        message: 'Designation not found'
+        message: "Designation not found",
       });
     }
 
@@ -244,7 +240,7 @@ const updateDesignation = async (req, res) => {
       if (nameExists) {
         return res.status(409).json({
           success: false,
-          message: 'Designation name already exists'
+          message: "Designation name already exists",
         });
       }
     }
@@ -257,41 +253,40 @@ const updateDesignation = async (req, res) => {
 
     // Populate user references for response
     await updatedDesignation.populate([
-      { path: 'createdBy', select: 'username' },
-      { path: 'updatedBy', select: 'username' }
+      { path: "createdBy", select: "username" },
+      { path: "updatedBy", select: "username" },
     ]);
 
     res.status(200).json({
       success: true,
-      message: 'Designation updated successfully',
-      data: updatedDesignation
+      message: "Designation updated successfully",
+      data: updatedDesignation,
     });
-
   } catch (error) {
-    console.error('❌ Error updating designation:', error);
+    console.error("❌ Error updating designation:", error);
 
-    if (error.name === 'CastError') {
+    if (error.name === "CastError") {
       return res.status(400).json({
         success: false,
-        message: 'Invalid designation ID format'
+        message: "Invalid designation ID format",
       });
     }
 
-    if (error.name === 'ValidationError') {
+    if (error.name === "ValidationError") {
       return res.status(400).json({
         success: false,
-        message: 'Validation failed',
-        errors: Object.values(error.errors).map(err => ({
+        message: "Validation failed",
+        errors: Object.values(error.errors).map((err) => ({
           field: err.path,
-          message: err.message
-        }))
+          message: err.message,
+        })),
       });
     }
 
     res.status(500).json({
       success: false,
-      message: 'Failed to update designation',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      message: "Failed to update designation",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }
 };
@@ -309,14 +304,14 @@ const deleteDesignation = async (req, res) => {
     if (!designation) {
       return res.status(404).json({
         success: false,
-        message: 'Designation not found'
+        message: "Designation not found",
       });
     }
 
     if (!designation.active) {
       return res.status(400).json({
         success: false,
-        message: 'Designation is already inactive'
+        message: "Designation is already inactive",
       });
     }
 
@@ -325,23 +320,22 @@ const deleteDesignation = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: 'Designation deleted successfully'
+      message: "Designation deleted successfully",
     });
-
   } catch (error) {
-    console.error('❌ Error deleting designation:', error);
+    console.error("❌ Error deleting designation:", error);
 
-    if (error.name === 'CastError') {
+    if (error.name === "CastError") {
       return res.status(400).json({
         success: false,
-        message: 'Invalid designation ID format'
+        message: "Invalid designation ID format",
       });
     }
 
     res.status(500).json({
       success: false,
-      message: 'Failed to delete designation',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      message: "Failed to delete designation",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }
 };
@@ -359,14 +353,14 @@ const restoreDesignation = async (req, res) => {
     if (!designation) {
       return res.status(404).json({
         success: false,
-        message: 'Designation not found'
+        message: "Designation not found",
       });
     }
 
     if (designation.active) {
       return res.status(400).json({
         success: false,
-        message: 'Designation is already active'
+        message: "Designation is already active",
       });
     }
 
@@ -375,30 +369,29 @@ const restoreDesignation = async (req, res) => {
 
     // Populate user references for response
     await designation.populate([
-      { path: 'createdBy', select: 'username' },
-      { path: 'updatedBy', select: 'username' }
+      { path: "createdBy", select: "username" },
+      { path: "updatedBy", select: "username" },
     ]);
 
     res.status(200).json({
       success: true,
-      message: 'Designation restored successfully',
-      data: designation
+      message: "Designation restored successfully",
+      data: designation,
     });
-
   } catch (error) {
-    console.error('❌ Error restoring designation:', error);
+    console.error("❌ Error restoring designation:", error);
 
-    if (error.name === 'CastError') {
+    if (error.name === "CastError") {
       return res.status(400).json({
         success: false,
-        message: 'Invalid designation ID format'
+        message: "Invalid designation ID format",
       });
     }
 
     res.status(500).json({
       success: false,
-      message: 'Failed to restore designation',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      message: "Failed to restore designation",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }
 };
@@ -409,35 +402,34 @@ const restoreDesignation = async (req, res) => {
  */
 const searchDesignations = async (req, res) => {
   try {
-    const { q: searchTerm = '', includeInactive = 'false', limit = 50 } = req.query;
+    const { q: searchTerm = "", includeInactive = "false", limit = 50 } = req.query;
 
     if (!searchTerm.trim()) {
       return res.status(400).json({
         success: false,
-        message: 'Search term is required'
+        message: "Search term is required",
       });
     }
 
     const options = {
-      includeInactive: includeInactive === 'true',
-      limit: Math.min(parseInt(limit), 100) // Cap at 100 results
+      includeInactive: includeInactive === "true",
+      limit: parseInt(limit), // No cap - support large datasets
     };
 
     const designations = await Designation.searchByName(searchTerm, options);
 
     res.status(200).json({
       success: true,
-      message: 'Search completed successfully',
+      message: "Search completed successfully",
       data: designations,
-      count: designations.length
+      count: designations.length,
     });
-
   } catch (error) {
-    console.error('❌ Error searching designations:', error);
+    console.error("❌ Error searching designations:", error);
     res.status(500).json({
       success: false,
-      message: 'Failed to search designations',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      message: "Failed to search designations",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }
 };
@@ -451,26 +443,25 @@ const getDesignationStats = async (req, res) => {
     const [total, active, inactive] = await Promise.all([
       Designation.countDocuments({}),
       Designation.countDocuments({ active: true }),
-      Designation.countDocuments({ active: false })
+      Designation.countDocuments({ active: false }),
     ]);
 
     res.status(200).json({
       success: true,
-      message: 'Statistics retrieved successfully',
+      message: "Statistics retrieved successfully",
       data: {
         total,
         active,
         inactive,
-        activePercentage: total > 0 ? Math.round((active / total) * 100) : 0
-      }
+        activePercentage: total > 0 ? Math.round((active / total) * 100) : 0,
+      },
     });
-
   } catch (error) {
-    console.error('❌ Error getting designation statistics:', error);
+    console.error("❌ Error getting designation statistics:", error);
     res.status(500).json({
       success: false,
-      message: 'Failed to retrieve statistics',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      message: "Failed to retrieve statistics",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }
 };
@@ -481,8 +472,8 @@ const getDesignationStats = async (req, res) => {
  */
 const getDesignationMeta = (req, res) => {
   try {
-    const namePath = Designation.schema.path('name');
-    const activePath = Designation.schema.path('active');
+    const namePath = Designation.schema.path("name");
+    const activePath = Designation.schema.path("active");
 
     const resolveRuleValue = (rule) => {
       if (Array.isArray(rule)) {
@@ -494,16 +485,16 @@ const getDesignationMeta = (req, res) => {
     const minLength = resolveRuleValue(namePath?.options?.minlength) || 1;
     const maxLength = resolveRuleValue(namePath?.options?.maxlength) || 100;
     const defaultActive =
-      typeof activePath?.defaultValue === 'function'
+      typeof activePath?.defaultValue === "function"
         ? activePath.defaultValue()
         : activePath?.defaultValue;
 
     res.status(200).json({
       success: true,
-      message: 'Designation metadata retrieved successfully',
+      message: "Designation metadata retrieved successfully",
       data: {
         defaults: {
-          active: typeof defaultActive === 'undefined' ? true : defaultActive
+          active: typeof defaultActive === "undefined" ? true : defaultActive,
         },
         validation: {
           name: {
@@ -511,17 +502,17 @@ const getDesignationMeta = (req, res) => {
             maxLength,
             pattern: NAME_PATTERN.source,
             description:
-              'Allows letters, numbers, spaces, hyphen (-), period (.), comma (,), ampersand (&), and apostrophe (\')'
-          }
-        }
-      }
+              "Allows letters, numbers, spaces, hyphen (-), period (.), comma (,), ampersand (&), and apostrophe (')",
+          },
+        },
+      },
     });
   } catch (error) {
-    console.error('❌ Error generating designation metadata:', error);
+    console.error("❌ Error generating designation metadata:", error);
     res.status(500).json({
       success: false,
-      message: 'Failed to generate designation metadata',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      message: "Failed to generate designation metadata",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }
 };
@@ -536,5 +527,5 @@ module.exports = {
   restoreDesignation,
   searchDesignations,
   getDesignationStats,
-  getDesignationMeta
+  getDesignationMeta,
 };

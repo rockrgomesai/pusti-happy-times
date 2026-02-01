@@ -118,7 +118,9 @@ export default function UsersPage() {
   const loadUsers = async () => {
     try {
       setLoading(true);
-      const response = await api.get('/users');
+      const response = await api.get('/users', {
+        params: { limit: 100000 }
+      });
       setUsers(response.data);
     } catch (error) {
       toast.error('Failed to load users');
@@ -130,7 +132,9 @@ export default function UsersPage() {
 
   const loadRoles = async () => {
     try {
-      const response = await api.get('/roles');
+      const response = await api.get('/roles', {
+        params: { limit: 100000 }
+      });
       setRoles(response.data);
     } catch (error) {
       console.error('Error loading roles:', error);

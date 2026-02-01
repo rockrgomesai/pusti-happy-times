@@ -87,7 +87,9 @@ export default function PermissionsPage() {
 
   const fetchRoles = async () => {
     try {
-      const response = await api.get("/roles");
+      const response = await api.get("/roles", {
+        params: { limit: 100000 }
+      });
       const rolesData = response.data?.data && Array.isArray(response.data.data) 
         ? response.data.data 
         : [];

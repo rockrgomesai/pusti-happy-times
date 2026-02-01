@@ -1,0 +1,77 @@
+# AI Assistant Instructions for Pusti HT MERN Project
+
+## UI Framework Constraints
+
+### Material-UI (MUI) Version
+
+- **This project uses MUI v5 with the LEGACY Grid component**
+- **DO NOT use Grid2 or import from `@mui/material/Grid2`**
+- **ALWAYS use the standard Grid component from `@mui/material`**
+- **Use legacy Grid props:** `container`, `item`, `xs`, `sm`, `md`, `lg`, `xl`
+- Grid v2 deprecation warnings can be safely ignored - do not attempt to "fix" them
+
+## Database Schema Conventions
+
+### Field Naming
+
+- Use `role` field for role documents (not `name`)
+- Use `api_permissions` field for permission documents (not `code`)
+- References use `_id` suffix (e.g., `role_id`, `outlet_id`)
+
+### Indexes
+
+- Always create appropriate indexes for foreign key references
+- Include compound unique indexes where needed to prevent duplicates
+
+## Backend Patterns
+
+### API Routes
+
+- Always populate referenced documents in responses
+- Include proper permission checks using `requireApiPermission()`
+- Use proper error messages with meaningful HTTP status codes
+- Validate all required fields before processing
+- **NO PAGINATION LIMITS:** Query validations should use `isInt({ min: 1 })` for limit parameter (no max restriction)
+- Database has 1M+ records - do not enforce maximum limits on pagination
+
+### Mongoose Models
+
+- Use `strict: false` for flexible schemas during migrations
+- Include `timestamps` with custom field names: `createdAt: "created_at"`, `updatedAt: "updated_at"`
+- Add `created_by` and `updated_by` fields for audit trails
+
+## Frontend Patterns
+
+### Form Handling
+
+- Use React Hook Form with Zod validation
+- Include proper TypeScript types for all form data
+- Autocomplete fields should show meaningful labels (e.g., `outlet_id - outlet_name`)
+
+### State Management
+
+- Separate loading states for different data sources
+- Use callbacks with proper dependencies to avoid unnecessary re-renders
+
+## Migration Scripts
+
+### Script Location
+
+- Place all migration scripts in `backend/scripts/`
+- Use descriptive names (e.g., `clear-outlet-market-sizes.js`, `assign-outlets-permissions.js`)
+
+### Script Pattern
+
+- Always use `require('dotenv').config()`
+- Provide clear console output with progress indicators
+- Disconnect from MongoDB before exit
+- Use `process.exit(0)` or `process.exit(1)` appropriately
+
+## Permissions System
+
+### Permission Assignment
+
+- Permissions must be assigned to roles in the database
+- Users inherit permissions from their assigned role
+- Session must be refreshed (logout/login) after permission changes
+- Check user permissions using the field structure: `role.api_permissions[]`

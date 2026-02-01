@@ -160,7 +160,9 @@ export default function TransportsPage() {
   const loadTransports = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await api.get('/transports');
+      const response = await api.get('/transports', {
+        params: { limit: 100000 }
+      });
       
       // Extract transports array from API response
       const transportsData = response.data?.data && Array.isArray(response.data.data) 

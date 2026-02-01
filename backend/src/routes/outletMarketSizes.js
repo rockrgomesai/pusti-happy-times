@@ -18,6 +18,7 @@ router.get(
         sortOrder = "desc",
         active,
         category,
+        outlet,
       } = req.query;
 
       const query = {};
@@ -32,12 +33,21 @@ router.get(
         query.category = category;
       }
 
+      // Outlet filter
+      if (outlet) {
+        query.outlet = outlet;
+      }
+
       const sort = {};
       sort[sortBy] = sortOrder === "asc" ? 1 : -1;
 
       const skip = (parseInt(page) - 1) * parseInt(limit);
 
       let dataQuery = OutletMarketSize.find(query)
+        .populate({
+          path: "outlet",
+          select: "outlet_id outlet_name",
+        })
         .populate({
           path: "category",
           select: "name active",
@@ -80,10 +90,15 @@ router.get(
   requireApiPermission("outlet-market-sizes:read"),
   async (req, res) => {
     try {
-      const outletMarketSize = await OutletMarketSize.findById(req.params.id).populate({
-        path: "category",
-        select: "name active",
-      });
+      const outletMarketSize = await OutletMarketSize.findById(req.params.id)
+        .populate({
+          path: "outlet",
+          select: "outlet_id outlet_name",
+        })
+        .populate({
+          path: "category",
+          select: "name active",
+        });
 
       if (!outletMarketSize) {
         return res.status(404).json({ message: "Outlet market size not found" });
@@ -104,7 +119,11 @@ router.post(
   requireApiPermission("outlet-market-sizes:create"),
   async (req, res) => {
     try {
-      const { category, mkt_size, active = true } = req.body;
+      const { outlet, category, mkt_size, active = true } = req.body;
+
+      if (!outlet) {
+        return res.status(400).json({ message: "Outlet is required" });
+      }
 
       if (!category) {
         return res.status(400).json({ message: "Category is required" });
@@ -118,15 +137,18 @@ router.post(
         return res.status(400).json({ message: "Market size must be a positive number" });
       }
 
-      // Check for duplicate active category
-      const existing = await OutletMarketSize.findOne({ category, active: true });
+      // Check for duplicate active outlet-category combination
+      const existing = await OutletMarketSize.findOne({ outlet, category, active: true });
       if (existing) {
         return res
           .status(400)
-          .json({ message: "This category already has an active market size entry" });
+          .json({
+            message: "This outlet-category combination already has an active market size entry",
+          });
       }
 
       const outletMarketSize = new OutletMarketSize({
+        outlet,
         category,
         mkt_size: parseInt(mkt_size),
         active,
@@ -136,11 +158,17 @@ router.post(
 
       await outletMarketSize.save();
 
-      // Populate category before returning
-      await outletMarketSize.populate({
-        path: "category",
-        select: "name active",
-      });
+      // Populate outlet and category before returning
+      await outletMarketSize.populate([
+        {
+          path: "outlet",
+          select: "outlet_id outlet_name",
+        },
+        {
+          path: "category",
+          select: "name active",
+        },
+      ]);
 
       res.status(201).json(outletMarketSize);
     } catch (error) {
@@ -157,7 +185,7 @@ router.put(
   requireApiPermission("outlet-market-sizes:update"),
   async (req, res) => {
     try {
-      const { category, mkt_size, active } = req.body;
+      const { outlet, category, mkt_size, active } = req.body;
 
       const outletMarketSize = await OutletMarketSize.findById(req.params.id);
 
@@ -165,19 +193,30 @@ router.put(
         return res.status(404).json({ message: "Outlet market size not found" });
       }
 
-      // Check for duplicate category if category is being changed
-      if (category && category !== outletMarketSize.category.toString()) {
+      // Check for duplicate outlet-category combination if either is being changed
+      const outletChanged = outlet && outlet !== outletMarketSize.outlet.toString();
+      const categoryChanged = category && category !== outletMarketSize.category.toString();
+
+      if (outletChanged || categoryChanged) {
         const existing = await OutletMarketSize.findOne({
-          category,
+          outlet: outlet || outletMarketSize.outlet,
+          category: category || outletMarketSize.category,
           active: true,
           _id: { $ne: req.params.id },
         });
         if (existing) {
           return res
             .status(400)
-            .json({ message: "This category already has an active market size entry" });
+            .json({
+              message: "This outlet-category combination already has an active market size entry",
+            });
         }
-        outletMarketSize.category = category;
+        if (outletChanged) {
+          outletMarketSize.outlet = outlet;
+        }
+        if (categoryChanged) {
+          outletMarketSize.category = category;
+        }
       }
 
       if (mkt_size !== undefined && mkt_size !== null) {
@@ -195,11 +234,17 @@ router.put(
 
       await outletMarketSize.save();
 
-      // Populate category before returning
-      await outletMarketSize.populate({
-        path: "category",
-        select: "name active",
-      });
+      // Populate outlet and category before returning
+      await outletMarketSize.populate([
+        {
+          path: "outlet",
+          select: "outlet_id outlet_name",
+        },
+        {
+          path: "category",
+          select: "name active",
+        },
+      ]);
 
       res.json(outletMarketSize);
     } catch (error) {
@@ -226,10 +271,16 @@ router.delete(
       outletMarketSize.updated_by = req.user?.username || req.user?.email;
       await outletMarketSize.save();
 
-      await outletMarketSize.populate({
-        path: "category",
-        select: "name active",
-      });
+      await outletMarketSize.populate([
+        {
+          path: "outlet",
+          select: "outlet_id outlet_name",
+        },
+        {
+          path: "category",
+          select: "name active",
+        },
+      ]);
 
       res.json({ message: "Outlet market size deactivated successfully", data: outletMarketSize });
     } catch (error) {
@@ -252,8 +303,9 @@ router.patch(
         return res.status(404).json({ message: "Outlet market size not found" });
       }
 
-      // Check for duplicate active category
+      // Check for duplicate active outlet-category combination
       const existing = await OutletMarketSize.findOne({
+        outlet: outletMarketSize.outlet,
         category: outletMarketSize.category,
         active: true,
         _id: { $ne: req.params.id },
@@ -261,17 +313,25 @@ router.patch(
       if (existing) {
         return res
           .status(400)
-          .json({ message: "This category already has an active market size entry" });
+          .json({
+            message: "This outlet-category combination already has an active market size entry",
+          });
       }
 
       outletMarketSize.active = true;
       outletMarketSize.updated_by = req.user?.username || req.user?.email;
       await outletMarketSize.save();
 
-      await outletMarketSize.populate({
-        path: "category",
-        select: "name active",
-      });
+      await outletMarketSize.populate([
+        {
+          path: "outlet",
+          select: "outlet_id outlet_name",
+        },
+        {
+          path: "category",
+          select: "name active",
+        },
+      ]);
 
       res.json({ message: "Outlet market size activated successfully", data: outletMarketSize });
     } catch (error) {

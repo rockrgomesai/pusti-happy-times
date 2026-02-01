@@ -88,7 +88,9 @@ export default function RolesPage() {
   const loadRoles = async () => {
     try {
       setLoading(true);
-      const response = await api.get('/roles');
+      const response = await api.get('/roles', {
+        params: { limit: 100000 }
+      });
       if (response.data.success) {
         setRoles(response.data.data);
       } else {

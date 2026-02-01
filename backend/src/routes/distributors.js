@@ -251,8 +251,15 @@ router.get(
     query("active").optional().isBoolean().withMessage("Active flag must be boolean"),
     query("db_point_id")
       .optional()
-      .custom((value) => mongoose.Types.ObjectId.isValid(value))
-      .withMessage("DB Point ID must be a valid ObjectId"),
+      .custom((value) => {
+        // Accept single ID or comma-separated IDs
+        if (typeof value === "string") {
+          const ids = value.split(",").map((id) => id.trim());
+          return ids.every((id) => mongoose.Types.ObjectId.isValid(id));
+        }
+        return mongoose.Types.ObjectId.isValid(value);
+      })
+      .withMessage("DB Point ID(s) must be valid ObjectId(s)"),
     query("area_id")
       .optional()
       .custom((value) => mongoose.Types.ObjectId.isValid(value))
@@ -261,7 +268,16 @@ router.get(
   handleValidationErrors,
   async (req, res) => {
     try {
-      const { search, segment, type, active, db_point_id, area_id, limit = 50, offset = 0 } = req.query;
+      const {
+        search,
+        segment,
+        type,
+        active,
+        db_point_id,
+        area_id,
+        limit,
+        offset,
+      } = req.query;
 
       const queryBuilder = {};
 
@@ -277,21 +293,32 @@ router.get(
         queryBuilder.distributor_type = type;
       }
 
-      // Filter by DB Point
+      // Filter by DB Point (supports single or multiple IDs)
       if (db_point_id) {
-        queryBuilder.db_point_id = db_point_id;
+        if (typeof db_point_id === "string" && db_point_id.includes(",")) {
+          // Multiple DB points - comma-separated
+          const dbPointIds = db_point_id
+            .split(",")
+            .map((id) => new mongoose.Types.ObjectId(id.trim()));
+          queryBuilder.db_point_id = { $in: dbPointIds };
+        } else {
+          // Single DB point
+          queryBuilder.db_point_id = new mongoose.Types.ObjectId(db_point_id);
+        }
       }
 
       // Filter by Area (find all DB Points in the area, then find distributors)
       if (area_id && !db_point_id) {
-        const dbPoints = await Territory.find({ 
-          parent_id: area_id, 
-          type: 'db_point', 
-          active: true 
-        }).select('_id').lean();
-        
+        const dbPoints = await Territory.find({
+          parent_id: area_id,
+          type: "db_point",
+          active: true,
+        })
+          .select("_id")
+          .lean();
+
         if (dbPoints.length > 0) {
-          queryBuilder.db_point_id = { $in: dbPoints.map(dp => dp._id) };
+          queryBuilder.db_point_id = { $in: dbPoints.map((dp) => dp._id) };
         } else {
           // No DB Points in this area, return empty result
           return res.json({
@@ -299,8 +326,6 @@ router.get(
             data: [],
             meta: {
               total: 0,
-              limit: parseInt(limit, 10),
-              offset: parseInt(offset, 10),
             },
           });
         }
@@ -314,15 +339,10 @@ router.get(
         ].filter(Boolean);
       }
 
-      const sanitizedLimit = Math.min(Math.max(parseInt(limit, 10) || 50, 1), 200);
-      const sanitizedOffset = Math.max(parseInt(offset, 10) || 0, 0);
-
       const [total, distributors] = await Promise.all([
         Distributor.countDocuments(queryBuilder),
         Distributor.find(queryBuilder)
           .sort({ name: 1 })
-          .skip(sanitizedOffset)
-          .limit(sanitizedLimit)
           .lean(),
       ]);
 
@@ -331,8 +351,6 @@ router.get(
         data: distributors,
         meta: {
           total,
-          limit: sanitizedLimit,
-          offset: sanitizedOffset,
         },
       });
     } catch (error) {
@@ -492,10 +510,7 @@ router.get(
       .isIn(["draft", "active", "paused", "expired", "completed"])
       .withMessage("Invalid status"),
     query("page").optional().isInt({ min: 1 }).withMessage("Page must be a positive integer"),
-    query("limit")
-      .optional()
-      .isInt({ min: 1, max: 100 })
-      .withMessage("Limit must be between 1 and 100"),
+    query("limit").optional().isInt({ min: 1 }).withMessage("Limit must be a positive integer"),
   ],
   async (req, res) => {
     try {

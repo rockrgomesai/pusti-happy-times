@@ -106,9 +106,7 @@ router.post(
   [
     body("parentIds").isArray({ min: 1 }).withMessage("At least one parent ID required"),
     body("parentIds.*").isMongoId().withMessage("Invalid parent ID"),
-    body("childType")
-      .isIn(["region", "area", "db_point"])
-      .withMessage("Invalid child type"),
+    body("childType").isIn(["region", "area", "db_point"]).withMessage("Invalid child type"),
   ],
   async (req, res) => {
     try {
@@ -230,6 +228,8 @@ router.post(
     body("dbPointIds.*").isMongoId().withMessage("Invalid DB point ID"),
     body("segments").isArray({ min: 1 }).withMessage("At least one product segment required"),
     body("segments.*").isIn(["BIS", "BEV"]).withMessage("Invalid product segment"),
+    body("limit").optional().isInt({ min: 1 }).withMessage("Limit must be a positive integer"),
+    body("page").optional().isInt({ min: 1 }).withMessage("Page must be a positive integer"),
   ],
   async (req, res) => {
     try {
@@ -241,26 +241,50 @@ router.post(
         });
       }
 
-      const { dbPointIds, segments } = req.body;
+      const { dbPointIds, segments, limit, page = 1 } = req.body;
 
-      // Find distributors where:
-      // 1. db_point_id is in the selected dbPointIds
-      // 2. product_segment array has at least one match with segments
-      const distributors = await Distributor.find({
+      // Build query
+      const query = Distributor.find({
         db_point_id: { $in: dbPointIds },
         product_segment: { $in: segments },
         active: true,
       })
         .select("_id name db_point_id product_segment distributor_type mobile contact_number")
         .populate("db_point_id", "name code")
-        .sort({ name: 1 })
-        .lean();
+        .sort({ name: 1 });
 
-      res.json({
+      // Only apply pagination if limit is provided
+      if (limit) {
+        const skip = (page - 1) * limit;
+        query.skip(skip).limit(limit);
+      }
+
+      const [distributors, total] = await Promise.all([
+        query.lean(),
+        Distributor.countDocuments({
+          db_point_id: { $in: dbPointIds },
+          product_segment: { $in: segments },
+          active: true,
+        }),
+      ]);
+
+      const response = {
         success: true,
         data: distributors,
         count: distributors.length,
-      });
+        total,
+      };
+
+      // Only add pagination if limit was provided
+      if (limit) {
+        response.pagination = {
+          page,
+          limit,
+          totalPages: Math.ceil(total / limit),
+        };
+      }
+
+      res.json(response);
     } catch (error) {
       console.error("Error fetching eligible distributors:", error);
       res.status(500).json({
@@ -417,6 +441,7 @@ router.post(
   [
     body("segments").isArray({ min: 1 }).withMessage("At least one segment required"),
     body("segments.*").isIn(["BIS", "BEV"]).withMessage("Invalid segment"),
+    body("limit").optional().isInt({ min: 1 }).withMessage("Limit must be a positive integer"),
   ],
   async (req, res) => {
     try {
@@ -428,7 +453,7 @@ router.post(
         });
       }
 
-      const { segments } = req.body;
+      const { segments, limit } = req.body;
 
       // Get all categories that match the segments
       const allCategories = await Category.find({
@@ -446,7 +471,7 @@ router.post(
       const leafCategoryIds = leafCategories.map((cat) => cat._id);
 
       // Get products for leaf categories only
-      const products = await Product.find({
+      const query = Product.find({
         category_id: { $in: leafCategoryIds },
         active: true,
       })
@@ -454,8 +479,14 @@ router.post(
           "_id sku bangla_name product_type category_id brand_id unit ctn_pcs db_price mrp trade_price"
         )
         .populate("category_id", "name product_segment")
-        .populate("brand_id", "brand")
-        .lean();
+        .populate("brand_id", "brand");
+
+      // Only apply limit if provided
+      if (limit) {
+        query.limit(limit);
+      }
+
+      const products = await query.lean();
 
       // Filter out products with missing populated fields
       const validProducts = products.filter((p) => p.category_id && p.category_id._id);
@@ -600,6 +631,45 @@ router.post(
       console.log("- distributors:", JSON.stringify(distributors, null, 2));
       console.log("- config:", JSON.stringify(config, null, 2));
 
+      // Validate territories exist and are active
+      if (territories) {
+        const allTerritoryIds = [
+          ...(territories.zones?.ids || []),
+          ...(territories.regions?.ids || []),
+          ...(territories.areas?.ids || []),
+          ...(territories.db_points?.ids || []),
+        ];
+
+        if (allTerritoryIds.length > 0) {
+          const validTerritories = await Territory.countDocuments({
+            _id: { $in: allTerritoryIds },
+            active: true,
+          });
+
+          if (validTerritories !== allTerritoryIds.length) {
+            return res.status(400).json({
+              success: false,
+              message: "Some selected territories are invalid or inactive",
+            });
+          }
+        }
+      }
+
+      // Validate distributors exist and are active
+      if (distributors?.ids && distributors.ids.length > 0) {
+        const validDistributors = await Distributor.countDocuments({
+          _id: { $in: distributors.ids },
+          active: true,
+        });
+
+        if (validDistributors !== distributors.ids.length) {
+          return res.status(400).json({
+            success: false,
+            message: "Some selected distributors are invalid or inactive",
+          });
+        }
+      }
+
       // Create the offer
       const offer = new Offer({
         name,
@@ -708,10 +778,7 @@ router.get(
       .withMessage("Invalid offer type"),
     query("active").optional().isBoolean().withMessage("Active must be boolean"),
     query("page").optional().isInt({ min: 1 }).withMessage("Page must be a positive integer"),
-    query("limit")
-      .optional()
-      .isInt({ min: 1, max: 100 })
-      .withMessage("Limit must be between 1 and 100"),
+    query("limit").optional().isInt({ min: 1 }).withMessage("Limit must be a positive integer"),
   ],
   async (req, res) => {
     try {
@@ -934,6 +1001,45 @@ router.put(
           return res.status(400).json({
             success: false,
             message: "End date must be after start date",
+          });
+        }
+      }
+
+      // Validate territories if provided
+      if (updateData.territories) {
+        const allTerritoryIds = [
+          ...(updateData.territories.zones?.ids || []),
+          ...(updateData.territories.regions?.ids || []),
+          ...(updateData.territories.areas?.ids || []),
+          ...(updateData.territories.db_points?.ids || []),
+        ];
+
+        if (allTerritoryIds.length > 0) {
+          const validTerritories = await Territory.countDocuments({
+            _id: { $in: allTerritoryIds },
+            active: true,
+          });
+
+          if (validTerritories !== allTerritoryIds.length) {
+            return res.status(400).json({
+              success: false,
+              message: "Some selected territories are invalid or inactive",
+            });
+          }
+        }
+      }
+
+      // Validate distributors if provided
+      if (updateData.distributors?.ids && updateData.distributors.ids.length > 0) {
+        const validDistributors = await Distributor.countDocuments({
+          _id: { $in: updateData.distributors.ids },
+          active: true,
+        });
+
+        if (validDistributors !== updateData.distributors.ids.length) {
+          return res.status(400).json({
+            success: false,
+            message: "Some selected distributors are invalid or inactive",
           });
         }
       }

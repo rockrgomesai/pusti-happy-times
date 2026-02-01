@@ -51,11 +51,14 @@ import { z } from 'zod';
 import { toast } from 'react-hot-toast';
 import { outletMarketSizesApi } from '@/lib/api/outletMarketSizes';
 import { categoriesApi } from '@/lib/api/categories';
+import { outletsApi } from '@/lib/api/outlets';
 import type { OutletMarketSize } from '@/types/outletMarketSize';
 import type { Category } from '@/types/category';
+import type { Outlet } from '@/types/outlet';
 
 // Form schema
 const outletMarketSizeSchema = z.object({
+  outlet: z.string().min(1, 'Outlet is required'),
   category: z.string().min(1, 'Category is required'),
   mkt_size: z.number().min(0, 'Market size must be a positive number'),
   active: z.boolean(),
@@ -79,8 +82,10 @@ export default function OutletMarketSizesPage() {
   // State management
   const [outletMarketSizes, setOutletMarketSizes] = useState<OutletMarketSize[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [outlets, setOutlets] = useState<Outlet[]>([]);
   const [loading, setLoading] = useState(true);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
+  const [outletsLoading, setOutletsLoading] = useState(true);
   const [viewMode, setViewMode] = useState<'cards' | 'list'>('cards');
   const [searchTerm, setSearchTerm] = useState('');
   const [openDialog, setOpenDialog] = useState(false);
@@ -103,6 +108,7 @@ export default function OutletMarketSizesPage() {
   } = useForm<OutletMarketSizeFormData>({
     resolver: zodResolver(outletMarketSizeSchema),
     defaultValues: {
+      outlet: '',
       category: '',
       mkt_size: 0,
       active: true,
@@ -123,6 +129,20 @@ export default function OutletMarketSizesPage() {
     }
   }, []);
 
+  // Load outlets
+  const loadOutlets = useCallback(async () => {
+    try {
+      setOutletsLoading(true);
+      const response = await outletsApi.list({ sortBy: 'outlet_name', sortOrder: 'asc' });
+      setOutlets(response.data.filter((outlet) => outlet.active));
+    } catch (error) {
+      toast.error('Failed to load outlets');
+      console.error('Error loading outlets:', error);
+    } finally {
+      setOutletsLoading(false);
+    }
+  }, []);
+
   // Load outlet market sizes
   const loadOutletMarketSizes = useCallback(async () => {
     try {
@@ -139,8 +159,9 @@ export default function OutletMarketSizesPage() {
 
   useEffect(() => {
     loadCategories();
+    loadOutlets();
     loadOutletMarketSizes();
-  }, [loadCategories, loadOutletMarketSizes]);
+  }, [loadCategories, loadOutlets, loadOutletMarketSizes]);
 
   // Form submission
   const onSubmit = async (data: OutletMarketSizeFormData) => {
@@ -201,6 +222,7 @@ export default function OutletMarketSizesPage() {
     (outletMarketSize: OutletMarketSize) => {
       setEditingOutletMarketSize(outletMarketSize);
       reset({
+        outlet: outletMarketSize.outlet._id,
         category: outletMarketSize.category._id,
         mkt_size: outletMarketSize.mkt_size,
         active: outletMarketSize.active,
@@ -214,6 +236,7 @@ export default function OutletMarketSizesPage() {
   const handleAdd = useCallback(() => {
     setEditingOutletMarketSize(null);
     reset({
+      outlet: '',
       category: '',
       mkt_size: 0,
       active: true,
@@ -238,6 +261,20 @@ export default function OutletMarketSizesPage() {
   // Column definitions
   const columns = useMemo<OutletMarketSizeColumnDefinition[]>(
     () => [
+      {
+        id: 'outlet',
+        label: 'Outlet',
+        renderCell: (outletMarketSize) => (
+          <Box>
+            <Typography variant="body2" fontWeight="medium">
+              {outletMarketSize.outlet?.outlet_id || 'N/A'}
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              {outletMarketSize.outlet?.outlet_name || ''}
+            </Typography>
+          </Box>
+        ),
+      },
       {
         id: 'category',
         label: 'Category',
@@ -375,7 +412,13 @@ export default function OutletMarketSizesPage() {
               <CardContent>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', mb: 1 }}>
                   <Box>
-                    <Typography variant="h6" component="h2">
+                    <Typography variant="subtitle2" color="text.secondary">
+                      {outletMarketSize.outlet?.outlet_id || 'N/A'}
+                    </Typography>
+                    <Typography variant="body2" fontWeight="medium">
+                      {outletMarketSize.outlet?.outlet_name || 'N/A'}
+                    </Typography>
+                    <Typography variant="body1" color="primary" sx={{ mt: 1 }}>
                       {outletMarketSize.category?.name || 'N/A'}
                     </Typography>
                     <Typography variant="h5" color="primary" sx={{ mt: 1 }}>
@@ -561,6 +604,32 @@ export default function OutletMarketSizesPage() {
         <DialogTitle>{editingOutletMarketSize ? 'Edit Market Size' : 'Add New Market Size'}</DialogTitle>
         <form onSubmit={handleSubmit(onSubmit)}>
           <DialogContent>
+            <Controller
+              name="outlet"
+              control={control}
+              render={({ field: { onChange, value } }) => (
+                <Autocomplete
+                  options={outlets}
+                  getOptionLabel={(option) => `${option.outlet_id} - ${option.outlet_name}`}
+                  value={outlets.find((outlet) => outlet._id === value) || null}
+                  onChange={(_event, newValue) => {
+                    onChange(newValue?._id || '');
+                  }}
+                  loading={outletsLoading}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label="Outlet"
+                      error={!!errors.outlet}
+                      helperText={errors.outlet?.message}
+                      margin="normal"
+                      placeholder="Select an outlet"
+                    />
+                  )}
+                />
+              )}
+            />
+            
             <Controller
               name="category"
               control={control}

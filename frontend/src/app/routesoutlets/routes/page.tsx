@@ -184,9 +184,13 @@ export default function RoutesPage() {
     }
   }, []);
 
-  const loadSalesReps = useCallback(async () => {
+  const loadSalesReps = useCallback(async (areaId?: string) => {
     try {
-      const response = await listEmployees({ limit: 100000, active: true });
+      const params: any = { limit: 100000, active: true, employee_type: 'field', designation_name: 'Sales Officer' };
+      if (areaId) {
+        params.area_id = areaId;
+      }
+      const response = await listEmployees(params);
       setSalesReps(response.employees || []);
     } catch (err) {
       console.error("Failed to load sales reps:", err);
@@ -254,9 +258,11 @@ export default function RoutesPage() {
     
     if (areaId) {
       await loadDbPoints(areaId);
+      await loadSalesReps(areaId);
     } else {
       setDbPoints([]);
       setDistributors([]);
+      setSalesReps([]);
     }
   };
 
@@ -305,6 +311,9 @@ export default function RoutesPage() {
       if (dbPointId) {
         await loadDistributors(dbPointId);
       }
+      
+      // Load sales reps for this area
+      await loadSalesReps(areaId);
       
       console.log("Setting formData with zone_id:", zoneId, "region_id:", regionId);
       

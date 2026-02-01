@@ -168,7 +168,9 @@ export default function FacilitiesPage() {
   const loadFacilities = async () => {
     try {
       setLoading(true);
-      const response = await api.get('/facilities');
+      const response = await api.get('/facilities', {
+        params: { limit: 100000 }
+      });
 
       const facilitiesData = response.data?.data && Array.isArray(response.data.data)
         ? response.data.data

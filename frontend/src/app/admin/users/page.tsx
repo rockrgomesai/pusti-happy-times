@@ -124,7 +124,9 @@ export default function UsersPage() {
   const loadUsers = async () => {
     try {
       setLoading(true);
-      const response = await api.get('/users');
+      const response = await api.get('/users', {
+        params: { limit: 100000 }
+      });
       
       // Extract users array from API response
       const usersData = response.data?.data && Array.isArray(response.data.data) 
@@ -144,7 +146,9 @@ export default function UsersPage() {
   // Load roles for dropdown
   const loadRoles = async () => {
     try {
-      const response = await api.get('/roles');
+      const response = await api.get('/roles', {
+        params: { limit: 100000 }
+      });
       const rolesData = response.data?.data && Array.isArray(response.data.data) 
         ? response.data.data 
         : [];

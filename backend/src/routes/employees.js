@@ -482,13 +482,47 @@ router.get(
   handleValidationErrors,
   async (req, res) => {
     try {
-      const { page = 1, limit = 10, search, sort = "name", order = "asc" } = req.query;
+      const {
+        page = 1,
+        limit = 10,
+        search,
+        sort = "name",
+        order = "asc",
+        active,
+        employee_type,
+        area_id,
+        zone_id,
+        region_id,
+        designation_name,
+      } = req.query;
 
       const pageNumber = Math.max(Number(page) || 1, 1);
-      const limitNumber = Math.min(Math.max(Number(limit) || 10, 1), 500);
+      const limitNumber = Math.max(Number(limit) || 10, 1);
       const skip = (pageNumber - 1) * limitNumber;
 
       const queryFilter = {};
+
+      // Filter by active status if provided
+      if (active !== undefined) {
+        queryFilter.active = active === "true" || active === true;
+      }
+
+      // Filter by employee type if provided
+      if (employee_type) {
+        queryFilter.employee_type = employee_type;
+      }
+
+      // Filter by territory assignments if provided
+      if (area_id) {
+        queryFilter["territory_assignments.area_ids"] = area_id;
+      }
+      if (region_id) {
+        queryFilter["territory_assignments.region_ids"] = region_id;
+      }
+      if (zone_id) {
+        queryFilter["territory_assignments.zone_ids"] = zone_id;
+      }
+
       if (search) {
         const regex = new RegExp(search, "i");
         queryFilter.$or = [
@@ -508,19 +542,31 @@ router.get(
 
       const sortOption = sortFieldMap[sort] || sortFieldMap.name;
 
-      const [employees, totalCount] = await Promise.all([
-        Employee.find(queryFilter)
-          .sort(sortOption)
-          .skip(skip)
-          .limit(limitNumber)
-          .populate("designation_id", "name"),
+      let query = Employee.find(queryFilter)
+        .sort(sortOption)
+        .skip(skip)
+        .limit(limitNumber)
+        .populate("designation_id", "name");
+
+      const [employeesData, totalCount] = await Promise.all([
+        query.lean(),
         Employee.countDocuments(queryFilter),
       ]);
+
+      // Filter by designation name after population if provided
+      let employees = employeesData;
+      if (designation_name) {
+        const designationRegex = new RegExp(designation_name, "i");
+        employees = employeesData.filter(
+          (emp) => emp.designation_id && designationRegex.test(emp.designation_id.name)
+        );
+      }
 
       const totalPages = Math.max(1, Math.ceil(totalCount / limitNumber));
 
       res.json({
         success: true,
+        employees: employees,
         data: employees,
         pagination: {
           page: pageNumber,

@@ -29,7 +29,10 @@ const handleValidationErrors = (req, res, next) => {
   next();
 };
 
-const idValidation = [param("id").isMongoId().withMessage("Invalid outlet ID"), handleValidationErrors];
+const idValidation = [
+  param("id").isMongoId().withMessage("Invalid outlet ID"),
+  handleValidationErrors,
+];
 
 const createValidation = [
   body("outlet_name").trim().notEmpty().withMessage("Outlet name is required"),
@@ -42,7 +45,10 @@ const createValidation = [
     .withMessage("Invalid mobile number format (use 01XXXXXXXXX or +8801XXXXXXXXX)"),
   body("lati").optional().isFloat({ min: -90, max: 90 }).withMessage("Invalid latitude"),
   body("longi").optional().isFloat({ min: -180, max: 180 }).withMessage("Invalid longitude"),
-  body("credit_limit").optional().isFloat({ min: 0 }).withMessage("Credit limit must be non-negative"),
+  body("credit_limit")
+    .optional()
+    .isFloat({ min: 0 })
+    .withMessage("Credit limit must be non-negative"),
   handleValidationErrors,
 ];
 
@@ -57,7 +63,10 @@ const updateValidation = [
     .withMessage("Invalid mobile number format"),
   body("lati").optional().isFloat({ min: -90, max: 90 }).withMessage("Invalid latitude"),
   body("longi").optional().isFloat({ min: -180, max: 180 }).withMessage("Invalid longitude"),
-  body("credit_limit").optional().isFloat({ min: 0 }).withMessage("Credit limit must be non-negative"),
+  body("credit_limit")
+    .optional()
+    .isFloat({ min: 0 })
+    .withMessage("Credit limit must be non-negative"),
   body("active").optional().isBoolean().withMessage("Active must be a boolean"),
   handleValidationErrors,
 ];
@@ -73,7 +82,7 @@ router.get(
   requireApiPermission("outlets:read"),
   [
     query("page").optional().isInt({ min: 1 }).withMessage("Page must be a positive integer"),
-    query("limit").optional().isInt({ min: 1, max: 100 }).withMessage("Limit must be between 1 and 100"),
+    query("limit").optional().isInt({ min: 1 }).withMessage("Limit must be a positive integer"),
     query("search").optional().trim(),
     query("route_id").optional().isMongoId().withMessage("Invalid route ID"),
     query("outlet_type").optional().isMongoId().withMessage("Invalid outlet type ID"),
@@ -82,12 +91,18 @@ router.get(
       .optional()
       .isIn(["PENDING", "VERIFIED", "REJECTED", "all"])
       .withMessage("Invalid verification status"),
-    query("active").optional().isIn(["true", "false", "all"]).withMessage("Active must be true, false, or all"),
+    query("active")
+      .optional()
+      .isIn(["true", "false", "all"])
+      .withMessage("Active must be true, false, or all"),
     query("sortBy")
       .optional()
       .isIn(["outlet_name", "outlet_id", "created_date", "update_date_time"])
       .withMessage("Invalid sort field"),
-    query("sortOrder").optional().isIn(["asc", "desc"]).withMessage("Sort order must be asc or desc"),
+    query("sortOrder")
+      .optional()
+      .isIn(["asc", "desc"])
+      .withMessage("Sort order must be asc or desc"),
     handleValidationErrors,
   ],
   async (req, res) => {
@@ -201,7 +216,10 @@ router.get(
   [
     query("lat").isFloat({ min: -90, max: 90 }).withMessage("Valid latitude is required"),
     query("lon").isFloat({ min: -180, max: 180 }).withMessage("Valid longitude is required"),
-    query("radius").optional().isFloat({ min: 0.1, max: 50 }).withMessage("Radius must be between 0.1 and 50 km"),
+    query("radius")
+      .optional()
+      .isFloat({ min: 0.1, max: 50 })
+      .withMessage("Radius must be between 0.1 and 50 km"),
     handleValidationErrors,
   ],
   async (req, res) => {
@@ -235,145 +253,157 @@ router.get(
  * @desc    Get outlet by ID
  * @access  Private
  */
-router.get("/:id", authenticate, requireApiPermission("outlets:read"), idValidation, async (req, res) => {
-  try {
-    const outlet = await Outlet.findById(req.params.id)
-      .populate("route_id", "route_id route_name area_id db_point_id distributor_id")
-      .populate({
-        path: "route_id",
-        populate: [
-          { path: "area_id", select: "name territory_type" },
-          { path: "db_point_id", select: "name territory_type" },
-          { path: "distributor_id", select: "name" },
-        ],
-      })
-      .populate("outlet_type", "name active")
-      .populate("outlet_channel_id", "name active")
-      .populate("verified_by", "username email")
-      .populate("created_by", "username email")
-      .populate("updated_by", "username email")
-      .lean();
+router.get(
+  "/:id",
+  authenticate,
+  requireApiPermission("outlets:read"),
+  idValidation,
+  async (req, res) => {
+    try {
+      const outlet = await Outlet.findById(req.params.id)
+        .populate("route_id", "route_id route_name area_id db_point_id distributor_id")
+        .populate({
+          path: "route_id",
+          populate: [
+            { path: "area_id", select: "name territory_type" },
+            { path: "db_point_id", select: "name territory_type" },
+            { path: "distributor_id", select: "name" },
+          ],
+        })
+        .populate("outlet_type", "name active")
+        .populate("outlet_channel_id", "name active")
+        .populate("verified_by", "username email")
+        .populate("created_by", "username email")
+        .populate("updated_by", "username email")
+        .lean();
 
-    if (!outlet) {
-      return res.status(404).json({
+      if (!outlet) {
+        return res.status(404).json({
+          success: false,
+          message: "Outlet not found",
+        });
+      }
+
+      res.json({
+        success: true,
+        data: outlet,
+      });
+    } catch (error) {
+      console.error("Error fetching outlet:", error);
+      res.status(500).json({
         success: false,
-        message: "Outlet not found",
+        message: "Error fetching outlet",
+        error: process.env.NODE_ENV === "development" ? error.message : undefined,
       });
     }
-
-    res.json({
-      success: true,
-      data: outlet,
-    });
-  } catch (error) {
-    console.error("Error fetching outlet:", error);
-    res.status(500).json({
-      success: false,
-      message: "Error fetching outlet",
-      error: process.env.NODE_ENV === "development" ? error.message : undefined,
-    });
   }
-});
+);
 
 /**
  * @route   POST /api/v1/outlets
  * @desc    Create new outlet
  * @access  Private
  */
-router.post("/", authenticate, requireApiPermission("outlets:create"), createValidation, async (req, res) => {
-  try {
-    const userId = req.user._id;
+router.post(
+  "/",
+  authenticate,
+  requireApiPermission("outlets:create"),
+  createValidation,
+  async (req, res) => {
+    try {
+      const userId = req.user._id;
 
-    // Verify route exists
-    const route = await Route.findById(req.body.route_id);
-    if (!route) {
-      return res.status(404).json({
-        success: false,
-        message: "Route not found",
-      });
-    }
-
-    // Verify outlet type exists
-    const outletType = await OutletType.findById(req.body.outlet_type);
-    if (!outletType) {
-      return res.status(404).json({
-        success: false,
-        message: "Outlet type not found",
-      });
-    }
-
-    // Verify outlet channel exists
-    const outletChannel = await OutletChannel.findById(req.body.outlet_channel_id);
-    if (!outletChannel) {
-      return res.status(404).json({
-        success: false,
-        message: "Outlet channel not found",
-      });
-    }
-
-    // Generate outlet ID
-    let outletId;
-    if (req.body.outlet_id) {
-      // Check if custom outlet_id already exists
-      const existing = await Outlet.findOne({ outlet_id: req.body.outlet_id.toUpperCase() });
-      if (existing) {
-        return res.status(400).json({
+      // Verify route exists
+      const route = await Route.findById(req.body.route_id);
+      if (!route) {
+        return res.status(404).json({
           success: false,
-          message: "Outlet ID already exists",
+          message: "Route not found",
         });
       }
-      outletId = req.body.outlet_id.toUpperCase();
-    } else {
-      // Auto-generate outlet ID based on route
-      outletId = await Outlet.generateOutletId(route.route_id);
-    }
 
-    // Create outlet
-    const outletData = {
-      ...req.body,
-      outlet_id: outletId,
-      created_by: userId,
-      updated_by: userId,
-      created_date: new Date(),
-      update_date_time: new Date(),
-    };
+      // Verify outlet type exists
+      const outletType = await OutletType.findById(req.body.outlet_type);
+      if (!outletType) {
+        return res.status(404).json({
+          success: false,
+          message: "Outlet type not found",
+        });
+      }
 
-    // Set GeoJSON location if lat/lon provided
-    if (req.body.lati && req.body.longi) {
-      outletData.location = {
-        type: "Point",
-        coordinates: [req.body.longi, req.body.lati],
+      // Verify outlet channel exists
+      const outletChannel = await OutletChannel.findById(req.body.outlet_channel_id);
+      if (!outletChannel) {
+        return res.status(404).json({
+          success: false,
+          message: "Outlet channel not found",
+        });
+      }
+
+      // Generate outlet ID
+      let outletId;
+      if (req.body.outlet_id) {
+        // Check if custom outlet_id already exists
+        const existing = await Outlet.findOne({ outlet_id: req.body.outlet_id.toUpperCase() });
+        if (existing) {
+          return res.status(400).json({
+            success: false,
+            message: "Outlet ID already exists",
+          });
+        }
+        outletId = req.body.outlet_id.toUpperCase();
+      } else {
+        // Auto-generate outlet ID based on route
+        outletId = await Outlet.generateOutletId(route.route_id);
+      }
+
+      // Create outlet
+      const outletData = {
+        ...req.body,
+        outlet_id: outletId,
+        created_by: userId,
+        updated_by: userId,
+        created_date: new Date(),
+        update_date_time: new Date(),
       };
+
+      // Set GeoJSON location if lat/lon provided
+      if (req.body.lati && req.body.longi) {
+        outletData.location = {
+          type: "Point",
+          coordinates: [req.body.longi, req.body.lati],
+        };
+      }
+
+      const outlet = await Outlet.create(outletData);
+
+      // Update route's actual outlet quantity
+      await Route.findByIdAndUpdate(req.body.route_id, {
+        $inc: { actual_outlet_qty: 1 },
+      });
+
+      // Populate before returning
+      const populatedOutlet = await Outlet.findById(outlet._id)
+        .populate("route_id", "route_id route_name")
+        .populate("outlet_type", "name")
+        .populate("outlet_channel_id", "name")
+        .lean();
+
+      res.status(201).json({
+        success: true,
+        message: "Outlet created successfully",
+        data: populatedOutlet,
+      });
+    } catch (error) {
+      console.error("Error creating outlet:", error);
+      res.status(500).json({
+        success: false,
+        message: "Error creating outlet",
+        error: process.env.NODE_ENV === "development" ? error.message : undefined,
+      });
     }
-
-    const outlet = await Outlet.create(outletData);
-
-    // Update route's actual outlet quantity
-    await Route.findByIdAndUpdate(req.body.route_id, {
-      $inc: { actual_outlet_qty: 1 },
-    });
-
-    // Populate before returning
-    const populatedOutlet = await Outlet.findById(outlet._id)
-      .populate("route_id", "route_id route_name")
-      .populate("outlet_type", "name")
-      .populate("outlet_channel_id", "name")
-      .lean();
-
-    res.status(201).json({
-      success: true,
-      message: "Outlet created successfully",
-      data: populatedOutlet,
-    });
-  } catch (error) {
-    console.error("Error creating outlet:", error);
-    res.status(500).json({
-      success: false,
-      message: "Error creating outlet",
-      error: process.env.NODE_ENV === "development" ? error.message : undefined,
-    });
   }
-});
+);
 
 /**
  * @route   PUT /api/v1/outlets/:id
@@ -474,42 +504,48 @@ router.put(
  * @desc    Deactivate outlet (soft delete)
  * @access  Private
  */
-router.delete("/:id", authenticate, requireApiPermission("outlets:delete"), idValidation, async (req, res) => {
-  try {
-    const userId = req.user._id;
+router.delete(
+  "/:id",
+  authenticate,
+  requireApiPermission("outlets:delete"),
+  idValidation,
+  async (req, res) => {
+    try {
+      const userId = req.user._id;
 
-    const outlet = await Outlet.findById(req.params.id);
-    if (!outlet) {
-      return res.status(404).json({
+      const outlet = await Outlet.findById(req.params.id);
+      if (!outlet) {
+        return res.status(404).json({
+          success: false,
+          message: "Outlet not found",
+        });
+      }
+
+      outlet.active = false;
+      outlet.updated_by = userId;
+      outlet.update_date_time = new Date();
+      await outlet.save();
+
+      // Decrement route's actual outlet quantity
+      await Route.findByIdAndUpdate(outlet.route_id, {
+        $inc: { actual_outlet_qty: -1 },
+      });
+
+      res.json({
+        success: true,
+        message: "Outlet deactivated successfully",
+        data: outlet,
+      });
+    } catch (error) {
+      console.error("Error deactivating outlet:", error);
+      res.status(500).json({
         success: false,
-        message: "Outlet not found",
+        message: "Error deactivating outlet",
+        error: process.env.NODE_ENV === "development" ? error.message : undefined,
       });
     }
-
-    outlet.active = false;
-    outlet.updated_by = userId;
-    outlet.update_date_time = new Date();
-    await outlet.save();
-
-    // Decrement route's actual outlet quantity
-    await Route.findByIdAndUpdate(outlet.route_id, {
-      $inc: { actual_outlet_qty: -1 },
-    });
-
-    res.json({
-      success: true,
-      message: "Outlet deactivated successfully",
-      data: outlet,
-    });
-  } catch (error) {
-    console.error("Error deactivating outlet:", error);
-    res.status(500).json({
-      success: false,
-      message: "Error deactivating outlet",
-      error: process.env.NODE_ENV === "development" ? error.message : undefined,
-    });
   }
-});
+);
 
 /**
  * @route   PATCH /api/v1/outlets/:id/activate

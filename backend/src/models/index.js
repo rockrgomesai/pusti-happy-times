@@ -33,6 +33,10 @@ const Offer = require("./Offer");
 const BdBank = require("./BdBank");
 const Collection = require("./Collection");
 const DemandOrder = require("./DemandOrder");
+const Route = require("./Route");
+const Outlet = require("./Outlet");
+const OutletType = require("./OutletType");
+const OutletChannel = require("./OutletChannel");
 
 // Import depot inventory models (new architecture)
 const DepotStock = require("./DepotStock");
@@ -81,6 +85,10 @@ const models = {
   BdBank,
   Collection,
   DemandOrder,
+  Route,
+  Outlet,
+  OutletType,
+  OutletChannel,
   SidebarMenuItem,
 
   // Depot inventory models (new architecture)
@@ -234,6 +242,10 @@ module.exports = {
   Territory,
   DSR,
   Distributor,
+  Route,
+  Outlet,
+  OutletType,
+  OutletChannel,
   BdBank,
   Collection,
   DemandOrder,

@@ -4,8 +4,15 @@ export interface Category {
   active: boolean;
 }
 
+export interface Outlet {
+  _id: string;
+  outlet_id: string;
+  outlet_name: string;
+}
+
 export interface OutletMarketSize {
   _id: string;
+  outlet: Outlet;
   category: Category;
   mkt_size: number;
   active: boolean;
@@ -16,6 +23,7 @@ export interface OutletMarketSize {
 }
 
 export interface OutletMarketSizeFormData {
+  outlet: string;
   category: string;
   mkt_size: number;
   active: boolean;
@@ -29,6 +37,7 @@ export interface OutletMarketSizeListParams {
   sortOrder?: 'asc' | 'desc';
   active?: boolean;
   category?: string;
+  outlet?: string;
 }
 
 export interface OutletMarketSizeListResponse {

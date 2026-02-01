@@ -517,7 +517,9 @@ export default function EmployeesPage() {
 
   const loadDesignations = async () => {
     try {
-      const response = await api.get('/designations');
+      const response = await api.get('/designations', {
+        params: { limit: 100000 }
+      });
       if (Array.isArray(response.data?.data)) {
         setDesignations(response.data.data as DesignationOption[]);
       } else if (Array.isArray(response.data)) {

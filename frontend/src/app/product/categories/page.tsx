@@ -255,7 +255,9 @@ export default function CategoriesPage() {
   const loadCategories = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await api.get('/categories');
+      const response = await api.get('/categories', {
+        params: { limit: 100000 }
+      });
       const categoriesData =
         response.data?.data && Array.isArray(response.data.data) ? response.data.data : [];
       setCategories(categoriesData);

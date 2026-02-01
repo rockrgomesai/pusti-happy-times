@@ -152,7 +152,9 @@ export default function BrandsPage() {
   const loadBrands = async () => {
     try {
       setLoading(true);
-      const response = await api.get('/brands');
+      const response = await api.get('/brands', {
+        params: { limit: 100000 }
+      });
       
       // Extract brands array from API response
       const brandsData = response.data?.data && Array.isArray(response.data.data) 

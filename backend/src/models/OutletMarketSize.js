@@ -2,6 +2,12 @@ const mongoose = require("mongoose");
 
 const outletMarketSizeSchema = new mongoose.Schema(
   {
+    outlet: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Outlet",
+      required: true,
+      index: true,
+    },
     category: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Category",
@@ -29,12 +35,13 @@ const outletMarketSizeSchema = new mongoose.Schema(
 );
 
 // Indexes
+outletMarketSizeSchema.index({ outlet: 1 });
 outletMarketSizeSchema.index({ category: 1 });
 outletMarketSizeSchema.index({ mkt_size: 1 });
 outletMarketSizeSchema.index({ active: 1 });
 
-// Compound unique index to prevent duplicate category entries
-outletMarketSizeSchema.index({ category: 1, active: 1 }, { unique: true });
+// Compound unique index to prevent duplicate outlet-category entries
+outletMarketSizeSchema.index({ outlet: 1, category: 1, active: 1 }, { unique: true });
 
 const OutletMarketSize = mongoose.model("OutletMarketSize", outletMarketSizeSchema);
 

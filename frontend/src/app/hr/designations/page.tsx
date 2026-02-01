@@ -104,7 +104,9 @@ export default function DesignationsPage() {
   const loadDesignations = async () => {
     try {
       setLoading(true);
-      const response = await api.get('/designations');
+      const response = await api.get('/designations', {
+        params: { limit: 100000 }
+      });
       
       // Handle API response structure (designations returns data in response.data.data)
       if (response.data && response.data.success && Array.isArray(response.data.data)) {
