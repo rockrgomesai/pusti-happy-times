@@ -268,16 +268,7 @@ router.get(
   handleValidationErrors,
   async (req, res) => {
     try {
-      const {
-        search,
-        segment,
-        type,
-        active,
-        db_point_id,
-        area_id,
-        limit,
-        offset,
-      } = req.query;
+      const { search, segment, type, active, db_point_id, area_id, limit, offset } = req.query;
 
       const queryBuilder = {};
 
@@ -341,9 +332,7 @@ router.get(
 
       const [total, distributors] = await Promise.all([
         Distributor.countDocuments(queryBuilder),
-        Distributor.find(queryBuilder)
-          .sort({ name: 1 })
-          .lean(),
+        Distributor.find(queryBuilder).sort({ name: 1 }).lean(),
       ]);
 
       return res.json({

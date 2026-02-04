@@ -256,7 +256,7 @@ depotTransactionOutSchema.statics.getHistory = async function (
   depotId,
   filters = {},
   page = 1,
-  limit = 50
+  limit = 0
 ) {
   const query = {
     depot_id: depotId,
@@ -323,7 +323,7 @@ depotTransactionOutSchema.statics.getDailySummary = async function (depotId, dat
 };
 
 // Static method to get pending dispatches
-depotTransactionOutSchema.statics.getPendingDispatches = async function (depotId, limit = 20) {
+depotTransactionOutSchema.statics.getPendingDispatches = async function (depotId, limit = 0) {
   return this.find({
     depot_id: depotId,
     status: { $in: ["pending", "approved"] },

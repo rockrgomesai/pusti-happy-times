@@ -145,7 +145,7 @@ designationSchema.statics.getActive = function() {
 designationSchema.statics.getPaginated = async function(options = {}) {
   const {
     page = 1,
-    limit = 10,
+    limit = 0,
     search = '',
     sortBy = 'name',
     sortOrder = 'asc',
@@ -197,7 +197,7 @@ designationSchema.statics.getPaginated = async function(options = {}) {
  * @returns {Array} Array of matching designations
  */
 designationSchema.statics.searchByName = function(searchTerm, options = {}) {
-  const { includeInactive = false, limit = 50 } = options;
+  const { includeInactive = false, limit = 0 } = options;
   
   const query = {
     name: { $regex: searchTerm, $options: 'i' }

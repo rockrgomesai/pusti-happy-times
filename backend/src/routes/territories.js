@@ -224,7 +224,7 @@ const listValidation = [
     .toInt(),
   query("type")
     .optional()
-    .customSanitizer((value) => value ? value.toLowerCase() : value)
+    .customSanitizer((value) => (value ? value.toLowerCase() : value))
     .isIn(TERRITORY_TYPES)
     .withMessage("Invalid territory type"),
   query("parentId")

@@ -352,7 +352,9 @@ secondaryOfferSchema.statics.resolveTargetedOutlets = async function (offerScope
   if (offerScope.targeting?.distributors?.ids?.length > 0) {
     const mode = offerScope.targeting.distributors.mode;
     const routesByDistributor = await Route.find({
-      distributor_id: { [mode === "include" ? "$in" : "$nin"]: offerScope.targeting.distributors.ids },
+      distributor_id: {
+        [mode === "include" ? "$in" : "$nin"]: offerScope.targeting.distributors.ids,
+      },
       active: true,
     }).distinct("_id");
 
@@ -371,9 +373,7 @@ secondaryOfferSchema.statics.resolveTargetedOutlets = async function (offerScope
   // Step 3: Filter by routes if specified
   if (offerScope.targeting?.routes?.ids?.length > 0) {
     const mode = offerScope.targeting.routes.mode;
-    const routeIdsBySelection = new Set(
-      offerScope.targeting.routes.ids.map((id) => id.toString())
-    );
+    const routeIdsBySelection = new Set(offerScope.targeting.routes.ids.map((id) => id.toString()));
 
     if (mode === "include") {
       // Intersect with previously filtered routes

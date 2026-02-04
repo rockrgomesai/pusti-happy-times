@@ -125,7 +125,7 @@ router.post("/login", loginValidation, async (req, res) => {
     console.log("🔍 Looking up user:", username);
 
     // Find user by username (case-insensitive) and include password, populate employee/distributor
-    const user = await User.findOne({ username: new RegExp(`^${username}$`, 'i') })
+    const user = await User.findOne({ username: new RegExp(`^${username}$`, "i") })
       .select("+password")
       .populate("role_id")
       .populate("employee_id")
@@ -504,19 +504,20 @@ router.get("/me", authenticate, async (req, res) => {
     // Load user's permissions from role
     const { RoleApiPermission } = require("../models/JunctionTables");
     const { ApiPermission } = require("../models/Permission");
-    
-    const rolePerms = await RoleApiPermission.find({ role_id: req.user.role_id._id })
-      .populate('api_permission_id');
-    
+
+    const rolePerms = await RoleApiPermission.find({ role_id: req.user.role_id._id }).populate(
+      "api_permission_id"
+    );
+
     // Filter out null/invalid references and extract permission strings
     const permissions = rolePerms
-      .filter(rp => rp.api_permission_id && rp.api_permission_id.api_permissions)
-      .map(rp => rp.api_permission_id.api_permissions);
+      .filter((rp) => rp.api_permission_id && rp.api_permission_id.api_permissions)
+      .map((rp) => rp.api_permission_id.api_permissions);
 
     // Disable caching for this endpoint so browser always gets fresh permissions
-    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
-    res.setHeader('Pragma', 'no-cache');
-    res.setHeader('Expires', '0');
+    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, private");
+    res.setHeader("Pragma", "no-cache");
+    res.setHeader("Expires", "0");
 
     res.json({
       success: true,

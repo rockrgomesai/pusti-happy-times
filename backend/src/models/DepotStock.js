@@ -1,4 +1,12 @@
 /**
+ * Passing `0` for the `limit` argument removes the cap entirely, so MongoDB returns all matching documents for that query.
+ */
+/**
+ * Removing the `limit = 50` default argument means that callers who omit
+ * the `limit` parameter will send `undefined` to `.limit()`, effectively
+ * removing the cap and allowing every matching document to be returned.
+ */
+/**
  * DepotStock Model
  * Maintains ONLY current stock levels for each depot + product
  * Simple aggregated quantity only - all details are in transactions
@@ -83,7 +91,7 @@ depotStockSchema.statics.getCurrentStock = async function (depotId, productId) {
 };
 
 // Static method to get low stock items (below threshold)
-depotStockSchema.statics.getLowStock = async function (depotId, threshold = 10, limit = 50) {
+depotStockSchema.statics.getLowStock = async function (depotId, threshold = 10, limit = 0) {
   return this.find({
     depot_id: depotId,
     qty_ctn: { $lt: threshold, $gt: 0 },
@@ -94,7 +102,7 @@ depotStockSchema.statics.getLowStock = async function (depotId, threshold = 10, 
 };
 
 // Static method to get out of stock items
-depotStockSchema.statics.getOutOfStock = async function (depotId, limit = 50) {
+depotStockSchema.statics.getOutOfStock = async function (depotId, limit = 0) {
   return this.find({
     depot_id: depotId,
     qty_ctn: 0,

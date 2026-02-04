@@ -159,7 +159,7 @@ factoryStoreInventoryTransactionSchema.statics.getHistory = async function (
   facilityStoreId,
   filters = {},
   page = 1,
-  limit = 50
+  limit = 0
 ) {
   const query = { facility_store_id: facilityStoreId, ...filters };
 

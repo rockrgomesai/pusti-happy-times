@@ -309,7 +309,7 @@ outletSchema.statics.findNearby = function (longitude, latitude, maxDistanceKm =
       },
     },
     active: true,
-  }).limit(50);
+  }).limit(0);
 };
 
 // Instance method: Update last visit

@@ -140,3 +140,6 @@ dump.rdb
 # Development artifacts
 conversation-log.md
 *.code-workspace
+
+# Generated category images (development/testing only)
+backend/public/images/categories/

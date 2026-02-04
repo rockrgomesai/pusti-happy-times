@@ -402,7 +402,7 @@ const restoreDesignation = async (req, res) => {
  */
 const searchDesignations = async (req, res) => {
   try {
-    const { q: searchTerm = "", includeInactive = "false", limit = 50 } = req.query;
+    const { q: searchTerm = "", includeInactive = "false", limit = 0 } = req.query;
 
     if (!searchTerm.trim()) {
       return res.status(400).json({

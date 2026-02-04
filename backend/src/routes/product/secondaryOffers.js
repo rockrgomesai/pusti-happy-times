@@ -94,7 +94,7 @@ router.post(
   async (req, res) => {
     try {
       console.log("📍 [ROUTES] Request received:", { body: req.body });
-      
+
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
         console.log("❌ [ROUTES] Validation failed:", errors.array());

@@ -287,7 +287,7 @@ offerSendSchema.pre("validate", async function (next) {
 });
 
 // Static method to get sends for a specific depot
-offerSendSchema.statics.getForDepot = async function (depotId, filters = {}, page = 1, limit = 50) {
+offerSendSchema.statics.getForDepot = async function (depotId, filters = {}, page = 1, limit = 0) {
   const query = {
     depot_ids: depotId,
     is_deleted: false,
