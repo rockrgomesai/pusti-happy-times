@@ -14,12 +14,12 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
-import Mapbox from '@rnmapbox/maps';
+// import Mapbox from '@rnmapbox/maps';
 import PustiLogo from '../components/PustiLogo';
 import UserInfoModal from '../components/UserInfoModal';
 import locationService, {LocationPoint} from '../services/locationService';
 
-Mapbox.setAccessToken('pk.eyJ1Ijoicm9ja3Jnb21lc2FpIiwiYSI6ImNtbDhmOHptNjA2eTAzZm9rMXJqcmE3Y28ifQ.Q2nQrXEFSe7OgwnBjIh5bg');
+// Mapbox.setAccessToken('pk.eyJ1Ijoicm9ja3Jnb21lc2FpIiwiYSI6ImNtbDhmOHptNjA2eTAzZm9rMXJqcmE3Y28ifQ.Q2nQrXEFSe7OgwnBjIh5bg');
 
 const traceRouteIcon = require('../assets/images/trace-route.png');
 const {width, height} = Dimensions.get('window');
@@ -175,53 +175,71 @@ const HomeScreen = ({navigation, route}: any) => {
   };
 
   const handleTrackToggle = async () => {
-    if (isTracking) {
-      // Stop tracking
-      const points = locationService.stopTracking();
-      if (statsInterval.current) {
-        clearInterval(statsInterval.current);
-        statsInterval.current = null;
+    console.log('=== handleTrackToggle called ===');
+    console.log('Current isTracking state:', isTracking);
+    
+    try {
+      if (isTracking) {
+        // Stop tracking
+        const points = locationService.stopTracking();
+        if (statsInterval.current) {
+          clearInterval(statsInterval.current);
+          statsInterval.current = null;
+        }
+        setIsTracking(false);
+        
+        Alert.alert(
+          'Tracking Stopped',
+          `Route saved with ${points.length} points.\nDistance: ${distance.toFixed(2)} km\nDuration: ${locationService.formatDuration(duration)}`,
+          [{text: 'OK', onPress: () => setShowTrackingDrawer(false)}]
+        );
+      } else {
+        console.log('Starting tracking...');
+        
+        // Request permission and start tracking
+        const hasPermission = await locationService.requestLocationPermission();
+        console.log('Permission granted:', hasPermission);
+        
+        if (!hasPermission) {
+          Alert.alert('Permission Denied', 'Location permission is required for tracking.');
+          return;
+        }
+
+        try {
+          console.log('Getting current position...');
+          const position = await locationService.getCurrentPosition();
+          console.log('Current position:', position);
+          setCurrentLocation([position.longitude, position.latitude]);
+        } catch (error) {
+          console.error('Could not get current location:', error);
+          Alert.alert('Location Error', 'Could not get your current location. Make sure GPS is enabled.');
+          return;
+        }
+
+        setRouteCoordinates([]);
+        setDistance(0);
+        setDuration(0);
+        setVisits(0);
+        setIsTracking(true);
+        setShowTrackingDrawer(true);
+
+        console.log('Starting location tracking service...');
+        locationService.startTracking((point: LocationPoint) => {
+          console.log('Location update:', point);
+          setCurrentLocation([point.longitude, point.latitude]);
+          const points = locationService.getLocationPoints();
+          setRouteCoordinates(points.map(p => [p.longitude, p.latitude]));
+        });
+
+        // Update stats every second
+        statsInterval.current = setInterval(() => {
+          setDistance(locationService.calculateDistance());
+          setDuration(locationService.getDuration());
+        }, 1000);
       }
-      setIsTracking(false);
-      
-      Alert.alert(
-        'Tracking Stopped',
-        `Route saved with ${points.length} points.\nDistance: ${distance.toFixed(2)} km\nDuration: ${locationService.formatDuration(duration)}`,
-        [{text: 'OK', onPress: () => setShowTrackingDrawer(false)}]
-      );
-    } else {
-      // Request permission and start tracking
-      const hasPermission = await locationService.requestLocationPermission();
-      if (!hasPermission) {
-        Alert.alert('Permission Denied', 'Location permission is required for tracking.');
-        return;
-      }
-
-      try {
-        const position = await locationService.getCurrentPosition();
-        setCurrentLocation([position.longitude, position.latitude]);
-      } catch (error) {
-        console.error('Could not get current location:', error);
-      }
-
-      setRouteCoordinates([]);
-      setDistance(0);
-      setDuration(0);
-      setVisits(0);
-      setIsTracking(true);
-      setShowTrackingDrawer(true);
-
-      locationService.startTracking((point: LocationPoint) => {
-        setCurrentLocation([point.longitude, point.latitude]);
-        const points = locationService.getLocationPoints();
-        setRouteCoordinates(points.map(p => [p.longitude, p.latitude]));
-      });
-
-      // Update stats every second
-      statsInterval.current = setInterval(() => {
-        setDistance(locationService.calculateDistance());
-        setDuration(locationService.getDuration());
-      }, 1000);
+    } catch (error) {
+      console.error('Error in handleTrackToggle:', error);
+      Alert.alert('Error', 'An error occurred while toggling tracking. Please try again.');
     }
   };
 
@@ -343,47 +361,18 @@ const HomeScreen = ({navigation, route}: any) => {
 
             {/* Map View */}
             <View style={styles.mapContainer}>
-              <Mapbox.MapView 
-                style={styles.map}
-                styleURL={Mapbox.StyleURL.Street}
-                zoomEnabled={true}
-                scrollEnabled={true}
-                pitchEnabled={false}
-                rotateEnabled={false}>
-                <Mapbox.Camera
-                  zoomLevel={15}
-                  centerCoordinate={currentLocation}
-                  animationMode="flyTo"
-                  animationDuration={1000}
-                  followUserLocation={isTracking}
-                />
-                <Mapbox.UserLocation
-                  visible={true}
-                  showsUserHeadingIndicator={true}
-                />
-                {routeCoordinates.length > 1 && (
-                  <Mapbox.ShapeSource
-                    id="routeSource"
-                    shape={{
-                      type: 'Feature',
-                      properties: {},
-                      geometry: {
-                        type: 'LineString',
-                        coordinates: routeCoordinates,
-                      },
-                    }}>
-                    <Mapbox.LineLayer
-                      id="routeLine"
-                      style={{
-                        lineColor: '#4CAF50',
-                        lineWidth: 4,
-                        lineCap: 'round',
-                        lineJoin: 'round',
-                      }}
-                    />
-                  </Mapbox.ShapeSource>
+              <View style={styles.mapPlaceholder}>
+                <Text style={styles.mapIcon}>🗺️</Text>
+                <Text style={styles.mapText}>Map View</Text>
+                <Text style={styles.mapSubtext}>
+                  {isTracking ? `Tracking active\nLocation: ${currentLocation[1].toFixed(4)}, ${currentLocation[0].toFixed(4)}` : 'Start tracking to see route'}
+                </Text>
+                {routeCoordinates.length > 0 && (
+                  <Text style={styles.mapSubtext}>
+                    {'\n'}Points recorded: {routeCoordinates.length}
+                  </Text>
                 )}
-              </Mapbox.MapView>
+              </View>
             </View>
 
             {/* Stats Bar */}
@@ -651,8 +640,26 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f0f0f0',
   },
-  map: {
+  mapPlaceholder: {
     flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  mapIcon: {
+    fontSize: 64,
+    marginBottom: 15,
+  },
+  mapText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 8,
+  },
+  mapSubtext: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
   },
   statsBar: {
     flexDirection: 'row',
