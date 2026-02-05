@@ -363,13 +363,13 @@ const HomeScreen = ({navigation, route}: any) => {
             <View style={styles.mapContainer}>
               <View style={styles.mapPlaceholder}>
                 <Text style={styles.mapIcon}>🗺️</Text>
-                <Text style={styles.mapText}>Map View</Text>
+                <Text style={styles.mapText}>GPS Tracking Active</Text>
                 <Text style={styles.mapSubtext}>
-                  {isTracking ? `Tracking active\nLocation: ${currentLocation[1].toFixed(4)}, ${currentLocation[0].toFixed(4)}` : 'Start tracking to see route'}
+                  {isTracking ? `Location: ${currentLocation[1].toFixed(6)}, ${currentLocation[0].toFixed(6)}` : 'Waiting to start...'}
                 </Text>
                 {routeCoordinates.length > 0 && (
                   <Text style={styles.mapSubtext}>
-                    {'\n'}Points recorded: {routeCoordinates.length}
+                    {'\n'}Route points: {routeCoordinates.length}
                   </Text>
                 )}
               </View>
@@ -645,6 +645,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
+    backgroundColor: '#fff',
   },
   mapIcon: {
     fontSize: 64,
@@ -660,6 +661,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
     textAlign: 'center',
+    lineHeight: 20,
   },
   statsBar: {
     flexDirection: 'row',
