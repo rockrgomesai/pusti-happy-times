@@ -18,6 +18,7 @@ const { authenticate, requireRole, requireApiPermission } = require("../middlewa
 
 // Import route modules
 const authRoutes = require("./auth");
+const profileRoutes = require("./profile");
 const userRoutes = require("./users");
 const roleRoutes = require("./roles");
 const brandRoutes = require("./brands");
@@ -229,6 +230,13 @@ router.use("/auth", authRoutes);
 
 // Apply authentication middleware to all subsequent routes
 router.use(authenticate);
+
+/**
+ * Profile Routes
+ * @route   /api/profile/*
+ * @desc    User profile management including photo upload
+ */
+router.use("/profile", profileRoutes);
 
 /**
  * User Management Routes

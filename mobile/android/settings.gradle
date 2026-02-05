@@ -1,0 +1,24 @@
+pluginManagement { includeBuild("../node_modules/@react-native/gradle-plugin") }
+plugins { id("com.facebook.react.settings") }
+
+dependencyResolutionManagement {
+    repositories {
+        google()
+        mavenCentral()
+        maven {
+            url 'https://api.mapbox.com/downloads/v2/releases/maven'
+            authentication {
+                basic(BasicAuthentication)
+            }
+            credentials {
+                username = "mapbox"
+                password = providers.gradleProperty('MAPBOX_DOWNLOADS_TOKEN').getOrElse(System.getenv('MAPBOX_DOWNLOADS_TOKEN') ?: "")
+            }
+        }
+    }
+}
+
+extensions.configure(com.facebook.react.ReactSettingsExtension){ ex -> ex.autolinkLibrariesFromCommand() }
+rootProject.name = 'TkgPustiHtSalesApp'
+include ':app'
+includeBuild('../node_modules/@react-native/gradle-plugin')

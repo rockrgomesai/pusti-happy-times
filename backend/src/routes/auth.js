@@ -276,7 +276,15 @@ router.post("/login", loginValidation, async (req, res) => {
         role: user.role_id.role,
       },
       context: contextData,
+      profile_photo: null, // Will be populated based on user type
     };
+
+    // Add profile photo based on user type
+    if (user.user_type === "employee" && user.employee_id) {
+      userData.profile_photo = user.employee_id.profile_photo;
+    } else if (user.user_type === "distributor" && user.distributor_id) {
+      userData.profile_photo = user.distributor_id.profile_photo;
+    }
 
     res.json({
       success: true,

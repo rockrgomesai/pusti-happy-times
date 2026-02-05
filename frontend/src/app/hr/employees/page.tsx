@@ -447,7 +447,7 @@ export default function EmployeesPage() {
       const detectedType = detectEmployeeTypeFromDesignation(selectedDesignationId);
       if (detectedType && detectedType !== selectedEmployeeType) {
         setValue('employee_type', detectedType as 'system_admin' | 'field' | 'facility' | 'hq');
-        toast.info(`Employee type auto-set to "${detectedType}" based on designation`);
+        toast.success(`Employee type auto-set to "${detectedType}" based on designation`);
       }
     }
   }, [selectedDesignationId, selectedEmployeeType, detectEmployeeTypeFromDesignation, setValue]);

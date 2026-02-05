@@ -279,6 +279,11 @@ const employeeSchema = new mongoose.Schema(
       default: true,
       index: true,
     },
+    profile_photo: {
+      type: String,
+      default: null,
+      trim: true,
+    },
 
     // Employee type classification
     employee_type: {
