@@ -54,7 +54,7 @@ const HomeScreen = ({navigation, route}: any) => {
   const [distance, setDistance] = useState<number>(0);
   const [duration, setDuration] = useState<number>(0);
   const [visits, setVisits] = useState<number>(0);
-  const statsInterval = useRef<NodeJS.Timeout | null>(null);
+  const statsInterval = useRef<any>(null);
 
   useEffect(() => {
     loadUserData();
