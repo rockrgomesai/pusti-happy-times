@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
-import MapView, {Polyline, PROVIDER_GOOGLE} from 'react-native-maps';
+// import MapView, {Polyline, PROVIDER_GOOGLE} from 'react-native-maps';
 import PustiLogo from '../components/PustiLogo';
 import UserInfoModal from '../components/UserInfoModal';
 import locationService, {LocationPoint} from '../services/locationService';
@@ -359,31 +359,18 @@ const HomeScreen = ({navigation, route}: any) => {
 
             {/* Map View */}
             <View style={styles.mapContainer}>
-              <MapView
-                provider={PROVIDER_GOOGLE}
-                style={styles.map}
-                region={{
-                  latitude: currentLocation[1],
-                  longitude: currentLocation[0],
-                  latitudeDelta: 0.01,
-                  longitudeDelta: 0.01,
-                }}
-                showsUserLocation={true}
-                followsUserLocation={isTracking}
-                showsMyLocationButton={false}
-                zoomEnabled={true}
-                scrollEnabled={true}>
-                {routeCoordinates.length > 1 && (
-                  <Polyline
-                    coordinates={routeCoordinates.map(coord => ({
-                      latitude: coord[1],
-                      longitude: coord[0],
-                    }))}
-                    strokeColor="#4CAF50"
-                    strokeWidth={4}
-                  />
+              <View style={styles.mapPlaceholder}>
+                <Text style={styles.mapIcon}>🗺️</Text>
+                <Text style={styles.mapText}>GPS Tracking Active</Text>
+                <Text style={styles.mapSubtext}>
+                  {isTracking ? `Location: ${currentLocation[1].toFixed(6)}, ${currentLocation[0].toFixed(6)}` : 'Waiting to start...'}
+                </Text>
+                {routeCoordinates.length > 0 && (
+                  <Text style={styles.mapSubtext}>
+                    {'\n'}Route points: {routeCoordinates.length}
+                  </Text>
                 )}
-              </MapView>
+              </View>
             </View>
 
             {/* Stats Bar */}
@@ -655,6 +642,29 @@ const styles = StyleSheet.create({
     flex: 1,
     width: '100%',
     height: '100%',
+  },
+  mapPlaceholder: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+    backgroundColor: '#fff',
+  },
+  mapIcon: {
+    fontSize: 48,
+    marginBottom: 10,
+  },
+  mapText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 8,
+  },
+  mapSubtext: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    lineHeight: 20,
   },
   statsBar: {
     flexDirection: 'row',
