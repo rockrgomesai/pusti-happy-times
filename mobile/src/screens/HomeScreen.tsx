@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
-import MapView, {Polyline, PROVIDER_GOOGLE} from 'react-native-maps';
+import {WebView} from 'react-native-webview';
 import PustiLogo from '../components/PustiLogo';
 import UserInfoModal from '../components/UserInfoModal';
 import locationService, {LocationPoint} from '../services/locationService';
@@ -48,6 +48,7 @@ const HomeScreen = ({navigation, route}: any) => {
   const [isTracking, setIsTracking] = useState(false);
   const [showTrackingDrawer, setShowTrackingDrawer] = useState(false);
   const slideAnim = useRef(new Animated.Value(width)).current;
+  const webViewRef = useRef<any>(null);
   const [currentLocation, setCurrentLocation] = useState<[number, number]>([90.4125, 23.8103]);
   const [routeCoordinates, setRouteCoordinates] = useState<number[][]>([]);
   const [distance, setDistance] = useState<number>(0);
@@ -227,6 +228,15 @@ const HomeScreen = ({navigation, route}: any) => {
           setCurrentLocation([point.longitude, point.latitude]);
           const points = locationService.getLocationPoints();
           setRouteCoordinates(points.map(p => [p.longitude, p.latitude]));
+          
+          // Update WebView map
+          if (webViewRef.current) {
+            webViewRef.current.postMessage(JSON.stringify({
+              type: 'updateLocation',
+              lat: point.latitude,
+              lng: point.longitude
+            }));
+          }
         });
 
         // Update stats every second
@@ -359,30 +369,91 @@ const HomeScreen = ({navigation, route}: any) => {
 
             {/* Map View */}
             <View style={styles.mapContainer}>
-              <MapView
-                provider={PROVIDER_GOOGLE}
-                style={styles.map}
-                initialRegion={{
-                  latitude: currentLocation[1],
-                  longitude: currentLocation[0],
-                  latitudeDelta: 0.01,
-                  longitudeDelta: 0.01,
+              <WebView
+                ref={webViewRef}
+                source={{
+                  html: `
+                    <!DOCTYPE html>
+                    <html>
+                      <head>
+                        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                        <style>
+                          body, html { margin: 0; padding: 0; height: 100%; }
+                          #map { height: 100%; width: 100%; }
+                        </style>
+                      </head>
+                      <body>
+                        <div id="map"></div>
+                        <script>
+                          let map, marker, polyline;
+                          const routeCoordinates = [];
+                          
+                          function initMap() {
+                            const defaultLocation = {lat: ${currentLocation[1]}, lng: ${currentLocation[0]}};
+                            map = new google.maps.Map(document.getElementById('map'), {
+                              center: defaultLocation,
+                              zoom: 15,
+                              mapTypeControl: false
+                            });
+                            
+                            marker = new google.maps.Marker({
+                              position: defaultLocation,
+                              map: map,
+                              icon: {
+                                path: google.maps.SymbolPath.CIRCLE,
+                                scale: 8,
+                                fillColor: '#4285F4',
+                                fillOpacity: 1,
+                                strokeColor: '#ffffff',
+                                strokeWeight: 2
+                              }
+                            });
+                            
+                            polyline = new google.maps.Polyline({
+                              path: [],
+                              geodesic: true,
+                              strokeColor: '#4CAF50',
+                              strokeOpacity: 1.0,
+                              strokeWeight: 4,
+                              map: map
+                            });
+                          }
+                          
+                          function updateLocation(lat, lng) {
+                            const newPos = {lat: lat, lng: lng};
+                            marker.setPosition(newPos);
+                            map.panTo(newPos);
+                            routeCoordinates.push(newPos);
+                            polyline.setPath(routeCoordinates);
+                          }
+                          
+                          window.addEventListener('message', (event) => {
+                            try {
+                              const data = JSON.parse(event.data);
+                              if (data.type === 'updateLocation') {
+                                updateLocation(data.lat, data.lng);
+                              }
+                            } catch(e) {}
+                          });
+                          
+                          document.addEventListener('message', (event) => {
+                            try {
+                              const data = JSON.parse(event.data);
+                              if (data.type === 'updateLocation') {
+                                updateLocation(data.lat, data.lng);
+                              }
+                            } catch(e) {}
+                          });
+                        </script>
+                        <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&callback=initMap" async defer></script>
+                      </body>
+                    </html>
+                  `,
                 }}
-                showsUserLocation={true}
-                showsMyLocationButton={true}
-                zoomEnabled={true}
-                scrollEnabled={true}>
-                {routeCoordinates.length > 1 && (
-                  <Polyline
-                    coordinates={routeCoordinates.map(coord => ({
-                      latitude: coord[1],
-                      longitude: coord[0],
-                    }))}
-                    strokeColor="#4CAF50"
-                    strokeWidth={4}
-                  />
-                )}
-              </MapView>
+                style={styles.map}
+                javaScriptEnabled={true}
+                domStorageEnabled={true}
+              />
             </View>
 
             {/* Stats Bar */}
