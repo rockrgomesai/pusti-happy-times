@@ -389,7 +389,7 @@ const HomeScreen = ({navigation, route}: any) => {
                           const routeCoordinates = [];
                           
                           function initMap() {
-                            const defaultLocation = {lat: ${currentLocation[1]}, lng: ${currentLocation[0]}};
+                            const defaultLocation = {lat: 23.8103, lng: 90.4125};
                             map = new google.maps.Map(document.getElementById('map'), {
                               center: defaultLocation,
                               zoom: 15,
