@@ -2,7 +2,7 @@ import React, {useEffect, useState} from 'react';
 import {NavigationContainer} from '@react-navigation/native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
-import {Alert, Text} from 'react-native';
+import {Alert, Text, View, ActivityIndicator} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import LoginScreen from '../screens/LoginScreen';
 import HomeScreen from '../screens/HomeScreen';
@@ -109,7 +109,8 @@ const LogoutIcon = ({color}: {color: string}) => (
 );
 
 const AppNavigator = () => {
-  const [initialRoute, setInitialRoute] = useState<string | null>(null);
+  const [initialRoute, setInitialRoute] = useState<string>('Login');
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     checkAuth();
@@ -121,11 +122,17 @@ const AppNavigator = () => {
       setInitialRoute(token ? 'MainApp' : 'Login');
     } catch (error) {
       setInitialRoute('Login');
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  if (!initialRoute) {
-    return null; // Loading state
+  if (isLoading) {
+    return (
+      <View style={{flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff'}}>
+        <ActivityIndicator size="large" color="#4CAF50" />
+      </View>
+    );
   }
 
   return (
