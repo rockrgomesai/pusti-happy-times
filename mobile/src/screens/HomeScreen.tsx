@@ -105,6 +105,9 @@ const HomeScreen = ({navigation, route}: any) => {
           data: user,
           userId: user.username,
         });
+        
+        // Set loading to false now so UI shows
+        setLoading(false);
       }
       
       // Then try to fetch full profile from backend
