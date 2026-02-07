@@ -46,6 +46,7 @@ import {
   Typography,
 } from '@mui/material';
 import type { SelectChangeEvent } from '@mui/material/Select';
+import Autocomplete from '@mui/material/Autocomplete';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
@@ -370,12 +371,13 @@ const fetchDistributors = async (): Promise<Distributor[]> => {
   }
 };
 
-const fetchDbPoints = async (): Promise<TerritoryOption[]> => {
+const fetchDbPoints = async (searchTerm = ''): Promise<TerritoryOption[]> => {
   try {
     const response = await api.get('/territories', {
       params: {
         type: 'db_point',
-        limit: 100000,
+        search: searchTerm || undefined,
+        limit: searchTerm ? 50 : 100000,
         includeInactive: true,
       },
     });
@@ -403,16 +405,20 @@ const fetchDbPoints = async (): Promise<TerritoryOption[]> => {
       .filter((entry): entry is TerritoryOption => Boolean(entry));
   } catch (error) {
     console.error('Failed to load DB points', error);
-    toast.error('Failed to load DB points');
+    // Only show toast error if user was actually searching
+    if (searchTerm && searchTerm.trim()) {
+      toast.error('Failed to load DB points');
+    }
     return [];
   }
 };
 
-const fetchDepots = async (): Promise<DepotOption[]> => {
+const fetchDepots = async (searchTerm = ''): Promise<DepotOption[]> => {
   try {
     const response = await api.get('/facilities/depots', {
       params: {
-        limit: 100000,
+        search: searchTerm || undefined,
+        limit: searchTerm ? 50 : 100000, // Limit results when searching
       },
     });
 
@@ -431,7 +437,10 @@ const fetchDepots = async (): Promise<DepotOption[]> => {
       .filter((entry): entry is DepotOption => Boolean(entry));
   } catch (error) {
     console.error('Failed to load depots', error);
-    toast.error('Failed to load depots');
+    // Only show toast error if user was actually searching
+    if (searchTerm && searchTerm.trim()) {
+      toast.error('Failed to load depots');
+    }
     return [];
   }
 };
@@ -575,8 +584,18 @@ const DistributorsPage: React.FC = () => {
   const [visibleColumnIds, setVisibleColumnIds] = useState<DistributorColumnId[]>(DEFAULT_VISIBLE_COLUMNS);
   const [persistedColumnIds, setPersistedColumnIds] = useState<DistributorColumnId[]>(DEFAULT_VISIBLE_COLUMNS);
   const columnStateHydratedRef = useRef(false);
+  const dbPointSearchTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const depotSearchTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const dbPointSearchInputRef = useRef<HTMLInputElement | null>(null);
+  const depotSearchInputRef = useRef<HTMLInputElement | null>(null);
   const [dbPointOptions, setDbPointOptions] = useState<TerritoryOption[]>([]);
+  const [dbPointSearchLoading, setDbPointSearchLoading] = useState(false);
+  const [dbPointSearchTerm, setDbPointSearchTerm] = useState('');
+  const [dbPointOpen, setDbPointOpen] = useState(false);
   const [depotOptions, setDepotOptions] = useState<DepotOption[]>([]);
+  const [depotSearchLoading, setDepotSearchLoading] = useState(false);
+  const [depotSearchTerm, setDepotSearchTerm] = useState('');
+  const [depotOpen, setDepotOpen] = useState(false);
   const [productOptions, setProductOptions] = useState<ProductOption[]>([]);
   const [formError, setFormError] = useState<string | null>(null);
 
@@ -1381,32 +1400,117 @@ const DistributorsPage: React.FC = () => {
                   />
                 </Box>
                 <Box sx={{ minWidth: 0 }}>
-                  <FormControl fullWidth error={Boolean(errors.db_point_id)}>
-                    <InputLabel id="db-point-label">DB Point</InputLabel>
-                    <Controller
-                      name="db_point_id"
-                      control={control}
-                      render={({ field }) => (
-                        <Select
-                          {...field}
-                          labelId="db-point-label"
-                          label="DB Point"
-                          value={field.value ?? ''}
-                          onChange={(event: SelectChangeEvent<string>) => field.onChange(event.target.value)}
-                        >
-                          <MenuItem value="">
-                            <em>None</em>
-                          </MenuItem>
-                          {dbPointOptions.map((option) => (
-                            <MenuItem key={option.value} value={option.value}>
+                  <Controller
+                    name="db_point_id"
+                    control={control}
+                    render={({ field }) => {
+                      const selectedOption = dbPointOptions.find(opt => opt.value === field.value);
+                      
+                      const handleDbPointSearch = (searchValue: string) => {
+                        setDbPointSearchTerm(searchValue);
+                        
+                        // Clear previous timer
+                        if (dbPointSearchTimerRef.current) {
+                          clearTimeout(dbPointSearchTimerRef.current);
+                        }
+                        
+                        // Clear options if search is empty
+                        const trimmedInput = searchValue?.trim();
+                        if (!trimmedInput) {
+                          setDbPointOptions([]);
+                          return;
+                        }
+                        
+                        dbPointSearchTimerRef.current = setTimeout(async () => {
+                          setDbPointSearchLoading(true);
+                          const results = await fetchDbPoints(trimmedInput);
+                          setDbPointOptions(results);
+                          setDbPointSearchLoading(false);
+                        }, 300);
+                      };
+                      
+                      return (
+                        <Autocomplete
+                          open={dbPointOpen}
+                          onOpen={() => setDbPointOpen(true)}
+                          onClose={(_, reason) => {
+                            // Don't close when clicking inside the listbox
+                            if (reason === 'toggleInput' || reason === 'escape') {
+                              setDbPointOpen(false);
+                            }
+                          }}
+                          value={selectedOption || null}
+                          onChange={(_, newValue) => {
+                            field.onChange(newValue?.value || '');
+                            setDbPointOpen(false);
+                          }}
+                          options={dbPointOptions}
+                          getOptionLabel={(option) => option.label}
+                          isOptionEqualToValue={(option, value) => option.value === value.value}
+                          loading={dbPointSearchLoading}
+                          disableCloseOnSelect={false}
+                          ListboxProps={{
+                            style: { maxHeight: '300px' },
+                            onMouseDown: (e) => e.preventDefault(),
+                          }}
+                          renderInput={(params) => (
+                            <TextField
+                              {...params}
+                              label="DB Point"
+                              error={Boolean(errors.db_point_id)}
+                              helperText={errors.db_point_id?.message}
+                              onClick={() => setDbPointOpen(true)}
+                              InputProps={{
+                                ...params.InputProps,
+                                readOnly: true,
+                              }}
+                              inputProps={{
+                                ...params.inputProps,
+                                readOnly: true,
+                              }}
+                            />
+                          )}
+                          componentsProps={{
+                            popper: {
+                              modifiers: [
+                                {
+                                  name: 'flip',
+                                  enabled: false,
+                                },
+                              ],
+                            },
+                          }}
+                          PaperComponent={({ children }) => (
+                            <Paper sx={{ mt: 1 }}>
+                              <Box 
+                                sx={{ p: 1, borderBottom: '1px solid #e0e0e0', bgcolor: 'background.paper' }}
+                              >
+                                <TextField
+                                  inputRef={dbPointSearchInputRef}
+                                  size="small"
+                                  fullWidth
+                                  placeholder="Search DB Points..."
+                                  value={dbPointSearchTerm}
+                                  onChange={(e) => handleDbPointSearch(e.target.value)}
+                                  onMouseDown={(e) => e.stopPropagation()}
+                                  autoFocus
+                                  InputProps={{
+                                    endAdornment: dbPointSearchLoading ? <span style={{ fontSize: '12px' }}>Loading...</span> : null
+                                  }}
+                                />
+                              </Box>
+                              {children}
+                            </Paper>
+                          )}
+                          renderOption={(props, option) => (
+                            <li {...props} key={option.value}>
                               {option.label}
-                            </MenuItem>
-                          ))}
-                        </Select>
-                      )}
-                    />
-                    <FormHelperText>{errors.db_point_id?.message}</FormHelperText>
-                  </FormControl>
+                            </li>
+                          )}
+                        />
+                      );
+                    }}
+                  />
                 </Box>
                 <Box sx={{ minWidth: 0 }}>
                   <FormControl fullWidth error={Boolean(errors.product_segment)}>
@@ -1580,31 +1684,115 @@ const DistributorsPage: React.FC = () => {
                   />
                 </Box>
                 <Box sx={{ minWidth: 0 }}>
-                  <FormControl fullWidth>
-                    <InputLabel id="depot-label">Delivery Depot</InputLabel>
-                    <Controller
-                      name="delivery_depot_id"
-                      control={control}
-                      render={({ field }) => (
-                        <Select
-                          {...field}
-                          labelId="depot-label"
-                          label="Delivery Depot"
-                          value={field.value ?? ''}
-                          onChange={(event: SelectChangeEvent<string>) => field.onChange(event.target.value)}
-                        >
-                          <MenuItem value="">
-                            <em>None</em>
-                          </MenuItem>
-                          {depotOptions.map((option) => (
-                            <MenuItem key={option.value} value={option.value}>
+                  <Controller
+                    name="delivery_depot_id"
+                    control={control}
+                    render={({ field }) => {
+                      const selectedOption = depotOptions.find(opt => opt.value === field.value);
+                      
+                      const handleDepotSearch = (searchValue: string) => {
+                        setDepotSearchTerm(searchValue);
+                        
+                        // Clear previous timer
+                        if (depotSearchTimerRef.current) {
+                          clearTimeout(depotSearchTimerRef.current);
+                        }
+                        
+                        // Clear options if search is empty
+                        const trimmedInput = searchValue?.trim();
+                        if (!trimmedInput) {
+                          setDepotOptions([]);
+                          return;
+                        }
+                        
+                        depotSearchTimerRef.current = setTimeout(async () => {
+                          setDepotSearchLoading(true);
+                          const results = await fetchDepots(trimmedInput);
+                          setDepotOptions(results);
+                          setDepotSearchLoading(false);
+                        }, 300);
+                      };
+                      
+                      return (
+                        <Autocomplete
+                          open={depotOpen}
+                          onOpen={() => setDepotOpen(true)}
+                          onClose={(_, reason) => {
+                            // Don't close when clicking inside the listbox
+                            if (reason === 'toggleInput' || reason === 'escape') {
+                              setDepotOpen(false);
+                            }
+                          }}
+                          value={selectedOption || null}
+                          onChange={(_, newValue) => {
+                            field.onChange(newValue?.value || '');
+                            setDepotOpen(false);
+                          }}
+                          options={depotOptions}
+                          getOptionLabel={(option) => option.label}
+                          isOptionEqualToValue={(option, value) => option.value === value.value}
+                          loading={depotSearchLoading}
+                          disableCloseOnSelect={false}
+                          ListboxProps={{
+                            style: { maxHeight: '300px' },
+                            onMouseDown: (e) => e.preventDefault(),
+                          }}
+                          renderInput={(params) => (
+                            <TextField
+                              {...params}
+                              label="Delivery Depot"
+                              onClick={() => setDepotOpen(true)}
+                              InputProps={{
+                                ...params.InputProps,
+                                readOnly: true,
+                              }}
+                              inputProps={{
+                                ...params.inputProps,
+                                readOnly: true,
+                              }}
+                            />
+                          )}
+                          componentsProps={{
+                            popper: {
+                              modifiers: [
+                                {
+                                  name: 'flip',
+                                  enabled: false,
+                                },
+                              ],
+                            },
+                          }}
+                          PaperComponent={({ children }) => (
+                            <Paper sx={{ mt: 1 }}>
+                              <Box 
+                                sx={{ p: 1, borderBottom: '1px solid #e0e0e0', bgcolor: 'background.paper' }}
+                              >
+                                <TextField
+                                  inputRef={depotSearchInputRef}
+                                  size="small"
+                                  fullWidth
+                                  placeholder="Search Delivery Depots..."
+                                  value={depotSearchTerm}
+                                  onChange={(e) => handleDepotSearch(e.target.value)}
+                                  onMouseDown={(e) => e.stopPropagation()}
+                                  autoFocus
+                                  InputProps={{
+                                    endAdornment: depotSearchLoading ? <span style={{ fontSize: '12px' }}>Loading...</span> : null
+                                  }}
+                                />
+                              </Box>
+                              {children}
+                            </Paper>
+                          )}
+                          renderOption={(props, option) => (
+                            <li {...props} key={option.value}>
                               {option.label}
-                            </MenuItem>
-                          ))}
-                        </Select>
-                      )}
-                    />
-                  </FormControl>
+                            </li>
+                          )}
+                        />
+                      );
+                    }}
+                  />
                 </Box>
                 <Box sx={{ minWidth: 0 }}>
                   <FormControl fullWidth>
