@@ -18,5 +18,6 @@ module.exports = {
     'react-hooks/exhaustive-deps': 'warn',
     'react/no-unescaped-entities': 'warn',
     'import/no-anonymous-default-export': 'warn',
+    'prefer-const': 'warn',
   },
 };
