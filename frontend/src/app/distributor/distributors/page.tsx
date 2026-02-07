@@ -158,8 +158,13 @@ const distributorFormSchema = z.object({
     .optional()
     .or(z.literal(''))
     .refine(
-      (val) => !val || /^(\+88)?01[3-9]\d{8}$/.test(val),
-      'Invalid mobile number format (e.g., 01XXXXXXXXX)'
+      (val) => {
+        if (!val) return true;
+        // Split by comma or space and validate each number
+        const numbers = val.split(/[,\s]+/).filter(n => n.trim());
+        return numbers.every(num => /^(\+88)?01[3-9]\d{8}$/.test(num.trim()));
+      },
+      'Invalid mobile number format. Use comma or space to separate multiple numbers (e.g., 01XXXXXXXXX, 01XXXXXXXXX)'
     ),
   credit_limit: z.string().min(1, 'Credit limit is required'),
   bank_guarantee: z.string().min(1, 'Bank guarantee is required'),
@@ -176,8 +181,13 @@ const distributorFormSchema = z.object({
     .optional()
     .or(z.literal(''))
     .refine(
-      (val) => !val || /^(\+88)?01[3-9]\d{8}$/.test(val),
-      'Invalid mobile number format (e.g., 01XXXXXXXXX)'
+      (val) => {
+        if (!val) return true;
+        // Split by comma or space and validate each number
+        const numbers = val.split(/[,\s]+/).filter(n => n.trim());
+        return numbers.every(num => /^(\+88)?01[3-9]\d{8}$/.test(num.trim()));
+      },
+      'Invalid mobile number format. Use comma or space to separate multiple numbers (e.g., 01XXXXXXXXX, 01XXXXXXXXX)'
     ),
   unit: z.string().trim().min(1, 'Unit is required'),
   latitude: z.string().optional(),

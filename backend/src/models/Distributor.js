@@ -39,14 +39,21 @@ const normalizePhone = (value) => {
   if (!value) {
     return null;
   }
-  const raw = String(value).replace(/[^\d+]/g, "");
-  if (!raw.length) {
+  // Handle multiple phone numbers separated by comma or space
+  const numbers = String(value).split(/[,\s]+/).filter(n => n.trim());
+  if (!numbers.length) {
     return null;
   }
-  if (raw.startsWith("+")) {
-    return raw;
-  }
-  return `+${raw}`;
+  
+  // Normalize each number
+  const normalized = numbers.map(num => {
+    const raw = num.replace(/[^\d+]/g, "");
+    if (!raw.length) return null;
+    if (raw.startsWith("+")) return raw;
+    return `+${raw}`;
+  }).filter(Boolean);
+  
+  return normalized.length ? normalized.join(", ") : null;
 };
 
 const distributorSchema = new Schema(
@@ -132,8 +139,13 @@ const distributorSchema = new Schema(
       trim: true,
       set: normalizePhone,
       validate: {
-        validator: (value) => !value || /^\+\d{8,15}$/.test(value),
-        message: "Mobile number must follow E.164 format",
+        validator: (value) => {
+          if (!value) return true;
+          // Validate multiple phone numbers separated by comma or space
+          const numbers = value.split(/[,\s]+/).filter(n => n.trim());
+          return numbers.every(num => /^\+\d{8,15}$/.test(num.trim()));
+        },
+        message: "Mobile numbers must follow E.164 format (multiple numbers separated by comma or space)",
       },
       sparse: true,
       index: true,
@@ -192,8 +204,13 @@ const distributorSchema = new Schema(
       trim: true,
       set: normalizePhone,
       validate: {
-        validator: (value) => !value || /^\+\d{8,15}$/.test(value),
-        message: "Emergency mobile must follow E.164 format",
+        validator: (value) => {
+          if (!value) return true;
+          // Validate multiple phone numbers separated by comma or space
+          const numbers = value.split(/[,\s]+/).filter(n => n.trim());
+          return numbers.every(num => /^\+\d{8,15}$/.test(num.trim()));
+        },
+        message: "Emergency mobile numbers must follow E.164 format (multiple numbers separated by comma or space)",
       },
     },
     unit: {
