@@ -47,20 +47,22 @@ const normalizePhone = (value) => {
   
   // Normalize each number
   const normalized = numbers.map(num => {
-    const raw = num.replace(/[^\d+]/g, "");
-    if (!raw.length) return null;
+    // Remove all non-digits first (including any + signs)
+    const digitsOnly = num.replace(/\D/g, "");
+    if (!digitsOnly.length) return null;
     
-    // If already has country code, return as-is
-    if (raw.startsWith("+")) return raw;
+    // If starts with 88 (already has BD country code), add +
+    if (digitsOnly.startsWith("88")) {
+      return `+${digitsOnly}`;
+    }
     
-    // If starts with 88, add + prefix
-    if (raw.startsWith("88")) return `+${raw}`;
+    // If starts with 01 (Bangladesh mobile number), add +88
+    if (digitsOnly.startsWith("01")) {
+      return `+88${digitsOnly}`;
+    }
     
-    // If starts with 01 (Bangladesh mobile), add +88
-    if (raw.startsWith("01")) return `+88${raw}`;
-    
-    // Otherwise add + prefix (for international numbers)
-    return `+${raw}`;
+    // For other international numbers, add + prefix
+    return `+${digitsOnly}`;
   }).filter(Boolean);
   
   return normalized.length ? normalized.join(", ") : null;
