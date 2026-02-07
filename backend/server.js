@@ -139,8 +139,14 @@ const corsOptions = {
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+  exposedHeaders: ["Content-Length", "X-Request-ID"],
+  optionsSuccessStatus: 204,
+  preflightContinue: false,
 };
 app.use(cors(corsOptions));
+
+// Handle OPTIONS requests explicitly for all routes
+app.options("*", cors(corsOptions));
 
 // Body parsing middleware
 app.use(express.json({ limit: "10mb" }));

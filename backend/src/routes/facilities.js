@@ -97,12 +97,33 @@ router.get("/", authenticate, requireApiPermission("facilities:read"), async (re
   }
 });
 
-// GET /api/facilities/depots - list only depots
+// GET /api/facilities/depots - list only depots (with optional search)
 router.get("/depots", authenticate, requireApiPermission("facilities:read"), async (req, res) => {
   try {
-    const depots = await Facility.find({ type: "Depot" })
+    const { search, limit } = req.query;
+    const limitNumber = limit ? parseInt(limit, 10) : undefined;
+
+    // Build query filter
+    const filter = { type: "Depot" };
+    
+    // Add search filter if provided
+    if (search && typeof search === 'string' && search.trim()) {
+      filter.$or = [
+        { name: { $regex: search.trim(), $options: 'i' } },
+        { depot_id: { $regex: search.trim(), $options: 'i' } },
+      ];
+    }
+
+    let query = Facility.find(filter)
       .sort({ name: 1 })
       .select("_id name depot_id location active contact_person contact_mobile");
+    
+    // Apply limit if specified
+    if (limitNumber) {
+      query = query.limit(limitNumber);
+    }
+
+    const depots = await query;
 
     res.json({
       success: true,

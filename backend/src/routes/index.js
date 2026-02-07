@@ -65,6 +65,7 @@ const outletChannelsRoutes = require("./outletChannels");
 const outletMarketSizesRoutes = require("./outletMarketSizes");
 const routeRoutes = require("./routes");
 const outletsRoutes = require("./outlets");
+const trackingRoutes = require("../../routes/tracking");
 
 const router = express.Router();
 
@@ -306,6 +307,14 @@ router.use("/routes", routeRoutes);
  * @access  Private (authenticated users)
  */
 router.use("/outlets", outletsRoutes);
+
+/**
+ * GPS Tracking Routes
+ * @route   /api/tracking/*
+ * @desc    Field officer GPS tracking sessions and location data
+ * @access  Private (authenticated users)
+ */
+router.use("/tracking", trackingRoutes);
 
 /**
  * Facility Management Routes (Unified Depots & Factories)
