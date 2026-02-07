@@ -162,7 +162,11 @@ const distributorFormSchema = z.object({
         if (!val) return true;
         // Split by comma or space and validate each number
         const numbers = val.split(/[,\s]+/).filter(n => n.trim());
-        return numbers.every(num => /^(\+88)?01[3-9]\d{8}$/.test(num.trim()));
+        return numbers.every(num => {
+          const trimmed = num.trim();
+          // Accept BD format: 01XXXXXXXXX or +8801XXXXXXXXX or +88 01XXXXXXXXX
+          return /^(\+?88\s?)?01[3-9]\d{8}$/.test(trimmed);
+        });
       },
       'Invalid mobile number format. Use comma or space to separate multiple numbers (e.g., 01XXXXXXXXX, 01XXXXXXXXX)'
     ),
@@ -185,7 +189,11 @@ const distributorFormSchema = z.object({
         if (!val) return true;
         // Split by comma or space and validate each number
         const numbers = val.split(/[,\s]+/).filter(n => n.trim());
-        return numbers.every(num => /^(\+88)?01[3-9]\d{8}$/.test(num.trim()));
+        return numbers.every(num => {
+          const trimmed = num.trim();
+          // Accept BD format: 01XXXXXXXXX or +8801XXXXXXXXX or +88 01XXXXXXXXX
+          return /^(\+?88\s?)?01[3-9]\d{8}$/.test(trimmed);
+        });
       },
       'Invalid mobile number format. Use comma or space to separate multiple numbers (e.g., 01XXXXXXXXX, 01XXXXXXXXX)'
     ),

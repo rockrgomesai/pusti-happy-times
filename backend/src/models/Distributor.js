@@ -49,7 +49,17 @@ const normalizePhone = (value) => {
   const normalized = numbers.map(num => {
     const raw = num.replace(/[^\d+]/g, "");
     if (!raw.length) return null;
+    
+    // If already has country code, return as-is
     if (raw.startsWith("+")) return raw;
+    
+    // If starts with 88, add + prefix
+    if (raw.startsWith("88")) return `+${raw}`;
+    
+    // If starts with 01 (Bangladesh mobile), add +88
+    if (raw.startsWith("01")) return `+88${raw}`;
+    
+    // Otherwise add + prefix (for international numbers)
     return `+${raw}`;
   }).filter(Boolean);
   
