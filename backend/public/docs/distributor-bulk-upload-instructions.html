@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Distributor Bulk Upload Instructions</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 20mm;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.4;
+            color: #333;
+            max-width: 210mm;
+            margin: 0 auto;
+            padding: 10mm;
+            font-size: 10pt;
+        }
+        
+        h1 {
+            color: #1976d2;
+            font-size: 18pt;
+            margin-bottom: 10px;
+            border-bottom: 3px solid #1976d2;
+            padding-bottom: 5px;
+        }
+        
+        h2 {
+            color: #424242;
+            font-size: 12pt;
+            margin-top: 12px;
+            margin-bottom: 6px;
+            background: #f5f5f5;
+            padding: 4px 8px;
+        }
+        
+        h3 {
+            color: #616161;
+            font-size: 10pt;
+            margin-top: 8px;
+            margin-bottom: 4px;
+        }
+        
+        ul, ol {
+            margin: 4px 0;
+            padding-left: 20px;
+        }
+        
+        li {
+            margin: 2px 0;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 8px 0;
+            font-size: 9pt;
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            padding: 4px 6px;
+            text-align: left;
+        }
+        
+        th {
+            background-color: #1976d2;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .required {
+            color: #d32f2f;
+            font-weight: bold;
+        }
+        
+        .optional {
+            color: #757575;
+            font-style: italic;
+        }
+        
+        .note {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 6px;
+            margin: 8px 0;
+            font-size: 9pt;
+        }
+        
+        .warning {
+            background: #f8d7da;
+            border-left: 4px solid #dc3545;
+            padding: 6px;
+            margin: 8px 0;
+            font-size: 9pt;
+        }
+        
+        code {
+            background: #f5f5f5;
+            padding: 1px 4px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 9pt;
+        }
+        
+        .steps {
+            counter-reset: step-counter;
+        }
+        
+        .steps li {
+            counter-increment: step-counter;
+            margin: 6px 0;
+        }
+        
+        .steps li::marker {
+            content: "Step " counter(step-counter) ": ";
+            font-weight: bold;
+            color: #1976d2;
+        }
+    </style>
+</head>
+<body>
+    <h1>📊 Distributor Bulk Upload Instructions</h1>
+    
+    <h2>1. Prerequisites</h2>
+    <div class="warning">
+        <strong>⚠️ IMPORTANT:</strong> Before uploading distributors, ensure the following master data exists in the system:
+    </div>
+    <ul>
+        <li><strong>Territories:</strong> All DB Points (Zone → Region → Area → DB Point) must be created</li>
+        <li><strong>Facilities:</strong> All delivery depots/factories must be created</li>
+        <li>Navigate to <strong>Master → Territories</strong> and <strong>Master → Facilities</strong> to verify</li>
+    </ul>
+    
+    <h2>2. Upload Process</h2>
+    <ol class="steps">
+        <li>Click <strong>"Download CSV Template"</strong> button on the Distributors page</li>
+        <li>Open the template in Excel, Google Sheets, or any CSV editor</li>
+        <li>Fill in distributor data following the column specifications below</li>
+        <li>Save the file as CSV format (UTF-8 encoding recommended)</li>
+        <li>Click <strong>"Upload CSV"</strong> button and select your file</li>
+        <li>Review the upload results - any errors will be displayed with row numbers</li>
+    </ol>
+    
+    <h2>3. CSV Column Specifications</h2>
+    
+    <h3>Required Columns <span class="required">*</span></h3>
+    <table>
+        <tr>
+            <th>Column</th>
+            <th>Description</th>
+            <th>Valid Values / Format</th>
+        </tr>
+        <tr>
+            <td><code>name</code></td>
+            <td>Distributor name (must be unique)</td>
+            <td>3-160 characters, no duplicates</td>
+        </tr>
+        <tr>
+            <td><code>db_point_name</code></td>
+            <td>DB Point territory name (exact match)</td>
+            <td>Must exist in Territories with type "DB Point"</td>
+        </tr>
+        <tr>
+            <td><code>product_segments</code></td>
+            <td>Product categories</td>
+            <td><code>BIS</code>, <code>BEV</code>, or <code>BIS,BEV</code> (comma-separated)</td>
+        </tr>
+        <tr>
+            <td><code>distributor_type</code></td>
+            <td>Distributor classification</td>
+            <td>Commission Distributor, General Distributor, Special Distributor, Spot Distributor, Super Distributor</td>
+        </tr>
+        <tr>
+            <td><code>delivery_depot_name</code></td>
+            <td>Delivery facility name (exact match)</td>
+            <td>Must exist in Facilities</td>
+        </tr>
+        <tr>
+            <td><code>unit</code></td>
+            <td>Order unit</td>
+            <td><code>CTN</code> (carton) or <code>PCS</code> (pieces)</td>
+        </tr>
+    </table>
+    
+    <h3>Optional Columns</h3>
+    <table>
+        <tr>
+            <th>Column</th>
+            <th>Description</th>
+            <th>Format / Example</th>
+        </tr>
+        <tr>
+            <td><code>erp_id</code></td>
+            <td>ERP system ID (must be unique)</td>
+            <td>Number: <code>2001</code></td>
+        </tr>
+        <tr>
+            <td><code>mobile</code></td>
+            <td>Contact number(s)</td>
+            <td><code>+8801712345678</code> or <code>01712345678, 01812345678</code></td>
+        </tr>
+        <tr>
+            <td><code>credit_limit</code></td>
+            <td>Credit limit amount</td>
+            <td>Number: <code>500000.00</code></td>
+        </tr>
+        <tr>
+            <td><code>bank_guarantee</code></td>
+            <td>Bank guarantee amount</td>
+            <td>Number: <code>100000.00</code></td>
+        </tr>
+        <tr>
+            <td><code>proprietor</code></td>
+            <td>Owner name</td>
+            <td>Text: <code>Mohammad Rahman</code></td>
+        </tr>
+        <tr>
+            <td><code>proprietor_dob</code></td>
+            <td>Owner date of birth</td>
+            <td>Date: <code>1980-05-15</code> (YYYY-MM-DD)</td>
+        </tr>
+        <tr>
+            <td><code>registration_date</code></td>
+            <td>Business registration date</td>
+            <td>Date: <code>2020-01-10</code> (YYYY-MM-DD)</td>
+        </tr>
+        <tr>
+            <td><code>computer</code></td>
+            <td>Has computer?</td>
+            <td><code>Yes</code> or <code>No</code></td>
+        </tr>
+        <tr>
+            <td><code>printer</code></td>
+            <td>Has printer?</td>
+            <td><code>Yes</code> or <code>No</code></td>
+        </tr>
+        <tr>
+            <td><code>emergency_contact</code></td>
+            <td>Emergency contact person</td>
+            <td>Text: <code>Fatima Rahman</code></td>
+        </tr>
+        <tr>
+            <td><code>emergency_relation</code></td>
+            <td>Relationship</td>
+            <td>Text: <code>Wife</code>, <code>Spouse</code></td>
+        </tr>
+        <tr>
+            <td><code>emergency_mobile</code></td>
+            <td>Emergency contact number</td>
+            <td><code>+8801812345678</code></td>
+        </tr>
+        <tr>
+            <td><code>latitude</code></td>
+            <td>GPS latitude</td>
+            <td>Number: <code>23.8103</code></td>
+        </tr>
+        <tr>
+            <td><code>longitude</code></td>
+            <td>GPS longitude</td>
+            <td>Number: <code>90.4125</code></td>
+        </tr>
+        <tr>
+            <td><code>address</code></td>
+            <td>Physical address</td>
+            <td>Text: <code>House 12, Road 5, Mirpur-10, Dhaka</code></td>
+        </tr>
+        <tr>
+            <td><code>note</code></td>
+            <td>Additional notes</td>
+            <td>Text: <code>Primary distributor for Mirpur area</code></td>
+        </tr>
+    </table>
+    
+    <h2>4. Important Notes</h2>
+    <div class="note">
+        <strong>📝 Tips for Success:</strong>
+        <ul style="margin: 4px 0;">
+            <li><strong>Exact Name Matching:</strong> Territory and facility names must match exactly (case-sensitive)</li>
+            <li><strong>Phone Format:</strong> Use +8801XXXXXXXXX or 01XXXXXXXXX format</li>
+            <li><strong>Multiple Phones:</strong> Separate with commas: <code>01712345678, 01812345678</code></li>
+            <li><strong>Date Format:</strong> Always use YYYY-MM-DD format (e.g., 2020-01-10)</li>
+            <li><strong>Decimals:</strong> Use dot (.) for decimals, not comma: <code>500000.00</code></li>
+            <li><strong>Empty Fields:</strong> Leave optional fields blank if not applicable</li>
+        </ul>
+    </div>
+    
+    <h2>5. Error Handling</h2>
+    <ul>
+        <li>If validation fails, <strong>no distributors</strong> will be created (atomic transaction)</li>
+        <li>Review error messages carefully - they include row numbers and specific issues</li>
+        <li>Fix all errors in your CSV and re-upload the entire file</li>
+        <li>Common errors: duplicate names, invalid territory/facility names, wrong phone format, missing required fields</li>
+    </ul>
+    
+    <div class="note" style="margin-top: 12px;">
+        <strong>🆘 Need Help?</strong> Contact your system administrator or refer to the Master Data modules to verify territory and facility names before uploading.
+    </div>
+</body>
+</html>

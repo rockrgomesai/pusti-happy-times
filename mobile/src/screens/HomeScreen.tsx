@@ -18,12 +18,23 @@ import {WebView} from 'react-native-webview';
 import PustiLogo from '../components/PustiLogo';
 import UserInfoModal from '../components/UserInfoModal';
 import locationService, {LocationPoint} from '../services/locationService';
+import mockLocationService, {MOCK_ROUTES} from '../services/mockLocationService';
+import trackingAPI from '../services/trackingAPI';
+import DeviceInfo from 'react-native-device-info';
+import syncService, { SyncStatus } from '../services/syncService';
+
+// Mock GPS route options
+const MOCK_ROUTE = 'GULSHAN_LOOP'; // Options: GULSHAN_LOOP, DHAKA_COMMUTE, QUICK_TEST
+
+// Location upload configuration
+const UPLOAD_INTERVAL_MS = 2 * 60 * 1000; // 2 minutes
+const UPLOAD_BATCH_SIZE = 20; // Upload when 20 points collected
 
 const traceRouteIcon = require('../assets/images/trace-route.png');
 const {width, height} = Dimensions.get('window');
 
 const API_URL = 'http://10.0.2.2:8080/api/v1';
-const MAPBOX_TOKEN = 'pk.eyJ1Ijoicm9ja3Jnb21lc2FpIiwiYSI6ImNtbDhmOHptNjA2eTAzZm9rMXJqcmE3Y28ifQ.Q2nQrXEFSe7OgwnBjIh5bg';
+// Using OpenStreetMap - No API key needed!
 
 interface UserData {
   username: string;
@@ -47,6 +58,7 @@ const HomeScreen = ({navigation, route}: any) => {
   const [showUserInfoModal, setShowUserInfoModal] = useState(false);
   const [isTracking, setIsTracking] = useState(false);
   const [showTrackingDrawer, setShowTrackingDrawer] = useState(false);
+  const [useMockGPS, setUseMockGPS] = useState(false);
   const slideAnim = useRef(new Animated.Value(width)).current;
   const webViewRef = useRef<any>(null);
   const [currentLocation, setCurrentLocation] = useState<[number, number]>([90.4125, 23.8103]);
@@ -55,9 +67,34 @@ const HomeScreen = ({navigation, route}: any) => {
   const [duration, setDuration] = useState<number>(0);
   const [visits, setVisits] = useState<number>(0);
   const statsInterval = useRef<any>(null);
+  
+  // Tracking API integration state
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const locationBuffer = useRef<LocationPoint[]>([]);
+  const uploadIntervalRef = useRef<any>(null);
+  const lastUploadTime = useRef<number>(Date.now());
+  const lastToggleTime = useRef<number>(0); // Prevent rapid toggle clicks
+  const [syncStatus, setSyncStatus] = useState<SyncStatus>({
+    isOnline: true,
+    queueSize: 0,
+    isSyncing: false,
+  });
 
   useEffect(() => {
     loadUserData();
+    
+    // Get initial real location
+    getRealLocation();
+    
+    // Setup sync status listener
+    const handleSyncStatus = (status: SyncStatus) => {
+      setSyncStatus(status);
+    };
+    syncService.addSyncListener(handleSyncStatus);
+    
+    return () => {
+      syncService.removeSyncListener(handleSyncStatus);
+    };
   }, []);
 
   // Handle route params to open modal
@@ -176,28 +213,236 @@ const HomeScreen = ({navigation, route}: any) => {
     return trackingRoles.includes(userRole);
   };
 
+  // Get real GPS location on page load
+  const getRealLocation = async () => {
+    try {
+      const hasPermission = await locationService.requestLocationPermission();
+      if (hasPermission) {
+        const position = await locationService.getCurrentPosition();
+        console.log('📍 Real location on load:', position);
+        setCurrentLocation([position.longitude, position.latitude]);
+        
+        // Update map to center on real location
+        if (webViewRef.current) {
+          webViewRef.current.postMessage(JSON.stringify({
+            type: 'updateLocation',
+            lat: position.latitude,
+            lng: position.longitude
+          }));
+        }
+      }
+    } catch (error) {
+      console.log('Could not get real location:', error);
+      // Keep default Dhaka center location
+    }
+  };
+
+  // Upload buffered locations to backend
+  const uploadLocationBatch = async () => {
+    if (!sessionId || locationBuffer.current.length === 0) {
+      return;
+    }
+
+    const pointsToUpload = [...locationBuffer.current];
+    locationBuffer.current = []; // Clear buffer
+    lastUploadTime.current = Date.now();
+
+    try {
+      console.log(`📤 Uploading ${pointsToUpload.length} location points...`);
+      const response = await trackingAPI.uploadLocations(sessionId, pointsToUpload);
+      console.log('✅ Upload successful:', response);
+    } catch (error) {
+      console.error('❌ Failed to upload locations:', error);
+      
+      // Add to offline sync queue
+      await syncService.addToQueue({
+        type: 'upload_locations',
+        priority: 2,
+        endpoint: `/tracking/sessions/${sessionId}/locations/batch`,
+        method: 'POST',
+        data: {
+          sessionId,
+          locations: pointsToUpload,
+        },
+      });
+      
+      console.log('📦 Added to offline queue for retry');
+    }
+  };
+
+  // Buffer location and upload when threshold is reached
+  const bufferAndUploadLocation = async (point: LocationPoint) => {
+    locationBuffer.current.push(point);
+    
+    const bufferSize = locationBuffer.current.length;
+    const timeSinceLastUpload = Date.now() - lastUploadTime.current;
+    
+    // Upload if buffer is full OR 2 minutes have passed
+    if (bufferSize >= UPLOAD_BATCH_SIZE || timeSinceLastUpload >= UPLOAD_INTERVAL_MS) {
+      await uploadLocationBatch();
+    }
+  };
+
   const handleTrackToggle = async () => {
     console.log('=== handleTrackToggle called ===');
     console.log('Current isTracking state:', isTracking);
     
+    // Prevent rapid toggling (debounce 2 seconds)
+    const now = Date.now();
+    if (lastToggleTime.current && now - lastToggleTime.current < 2000) {
+      console.log('⚠️ Toggle blocked - too soon after last toggle (debounce)');
+      return;
+    }
+    lastToggleTime.current = now;
+    
     try {
       if (isTracking) {
-        // Stop tracking
-        const points = locationService.stopTracking();
+        // Stop tracking - upload remaining buffer and close session
+        console.log('Stopping tracking...');
+        
+        if (useMockGPS) {
+          mockLocationService.stopMockTracking();
+          console.log('🧪 Mock tracking stopped');
+          setUseMockGPS(false);
+        } else {
+          locationService.stopTracking();
+        }
+        
         if (statsInterval.current) {
           clearInterval(statsInterval.current);
           statsInterval.current = null;
         }
-        setIsTracking(false);
         
-        Alert.alert(
-          'Tracking Stopped',
-          `Route saved with ${points.length} points.\nDistance: ${distance.toFixed(2)} km\nDuration: ${locationService.formatDuration(duration)}`,
-          [{text: 'OK', onPress: () => setShowTrackingDrawer(false)}]
-        );
+        if (uploadIntervalRef.current) {
+          clearInterval(uploadIntervalRef.current);
+          uploadIntervalRef.current = null;
+        }
+        
+        // Upload any remaining buffered locations
+        if (sessionId && locationBuffer.current.length > 0) {
+          await uploadLocationBatch();
+        }
+        
+        // Stop the session on backend
+        if (sessionId) {
+          try {
+            const stopResponse = await trackingAPI.stopSession(sessionId);
+            console.log('✅ Session stopped:', stopResponse);
+            console.log('📊 Response structure:', JSON.stringify(stopResponse, null, 2));
+            
+            // Safely access nested data
+            const sessionData = stopResponse.data || stopResponse;
+            const distance = sessionData.total_distance_km || 0;
+            const duration = sessionData.total_duration_seconds || 0;
+            const points = sessionData.total_points || 0;
+            
+            Alert.alert(
+              'Tracking Stopped',
+              `Route saved successfully!\n\nDistance: ${distance.toFixed(2)} km\nDuration: ${locationService.formatDuration(duration)}\nPoints recorded: ${points}`,
+              [{text: 'OK', onPress: () => setShowTrackingDrawer(false)}]
+            );
+          } catch (error: any) {
+            console.error('❌ Failed to stop session:', error);
+            console.error('❌ Error details:', JSON.stringify(error.response?.data || error.message, null, 2));
+            Alert.alert('Warning', 'Tracking stopped locally but failed to sync with server.');
+          }
+        }
+        
+        setIsTracking(false);
+        setSessionId(null);
+        locationBuffer.current = [];
       } else {
         console.log('Starting tracking...');
         
+        // Get device info
+        const deviceInfo = {
+          device_model: await DeviceInfo.getModel(),
+          os_version: await DeviceInfo.getSystemVersion(),
+          app_version: await DeviceInfo.getVersion(),
+        };
+        
+        // Start tracking session on backend
+        try {
+          const sessionResponse = await trackingAPI.startSession(deviceInfo);
+          console.log('✅ Session started:', sessionResponse);
+          setSessionId(sessionResponse.session_id);
+          lastUploadTime.current = Date.now();
+        } catch (error: any) {
+          console.error('❌ Failed to start session:', error);
+          console.log('📋 Error response data:', JSON.stringify(error.response?.data, null, 2));
+          
+          // Check if there's already an active session
+          if (error.response?.data?.data?.session_id) {
+            console.log('⚠️ Reusing existing active session:', error.response.data.data.session_id);
+            setSessionId(error.response.data.data.session_id);
+            lastUploadTime.current = Date.now();
+          } else {
+            // User-friendly error messages
+            let errorMessage = 'Could not start tracking session.';
+            
+            if (error.response?.status === 403 || error.response?.data?.message?.includes('employee')) {
+              errorMessage = 'Tracking is only available for field officers (SO, DSR). Please login with an employee account.';
+            } else if (error.code === 'ECONNREFUSED' || error.code === 'ERR_NETWORK') {
+              errorMessage = 'Cannot connect to server. Please check your internet connection.';
+            } else if (error.response?.status === 401) {
+              errorMessage = 'Session expired. Please login again.';
+            } else if (error.response?.data?.message) {
+              errorMessage = error.response.data.message;
+            }
+            
+            Alert.alert('Error', errorMessage);
+            return;
+          }
+        }
+        
+        // 🧪 Mock GPS Mode for Testing
+        if (useMockGPS) {
+          console.log('🧪 MOCK GPS MODE ENABLED');
+          console.log(`📍 Using route: ${MOCK_ROUTE}`);
+          
+          setRouteCoordinates([]);
+          setDistance(0);
+          setDuration(0);
+          setVisits(0);
+          setIsTracking(true);
+          setShowTrackingDrawer(true);
+          
+          // Start mock tracking
+          mockLocationService.startMockTracking(MOCK_ROUTE as keyof typeof MOCK_ROUTES, async (point: LocationPoint) => {
+            console.log('🧪 Mock location update:', point);
+            setCurrentLocation([point.longitude, point.latitude]);
+            
+            // Manually add to route (since we're not using real locationService)
+            setRouteCoordinates(prev => [...prev, [point.longitude, point.latitude]]);
+            
+            // Buffer and upload to backend
+            await bufferAndUploadLocation(point);
+            
+            // Update WebView map
+            if (webViewRef.current) {
+              webViewRef.current.postMessage(JSON.stringify({
+                type: 'updateLocation',
+                lat: point.latitude,
+                lng: point.longitude
+              }));
+            }
+          });
+          
+          // Mock stats updates
+          statsInterval.current = setInterval(() => {
+            setDistance(prev => prev + 0.05); // Simulate distance increase
+            setDuration(prev => prev + 1);
+          }, 1000);
+          
+          // Set up interval to force upload every 2 minutes
+          uploadIntervalRef.current = setInterval(async () => {
+            await uploadLocationBatch();
+          }, UPLOAD_INTERVAL_MS);
+          
+          return;
+        }
+        
+        // Real GPS tracking
         // Request permission and start tracking
         const hasPermission = await locationService.requestLocationPermission();
         console.log('Permission granted:', hasPermission);
@@ -226,11 +471,14 @@ const HomeScreen = ({navigation, route}: any) => {
         setShowTrackingDrawer(true);
 
         console.log('Starting location tracking service...');
-        locationService.startTracking((point: LocationPoint) => {
+        locationService.startTracking(async (point: LocationPoint) => {
           console.log('Location update:', point);
           setCurrentLocation([point.longitude, point.latitude]);
           const points = locationService.getLocationPoints();
           setRouteCoordinates(points.map(p => [p.longitude, p.latitude]));
+          
+          // Buffer and upload to backend
+          await bufferAndUploadLocation(point);
           
           // Update WebView map
           if (webViewRef.current) {
@@ -247,6 +495,11 @@ const HomeScreen = ({navigation, route}: any) => {
           setDistance(locationService.calculateDistance());
           setDuration(locationService.getDuration());
         }, 1000);
+        
+        // Set up interval to force upload every 2 minutes
+        uploadIntervalRef.current = setInterval(async () => {
+          await uploadLocationBatch();
+        }, UPLOAD_INTERVAL_MS);
       }
     } catch (error) {
       console.error('Error in handleTrackToggle:', error);
@@ -262,6 +515,9 @@ const HomeScreen = ({navigation, route}: any) => {
       }
       if (statsInterval.current) {
         clearInterval(statsInterval.current);
+      }
+      if (uploadIntervalRef.current) {
+        clearInterval(uploadIntervalRef.current);
       }
     };
   }, []);
@@ -370,7 +626,7 @@ const HomeScreen = ({navigation, route}: any) => {
               </View>
             </View>
 
-            {/* Map View */}
+            {/* Map View - OpenStreetMap with Leaflet.js */}
             <View style={styles.mapContainer}>
               <WebView
                 ref={webViewRef}
@@ -380,6 +636,7 @@ const HomeScreen = ({navigation, route}: any) => {
                     <html>
                       <head>
                         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
                         <style>
                           body, html { margin: 0; padding: 0; height: 100%; }
                           #map { height: 100%; width: 100%; }
@@ -387,47 +644,48 @@ const HomeScreen = ({navigation, route}: any) => {
                       </head>
                       <body>
                         <div id="map"></div>
+                        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
                         <script>
                           let map, marker, polyline;
                           const routeCoordinates = [];
                           
+                          // Initialize OpenStreetMap with Leaflet
                           function initMap() {
-                            const defaultLocation = {lat: 23.8103, lng: 90.4125};
-                            map = new google.maps.Map(document.getElementById('map'), {
-                              center: defaultLocation,
-                              zoom: 15,
-                              mapTypeControl: false
-                            });
+                            const defaultLocation = [23.8103, 90.4125]; // [lat, lng]
                             
-                            marker = new google.maps.Marker({
-                              position: defaultLocation,
-                              map: map,
-                              icon: {
-                                path: google.maps.SymbolPath.CIRCLE,
-                                scale: 8,
-                                fillColor: '#4285F4',
-                                fillOpacity: 1,
-                                strokeColor: '#ffffff',
-                                strokeWeight: 2
-                              }
-                            });
+                            // Create map with OpenStreetMap tiles (100% FREE)
+                            map = L.map('map').setView(defaultLocation, 15);
                             
-                            polyline = new google.maps.Polyline({
-                              path: [],
-                              geodesic: true,
-                              strokeColor: '#4CAF50',
-                              strokeOpacity: 1.0,
-                              strokeWeight: 4,
-                              map: map
-                            });
+                            // Add OpenStreetMap tile layer - NO API KEY NEEDED!
+                            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                              attribution: '© OpenStreetMap contributors',
+                              maxZoom: 19
+                            }).addTo(map);
+                            
+                            // Create custom blue circle marker
+                            marker = L.circleMarker(defaultLocation, {
+                              radius: 8,
+                              fillColor: '#4285F4',
+                              color: '#ffffff',
+                              weight: 2,
+                              opacity: 1,
+                              fillOpacity: 1
+                            }).addTo(map);
+                            
+                            // Create polyline for route tracking
+                            polyline = L.polyline([], {
+                              color: '#4CAF50',
+                              weight: 4,
+                              opacity: 1.0
+                            }).addTo(map);
                           }
                           
                           function updateLocation(lat, lng) {
-                            const newPos = {lat: lat, lng: lng};
-                            marker.setPosition(newPos);
+                            const newPos = [lat, lng];
+                            marker.setLatLng(newPos);
                             map.panTo(newPos);
                             routeCoordinates.push(newPos);
-                            polyline.setPath(routeCoordinates);
+                            polyline.setLatLngs(routeCoordinates);
                           }
                           
                           window.addEventListener('message', (event) => {
@@ -447,8 +705,10 @@ const HomeScreen = ({navigation, route}: any) => {
                               }
                             } catch(e) {}
                           });
+                          
+                          // Initialize map when page loads
+                          window.onload = initMap;
                         </script>
-                        <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&callback=initMap" async defer></script>
                       </body>
                     </html>
                   `,
@@ -491,6 +751,26 @@ const HomeScreen = ({navigation, route}: any) => {
                   {isTracking ? 'Stop Tracking' : 'Start Tracking'}
                 </Text>
               </TouchableOpacity>
+              
+              {/* Mock GPS Test Button */}
+              {!isTracking && (
+                <TouchableOpacity
+                  style={[styles.mockGPSButton, useMockGPS && styles.mockGPSButtonActive]}
+                  onPress={() => {
+                    setUseMockGPS(!useMockGPS);
+                    Alert.alert(
+                      useMockGPS ? 'Real GPS' : 'Mock GPS Enabled',
+                      useMockGPS 
+                        ? 'Switched to real GPS tracking' 
+                        : `Mock GPS enabled. Press "Start Tracking" to begin simulated route: ${MOCK_ROUTE}`
+                    );
+                  }}>
+                  <Text style={styles.mockGPSIcon}>🧪</Text>
+                  <Text style={styles.mockGPSText}>
+                    {useMockGPS ? 'Using Mock GPS' : 'Test Mock GPS'}
+                  </Text>
+                </TouchableOpacity>
+              )}
             </View>
           </Animated.View>
         </View>
@@ -721,7 +1001,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   mapContainer: {
-    flex: 1,
+    height: height * 0.5, // Fixed height instead of flex: 1
     backgroundColor: '#f0f0f0',
   },
   map: {
@@ -781,6 +1061,30 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     color: '#fff',
+  },
+  mockGPSButton: {
+    backgroundColor: '#f0f0f0',
+    borderRadius: 12,
+    padding: 15,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 10,
+    borderWidth: 2,
+    borderColor: '#e0e0e0',
+  },
+  mockGPSButtonActive: {
+    backgroundColor: '#FFF3E0',
+    borderColor: '#FF9800',
+  },
+  mockGPSIcon: {
+    fontSize: 20,
+  },
+  mockGPSText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#666',
   },
 });
 

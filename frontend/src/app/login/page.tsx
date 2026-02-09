@@ -65,12 +65,14 @@ export default function LoginPage() {
   const onSubmit = async (data: LoginFormData) => {
     try {
       setIsLoading(true);
+      console.log('🔐 Login form submitted:', data);
       const username = data.username.trim().toLowerCase();
       const password = data.password.trim();
+      console.log('🔐 Calling login with:', { username, passwordLength: password.length });
       await login(username, password);
       // Navigation is handled in the AuthContext login function
     } catch (error) {
-      console.error('Login failed:', error);
+      console.error('🔐 Login failed:', error);
       // Toast is handled centrally in AuthContext/api; avoid double toasts here
     } finally {
       setIsLoading(false);

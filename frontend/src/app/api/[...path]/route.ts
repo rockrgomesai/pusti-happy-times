@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:5000';
+const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:8080';
 
 export async function GET(
   request: NextRequest,
@@ -47,6 +47,8 @@ async function proxyRequest(
     const url = new URL(request.url);
     const backendUrl = `${BACKEND_URL}/api/${path}${url.search}`;
 
+    console.log(`[Proxy] ${method} ${path} -> ${backendUrl}`);
+
     // Get request body for POST/PUT/PATCH
     let body = undefined;
     if (['POST', 'PUT', 'PATCH'].includes(method)) {
@@ -73,14 +75,23 @@ async function proxyRequest(
       credentials: 'include',
     });
 
+    console.log(`[Proxy] Response status: ${response.status}`);
+
     // Get response body
     const responseBody = await response.text();
 
     // Forward response headers
     const responseHeaders = new Headers();
     response.headers.forEach((value, key) => {
+      // Forward all headers including cookies
       responseHeaders.set(key, value);
     });
+
+    // Ensure CORS headers are set
+    responseHeaders.set('Access-Control-Allow-Origin', request.headers.get('origin') || '*');
+    responseHeaders.set('Access-Control-Allow-Credentials', 'true');
+    responseHeaders.set('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+    responseHeaders.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
     // Return proxied response
     return new NextResponse(responseBody, {
@@ -89,7 +100,8 @@ async function proxyRequest(
       headers: responseHeaders,
     });
   } catch (error) {
-    console.error('Proxy error:', error);
+    console.error('[Proxy] Error:', error);
+    console.error('[Proxy] Backend URL was:', BACKEND_URL);
     return NextResponse.json(
       { 
         success: false, 

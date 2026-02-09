@@ -6,12 +6,31 @@
 const express = require("express");
 const { body, param, query, validationResult } = require("express-validator");
 const mongoose = require("mongoose");
+const multer = require("multer");
+const path = require("path");
 const Distributor = require("../models/Distributor");
 const Territory = require("../models/Territory");
 const Offer = require("../models/Offer");
 const { requireApiPermission, authenticate } = require("../middleware/auth");
+const { parseCSV, validateHeaders } = require("../utils/csvParser");
+const { REQUIRED_COLUMNS, processBulkUpload } = require("../utils/distributorBulkUpload");
 
 const router = express.Router();
+
+// Configure multer for CSV upload
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype === 'text/csv' || file.originalname.endsWith('.csv')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only CSV files are allowed'));
+    }
+  }
+});
 
 const PRODUCT_SEGMENTS = ["BIS", "BEV"];
 const DISTRIBUTOR_TYPES = [
@@ -347,6 +366,104 @@ router.get(
         success: false,
         message: "Failed to fetch distributors",
         error: error.message,
+      });
+    }
+  }
+);
+
+/**
+ * GET /api/v1/distributors/template
+ * Download CSV template for bulk upload
+ */
+router.get(
+  "/template",
+  authenticate,
+  requireApiPermission("distributors:read"),
+  (req, res) => {
+    console.log("📥 Template download request from user:", req.user?.username);
+    const templatePath = path.join(__dirname, "../../public/templates/distributor-upload-template.csv");
+    res.download(templatePath, "distributor-upload-template.csv", (err) => {
+      if (err) {
+        console.error("Error downloading template:", err);
+        res.status(500).json({
+          success: false,
+          message: "Failed to download template",
+          error: err.message
+        });
+      }
+    });
+  }
+);
+
+/**
+ * POST /api/v1/distributors/bulk-upload
+ * Bulk upload distributors via CSV
+ */
+router.post(
+  "/bulk-upload",
+  authenticate,
+  requireApiPermission("distributors:create"),
+  upload.single("file"),
+  async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({
+          success: false,
+          message: "No file uploaded"
+        });
+      }
+
+      console.log("📤 Processing CSV upload:", req.file.originalname);
+
+      // Parse CSV
+      const rows = await parseCSV(req.file.buffer);
+      
+      if (rows.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: "CSV file is empty"
+        });
+      }
+
+      console.log(`📊 Parsed ${rows.length} rows`);
+
+      // Validate headers
+      const headerValidation = validateHeaders(rows, REQUIRED_COLUMNS);
+      if (!headerValidation.valid) {
+        return res.status(400).json({
+          success: false,
+          message: "Missing required columns",
+          missing: headerValidation.missing,
+          found: headerValidation.headers
+        });
+      }
+
+      // Process bulk upload
+      const userId = req.user?._id;
+      const results = await processBulkUpload(rows, userId);
+
+      console.log(`✅ Upload complete: ${results.successful} created, ${results.failed} failed`);
+
+      if (results.failed > 0) {
+        return res.status(400).json({
+          success: false,
+          message: `Failed to import ${results.failed} distributor(s)`,
+          results
+        });
+      }
+
+      return res.status(201).json({
+        success: true,
+        message: `Successfully imported ${results.successful} distributor(s)`,
+        results
+      });
+
+    } catch (error) {
+      console.error("❌ Bulk upload error:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to process bulk upload",
+        error: error.message
       });
     }
   }

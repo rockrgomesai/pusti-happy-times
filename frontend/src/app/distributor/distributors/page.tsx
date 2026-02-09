@@ -55,6 +55,9 @@ import SearchIcon from '@mui/icons-material/Search';
 import StorefrontIcon from '@mui/icons-material/Storefront';
 import ViewListIcon from '@mui/icons-material/ViewList';
 import ViewModuleIcon from '@mui/icons-material/ViewModule';
+import DownloadIcon from '@mui/icons-material/Download';
+import UploadFileIcon from '@mui/icons-material/UploadFile';
+import DescriptionIcon from '@mui/icons-material/Description';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -616,6 +619,11 @@ const DistributorsPage: React.FC = () => {
   const [depotOpen, setDepotOpen] = useState(false);
   const [productOptions, setProductOptions] = useState<ProductOption[]>([]);
   const [formError, setFormError] = useState<string | null>(null);
+  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
+  const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [uploadLoading, setUploadLoading] = useState(false);
+  const [uploadResults, setUploadResults] = useState<any>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const {
     control,
@@ -859,6 +867,98 @@ const DistributorsPage: React.FC = () => {
       toast.error('Failed to restore distributor');
     }
   }, [loadDistributors, targetDistributor]);
+
+  const handleDownloadTemplate = useCallback(async () => {
+    try {
+      const response = await api.get('/distributors/template', {
+        responseType: 'blob',
+      });
+
+      const blob = new Blob([response.data], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'distributor-upload-template.csv';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      toast.success('Template downloaded');
+    } catch (error: any) {
+      console.error('Download error:', error);
+      toast.error(error?.response?.data?.message || 'Failed to download template');
+    }
+  }, []);
+
+  const handleDownloadInstructions = useCallback(() => {
+    window.open(`${process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '')}/docs/distributor-bulk-upload-instructions.html`, '_blank');
+  }, []);
+
+  const handleUploadClick = useCallback(() => {
+    setUploadDialogOpen(true);
+    setUploadFile(null);
+    setUploadResults(null);
+  }, []);
+
+  const handleFileSelect = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      if (!file.name.endsWith('.csv')) {
+        toast.error('Please select a CSV file');
+        return;
+      }
+      setUploadFile(file);
+      setUploadResults(null);
+    }
+  }, []);
+
+  const handleUploadSubmit = useCallback(async () => {
+    if (!uploadFile) {
+      toast.error('Please select a file');
+      return;
+    }
+
+    try {
+      setUploadLoading(true);
+      setUploadResults(null);
+
+      const formData = new FormData();
+      formData.append('file', uploadFile);
+
+      const response = await api.post('/distributors/bulk-upload', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      if (response.data.success) {
+        toast.success(response.data.message || 'Upload successful');
+        setUploadResults(response.data.results);
+        await loadDistributors();
+      } else {
+        toast.error(response.data.message || 'Upload failed');
+        setUploadResults(response.data.results);
+      }
+    } catch (error: any) {
+      console.error('Upload error:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to upload file';
+      toast.error(errorMessage);
+      if (error.response?.data?.results) {
+        setUploadResults(error.response.data.results);
+      }
+    } finally {
+      setUploadLoading(false);
+    }
+  }, [uploadFile, loadDistributors]);
+
+  const handleUploadDialogClose = useCallback(() => {
+    setUploadDialogOpen(false);
+    setUploadFile(null);
+    setUploadResults(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  }, []);
 
   const filteredDistributors = useMemo(
     () => filterDistributors(distributors, { searchTerm, includeInactive }),
@@ -1242,9 +1342,39 @@ const DistributorsPage: React.FC = () => {
             </Typography>
           </Box>
         </Box>
-        <Button variant="contained" startIcon={<AddIcon />} onClick={handleAddDistributor}>
-          Add Distributor
-        </Button>
+        <Stack direction="row" spacing={1}>
+          <Tooltip title="Download Instructions (PDF)">
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={<DescriptionIcon />}
+              onClick={handleDownloadInstructions}
+            >
+              Instructions
+            </Button>
+          </Tooltip>
+          <Tooltip title="Download CSV Template">
+            <Button
+              variant="outlined"
+              startIcon={<DownloadIcon />}
+              onClick={handleDownloadTemplate}
+            >
+              Download CSV
+            </Button>
+          </Tooltip>
+          <Tooltip title="Upload CSV File">
+            <Button
+              variant="outlined"
+              startIcon={<UploadFileIcon />}
+              onClick={handleUploadClick}
+            >
+              Upload CSV
+            </Button>
+          </Tooltip>
+          <Button variant="contained" startIcon={<AddIcon />} onClick={handleAddDistributor}>
+            Add Distributor
+          </Button>
+        </Stack>
       </Box>
 
       <Box
@@ -2152,6 +2282,118 @@ const DistributorsPage: React.FC = () => {
           >
             Restore
           </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* CSV Upload Dialog */}
+      <Dialog
+        open={uploadDialogOpen}
+        onClose={handleUploadDialogClose}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>Bulk Upload Distributors</DialogTitle>
+        <DialogContent dividers>
+          <Stack spacing={2}>
+            <Alert severity="info">
+              <Typography variant="body2" gutterBottom>
+                <strong>Before uploading:</strong>
+              </Typography>
+              <Typography variant="body2" component="div">
+                <ul style={{ margin: 0, paddingLeft: 20 }}>
+                  <li>Ensure all DB Points (territories) exist in Master  Territories</li>
+                  <li>Ensure all delivery depots/factories exist in Master  Facilities</li>
+                  <li>Download the CSV template and follow the column specifications</li>
+                  <li>Review the instructions document for detailed field requirements</li>
+                </ul>
+              </Typography>
+            </Alert>
+
+            <Box>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".csv"
+                onChange={handleFileSelect}
+                style={{ display: 'none' }}
+                id="csv-upload-input"
+              />
+              <label htmlFor="csv-upload-input">
+                <Button
+                  variant="outlined"
+                  component="span"
+                  startIcon={<UploadFileIcon />}
+                  fullWidth
+                >
+                  {uploadFile ? uploadFile.name : 'Choose CSV File'}
+                </Button>
+              </label>
+            </Box>
+
+            {uploadResults && (
+              <Box>
+                <Typography variant="subtitle2" gutterBottom>
+                  Upload Results:
+                </Typography>
+                <Alert severity={uploadResults.successful > 0 ? 'success' : 'error'}>
+                  <Typography variant="body2">
+                    <strong>Total Rows:</strong> {uploadResults.total}
+                    <br />
+                    <strong>Successful:</strong> {uploadResults.successful}
+                    <br />
+                    <strong>Failed:</strong> {uploadResults.failed}
+                  </Typography>
+                </Alert>
+
+                {uploadResults.errors && uploadResults.errors.length > 0 && (
+                  <Box sx={{ mt: 2, maxHeight: 300, overflow: 'auto' }}>
+                    <Typography variant="subtitle2" color="error" gutterBottom>
+                      Errors:
+                    </Typography>
+                    {uploadResults.errors.map((error: any, index: number) => (
+                      <Alert key={index} severity="error" sx={{ mb: 1 }}>
+                        <Typography variant="body2">
+                          <strong>Row {error.row}:</strong> {error.name}
+                          <br />
+                          {error.errors.map((err: string, i: number) => (
+                            <span key={i}>
+                               {err}
+                              <br />
+                            </span>
+                          ))}
+                        </Typography>
+                      </Alert>
+                    ))}
+                  </Box>
+                )}
+
+                {uploadResults.created && uploadResults.created.length > 0 && (
+                  <Box sx={{ mt: 2 }}>
+                    <Typography variant="subtitle2" color="success.main" gutterBottom>
+                      Successfully Created:
+                    </Typography>
+                    <Typography variant="body2">
+                      {uploadResults.created.map((item: any) => item.name).join(', ')}
+                    </Typography>
+                  </Box>
+                )}
+              </Box>
+            )}
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleUploadDialogClose}>
+            {uploadResults ? 'Close' : 'Cancel'}
+          </Button>
+          {!uploadResults && (
+            <Button
+              onClick={handleUploadSubmit}
+              variant="contained"
+              disabled={!uploadFile || uploadLoading}
+            >
+              {uploadLoading ? 'Uploading...' : 'Upload'}
+            </Button>
+          )}
         </DialogActions>
       </Dialog>
     </Box>

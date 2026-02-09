@@ -164,8 +164,22 @@ if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
+// Serve static files
+const docsDir = path.join(__dirname, "public", "docs");
+const templatesDir = path.join(__dirname, "public", "templates");
+
+if (!fs.existsSync(docsDir)) {
+  fs.mkdirSync(docsDir, { recursive: true });
+}
+
+if (!fs.existsSync(templatesDir)) {
+  fs.mkdirSync(templatesDir, { recursive: true });
+}
+
 app.use("/images", express.static(imagesDir));
 app.use("/uploads", express.static(uploadsDir));
+app.use("/docs", express.static(docsDir));
+app.use("/templates", express.static(templatesDir));
 
 // Data sanitization against NoSQL query injection
 app.use(mongoSanitize());
