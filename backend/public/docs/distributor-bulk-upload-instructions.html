@@ -201,7 +201,7 @@
         <tr>
             <td><code>mobile</code></td>
             <td>Contact number(s)</td>
-            <td><code>+8801712345678</code> or <code>01712345678, 01812345678</code></td>
+            <td><code>'8801712345678</code> or <code>'01712345678, '01812345678</code><br/><small style="color: #d32f2f;">⚠️ Use single quote (') prefix to prevent Excel formatting</small></td>
         </tr>
         <tr>
             <td><code>credit_limit</code></td>
@@ -251,7 +251,7 @@
         <tr>
             <td><code>emergency_mobile</code></td>
             <td>Emergency contact number</td>
-            <td><code>+8801812345678</code></td>
+            <td><code>'8801812345678</code><br/><small style="color: #d32f2f;">⚠️ Use single quote (') prefix</small></td>
         </tr>
         <tr>
             <td><code>latitude</code></td>
@@ -280,8 +280,9 @@
         <strong>📝 Tips for Success:</strong>
         <ul style="margin: 4px 0;">
             <li><strong>Exact Name Matching:</strong> Territory and facility names must match exactly (case-sensitive)</li>
-            <li><strong>Phone Format:</strong> Use +8801XXXXXXXXX or 01XXXXXXXXX format</li>
-            <li><strong>Multiple Phones:</strong> Separate with commas: <code>01712345678, 01812345678</code></li>
+            <li style="color: #d32f2f;"><strong>⚠️ CRITICAL - Phone Numbers in Excel:</strong> Always prefix mobile numbers with single quote (<code>'8801712345678</code>) to prevent Excel from converting to scientific notation (8.80171E+12). The quote forces text format and preserves leading zeros.</li>
+            <li><strong>Phone Format:</strong> Bangladesh format: <code>'8801XXXXXXXXX</code> or <code>'01XXXXXXXXX</code></li>
+            <li><strong>Multiple Phones:</strong> Separate with commas: <code>'01712345678, '01812345678</code></li>
             <li><strong>Date Format:</strong> Always use YYYY-MM-DD format (e.g., 2020-01-10)</li>
             <li><strong>Decimals:</strong> Use dot (.) for decimals, not comma: <code>500000.00</code></li>
             <li><strong>Empty Fields:</strong> Leave optional fields blank if not applicable</li>
