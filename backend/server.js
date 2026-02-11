@@ -179,6 +179,7 @@ if (!fs.existsSync(templatesDir)) {
 app.use("/images", express.static(imagesDir));
 app.use("/uploads", express.static(uploadsDir));
 app.use("/docs", express.static(docsDir));
+app.use("/api/docs", express.static(docsDir)); // Also serve docs at /api/docs for frontend compatibility
 app.use("/templates", express.static(templatesDir));
 
 // Data sanitization against NoSQL query injection
