@@ -49,6 +49,11 @@ const routeSchema = new mongoose.Schema(
       required: [true, "Distributor is required"],
       index: true,
     },
+    outlet_ids: {
+      type: [mongoose.Schema.Types.ObjectId],
+      ref: "Outlet",
+      default: [],
+    },
     sr_assignments: {
       sr_1: {
         type: salesRepAssignmentSchema,

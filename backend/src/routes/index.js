@@ -66,6 +66,7 @@ const outletMarketSizesRoutes = require("./outletMarketSizes");
 const routeRoutes = require("./routes");
 const outletsRoutes = require("./outlets");
 const trackingRoutes = require("../../routes/tracking");
+const attendanceRoutes = require("./attendance");
 
 const router = express.Router();
 
@@ -315,6 +316,14 @@ router.use("/outlets", outletsRoutes);
  * @access  Private (authenticated users)
  */
 router.use("/tracking", trackingRoutes);
+
+/**
+ * Attendance Routes
+ * @route   /api/attendance/*
+ * @desc    Smart attendance check-in based on proximity to outlets/distributors
+ * @access  Private (authenticated field officers)
+ */
+router.use("/attendance", attendanceRoutes);
 
 /**
  * Facility Management Routes (Unified Depots & Factories)
