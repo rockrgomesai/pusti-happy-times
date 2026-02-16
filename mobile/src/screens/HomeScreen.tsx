@@ -20,6 +20,7 @@ import UserInfoModal from '../components/UserInfoModal';
 import locationService, {LocationPoint} from '../services/locationService';
 import mockLocationService, {MOCK_ROUTES} from '../services/mockLocationService';
 import trackingAPI from '../services/trackingAPI';
+import attendanceAPI from '../services/attendanceAPI';
 import DeviceInfo from 'react-native-device-info';
 import syncService, { SyncStatus } from '../services/syncService';
 
@@ -80,8 +81,15 @@ const HomeScreen = ({navigation, route}: any) => {
     isSyncing: false,
   });
 
+  // Attendance state
+  const [attendanceMarked, setAttendanceMarked] = useState(false);
+  const [attendanceData, setAttendanceData] = useState<any>(null);
+  const [isMarkingAttendance, setIsMarkingAttendance] = useState(false);
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+
   useEffect(() => {
     loadUserData();
+    checkAttendanceStatus();
     
     // Get initial real location
     getRealLocation();
@@ -211,6 +219,129 @@ const HomeScreen = ({navigation, route}: any) => {
   const shouldShowTrackButton = () => {
     const trackingRoles = ['ZSM', 'RSM', 'ASM', 'SO'];
     return trackingRoles.includes(userRole);
+  };
+
+  // Check attendance status on load
+  const checkAttendanceStatus = async () => {
+    try {
+      const status = await attendanceAPI.getStatus();
+      if (status.success && status.marked) {
+        setAttendanceMarked(true);
+        setAttendanceData(status.data);
+        startPulseAnimation(); // Show green ring with pulse
+      }
+    } catch (error) {
+      console.log('Could not fetch attendance status:', error);
+    }
+  };
+
+  // Start pulse animation for avatar ring
+  const startPulseAnimation = () => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 1.15,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+  };
+
+  // Stop pulse animation
+  const stopPulseAnimation = () => {
+    pulseAnim.stopAnimation();
+    pulseAnim.setValue(1);
+  };
+
+  // Pulse red temporarily for failure
+  const pulseRed = () => {
+    Animated.sequence([
+      Animated.timing(pulseAnim, {
+        toValue: 1.2,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.timing(pulseAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.timing(pulseAnim, {
+        toValue: 1.2,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.timing(pulseAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
+  // Handle attendance mark
+  const handleMarkAttendance = async () => {
+    if (attendanceMarked) {
+      Alert.alert(
+        'Already Marked',
+        `Your attendance is already marked for today at ${attendanceData?.matched_location}.`,
+        [{text: 'OK'}]
+      );
+      return;
+    }
+
+    setIsMarkingAttendance(true);
+
+    try {
+      const result = await attendanceAPI.checkIn();
+
+      if (result.success) {
+        setAttendanceMarked(true);
+        setAttendanceData(result.data);
+        startPulseAnimation(); // Start green pulse
+        
+        Alert.alert(
+          'Success! ✓',
+          `Attendance marked successfully!\n\nLocation: ${result.data?.matched_location}\nDistance: ${result.data?.distance_meters}m`,
+          [{text: 'OK'}]
+        );
+      } else {
+        pulseRed(); // Red pulse for failure
+        Alert.alert('Failed', result.message, [{text: 'OK'}]);
+      }
+    } catch (error: any) {
+      pulseRed();
+      
+      // Check if session expired
+      if (error.message && error.message.includes('Session expired')) {
+        Alert.alert(
+          'Session Expired',
+          'Your session has expired. Please log in again.',
+          [
+            {
+              text: 'OK',
+              onPress: () => {
+                navigation.replace('Login');
+              },
+            },
+          ]
+        );
+      } else {
+        Alert.alert(
+          'Error',
+          error.message || 'Failed to mark attendance. Please try again.',
+          [{text: 'OK'}]
+        );
+      }
+    } finally {
+      setIsMarkingAttendance(false);
+    }
   };
 
   // Get real GPS location on page load
@@ -541,20 +672,47 @@ const HomeScreen = ({navigation, route}: any) => {
           
           <View style={styles.avatarSection}>
             <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
-              {userPhoto ? (
-                <Image
-                  source={{uri: `http://10.0.2.2:8080${userPhoto}`}}
-                  style={styles.avatar}
-                />
-              ) : (
-                <View style={styles.avatarPlaceholder}>
-                  <Text style={styles.avatarText}>
-                    {userName.charAt(0).toUpperCase()}
-                  </Text>
-                </View>
-              )}
+              <View style={styles.avatarContainer}>
+                {/* Attendance Ring */}
+                {attendanceMarked && (
+                  <Animated.View 
+                    style={[
+                      styles.attendanceRing,
+                      {
+                        transform: [{scale: pulseAnim}],
+                      }
+                    ]} 
+                  />
+                )}
+                
+                {/* Avatar */}
+                {userPhoto ? (
+                  <Image
+                    source={{uri: `http://10.0.2.2:8080${userPhoto}`}}
+                    style={styles.avatar}
+                  />
+                ) : (
+                  <View style={styles.avatarPlaceholder}>
+                    <Text style={styles.avatarText}>
+                      {userName.charAt(0).toUpperCase()}
+                    </Text>
+                  </View>
+                )}
+                
+                {/* Check Badge */}
+                {attendanceMarked && (
+                  <View style={styles.checkBadge}>
+                    <Text style={styles.checkBadgeText}>✓</Text>
+                  </View>
+                )}
+              </View>
             </TouchableOpacity>
             <Text style={styles.userName}>{userName}</Text>
+            {attendanceMarked && (
+              <Text style={styles.attendanceStatusText}>
+                Present • {new Date(attendanceData?.check_in_time).toLocaleTimeString('en-US', {hour: '2-digit', minute: '2-digit'})}
+              </Text>
+            )}
           </View>
         </View>
       </View>
@@ -578,12 +736,31 @@ const HomeScreen = ({navigation, route}: any) => {
                 </Text>
               </TouchableOpacity>
               
-              <TouchableOpacity style={styles.moduleButton}>
-                <Text style={styles.moduleIcon}>📍</Text>
-                <Text style={styles.moduleLabel}>Smart Attendance</Text>
+              <TouchableOpacity 
+                style={[
+                  styles.moduleButton,
+                  attendanceMarked && styles.moduleButtonSuccess,
+                  isMarkingAttendance && styles.moduleButtonDisabled,
+                ]}
+                onPress={handleMarkAttendance}
+                disabled={isMarkingAttendance}>
+                {isMarkingAttendance ? (
+                  <ActivityIndicator size="small" color="#4CAF50" />
+                ) : (
+                  <>
+                    <Text style={styles.moduleIcon}>
+                      {attendanceMarked ? '✓' : '📍'}
+                    </Text>
+                    <Text style={styles.moduleLabel}>
+                      {attendanceMarked ? 'Marked' : 'Mark Attendance'}
+                    </Text>
+                  </>
+                )}
               </TouchableOpacity>
               
-              <TouchableOpacity style={styles.moduleButton}>
+              <TouchableOpacity 
+                style={styles.moduleButton}
+                onPress={() => navigation.navigate('TraceRoute')}>
                 <Image 
                   source={traceRouteIcon} 
                   style={styles.traceRouteImage}
@@ -812,6 +989,41 @@ const styles = StyleSheet.create({
   avatarSection: {
     alignItems: 'center',
   },
+  avatarContainer: {
+    position: 'relative',
+    width: 50,
+    height: 50,
+  },
+  attendanceRing: {
+    position: 'absolute',
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    borderWidth: 3,
+    borderColor: '#10B981',
+    top: -5,
+    left: -5,
+    zIndex: 1,
+  },
+  checkBadge: {
+    position: 'absolute',
+    bottom: -2,
+    right: -2,
+    backgroundColor: '#10B981',
+    borderRadius: 10,
+    width: 20,
+    height: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#fff',
+    zIndex: 2,
+  },
+  checkBadgeText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
   notificationIcon: {
     position: 'relative',
     padding: 8,
@@ -864,6 +1076,12 @@ const styles = StyleSheet.create({
     color: '#333',
     marginTop: 4,
   },
+  attendanceStatusText: {
+    fontSize: 10,
+    color: '#10B981',
+    marginTop: 2,
+    fontWeight: '500',
+  },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -899,6 +1117,13 @@ const styles = StyleSheet.create({
   moduleButtonActive: {
     backgroundColor: '#ffebee',
     borderColor: '#f44336',
+  },
+  moduleButtonSuccess: {
+    backgroundColor: '#E8F5E9',
+    borderColor: '#10B981',
+  },
+  moduleButtonDisabled: {
+    opacity: 0.5,
   },
   moduleIcon: {
     fontSize: 36,

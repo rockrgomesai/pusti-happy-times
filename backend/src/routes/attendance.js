@@ -100,9 +100,8 @@ router.post("/check-in", authenticate, async (req, res) => {
       console.log(`SO Attendance Check - User: ${userId}, Today: ${today}`);
 
       // Convert userId to ObjectId for MongoDB query
-      const userObjectId = userId instanceof mongoose.Types.ObjectId 
-        ? userId 
-        : new mongoose.Types.ObjectId(userId);
+      const userObjectId =
+        userId instanceof mongoose.Types.ObjectId ? userId : new mongoose.Types.ObjectId(userId);
 
       // Find SO's route for today (check both sr_1 and sr_2 assignments)
       const route = await Route.findOne({
@@ -119,7 +118,7 @@ router.post("/check-in", authenticate, async (req, res) => {
         active: true,
       });
 
-      console.log(`Route found: ${route ? route.route_id : 'NONE'}`);
+      console.log(`Route found: ${route ? route.route_id : "NONE"}`);
 
       if (!route) {
         return res.status(400).json({
@@ -175,7 +174,9 @@ router.post("/check-in", authenticate, async (req, res) => {
           outletCoords[0]
         );
 
-        console.log(`✅ Matched outlet: ${matchedLocation.outlet_name}, Distance: ${matchedLocation.distance.toFixed(2)}m`);
+        console.log(
+          `✅ Matched outlet: ${matchedLocation.outlet_name}, Distance: ${matchedLocation.distance.toFixed(2)}m`
+        );
       }
     }
     // Logic for ASM/RSM/ZSM - Check distributors in territory

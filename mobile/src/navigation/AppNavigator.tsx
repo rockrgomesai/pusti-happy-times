@@ -7,6 +7,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import LoginScreen from '../screens/LoginScreen';
 import HomeScreen from '../screens/HomeScreen';
 import ProfileScreen from '../screens/ProfileScreen';
+import TraceRouteScreen from '../screens/TraceRouteScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -148,6 +149,11 @@ const AppNavigator = () => {
           name="Profile"
           component={ProfileScreen}
           options={{headerShown: true, title: 'Profile'}}
+        />
+        <Stack.Screen
+          name="TraceRoute"
+          component={TraceRouteScreen}
+          options={{headerShown: false}}
         />
       </Stack.Navigator>
     </NavigationContainer>

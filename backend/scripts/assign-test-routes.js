@@ -116,7 +116,9 @@ async function assignTestRoutes() {
       }
     }
 
-    console.log("✅ Setup complete! Login as SO1-ABIS or SO2-ABIS and use mock coordinates above.\n");
+    console.log(
+      "✅ Setup complete! Login as SO1-ABIS or SO2-ABIS and use mock coordinates above.\n"
+    );
 
     await mongoose.connection.close();
   } catch (error) {

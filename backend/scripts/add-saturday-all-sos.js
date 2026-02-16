@@ -15,22 +15,16 @@ async function addSaturdayForAllSOs() {
     await mongoose.connect(MONGODB_URI);
     console.log("✅ Connected to MongoDB\n");
 
-    const User = mongoose.model(
-      "User",
-      new mongoose.Schema({}, { strict: false }),
-      "users"
-    );
+    const User = mongoose.model("User", new mongoose.Schema({}, { strict: false }), "users");
 
-    const Route = mongoose.model(
-      "Route",
-      new mongoose.Schema({}, { strict: false }),
-      "routes"
-    );
+    const Route = mongoose.model("Route", new mongoose.Schema({}, { strict: false }), "routes");
 
     // Find all users with SO role
     console.log("🔍 Finding all SO users...\n");
-    const role = await mongoose.model("roles", new mongoose.Schema({}, { strict: false })).findOne({ role: "SO" });
-    
+    const role = await mongoose
+      .model("roles", new mongoose.Schema({}, { strict: false }))
+      .findOne({ role: "SO" });
+
     if (!role) {
       console.log("❌ SO role not found!");
       return;
@@ -38,7 +32,7 @@ async function addSaturdayForAllSOs() {
 
     const soUsers = await User.find({ role_id: role._id });
     console.log(`📍 Found ${soUsers.length} SO users:\n`);
-    soUsers.forEach(user => console.log(`  - ${user.username}`));
+    soUsers.forEach((user) => console.log(`  - ${user.username}`));
     console.log();
 
     if (soUsers.length === 0) {
@@ -47,8 +41,8 @@ async function addSaturdayForAllSOs() {
     }
 
     // Check if routes reference User IDs or Employee IDs
-    const sampleRoute = await Route.findOne({ 
-      "sr_assignments.sr_1.sr_id": { $exists: true, $ne: null }
+    const sampleRoute = await Route.findOne({
+      "sr_assignments.sr_1.sr_id": { $exists: true, $ne: null },
     });
 
     if (sampleRoute) {
@@ -57,7 +51,7 @@ async function addSaturdayForAllSOs() {
 
     // Find all routes (we'll assign random ones to SOs who don't have routes)
     const allRoutes = await Route.find({ active: true }).limit(10);
-    
+
     if (allRoutes.length === 0) {
       console.log("❌ No routes found in database! Please create routes first.");
       return;
@@ -72,18 +66,15 @@ async function addSaturdayForAllSOs() {
     for (let i = 0; i < soUsers.length; i++) {
       const user = soUsers[i];
       const userId = user._id;
-      
+
       // Check if this user already has routes
       const existingRoutes = await Route.find({
-        $or: [
-          { "sr_assignments.sr_1.sr_id": userId },
-          { "sr_assignments.sr_2.sr_id": userId },
-        ],
+        $or: [{ "sr_assignments.sr_1.sr_id": userId }, { "sr_assignments.sr_2.sr_id": userId }],
       });
 
       if (existingRoutes.length > 0) {
         console.log(`  ✅ ${user.username} already has ${existingRoutes.length} route(s)`);
-        
+
         // Update existing routes to include Saturday
         for (const route of existingRoutes) {
           let modified = false;
@@ -113,7 +104,7 @@ async function addSaturdayForAllSOs() {
       } else {
         // Assign a random route with Saturday included
         const routeToAssign = allRoutes[i % allRoutes.length];
-        
+
         routeToAssign.sr_assignments = {
           sr_1: {
             sr_id: userId,
@@ -121,9 +112,11 @@ async function addSaturdayForAllSOs() {
           },
           sr_2: routeToAssign.sr_assignments?.sr_2 || { sr_id: null, visit_days: [] },
         };
-        
+
         await routeToAssign.save();
-        console.log(`  ✅ Assigned ${routeToAssign.route_id} to ${user.username} with SAT, MON, WED`);
+        console.log(
+          `  ✅ Assigned ${routeToAssign.route_id} to ${user.username} with SAT, MON, WED`
+        );
         assigned++;
       }
     }

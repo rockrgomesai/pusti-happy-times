@@ -1,6 +1,6 @@
 /**
  * Add Saturday to visit_days for SO1-ABIS and SO2-ABIS routes
- * 
+ *
  * In Bangladesh, work week is SAT-THU (not SUN-THU)
  * This script updates routes to include Saturday visits
  */
@@ -23,11 +23,7 @@ async function addSaturdayRoutes() {
       "employees"
     );
 
-    const Route = mongoose.model(
-      "Route",
-      new mongoose.Schema({}, { strict: false }),
-      "routes"
-    );
+    const Route = mongoose.model("Route", new mongoose.Schema({}, { strict: false }), "routes");
 
     console.log("🔍 Finding SO1-ABIS and SO2-ABIS employees...\n");
 
@@ -59,10 +55,10 @@ async function addSaturdayRoutes() {
 
     if (routes.length === 0) {
       console.log("⚠️  No routes found! Creating sample route assignments...\n");
-      
+
       // Find some routes to assign
       const availableRoutes = await Route.find({ active: true }).limit(4);
-      
+
       if (availableRoutes.length < 2) {
         console.log("❌ Not enough routes in the database!");
         return;
@@ -71,7 +67,7 @@ async function addSaturdayRoutes() {
       // Assign routes to SOs with Saturday
       const route1 = availableRoutes[0];
       const route2 = availableRoutes[1];
-      
+
       // Update route 1 with SO1-ABIS
       route1.sr_assignments = {
         sr_1: {
@@ -97,7 +93,6 @@ async function addSaturdayRoutes() {
       console.log("\n🎯 Summary:");
       console.log(`  - 2 routes assigned`);
       console.log(`  - Both include Saturday visits`);
-      
     } else {
       // Update existing routes to include Saturday
       let updated = 0;
@@ -136,8 +131,10 @@ async function addSaturdayRoutes() {
             route.sr_assignments.sr_1?.sr_id?.toString() === so2._id.toString()
               ? route.sr_assignments.sr_1
               : route.sr_assignments.sr_2;
-          
-          console.log(`✅ Updated ${route.route_id}: Added SAT (Days: ${assignedTo.visit_days.join(", ")})`);
+
+          console.log(
+            `✅ Updated ${route.route_id}: Added SAT (Days: ${assignedTo.visit_days.join(", ")})`
+          );
           updated++;
         }
       }

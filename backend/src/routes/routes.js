@@ -1,7 +1,9 @@
 const express = require("express");
 const router = express.Router();
 const { body, param, query, validationResult } = require("express-validator");
+const mongoose = require("mongoose");
 const Route = require("../models/Route");
+const Outlet = require("../models/Outlet");
 const { authenticate, requireApiPermission } = require("../middleware/auth");
 
 // Validation middleware
@@ -115,6 +117,103 @@ router.get(
     }
   }
 );
+
+// @route   GET /api/v1/routes/my-route
+// @desc    Get logged-in SO's route for today (or specified day) with outlets
+// @access  Private (mobile app - no specific API permission required)
+router.get("/my-route", authenticate, async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const { day } = req.query;
+
+    // Determine which day to check
+    let targetDay;
+    if (day) {
+      targetDay = day.toUpperCase();
+    } else {
+      const daysOfWeek = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
+      targetDay = daysOfWeek[new Date().getDay()];
+    }
+
+    console.log(`[MY-ROUTE] Fetching route for user ${userId}, day: ${targetDay}`);
+
+    // Convert to ObjectId for query
+    const userObjectId =
+      userId instanceof mongoose.Types.ObjectId ? userId : new mongoose.Types.ObjectId(userId);
+
+    // Find route assigned to this user for the target day
+    const route = await Route.findOne({
+      $or: [
+        {
+          "sr_assignments.sr_1.sr_id": userObjectId,
+          "sr_assignments.sr_1.visit_days": { $in: [targetDay] },
+        },
+        {
+          "sr_assignments.sr_2.sr_id": userObjectId,
+          "sr_assignments.sr_2.visit_days": { $in: [targetDay] },
+        },
+      ],
+      active: true,
+    })
+      .populate("area_id", "name")
+      .populate("db_point_id", "name")
+      .populate("distributor_id", "name")
+      .lean();
+
+    if (!route) {
+      return res.status(404).json({
+        success: false,
+        message: `No route assigned for ${targetDay}. Please contact your supervisor.`,
+      });
+    }
+
+    console.log(
+      `[MY-ROUTE] Found route: ${route.route_id}, outlets: ${route.outlet_ids?.length || 0}`
+    );
+
+    // Get outlets for this route
+    const outletIds = route.outlet_ids || [];
+
+    if (outletIds.length === 0) {
+      return res.json({
+        success: true,
+        data: {
+          route_id: route.route_id,
+          route_name: route.route_name,
+          outlets: [],
+        },
+      });
+    }
+
+    // Fetch outlets with active filter
+    const outlets = await Outlet.find({
+      _id: { $in: outletIds },
+      active: true,
+    })
+      .populate("outlet_type", "name")
+      .populate("outlet_channel_id", "name")
+      .sort({ outlet_name: 1 }) // Alphabetical order
+      .lean();
+
+    console.log(`[MY-ROUTE] Returning ${outlets.length} active outlets`);
+
+    res.json({
+      success: true,
+      data: {
+        route_id: route.route_id,
+        route_name: route.route_name,
+        outlets: outlets,
+      },
+    });
+  } catch (error) {
+    console.error("[MY-ROUTE] Error fetching my route:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching route",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
+});
 
 // @route   GET /api/v1/routes/:id
 // @desc    Get route by ID

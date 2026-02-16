@@ -7,22 +7,18 @@ const MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost:27017/pusti_
 async function listUsers() {
   try {
     await mongoose.connect(MONGODB_URI);
-    
-    const User = mongoose.model(
-      "User",
-      new mongoose.Schema({}, { strict: false }),
-      "users"
-    );
-    
+
+    const User = mongoose.model("User", new mongoose.Schema({}, { strict: false }), "users");
+
     const users = await User.find({}).select("username user_type").limit(20);
-    
+
     console.log("\n📋 Users found in database:");
     console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-    users.forEach(user => {
+    users.forEach((user) => {
       console.log(`  ${user.username} - Type: ${user.user_type}`);
     });
     console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
-    
+
     await mongoose.connection.close();
   } catch (error) {
     console.error("Error:", error);
