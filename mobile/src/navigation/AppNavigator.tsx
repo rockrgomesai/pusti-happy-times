@@ -8,6 +8,11 @@ import LoginScreen from '../screens/LoginScreen';
 import HomeScreen from '../screens/HomeScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import TraceRouteScreen from '../screens/TraceRouteScreen';
+import ShopActionScreen from '../screens/ShopActionScreen';
+import DamageClaimScreen from '../screens/DamageClaimScreen';
+import NoSalesReasonScreen from '../screens/NoSalesReasonScreen';
+import AuditInventoryScreen from '../screens/AuditInventoryScreen';
+import SalesModuleScreen from '../screens/SalesModuleScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -153,6 +158,26 @@ const AppNavigator = () => {
         <Stack.Screen
           name="TraceRoute"
           component={TraceRouteScreen}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen
+          name="ShopAction"
+          component={ShopActionScreen}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen
+          name="DamageClaim"
+          component={DamageClaimScreen}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen
+          name="NoSalesReason"
+          component={NoSalesReasonScreen}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen
+          name="AuditInventory"
+          component={AuditInventoryScreen}
           options={{headerShown: false}}
         />
       </Stack.Navigator>

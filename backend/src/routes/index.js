@@ -67,6 +67,11 @@ const routeRoutes = require("./routes");
 const outletsRoutes = require("./outlets");
 const trackingRoutes = require("../../routes/tracking");
 const attendanceRoutes = require("./attendance");
+const damageClaimsRoutes = require("./damageClaims");
+const outletVisitsRoutes = require("./outletVisits");
+const outletAuditsRoutes = require("./outletAudits");
+const mobileCatalogRoutes = require("./mobile/catalog");
+const mobileOrdersRoutes = require("./mobile/orders");
 
 const router = express.Router();
 
@@ -324,6 +329,46 @@ router.use("/tracking", trackingRoutes);
  * @access  Private (authenticated field officers)
  */
 router.use("/attendance", attendanceRoutes);
+
+/**
+ * Damage Claims Routes
+ * @route   /api/damage-claims/*
+ * @desc    Damage/expired product claims from outlets with approval workflow
+ * @access  Private (authenticated field officers and admins)
+ */
+router.use("/damage-claims", damageClaimsRoutes);
+
+/**
+ * Outlet Visits Routes
+ * @route   /api/outlet-visits/*
+ * @desc    Track SO visits to outlets (shop closed, no sales, visit only)
+ * @access  Private (authenticated field officers)
+ */
+router.use("/outlet-visits", outletVisitsRoutes);
+
+/**
+ * Outlet Audits Routes
+ * @route   /api/outlet-audits/*
+ * @desc    Inventory audits at outlets with variance tracking
+ * @access  Private (authenticated field officers and managers)
+ */
+router.use("/outlet-audits", outletAuditsRoutes);
+
+/**
+ * Mobile Catalog Routes
+ * @route   /api/mobile/catalog/*
+ * @desc    Product catalog, categories, and offers for mobile app
+ * @access  Private (authenticated field officers)
+ */
+router.use("/mobile/catalog", mobileCatalogRoutes);
+
+/**
+ * Mobile Orders Routes
+ * @route   /api/mobile/orders/*
+ * @desc    Secondary order creation and management for mobile app
+ * @access  Private (authenticated field officers)
+ */
+router.use("/mobile/orders", mobileOrdersRoutes);
 
 /**
  * Facility Management Routes (Unified Depots & Factories)

@@ -32,6 +32,9 @@ interface Outlet {
   longi: number;
   address?: string;
   active: boolean;
+  visit_duration?: number; // Duration in minutes for today's visit
+  is_visited_today?: boolean;
+  is_checked_out?: boolean;
 }
 
 interface RouteData {
@@ -104,6 +107,41 @@ const TraceRouteScreen = ({navigation}: any) => {
       validOutlets.slice(0, 3).forEach(o => {
         console.log(`  ${o.outlet_name}: lat=${o.lati}, lng=${o.longi}`);
       });
+
+      // Fetch today's visit durations
+      if (validOutlets.length > 0) {
+        try {
+          const outletIds = validOutlets.map(o => o._id).join(',');
+          const visitResponse = await fetch(
+            `${API_URL}/outlet-visits/today-summary?outlet_ids=${outletIds}`,
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
+
+          if (visitResponse.ok) {
+            const visitData = await visitResponse.json();
+            if (visitData.success) {
+              const visitsByOutlet = visitData.data;
+
+              // Merge visit data with outlets
+              validOutlets.forEach(outlet => {
+                const visitInfo = visitsByOutlet[outlet._id];
+                if (visitInfo) {
+                  outlet.visit_duration = visitInfo.duration_minutes;
+                  outlet.is_visited_today = true;
+                  outlet.is_checked_out = visitInfo.is_checked_out;
+                }
+              });
+            }
+          }
+        } catch (error) {
+          console.log('Failed to fetch visit durations:', error);
+          // Continue without visit data
+        }
+      }
       
       setOutlets(validOutlets);
 
@@ -198,9 +236,19 @@ const TraceRouteScreen = ({navigation}: any) => {
   };
 
   const handleGetIn = (outlet: Outlet) => {
-    // TODO: Implement "Get In" functionality (navigate to outlet, start visit, etc.)
-    Alert.alert('Get In', `Navigate to ${outlet.outlet_name}`);
     hideBottomSheet();
+    
+    // Navigate to Shop Action screen with outlet details
+    navigation.navigate('ShopAction', {
+      outletId: outlet._id,
+      outletName: outlet.outlet_name,
+      outletAddress: outlet.address,
+      outletLocation: {
+        latitude: outlet.lati,
+        longitude: outlet.longi,
+      },
+      distributorId: 'DIST-001', // TODO: Get from route data or user context
+    });
   };
 
   // Handle messages from WebView
@@ -556,11 +604,23 @@ const TraceRouteScreen = ({navigation}: any) => {
                     style={styles.outletListItem}
                     onPress={() => handleOutletListItemClick(item)}
                   >
-                    <Text style={styles.outletListName}>{item.outlet_name}</Text>
-                    {item.outlet_name_bangla && (
-                      <Text style={styles.outletListNameBangla}>{item.outlet_name_bangla}</Text>
-                    )}
-                    <Text style={styles.outletListId}>{item.outlet_id}</Text>
+                    <View style={styles.outletListTextContainer}>
+                      <Text style={styles.outletListName}>{item.outlet_name}</Text>
+                      {item.outlet_name_bangla && (
+                        <Text style={styles.outletListNameBangla}>{item.outlet_name_bangla}</Text>
+                      )}
+                      <Text style={styles.outletListId}>{item.outlet_id}</Text>
+                      {item.is_visited_today && item.is_checked_out && item.visit_duration !== undefined && (
+                        <Text style={styles.visitDuration}>
+                          ⏱️ {item.visit_duration} min{item.visit_duration !== 1 ? 's' : ''}
+                        </Text>
+                      )}
+                      {item.is_visited_today && !item.is_checked_out && (
+                        <Text style={styles.visitInProgress}>
+                          🟢 Visit in progress
+                        </Text>
+                      )}
+                    </View>
                   </TouchableOpacity>
                 )}
                 ItemSeparatorComponent={() => <View style={styles.separator} />}
@@ -754,6 +814,9 @@ const styles = StyleSheet.create({
   outletListItem: {
     padding: 15,
   },
+  outletListTextContainer: {
+    flex: 1,
+  },
   outletListName: {
     fontSize: 16,
     fontWeight: 'bold',
@@ -768,6 +831,18 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#999',
     marginTop: 4,
+  },
+  visitDuration: {
+    fontSize: 12,
+    color: '#4CAF50',
+    fontWeight: '600',
+    marginTop: 6,
+  },
+  visitInProgress: {
+    fontSize: 12,
+    color: '#FF9800',
+    fontWeight: '600',
+    marginTop: 6,
   },
   separator: {
     height: 1,
