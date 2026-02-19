@@ -249,7 +249,7 @@ router.post('/products', authenticate, requireApiPermission('products_create'), 
 
 ---
 
-## Database Models (48 total)
+## Database Models (52 total)
 
 ### Core Models
 
@@ -811,6 +811,265 @@ router.post('/products', authenticate, requireApiPermission('products_create'), 
 }
 ```
 
+### Mobile & Secondary Sales Models (NEW - Feb 2026)
+
+#### SecondaryOrder.js
+```javascript
+{
+  order_number: String (unique, auto-generated "SO2602XXXX"),
+  outlet_id: ObjectId → Outlet,
+  distributor_id: ObjectId → Distributor,
+  dsr_id: ObjectId → Employee (Sales Officer),
+  route_id: ObjectId → Route,
+  visit_id: ObjectId → OutletVisit,
+  
+  order_date: Date (default: now),
+  
+  items: [{
+    product_id: ObjectId → Product,
+    sku: String,
+    quantity: Number,           // In PCS (pieces)
+    unit_price: Decimal128,     // Trade price per piece
+    subtotal: Decimal128        // Auto-calculated
+  }],
+  
+  // Auto-calculated fields (pre-save hook)
+  subtotal: Decimal128,
+  discount_amount: Decimal128,  // From applied offers
+  total_amount: Decimal128,
+  
+  // Offer integration
+  applied_offers: [{
+    offer_id: ObjectId → SecondaryOffer,
+    offer_name: String,
+    discount_amount: Decimal128
+  }],
+  
+  // Order lifecycle
+  order_status: 'Submitted' | 'Approved' | 'Cancelled' | 'Delivered',
+  
+  // Delivery (set by web portal)
+  delivery_chalan_id: ObjectId → DeliveryChalan,
+  delivery_chalan_no: String,
+  delivered_at: Date,
+  delivered_by: ObjectId → User,
+  
+  // GPS tracking
+  gps_location: {
+    type: "Point",
+    coordinates: [Number, Number]  // [longitude, latitude]
+  },
+  gps_accuracy: Number,
+  
+  so_notes: String,
+  
+  created_at, created_by, updated_at, updated_by
+}
+
+// Virtuals
+items_count: Number,       // Count of items
+total_quantity: Number     // Sum of all quantities
+```
+
+**Static Methods:**
+- `generateOrderNumber()` - Creates date-based sequential order number (SO2602XXXX)
+
+**Pre-save Hook:**
+- Auto-calculates subtotal from items
+- Auto-calculates discount from applied_offers
+- Auto-calculates total_amount = subtotal - discount
+
+**Stock Integration:**
+- Order creation triggers FIFO stock reduction via `DistributorStock.reduceStockFIFO()`
+- Atomic transaction ensures data consistency
+- Creates OutletVisit record with visit_type='sales'
+
+#### OutletVisit.js
+```javascript
+{
+  visit_id: String (unique, auto-generated "VISIT2602XXXX"),
+  outlet_id: ObjectId → Outlet,
+  route_id: ObjectId → Route,
+  so_id: ObjectId → Employee (Sales Officer),
+  dsr_id: ObjectId → Employee (same as so_id),
+  distributor_id: ObjectId → Distributor,
+  
+  visit_date: Date (default: now),
+  check_in_time: Date,
+  check_out_time: Date,
+  duration_minutes: Number,    // Auto-calculated on check-out
+  
+  // Visit classification
+  visit_type: 'shop_closed' | 'no_sales' | 'visit_only' | 'sales' | 'audit' | 'claim',
+  
+  // Shop closed fields
+  shop_status: 'Open' | 'Closed' | 'Temporarily Closed',
+  shop_closed_reason: String,
+  
+  // No sales fields
+  no_sales_reason: 'previous_order_not_delivered' | 'payment_issues' | 'overstocked' | 'credit_limit_reached' | 'outlet_requested_delay' | 'price_concerns' | 'competitor_issues' | 'other',
+  no_sales_notes: String,
+  
+  // Reference to activities
+  order_id: ObjectId → SecondaryOrder,
+  audit_id: ObjectId → OutletAudit,
+  claim_id: ObjectId → DamageClaim,
+  
+  // GPS tracking
+  gps_location: {
+    type: "Point",
+    coordinates: [Number, Number]
+  },
+  gps_accuracy: Number,
+  distance_from_outlet: Number,  // Calculated via Haversine
+  
+  // Productivity metrics
+  productive: Boolean (default: false),  // true if sales/order placed
+  
+  so_notes: String,
+  
+  created_at, created_by, updated_at, updated_by
+}
+```
+
+**Static Methods:**
+- `generateVisitId()` - Creates date-based sequential visit ID
+
+**Pre-save Hook:**
+- Auto-calculates `duration_minutes` = (check_out_time - check_in_time) / 60000
+- Only when both check_in and check_out times exist
+
+**Indexing:**
+- Compound index on (outlet_id, visit_date) for efficient today's visit queries
+- Geospatial index on gps_location
+
+#### OutletAudit.js
+```javascript
+{
+  audit_id: String (unique, auto-generated "AUDIT2602XXXX"),
+  outlet_id: ObjectId → Outlet,
+  so_id: ObjectId → Employee,
+  distributor_id: ObjectId → Distributor,
+  route_id: ObjectId → Route,
+  
+  audit_date: Date (default: now),
+  
+  items: [{
+    product_id: ObjectId → Product,
+    audited_qty_pcs: Number,      // Counted quantity in pieces
+    previous_qty_pcs: Number,     // From last audit
+    variance: Number             // Auto-calculated: audited - previous
+  }],
+  
+  // Auto-calculated summaries
+  total_items: Number,           // Count of items
+  total_qty_pcs: Number,         // Sum of audited quantities
+  total_variance: Number,        // Sum of variances
+  
+  // Audit lifecycle
+  status: 'Submitted' | 'Verified' | 'Flagged',
+  
+  // Verification (by manager)
+  verified_by: ObjectId → User,
+  verified_at: Date,
+  verification_notes: String,
+  
+  // Link to previous audit
+  previous_audit_id: ObjectId → OutletAudit,
+  
+  // GPS tracking
+  gps_location: {
+    type: "Point",
+    coordinates: [Number, Number]
+  },
+  gps_accuracy: Number,
+  
+  so_notes: String,
+  
+  created_at, created_by, updated_at, updated_by
+}
+```
+
+**Static Methods:**
+- `generateAuditId()` - Creates date-based sequential audit ID
+- `getPreviousAudit(outletId)` - Gets last audit for comparison
+
+**Pre-save Hook:**
+- Auto-calculates total_items, total_qty_pcs, total_variance
+- Validates variance thresholds (optional flagging)
+
+**Indexes:**
+- Index on outlet_id for audit history queries
+- Index on audit_date for time-based filtering
+
+#### DamageClaim.js
+```javascript
+{
+  claim_id: String (unique, auto-generated "CLAIM2602XXXX"),
+  outlet_id: ObjectId → Outlet,
+  distributor_id: ObjectId → Distributor,
+  so_id: ObjectId → Employee,
+  route_id: ObjectId → Route,
+  
+  claim_date: Date (default: now),
+  
+  items: [{
+    product_id: ObjectId → Product,
+    qty_claimed_pcs: Number,
+    damage_reason: 'physical_damage' | 'expired' | 'defective' | 'near_expiry' | 'wrong_product' | 'packaging_damage' | 'quality_issue',
+    notes: String,
+    batch_number: String,
+    estimated_value_bdt: Decimal128  // Auto-calculated from trade_price
+  }],
+  
+  // Auto-calculated summaries
+  total_items: Number,              // Count of items
+  total_qty_pcs: Number,            // Sum of claimed quantities
+  total_value_bdt: Decimal128,      // Sum of estimated values
+  
+  // Claim lifecycle
+  status: 'Pending' | 'Under Review' | 'Verified' | 'Approved' | 'Rejected' | 'Replaced' | 'Closed',
+  
+  // Processing (by management)
+  reviewed_by: ObjectId → User,
+  reviewed_at: Date,
+  review_notes: String,
+  
+  approved_by: ObjectId → User,
+  approved_at: Date,
+  approval_notes: String,
+  
+  replacement_order_id: ObjectId → SecondaryOrder,
+  
+  // GPS tracking
+  gps_location: {
+    type: "Point",
+    coordinates: [Number, Number]
+  },
+  gps_accuracy: Number,
+  
+  so_notes: String,
+  
+  created_at, created_by, updated_at, updated_by
+}
+```
+
+**Static Methods:**
+- `generateClaimId()` - Creates date-based sequential claim ID
+- `getPendingClaims(distributorId)` - Gets claims awaiting review
+- `getClaimsByOutlet(outletId)` - Gets claim history for outlet
+
+**Pre-save Hook:**
+- Auto-calculates estimated_value_bdt per item (qty × trade_price)
+- Auto-calculates total_items, total_qty_pcs, total_value_bdt
+
+**Workflow:**
+```
+Pending → Under Review → Verified → Approved → Replaced → Closed
+                              ↓
+                          Rejected → Closed
+```
+
 ---
 
 ## Routes Structure
@@ -867,7 +1126,38 @@ router.post('/products', authenticate, requireApiPermission('products_create'), 
 ├── /finance
 │   └── /customerledger             # Customer ledger
 ├── /dashboard                       # Dashboard data
-└── /notifications                   # Notifications
+├── /notifications                   # Notifications
+│
+├── /mobile                          # Mobile-specific routes (NEW - Feb 2026)
+│   ├── /catalog                    # Product catalog for mobile
+│   │   ├── GET /categories        # Categories with stock
+│   │   ├── GET /products          # Products by category
+│   │   └── GET /offers            # Eligible offers
+│   └── /orders                     # Secondary orders
+│       ├── POST /                  # Create order (FIFO stock reduction)
+│       ├── GET /                   # List orders
+│       └── GET /:id                # Order details
+│
+├── /outlet-visits                   # Outlet visit tracking (NEW - Feb 2026)
+│   ├── POST /                      # Record visit (shop_closed, no_sales, etc.)
+│   ├── GET /                       # List visits
+│   ├── GET /:id                    # Visit details
+│   ├── PUT /:id/checkout           # Check out from visit
+│   └── GET /today-summary          # Today's visit durations (route map)
+│
+├── /outlet-audits                   # Inventory audits (NEW - Feb 2026)
+│   ├── GET /products               # Products for audit (with previous data)
+│   ├── POST /                      # Submit audit
+│   ├── GET /history                # Audit history for outlet
+│   ├── GET /:id                    # Audit details
+│   └── PUT /:id/verify             # Verify audit (admin)
+│
+└── /damage-claims                   # Damage claims (NEW - Feb 2026)
+    ├── GET /products               # Products for claim (delivery history)
+    ├── POST /                      # Submit claim
+    ├── GET /history                # Claim history for outlet
+    ├── GET /:id                    # Claim details
+    └── PUT /:id/status             # Update claim status
 ```
 
 ---
