@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,12 +10,12 @@ import {
   SafeAreaView,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {launchCamera, launchImageLibrary} from 'react-native-image-picker';
+import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
 import axios from 'axios';
 
-const API_URL = 'http://10.0.2.2:8080/api/v1';
+const API_URL = 'https://tkgerp.com/api/v1';
 
-const ProfileScreen = ({navigation}: any) => {
+const ProfileScreen = ({ navigation }: any) => {
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [userPhoto, setUserPhoto] = useState<string | null>(null);
@@ -144,7 +144,7 @@ const ProfileScreen = ({navigation}: any) => {
         <View style={styles.photoContainer}>
           {userPhoto ? (
             <Image
-              source={{uri: `http://10.0.2.2:8080${userPhoto}`}}
+              source={{ uri: `https://tkgerp.com${userPhoto}` }}
               style={styles.photo}
             />
           ) : (

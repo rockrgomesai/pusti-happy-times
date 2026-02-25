@@ -72,7 +72,6 @@ import { calculateTableMinWidth } from '@/lib/tableUtils';
 
 const ORDER_UNITS = ['CTN', 'PCS', 'BAG', 'LTR', 'KG', 'GM'] as const;
 const PRODUCT_SEGMENTS = ['BIS', 'BEV'] as const;
-const DISTRIBUTOR_TYPES = ['General Distributor', 'Exclusive Distributor', 'Super Distributor'] as const;
 const BINARY_CHOICES = ['Yes', 'No'] as const;
 
 type Order = 'asc' | 'desc';
@@ -495,6 +494,24 @@ const fetchProducts = async (): Promise<ProductOption[]> => {
   }
 };
 
+const fetchDistributorTypes = async (): Promise<string[]> => {
+  try {
+    const response = await api.get('/distributor-types/active');
+    const rawData = Array.isArray(response.data?.data) ? response.data.data : [];
+    return rawData
+      .map((type) => {
+        if (!type || typeof type !== 'object') return null;
+        const record = type as Record<string, unknown>;
+        return typeof record.type_name === 'string' ? record.type_name : null;
+      })
+      .filter((name): name is string => Boolean(name));
+  } catch (error) {
+    console.error('Failed to load distributor types', error);
+    toast.error('Failed to load distributor types');
+    return [];
+  }
+};
+
 const filterDistributors = (
   distributors: Distributor[],
   { searchTerm, includeInactive }: { searchTerm: string; includeInactive: boolean },
@@ -618,6 +635,7 @@ const DistributorsPage: React.FC = () => {
   const [depotSearchTerm, setDepotSearchTerm] = useState('');
   const [depotOpen, setDepotOpen] = useState(false);
   const [productOptions, setProductOptions] = useState<ProductOption[]>([]);
+  const [distributorTypes, setDistributorTypes] = useState<string[]>([]);
   const [formError, setFormError] = useState<string | null>(null);
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [uploadFile, setUploadFile] = useState<File | null>(null);
@@ -648,14 +666,16 @@ const DistributorsPage: React.FC = () => {
   const loadMetadata = useCallback(async () => {
     try {
       setMetadataLoading(true);
-      const [dbPoints, depots, products] = await Promise.all([
+      const [dbPoints, depots, products, types] = await Promise.all([
         fetchDbPoints(),
         fetchDepots(),
         fetchProducts(),
+        fetchDistributorTypes(),
       ]);
       setDbPointOptions(dbPoints);
       setDepotOptions(depots);
       setProductOptions(products);
+      setDistributorTypes(types);
     } finally {
       setMetadataLoading(false);
     }
@@ -1750,8 +1770,9 @@ const DistributorsPage: React.FC = () => {
                           label="Distributor Type"
                           value={field.value}
                           onChange={(event: SelectChangeEvent<string>) => field.onChange(event.target.value)}
+                          disabled={distributorTypes.length === 0}
                         >
-                          {DISTRIBUTOR_TYPES.map((type) => (
+                          {distributorTypes.map((type) => (
                             <MenuItem key={type} value={type}>
                               {type}
                             </MenuItem>

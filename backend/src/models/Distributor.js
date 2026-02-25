@@ -138,8 +138,8 @@ const distributorSchema = new Schema(
     },
     distributor_type: {
       type: String,
-      enum: DISTRIBUTOR_TYPES,
       required: true,
+      trim: true,
     },
     erp_id: {
       type: Number,

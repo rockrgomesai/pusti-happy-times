@@ -1,7 +1,7 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const API_URL = 'http://10.0.2.2:8080/api/v1';
+const API_URL = 'https://tkgerp.com/api/v1';
 
 interface RouteAPIResponse {
   success: boolean;
@@ -29,7 +29,7 @@ class RouteAPI {
 
           try {
             const refreshToken = await AsyncStorage.getItem('refreshToken');
-            
+
             if (!refreshToken) {
               throw new Error('No refresh token');
             }
@@ -38,7 +38,7 @@ class RouteAPI {
               refreshToken,
             });
 
-            const {accessToken, refreshToken: newRefreshToken} = response.data;
+            const { accessToken, refreshToken: newRefreshToken } = response.data;
 
             await AsyncStorage.setItem('accessToken', accessToken);
             await AsyncStorage.setItem('refreshToken', newRefreshToken);
@@ -59,9 +59,9 @@ class RouteAPI {
   async getMyRoute(day?: string): Promise<RouteAPIResponse> {
     try {
       const token = await AsyncStorage.getItem('accessToken');
-      
-      const params = day ? {day} : {};
-      
+
+      const params = day ? { day } : {};
+
       const response = await this.axiosInstance.get('/routes/my-route', {
         headers: {
           Authorization: `Bearer ${token}`,

@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -11,10 +11,10 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {authService} from '../services/authService';
+import { authService } from '../services/authService';
 import PustiLogo from '../components/PustiLogo';
 
-const LoginScreen = ({navigation}: any) => {
+const LoginScreen = ({ navigation }: any) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -23,7 +23,7 @@ const LoginScreen = ({navigation}: any) => {
   // TEST: This will show once when screen loads
   React.useEffect(() => {
     console.log('🧪 LoginScreen loaded - Code is FRESH!');
-    console.log('🌐 Backend URL: http://10.0.2.2:8080/api/v1');
+    console.log('🌐 Backend URL: https://tkgerp.com/api/v1');
   }, []);
 
   const handleLogin = async () => {
@@ -36,11 +36,11 @@ const LoginScreen = ({navigation}: any) => {
     try {
       console.log('📱 Starting login for:', username);
       const response = await authService.login(username, password);
-      
+
       console.log('✅ Login response received:', response);
       console.log('🔑 Access Token:', response.accessToken ? 'Present' : 'Missing');
       console.log('🔄 Refresh Token:', response.refreshToken ? 'Present' : 'Missing');
-      
+
       // Save tokens
       await AsyncStorage.setItem('accessToken', response.accessToken);
       await AsyncStorage.setItem('refreshToken', response.refreshToken);
@@ -53,7 +53,7 @@ const LoginScreen = ({navigation}: any) => {
       navigation.replace('MainApp');
     } catch (error: any) {
       console.error('❌ Login failed in LoginScreen:', error);
-      
+
       // Show detailed error message
       const errorDetails = JSON.stringify({
         message: error.message,
@@ -61,7 +61,7 @@ const LoginScreen = ({navigation}: any) => {
         status: error.response?.status,
         code: error.code,
       }, null, 2);
-      
+
       Alert.alert(
         'Login Failed',
         `Error: ${error.message}\n\nDetails: ${errorDetails}`,
@@ -153,6 +153,7 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 15,
     fontSize: 16,
+    color: '#333',
   },
   eyeButton: {
     padding: 15,
@@ -168,6 +169,7 @@ const styles = StyleSheet.create({
     padding: 15,
     marginBottom: 15,
     fontSize: 16,
+    color: '#333',
     backgroundColor: '#f9f9f9',
   },
   button: {

@@ -75,9 +75,9 @@ const AuditInventoryScreen = ({ route, navigation }: any) => {
       setLoading(true);
 
       // Load products with previous audit
-      const token = await AsyncStorage.getItem('@auth_token');
+      const token = await AsyncStorage.getItem('accessToken');
       const response = await fetch(
-        `http://192.168.0.103:8080/api/v1/outlet-audits/products?outlet_id=${outletId}`,
+        `https://tkgerp.com/api/v1/outlet-audits/products?outlet_id=${outletId}`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -133,10 +133,10 @@ const AuditInventoryScreen = ({ route, navigation }: any) => {
 
   const updateAuditQty = (productId: string, qty: string, previousQty: number) => {
     const parsedQty = parseInt(qty) || 0;
-    
+
     setAuditItems((prev) => {
       const existingIndex = prev.findIndex((item) => item.product_id === productId);
-      
+
       if (existingIndex >= 0) {
         const updated = [...prev];
         updated[existingIndex] = {
@@ -202,7 +202,7 @@ const AuditInventoryScreen = ({ route, navigation }: any) => {
             try {
               setSubmitting(true);
 
-              const token = await AsyncStorage.getItem('@auth_token');
+              const token = await AsyncStorage.getItem('accessToken');
               const userId = await AsyncStorage.getItem('@user_id');
 
               const payload = {
@@ -217,7 +217,7 @@ const AuditInventoryScreen = ({ route, navigation }: any) => {
                 },
               };
 
-              const response = await fetch('http://192.168.0.103:8080/api/v1/outlet-audits', {
+              const response = await fetch('https://tkgerp.com/api/v1/outlet-audits', {
                 method: 'POST',
                 headers: {
                   Authorization: `Bearer ${token}`,
@@ -366,7 +366,7 @@ const AuditInventoryScreen = ({ route, navigation }: any) => {
                             }
                           />
                           <Text style={styles.pcsLabel}>PCS</Text>
-                          
+
                           {auditedQty > 0 && (
                             <View style={[styles.varianceBadge, { backgroundColor: varianceColor }]}>
                               <Text style={styles.varianceText}>
@@ -409,8 +409,8 @@ const AuditInventoryScreen = ({ route, navigation }: any) => {
                       calculateTotalVariance() > 0
                         ? '#4CAF50'
                         : calculateTotalVariance() < 0
-                        ? '#F44336'
-                        : '#666',
+                          ? '#F44336'
+                          : '#666',
                   },
                 ]}
               >

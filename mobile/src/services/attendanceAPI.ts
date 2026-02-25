@@ -3,8 +3,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import Geolocation from 'react-native-geolocation-service';
 import { PermissionsAndroid, Platform } from 'react-native';
 
-// Backend API base URL
-const API_BASE_URL = 'http://10.0.2.2:8080/api/v1';
+// Production API
+const API_BASE_URL = 'https://tkgerp.com/api/v1';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -19,11 +19,11 @@ api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
-    
+
     // If error is 401 and we haven't retried yet
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
-      
+
       try {
         // Try to refresh the token
         const refreshToken = await AsyncStorage.getItem('refreshToken');
@@ -31,11 +31,11 @@ api.interceptors.response.use(
           const response = await axios.post(`${API_BASE_URL}/auth/refresh`, {
             refreshToken,
           });
-          
+
           if (response.data.success) {
             const newAccessToken = response.data.data.accessToken;
             await AsyncStorage.setItem('accessToken', newAccessToken);
-            
+
             // Retry the original request with new token
             originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
             return api(originalRequest);
@@ -47,7 +47,7 @@ api.interceptors.response.use(
         return Promise.reject(new Error('Session expired. Please log in again.'));
       }
     }
-    
+
     return Promise.reject(error);
   }
 );
@@ -182,7 +182,7 @@ class AttendanceAPI {
       return response.data;
     } catch (error: any) {
       console.error('Attendance check-in error:', error);
-      
+
       // Return proper error response
       return {
         success: false,
@@ -225,7 +225,7 @@ class AttendanceAPI {
       const token = await this.getAuthToken();
       const response = await api.get<AttendanceHistoryResponse>(
         '/attendance/history',
-        { 
+        {
           params,
           headers: {
             Authorization: `Bearer ${token}`,

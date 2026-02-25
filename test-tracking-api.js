@@ -5,8 +5,8 @@
 
 const axios = require("axios");
 
-const BASE_URL = "http://localhost:8080/api/v1";
-const AUTH_URL = "http://localhost:8080/api/v1/auth";
+const BASE_URL = "http://localhost:5000/api/v1";
+const AUTH_URL = "http://localhost:5000/api/v1/auth";
 
 // Test credentials - use a real field officer user
 const TEST_USERNAME = "superadmin"; // Sales Officer (has tracking role)

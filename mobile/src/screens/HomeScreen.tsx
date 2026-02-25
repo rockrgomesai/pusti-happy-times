@@ -1,4 +1,4 @@
-import React, {useEffect, useState, useRef} from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   View,
   StyleSheet,
@@ -14,11 +14,11 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
-import {WebView} from 'react-native-webview';
+import { WebView } from 'react-native-webview';
 import PustiLogo from '../components/PustiLogo';
 import UserInfoModal from '../components/UserInfoModal';
-import locationService, {LocationPoint} from '../services/locationService';
-import mockLocationService, {MOCK_ROUTES} from '../services/mockLocationService';
+import locationService, { LocationPoint } from '../services/locationService';
+import mockLocationService, { MOCK_ROUTES } from '../services/mockLocationService';
 import trackingAPI from '../services/trackingAPI';
 import attendanceAPI from '../services/attendanceAPI';
 import DeviceInfo from 'react-native-device-info';
@@ -32,9 +32,9 @@ const UPLOAD_INTERVAL_MS = 2 * 60 * 1000; // 2 minutes
 const UPLOAD_BATCH_SIZE = 20; // Upload when 20 points collected
 
 const traceRouteIcon = require('../assets/images/trace-route.png');
-const {width, height} = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 
-const API_URL = 'http://10.0.2.2:8080/api/v1';
+const API_URL = 'https://tkgerp.com/api/v1';
 // Using OpenStreetMap - No API key needed!
 
 interface UserData {
@@ -48,7 +48,7 @@ interface UserData {
   dsr_id?: any;
 }
 
-const HomeScreen = ({navigation, route}: any) => {
+const HomeScreen = ({ navigation, route }: any) => {
   const [loading, setLoading] = useState(true);
   const [userPhoto, setUserPhoto] = useState<string | null>(null);
   const [userName, setUserName] = useState<string>('');
@@ -68,7 +68,7 @@ const HomeScreen = ({navigation, route}: any) => {
   const [duration, setDuration] = useState<number>(0);
   const [visits, setVisits] = useState<number>(0);
   const statsInterval = useRef<any>(null);
-  
+
   // Tracking API integration state
   const [sessionId, setSessionId] = useState<string | null>(null);
   const locationBuffer = useRef<LocationPoint[]>([]);
@@ -90,16 +90,16 @@ const HomeScreen = ({navigation, route}: any) => {
   useEffect(() => {
     loadUserData();
     checkAttendanceStatus();
-    
+
     // Get initial real location
     getRealLocation();
-    
+
     // Setup sync status listener
     const handleSyncStatus = (status: SyncStatus) => {
       setSyncStatus(status);
     };
     syncService.addSyncListener(handleSyncStatus);
-    
+
     return () => {
       syncService.removeSyncListener(handleSyncStatus);
     };
@@ -110,7 +110,7 @@ const HomeScreen = ({navigation, route}: any) => {
     if (route?.params?.openUserInfo) {
       setShowUserInfoModal(true);
       // Clear the param after opening
-      navigation.setParams({openUserInfo: undefined});
+      navigation.setParams({ openUserInfo: undefined });
     }
   }, [route?.params?.openUserInfo]);
 
@@ -134,7 +134,7 @@ const HomeScreen = ({navigation, route}: any) => {
   const loadUserData = async () => {
     try {
       setLoading(true);
-      
+
       // First load from AsyncStorage for immediate display
       const userStr = await AsyncStorage.getItem('user');
       if (userStr) {
@@ -143,18 +143,18 @@ const HomeScreen = ({navigation, route}: any) => {
         setUserPhoto(user.profile_photo);
         setUserType(user.user_type);
         setUserRole(user.role?.role || '');
-        
+
         // Set basic user details from AsyncStorage
         setUserDetails({
           type: 'basic',
           data: user,
           userId: user.username,
         });
-        
+
         // Set loading to false now so UI shows
         setLoading(false);
       }
-      
+
       // Then try to fetch full profile from backend
       const token = await AsyncStorage.getItem('accessToken');
       if (!token) {
@@ -176,7 +176,7 @@ const HomeScreen = ({navigation, route}: any) => {
           setUserPhoto(user.profile_photo);
           setUserType(user.user_type);
           setUserRole(user.role?.role || '');
-          
+
           // Store detailed info based on user type
           if (user.employee_id) {
             setUserDetails({
@@ -291,7 +291,7 @@ const HomeScreen = ({navigation, route}: any) => {
       Alert.alert(
         'Already Marked',
         `Your attendance is already marked for today at ${attendanceData?.matched_location}.`,
-        [{text: 'OK'}]
+        [{ text: 'OK' }]
       );
       return;
     }
@@ -305,19 +305,19 @@ const HomeScreen = ({navigation, route}: any) => {
         setAttendanceMarked(true);
         setAttendanceData(result.data);
         startPulseAnimation(); // Start green pulse
-        
+
         Alert.alert(
           'Success! ✓',
           `Attendance marked successfully!\n\nLocation: ${result.data?.matched_location}\nDistance: ${result.data?.distance_meters}m`,
-          [{text: 'OK'}]
+          [{ text: 'OK' }]
         );
       } else {
         pulseRed(); // Red pulse for failure
-        Alert.alert('Failed', result.message, [{text: 'OK'}]);
+        Alert.alert('Failed', result.message, [{ text: 'OK' }]);
       }
     } catch (error: any) {
       pulseRed();
-      
+
       // Check if session expired
       if (error.message && error.message.includes('Session expired')) {
         Alert.alert(
@@ -336,7 +336,7 @@ const HomeScreen = ({navigation, route}: any) => {
         Alert.alert(
           'Error',
           error.message || 'Failed to mark attendance. Please try again.',
-          [{text: 'OK'}]
+          [{ text: 'OK' }]
         );
       }
     } finally {
@@ -352,7 +352,7 @@ const HomeScreen = ({navigation, route}: any) => {
         const position = await locationService.getCurrentPosition();
         console.log('📍 Real location on load:', position);
         setCurrentLocation([position.longitude, position.latitude]);
-        
+
         // Update map to center on real location
         if (webViewRef.current) {
           webViewRef.current.postMessage(JSON.stringify({
@@ -384,7 +384,7 @@ const HomeScreen = ({navigation, route}: any) => {
       console.log('✅ Upload successful:', response);
     } catch (error) {
       console.error('❌ Failed to upload locations:', error);
-      
+
       // Add to offline sync queue
       await syncService.addToQueue({
         type: 'upload_locations',
@@ -396,7 +396,7 @@ const HomeScreen = ({navigation, route}: any) => {
           locations: pointsToUpload,
         },
       });
-      
+
       console.log('📦 Added to offline queue for retry');
     }
   };
@@ -404,10 +404,10 @@ const HomeScreen = ({navigation, route}: any) => {
   // Buffer location and upload when threshold is reached
   const bufferAndUploadLocation = async (point: LocationPoint) => {
     locationBuffer.current.push(point);
-    
+
     const bufferSize = locationBuffer.current.length;
     const timeSinceLastUpload = Date.now() - lastUploadTime.current;
-    
+
     // Upload if buffer is full OR 2 minutes have passed
     if (bufferSize >= UPLOAD_BATCH_SIZE || timeSinceLastUpload >= UPLOAD_INTERVAL_MS) {
       await uploadLocationBatch();
@@ -417,7 +417,7 @@ const HomeScreen = ({navigation, route}: any) => {
   const handleTrackToggle = async () => {
     console.log('=== handleTrackToggle called ===');
     console.log('Current isTracking state:', isTracking);
-    
+
     // Prevent rapid toggling (debounce 2 seconds)
     const now = Date.now();
     if (lastToggleTime.current && now - lastToggleTime.current < 2000) {
@@ -425,12 +425,12 @@ const HomeScreen = ({navigation, route}: any) => {
       return;
     }
     lastToggleTime.current = now;
-    
+
     try {
       if (isTracking) {
         // Stop tracking - upload remaining buffer and close session
         console.log('Stopping tracking...');
-        
+
         if (useMockGPS) {
           mockLocationService.stopMockTracking();
           console.log('🧪 Mock tracking stopped');
@@ -438,39 +438,39 @@ const HomeScreen = ({navigation, route}: any) => {
         } else {
           locationService.stopTracking();
         }
-        
+
         if (statsInterval.current) {
           clearInterval(statsInterval.current);
           statsInterval.current = null;
         }
-        
+
         if (uploadIntervalRef.current) {
           clearInterval(uploadIntervalRef.current);
           uploadIntervalRef.current = null;
         }
-        
+
         // Upload any remaining buffered locations
         if (sessionId && locationBuffer.current.length > 0) {
           await uploadLocationBatch();
         }
-        
+
         // Stop the session on backend
         if (sessionId) {
           try {
             const stopResponse = await trackingAPI.stopSession(sessionId);
             console.log('✅ Session stopped:', stopResponse);
             console.log('📊 Response structure:', JSON.stringify(stopResponse, null, 2));
-            
+
             // Safely access nested data
             const sessionData = stopResponse.data || stopResponse;
             const distance = sessionData.total_distance_km || 0;
             const duration = sessionData.total_duration_seconds || 0;
             const points = sessionData.total_points || 0;
-            
+
             Alert.alert(
               'Tracking Stopped',
               `Route saved successfully!\n\nDistance: ${distance.toFixed(2)} km\nDuration: ${locationService.formatDuration(duration)}\nPoints recorded: ${points}`,
-              [{text: 'OK', onPress: () => setShowTrackingDrawer(false)}]
+              [{ text: 'OK', onPress: () => setShowTrackingDrawer(false) }]
             );
           } catch (error: any) {
             console.error('❌ Failed to stop session:', error);
@@ -478,39 +478,39 @@ const HomeScreen = ({navigation, route}: any) => {
             Alert.alert('Warning', 'Tracking stopped locally but failed to sync with server.');
           }
         }
-        
+
         setIsTracking(false);
         setSessionId(null);
         locationBuffer.current = [];
       } else {
         console.log('Starting tracking...');
-        
+
         // Get device info
         const deviceInfo = {
           device_model: await DeviceInfo.getModel(),
           os_version: await DeviceInfo.getSystemVersion(),
           app_version: await DeviceInfo.getVersion(),
         };
-        
+
         // Start tracking session on backend
         try {
           const sessionResponse = await trackingAPI.startSession(deviceInfo);
           console.log('✅ Session started:', sessionResponse);
-          setSessionId(sessionResponse.session_id);
+          setSessionId(sessionResponse.data.session_id);
           lastUploadTime.current = Date.now();
         } catch (error: any) {
-          console.error('❌ Failed to start session:', error);
-          console.log('📋 Error response data:', JSON.stringify(error.response?.data, null, 2));
-          
-          // Check if there's already an active session
+          console.log('📋 Session start error response:', JSON.stringify(error.response?.data, null, 2));
+
+          // Check if there's already an active session - reuse it
           if (error.response?.data?.data?.session_id) {
             console.log('⚠️ Reusing existing active session:', error.response.data.data.session_id);
             setSessionId(error.response.data.data.session_id);
             lastUploadTime.current = Date.now();
           } else {
+            console.error('❌ Failed to start session:', error);
             // User-friendly error messages
             let errorMessage = 'Could not start tracking session.';
-            
+
             if (error.response?.status === 403 || error.response?.data?.message?.includes('employee')) {
               errorMessage = 'Tracking is only available for field officers (SO, DSR). Please login with an employee account.';
             } else if (error.code === 'ECONNREFUSED' || error.code === 'ERR_NETWORK') {
@@ -520,35 +520,35 @@ const HomeScreen = ({navigation, route}: any) => {
             } else if (error.response?.data?.message) {
               errorMessage = error.response.data.message;
             }
-            
+
             Alert.alert('Error', errorMessage);
             return;
           }
         }
-        
+
         // 🧪 Mock GPS Mode for Testing
         if (useMockGPS) {
           console.log('🧪 MOCK GPS MODE ENABLED');
           console.log(`📍 Using route: ${MOCK_ROUTE}`);
-          
+
           setRouteCoordinates([]);
           setDistance(0);
           setDuration(0);
           setVisits(0);
           setIsTracking(true);
           setShowTrackingDrawer(true);
-          
+
           // Start mock tracking
           mockLocationService.startMockTracking(MOCK_ROUTE as keyof typeof MOCK_ROUTES, async (point: LocationPoint) => {
             console.log('🧪 Mock location update:', point);
             setCurrentLocation([point.longitude, point.latitude]);
-            
+
             // Manually add to route (since we're not using real locationService)
             setRouteCoordinates(prev => [...prev, [point.longitude, point.latitude]]);
-            
+
             // Buffer and upload to backend
             await bufferAndUploadLocation(point);
-            
+
             // Update WebView map
             if (webViewRef.current) {
               webViewRef.current.postMessage(JSON.stringify({
@@ -558,26 +558,26 @@ const HomeScreen = ({navigation, route}: any) => {
               }));
             }
           });
-          
+
           // Mock stats updates
           statsInterval.current = setInterval(() => {
             setDistance(prev => prev + 0.05); // Simulate distance increase
             setDuration(prev => prev + 1);
           }, 1000);
-          
+
           // Set up interval to force upload every 2 minutes
           uploadIntervalRef.current = setInterval(async () => {
             await uploadLocationBatch();
           }, UPLOAD_INTERVAL_MS);
-          
+
           return;
         }
-        
+
         // Real GPS tracking
         // Request permission and start tracking
         const hasPermission = await locationService.requestLocationPermission();
         console.log('Permission granted:', hasPermission);
-        
+
         if (!hasPermission) {
           Alert.alert('Permission Denied', 'Location permission is required for tracking.');
           return;
@@ -607,10 +607,10 @@ const HomeScreen = ({navigation, route}: any) => {
           setCurrentLocation([point.longitude, point.latitude]);
           const points = locationService.getLocationPoints();
           setRouteCoordinates(points.map(p => [p.longitude, p.latitude]));
-          
+
           // Buffer and upload to backend
           await bufferAndUploadLocation(point);
-          
+
           // Update WebView map
           if (webViewRef.current) {
             webViewRef.current.postMessage(JSON.stringify({
@@ -626,7 +626,7 @@ const HomeScreen = ({navigation, route}: any) => {
           setDistance(locationService.calculateDistance());
           setDuration(locationService.getDuration());
         }, 1000);
-        
+
         // Set up interval to force upload every 2 minutes
         uploadIntervalRef.current = setInterval(async () => {
           await uploadLocationBatch();
@@ -659,7 +659,7 @@ const HomeScreen = ({navigation, route}: any) => {
         <View style={styles.logoContainer}>
           <PustiLogo width={120} height={50} />
         </View>
-        
+
         <View style={styles.userSection}>
           <TouchableOpacity style={styles.notificationIcon}>
             <Text style={styles.bellIcon}>🔔</Text>
@@ -669,26 +669,26 @@ const HomeScreen = ({navigation, route}: any) => {
               </View>
             )}
           </TouchableOpacity>
-          
+
           <View style={styles.avatarSection}>
             <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
               <View style={styles.avatarContainer}>
                 {/* Attendance Ring */}
                 {attendanceMarked && (
-                  <Animated.View 
+                  <Animated.View
                     style={[
                       styles.attendanceRing,
                       {
-                        transform: [{scale: pulseAnim}],
+                        transform: [{ scale: pulseAnim }],
                       }
-                    ]} 
+                    ]}
                   />
                 )}
-                
+
                 {/* Avatar */}
                 {userPhoto ? (
                   <Image
-                    source={{uri: `http://10.0.2.2:8080${userPhoto}`}}
+                    source={{ uri: `https://tkgerp.com${userPhoto}` }}
                     style={styles.avatar}
                   />
                 ) : (
@@ -698,7 +698,7 @@ const HomeScreen = ({navigation, route}: any) => {
                     </Text>
                   </View>
                 )}
-                
+
                 {/* Check Badge */}
                 {attendanceMarked && (
                   <View style={styles.checkBadge}>
@@ -710,7 +710,7 @@ const HomeScreen = ({navigation, route}: any) => {
             <Text style={styles.userName}>{userName}</Text>
             {attendanceMarked && (
               <Text style={styles.attendanceStatusText}>
-                Present • {new Date(attendanceData?.check_in_time).toLocaleTimeString('en-US', {hour: '2-digit', minute: '2-digit'})}
+                Present • {new Date(attendanceData?.check_in_time).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
               </Text>
             )}
           </View>
@@ -725,7 +725,7 @@ const HomeScreen = ({navigation, route}: any) => {
         <View style={styles.content}>
           {shouldShowTrackButton() && (
             <View style={styles.moduleButtonsContainer}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={[styles.moduleButton, isTracking && styles.moduleButtonActive]}
                 onPress={handleTrackToggle}>
                 <Text style={styles.moduleIcon}>
@@ -735,8 +735,8 @@ const HomeScreen = ({navigation, route}: any) => {
                   {isTracking ? 'Track Off' : 'Track On'}
                 </Text>
               </TouchableOpacity>
-              
-              <TouchableOpacity 
+
+              <TouchableOpacity
                 style={[
                   styles.moduleButton,
                   attendanceMarked && styles.moduleButtonSuccess,
@@ -757,12 +757,12 @@ const HomeScreen = ({navigation, route}: any) => {
                   </>
                 )}
               </TouchableOpacity>
-              
-              <TouchableOpacity 
+
+              <TouchableOpacity
                 style={styles.moduleButton}
                 onPress={() => navigation.navigate('TraceRoute')}>
-                <Image 
-                  source={traceRouteIcon} 
+                <Image
+                  source={traceRouteIcon}
                   style={styles.traceRouteImage}
                   resizeMode="contain"
                 />
@@ -785,7 +785,7 @@ const HomeScreen = ({navigation, route}: any) => {
             activeOpacity={1}
             onPress={() => setShowTrackingDrawer(false)}
           />
-          <Animated.View style={[styles.drawer, {transform: [{translateX: slideAnim}]}]}>
+          <Animated.View style={[styles.drawer, { transform: [{ translateX: slideAnim }] }]}>
             {/* Header */}
             <View style={styles.drawerHeader}>
               <View style={styles.drawerHeaderContent}>
@@ -795,8 +795,8 @@ const HomeScreen = ({navigation, route}: any) => {
                     {isTracking ? 'Tracking Active' : 'Tracking Stopped'}
                   </Text>
                 </View>
-                <TouchableOpacity 
-                  onPress={() => setShowTrackingDrawer(false)} 
+                <TouchableOpacity
+                  onPress={() => setShowTrackingDrawer(false)}
                   style={styles.drawerCloseButton}>
                   <Text style={styles.drawerCloseText}>✕</Text>
                 </TouchableOpacity>
@@ -928,7 +928,7 @@ const HomeScreen = ({navigation, route}: any) => {
                   {isTracking ? 'Stop Tracking' : 'Start Tracking'}
                 </Text>
               </TouchableOpacity>
-              
+
               {/* Mock GPS Test Button */}
               {!isTracking && (
                 <TouchableOpacity
@@ -937,8 +937,8 @@ const HomeScreen = ({navigation, route}: any) => {
                     setUseMockGPS(!useMockGPS);
                     Alert.alert(
                       useMockGPS ? 'Real GPS' : 'Mock GPS Enabled',
-                      useMockGPS 
-                        ? 'Switched to real GPS tracking' 
+                      useMockGPS
+                        ? 'Switched to real GPS tracking'
                         : `Mock GPS enabled. Press "Start Tracking" to begin simulated route: ${MOCK_ROUTE}`
                     );
                   }}>
@@ -1103,7 +1103,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 20,
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
@@ -1146,7 +1146,7 @@ const styles = StyleSheet.create({
     padding: 20,
     marginTop: 20,
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
@@ -1180,7 +1180,7 @@ const styles = StyleSheet.create({
     height: height,
     backgroundColor: '#fff',
     shadowColor: '#000',
-    shadowOffset: {width: -2, height: 0},
+    shadowOffset: { width: -2, height: 0 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 8,

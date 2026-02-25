@@ -21,7 +21,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const API_URL = 'http://10.0.2.2:8080/api/v1';
+const API_URL = 'https://tkgerp.com/api/v1';
 
 type RootStackParamList = {
   NoSalesReason: {
@@ -110,7 +110,7 @@ export default function NoSalesReasonScreen() {
 
       setSubmitting(true);
 
-      const token = await AsyncStorage.getItem('@auth_token');
+      const token = await AsyncStorage.getItem('accessToken');
       const response = await fetch(`${API_URL}/outlet-visits`, {
         method: 'POST',
         headers: {

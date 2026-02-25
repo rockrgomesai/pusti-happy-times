@@ -7,7 +7,7 @@ import axios from 'axios';
 import Config from 'react-native-config';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const API_BASE_URL = Config.API_BASE_URL || 'http://10.0.2.2:8080/api/v1';
+const API_BASE_URL = Config.API_BASE_URL || 'https://tkgerp.com/api/v1';
 
 // Create axios instance with interceptors
 const apiClient = axios.create({
@@ -22,7 +22,7 @@ const apiClient = axios.create({
 apiClient.interceptors.request.use(
   async (config) => {
     try {
-      const token = await AsyncStorage.getItem('@auth_token');
+      const token = await AsyncStorage.getItem('accessToken');
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }
@@ -47,7 +47,7 @@ apiClient.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
-        const refreshToken = await AsyncStorage.getItem('@refresh_token');
+        const refreshToken = await AsyncStorage.getItem('refreshToken');
         if (!refreshToken) {
           throw new Error('No refresh token available');
         }
@@ -58,14 +58,14 @@ apiClient.interceptors.response.use(
         });
 
         const { accessToken } = response.data;
-        await AsyncStorage.setItem('@auth_token', accessToken);
+        await AsyncStorage.setItem('accessToken', accessToken);
 
         // Retry original request with new token
         originalRequest.headers.Authorization = `Bearer ${accessToken}`;
         return apiClient(originalRequest);
       } catch (refreshError) {
         // Refresh failed, logout user
-        await AsyncStorage.multiRemove(['@auth_token', '@refresh_token', '@user_data']);
+        await AsyncStorage.multiRemove(['accessToken', 'refreshToken', 'user']);
         // Optionally navigate to login screen here
         return Promise.reject(refreshError);
       }

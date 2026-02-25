@@ -28,6 +28,7 @@ const { ApiPermission, PagePermission } = require("./Permission");
 const Product = require("./Product");
 const Territory = require("./Territory");
 const Distributor = require("./Distributor");
+const DistributorType = require("./DistributorType");
 const DSR = require("./DSR");
 const Offer = require("./Offer");
 const BdBank = require("./BdBank");
@@ -242,6 +243,7 @@ module.exports = {
   Territory,
   DSR,
   Distributor,
+  DistributorType,
   Route,
   Outlet,
   OutletType,

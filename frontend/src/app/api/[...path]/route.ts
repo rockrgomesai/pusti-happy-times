@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:8080';
+const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:5000';
 
 export async function GET(
   request: NextRequest,
@@ -103,9 +103,9 @@ async function proxyRequest(
     console.error('[Proxy] Error:', error);
     console.error('[Proxy] Backend URL was:', BACKEND_URL);
     return NextResponse.json(
-      { 
-        success: false, 
-        message: 'Failed to connect to backend server' 
+      {
+        success: false,
+        message: 'Failed to connect to backend server'
       },
       { status: 502 }
     );

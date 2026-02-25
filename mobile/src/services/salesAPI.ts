@@ -5,7 +5,7 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const API_BASE_URL = 'http://192.168.0.103:8080/api/v1';
+const API_BASE_URL = 'https://tkgerp.com/api/v1';
 
 // TypeScript interfaces
 export interface Category {
@@ -90,7 +90,7 @@ class SalesAPI {
    */
   async getCategories(distributorId: string, segment?: 'BIS' | 'BEV'): Promise<Category[]> {
     try {
-      const token = await AsyncStorage.getItem('@auth_token');
+      const token = await AsyncStorage.getItem('accessToken');
       let url = `${API_BASE_URL}/mobile/catalog/categories?distributor_id=${distributorId}`;
       if (segment) url += `&segment=${segment}`;
 
@@ -116,7 +116,7 @@ class SalesAPI {
    */
   async getProducts(categoryId: string, distributorId: string): Promise<Product[]> {
     try {
-      const token = await AsyncStorage.getItem('@auth_token');
+      const token = await AsyncStorage.getItem('accessToken');
       const url = `${API_BASE_URL}/mobile/catalog/products?category_id=${categoryId}&distributor_id=${distributorId}`;
 
       const response = await fetch(url, {
@@ -141,7 +141,7 @@ class SalesAPI {
    */
   async getOffers(outletId: string, distributorId: string): Promise<Offer[]> {
     try {
-      const token = await AsyncStorage.getItem('@auth_token');
+      const token = await AsyncStorage.getItem('accessToken');
       const url = `${API_BASE_URL}/mobile/catalog/offers?outlet_id=${outletId}&distributor_id=${distributorId}`;
 
       const response = await fetch(url, {
@@ -166,7 +166,7 @@ class SalesAPI {
    */
   async placeOrder(orderData: OrderSubmission): Promise<any> {
     try {
-      const token = await AsyncStorage.getItem('@auth_token');
+      const token = await AsyncStorage.getItem('accessToken');
       const url = `${API_BASE_URL}/mobile/orders`;
 
       const response = await fetch(url, {
@@ -209,7 +209,7 @@ class SalesAPI {
     }
   ): Promise<{ data: Order[]; pagination: any }> {
     try {
-      const token = await AsyncStorage.getItem('@auth_token');
+      const token = await AsyncStorage.getItem('accessToken');
       let url = `${API_BASE_URL}/mobile/orders?dsr_id=${dsrId}`;
 
       if (filters) {
@@ -246,7 +246,7 @@ class SalesAPI {
    */
   async getOrderById(orderId: string): Promise<any> {
     try {
-      const token = await AsyncStorage.getItem('@auth_token');
+      const token = await AsyncStorage.getItem('accessToken');
       const url = `${API_BASE_URL}/mobile/orders/${orderId}`;
 
       const response = await fetch(url, {

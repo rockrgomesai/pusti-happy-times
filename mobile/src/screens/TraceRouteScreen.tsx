@@ -1,4 +1,4 @@
-import React, {useEffect, useState, useRef} from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   View,
   StyleSheet,
@@ -13,11 +13,11 @@ import {
   Modal,
   ScrollView,
 } from 'react-native';
-import {WebView} from 'react-native-webview';
+import { WebView } from 'react-native-webview';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const {width, height} = Dimensions.get('window');
-const API_URL = 'http://10.0.2.2:8080/api/v1';
+const { width, height } = Dimensions.get('window');
+const API_URL = 'https://tkgerp.com/api/v1';
 
 interface Outlet {
   _id: string;
@@ -43,14 +43,14 @@ interface RouteData {
   outlets: Outlet[];
 }
 
-const TraceRouteScreen = ({navigation}: any) => {
+const TraceRouteScreen = ({ navigation }: any) => {
   const [loading, setLoading] = useState(true);
   const [outlets, setOutlets] = useState<Outlet[]>([]);
   const [routeName, setRouteName] = useState('');
   const [selectedOutlets, setSelectedOutlets] = useState<Outlet[]>([]);
   const [showBottomSheet, setShowBottomSheet] = useState(false);
   const [showOutletsDrawer, setShowOutletsDrawer] = useState(false);
-  
+
   const webViewRef = useRef<any>(null);
   const bottomSheetAnim = useRef(new Animated.Value(height)).current;
   const drawerAnim = useRef(new Animated.Value(width)).current;
@@ -62,7 +62,7 @@ const TraceRouteScreen = ({navigation}: any) => {
   const fetchMyRoute = async () => {
     try {
       setLoading(true);
-      
+
       const token = await AsyncStorage.getItem('accessToken');
       if (!token) {
         Alert.alert('Error', 'Please login again');
@@ -86,22 +86,35 @@ const TraceRouteScreen = ({navigation}: any) => {
         return;
       }
 
+      if (response.status === 403) {
+        const errData = await response.json();
+        console.log('[TRACE-ROUTE] Access denied:', errData);
+        Alert.alert('Access Denied', errData.message || 'You do not have permission to view routes.');
+        navigation.goBack();
+        return;
+      }
+
       const data = await response.json();
+      console.log('[TRACE-ROUTE] Response status:', response.status, 'data:', JSON.stringify(data).substring(0, 200));
 
       if (!data.success) {
-        Alert.alert('No Route Found', data.message || `No route assigned for ${today}`);
+        if (response.status === 404) {
+          Alert.alert('No Route Found', data.message || `No route assigned for ${today}`);
+        } else {
+          Alert.alert('Error', data.message || 'Failed to load route');
+        }
         navigation.goBack();
         return;
       }
 
       const routeData: RouteData = data.data;
       setRouteName(routeData.route_name || routeData.route_id);
-      
+
       // Filter outlets with valid coordinates
       const validOutlets = routeData.outlets.filter(
         o => o.lati !== 0 && o.longi !== 0 && o.active
       );
-      
+
       // Log first few outlets for debugging
       console.log('[TRACE-ROUTE] Sample outlet coordinates:');
       validOutlets.slice(0, 3).forEach(o => {
@@ -142,7 +155,7 @@ const TraceRouteScreen = ({navigation}: any) => {
           // Continue without visit data
         }
       }
-      
+
       setOutlets(validOutlets);
 
       if (validOutlets.length === 0) {
@@ -160,9 +173,9 @@ const TraceRouteScreen = ({navigation}: any) => {
 
   const handleMarkerClick = (clusterType: string, specificOutletId?: string) => {
     console.log(`[TRACE-ROUTE] Marker clicked - cluster type: ${clusterType}`);
-    
+
     let outletsToShow: Outlet[];
-    
+
     if (clusterType === 'C1' || clusterType === 'C2') {
       // Show all outlets of this cluster type
       outletsToShow = outlets.filter(o => o.outlet_name.startsWith(clusterType));
@@ -172,7 +185,7 @@ const TraceRouteScreen = ({navigation}: any) => {
       outletsToShow = outlets.filter(o => o._id === specificOutletId);
       console.log(`[TRACE-ROUTE] Found ${outletsToShow.length} outlet for ID ${specificOutletId}`);
     }
-    
+
     if (outletsToShow.length > 0) {
       setSelectedOutlets(outletsToShow);
       showBottomSheetModal();
@@ -224,10 +237,10 @@ const TraceRouteScreen = ({navigation}: any) => {
         lng: outlet.longi,
       }));
     }
-    
+
     // Close drawer
     toggleOutletsDrawer();
-    
+
     // Show bottom sheet after short delay
     setTimeout(() => {
       setSelectedOutlets([outlet]);
@@ -237,7 +250,7 @@ const TraceRouteScreen = ({navigation}: any) => {
 
   const handleGetIn = (outlet: Outlet) => {
     hideBottomSheet();
-    
+
     // Navigate to Shop Action screen with outlet details
     navigation.navigate('ShopAction', {
       outletId: outlet._id,
@@ -256,7 +269,7 @@ const TraceRouteScreen = ({navigation}: any) => {
     try {
       const message = JSON.parse(event.nativeEvent.data);
       console.log('[TRACE-ROUTE] WebView message received:', message);
-      
+
       if (message.type === 'markerClick') {
         handleMarkerClick(message.clusterType, message.outletId);
       } else if (message.type === 'mapReady') {
@@ -270,9 +283,9 @@ const TraceRouteScreen = ({navigation}: any) => {
             lat: o.lati,
             lng: o.longi,
           }));
-          
+
           console.log(`[TRACE-ROUTE] Sending ${outletsData.length} outlets to map`);
-          
+
           webViewRef.current?.postMessage(JSON.stringify({
             type: 'setOutlets',
             outlets: outletsData,
@@ -285,7 +298,7 @@ const TraceRouteScreen = ({navigation}: any) => {
   };
 
   // Sort outlets alphabetically
-  const sortedOutlets = [...outlets].sort((a, b) => 
+  const sortedOutlets = [...outlets].sort((a, b) =>
     a.outlet_name.localeCompare(b.outlet_name)
   );
 
@@ -525,14 +538,14 @@ const TraceRouteScreen = ({navigation}: any) => {
       {/* Bottom Sheet */}
       {showBottomSheet && selectedOutlets.length > 0 && (
         <Modal transparent visible={showBottomSheet} animationType="none">
-          <TouchableOpacity 
-            style={styles.bottomSheetBackdrop} 
+          <TouchableOpacity
+            style={styles.bottomSheetBackdrop}
             activeOpacity={1}
             onPress={hideBottomSheet}
           />
-          <Animated.View style={[styles.bottomSheet, {top: bottomSheetAnim}]}>
+          <Animated.View style={[styles.bottomSheet, { top: bottomSheetAnim }]}>
             <View style={styles.bottomSheetHandle} />
-            
+
             <View style={styles.bottomSheetContent}>
               {selectedOutlets.length === 1 ? (
                 // Single outlet view
@@ -541,11 +554,11 @@ const TraceRouteScreen = ({navigation}: any) => {
                   {selectedOutlets[0].outlet_name_bangla && (
                     <Text style={styles.outletNameBangla}>{selectedOutlets[0].outlet_name_bangla}</Text>
                   )}
-                  
+
                   {selectedOutlets[0].address && (
                     <Text style={styles.outletAddress}>{selectedOutlets[0].address}</Text>
                   )}
-                  
+
                   <TouchableOpacity style={styles.getInButton} onPress={() => handleGetIn(selectedOutlets[0])}>
                     <Text style={styles.getInButtonText}>Get In</Text>
                   </TouchableOpacity>
@@ -563,8 +576,8 @@ const TraceRouteScreen = ({navigation}: any) => {
                             <Text style={styles.multiOutletNameBangla}>{outlet.outlet_name_bangla}</Text>
                           )}
                         </View>
-                        <TouchableOpacity 
-                          style={styles.multiOutletGetInButton} 
+                        <TouchableOpacity
+                          style={styles.multiOutletGetInButton}
                           onPress={() => handleGetIn(outlet)}
                         >
                           <Text style={styles.multiOutletGetInText}>Get In</Text>
@@ -583,24 +596,24 @@ const TraceRouteScreen = ({navigation}: any) => {
       {showOutletsDrawer && (
         <Modal transparent visible={showOutletsDrawer} animationType="none">
           <View style={styles.drawerContainer}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.drawerBackdrop}
               activeOpacity={1}
               onPress={toggleOutletsDrawer}
             />
-            <Animated.View style={[styles.drawer, {transform: [{translateX: drawerAnim}]}]}>
+            <Animated.View style={[styles.drawer, { transform: [{ translateX: drawerAnim }] }]}>
               <View style={styles.drawerHeader}>
                 <Text style={styles.drawerTitle}>All Outlets ({sortedOutlets.length})</Text>
                 <TouchableOpacity onPress={toggleOutletsDrawer}>
                   <Text style={styles.drawerClose}>✕</Text>
                 </TouchableOpacity>
               </View>
-              
+
               <FlatList
                 data={sortedOutlets}
                 keyExtractor={item => item._id}
-                renderItem={({item}) => (
-                  <TouchableOpacity 
+                renderItem={({ item }) => (
+                  <TouchableOpacity
                     style={styles.outletListItem}
                     onPress={() => handleOutletListItemClick(item)}
                   >
@@ -707,7 +720,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 20,
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
     elevation: 5,
@@ -731,7 +744,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: -2},
+    shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 10,
@@ -789,7 +802,7 @@ const styles = StyleSheet.create({
     height: height,
     backgroundColor: '#fff',
     shadowColor: '#000',
-    shadowOffset: {width: -2, height: 0},
+    shadowOffset: { width: -2, height: 0 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 8,

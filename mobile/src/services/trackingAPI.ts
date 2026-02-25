@@ -1,9 +1,8 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// For Android emulator: 10.0.2.2 maps to host machine's localhost
-// For physical device: use your computer's IP (e.g., 192.168.10.157)
-const API_URL = 'http://10.0.2.2:8080/api/v1';
+// Production API
+const API_URL = 'https://tkgerp.com/api/v1';
 
 interface StartSessionResponse {
   success: boolean;
@@ -48,7 +47,7 @@ class TrackingAPI {
     battery_level?: number;
   }): Promise<StartSessionResponse> {
     const token = await this.getAuthToken();
-    
+
     try {
       const response = await axios.post(
         `${API_URL}/tracking/sessions/start`,
@@ -64,7 +63,7 @@ class TrackingAPI {
       return response.data;
     } catch (error: any) {
       if (error.code === 'ECONNREFUSED' || error.code === 'ERR_NETWORK') {
-        throw new Error('Cannot connect to server. Please ensure backend is running on port 8080.');
+        throw new Error('Cannot connect to server. Please ensure backend is running on port 5000.');
       }
       if (error.response?.status === 401) {
         throw new Error('Authentication failed. Please login again.');
@@ -96,8 +95,8 @@ class TrackingAPI {
       {
         points: points.map(p => ({
           ...p,
-          timestamp: typeof p.timestamp === 'number' 
-            ? new Date(p.timestamp).toISOString() 
+          timestamp: typeof p.timestamp === 'number'
+            ? new Date(p.timestamp).toISOString()
             : p.timestamp,
         })),
       },
