@@ -435,10 +435,10 @@ const fetchDbPoints = async (searchTerm = ''): Promise<TerritoryOption[]> => {
 
 const fetchDepots = async (searchTerm = ''): Promise<DepotOption[]> => {
   try {
-    // Use the new delivery-depots endpoint
-    const response = await api.get('/delivery-depots/active', {
+    const response = await api.get('/facilities/depots', {
       params: {
         search: searchTerm || undefined,
+        limit: searchTerm ? 50 : 100000, // Limit results when searching
       },
     });
 
@@ -456,10 +456,10 @@ const fetchDepots = async (searchTerm = ''): Promise<DepotOption[]> => {
       })
       .filter((entry): entry is DepotOption => Boolean(entry));
   } catch (error) {
-    console.error('Failed to load delivery depots', error);
+    console.error('Failed to load depots', error);
     // Only show toast error if user was actually searching
     if (searchTerm && searchTerm.trim()) {
-      toast.error('Failed to load delivery depots');
+      toast.error('Failed to load depots');
     }
     return [];
   }
