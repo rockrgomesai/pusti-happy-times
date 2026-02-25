@@ -37,6 +37,7 @@ const secondaryOffersRoutes = require("./product/secondaryOffers");
 const territoryRoutes = require("./territories");
 const distributorRoutes = require("./distributors");
 const distributorTypesRoutes = require("./distributorTypes");
+const deliveryDepotsRoutes = require("./deliveryDepots");
 const notificationRoutes = require("./notifications");
 const productionSendToStoreRoutes = require("./production/sendToStore");
 const inventoryFactoryToStoreRoutes = require("./inventory/factoryToStore");
@@ -434,6 +435,7 @@ router.use("/distributors", distributorRoutes);
  * @access  Private (SuperAdmin only)
  */
 router.use("/distributor-types", distributorTypesRoutes);
+router.use("/delivery-depots", deliveryDepotsRoutes);
 
 /**
  * DSR Management Routes
