@@ -9,8 +9,7 @@
 const express = require("express");
 const router = express.Router();
 const DeliveryDepot = require("../models/DeliveryDepot");
-const { authenticate } = require("../middleware/auth");
-const { requireApiPermission } = require("../middleware/permissions");
+const { authenticate, requireApiPermission } = require("../middleware/auth");
 
 /**
  * @route   GET /api/v1/delivery-depots
