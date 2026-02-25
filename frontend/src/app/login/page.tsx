@@ -15,6 +15,7 @@ import {
   InputAdornment,
   CircularProgress,
   useTheme,
+  Alert,
 } from '@mui/material';
 import {
   Visibility,
@@ -25,15 +26,19 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { loginSchema, LoginFormData } from '@/lib/validationSchemas';
 import { useAuth } from '@/contexts/AuthContext';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 export default function LoginPage() {
   const theme = useTheme();
   const { login, isAuthenticated, isLoading: authLoading } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
+  
+  // Get redirect URL from query params
+  const redirectTo = searchParams.get('redirectTo') || '/dashboard';
 
   const {
     control,
@@ -68,8 +73,8 @@ export default function LoginPage() {
       console.log('🔐 Login form submitted:', data);
       const username = data.username.trim().toLowerCase();
       const password = data.password.trim();
-      console.log('🔐 Calling login with:', { username, passwordLength: password.length });
-      await login(username, password);
+      console.log('🔐 Calling login with:', { username, passwordLength: password.length, redirectTo });
+      await login(username, password, redirectTo);
       // Navigation is handled in the AuthContext login function
     } catch (error) {
       console.error('🔐 Login failed:', error);
@@ -154,6 +159,13 @@ export default function LoginPage() {
         >
           Welcome back! Please sign in to your account.
         </Typography>
+        
+        {/* Show session expired message if redirected */}
+        {searchParams.get('redirectTo') && (
+          <Alert severity="warning" sx={{ mb: 2 }}>
+            Your session has expired. Please login again.
+          </Alert>
+        )}
       </Box>
 
       {/* Login Form */}

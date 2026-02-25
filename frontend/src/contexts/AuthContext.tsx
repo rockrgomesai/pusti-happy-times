@@ -49,7 +49,7 @@ interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  login: (username: string, password: string) => Promise<void>;
+  login: (username: string, password: string, redirectTo?: string) => Promise<void>;
   logout: () => Promise<void>;
   changePassword: (passwordData: {
     currentPassword: string;
@@ -137,7 +137,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     return '/dashboard';
   };
 
-  const login = async (username: string, password: string): Promise<void> => {
+  const login = async (username: string, password: string, redirectTo?: string): Promise<void> => {
     try {
       setIsLoading(true);
       const response = await authAPI.login({ username, password });
@@ -159,8 +159,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
         
         toast.success('Login successful!');
         
-        // Determine redirect path based on user type
-        const redirectPath = determineRedirectPath(userData);
+        // Use provided redirect path or determine based on user type
+        const redirectPath = redirectTo || determineRedirectPath(userData);
+        
+        console.log('🔀 Redirecting to:', redirectPath);
         
         // Force a full page reload to clear all stale state
         // This prevents issues with cached role data when switching users

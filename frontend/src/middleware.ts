@@ -5,7 +5,7 @@ import type { NextRequest } from 'next/server';
 const protectedRoutes = ['/dashboard', '/users', '/roles', '/brands', '/menu-items', '/permissions', '/admin', '/master'];
 
 export function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
+  const { pathname, search } = request.nextUrl;
   
   // Get token from cookies
   const accessToken = request.cookies.get('accessToken')?.value;
@@ -24,9 +24,10 @@ export function middleware(request: NextRequest) {
   
   // If user is not authenticated and trying to access protected route
   if (!accessToken && isProtectedRoute) {
-    // Store the intended destination for redirect after login
+    // Store the intended destination (full path with query params) for redirect after login
     const loginUrl = new URL('/login', request.url);
-    loginUrl.searchParams.set('redirectTo', pathname);
+    const intendedUrl = pathname + search;
+    loginUrl.searchParams.set('redirectTo', intendedUrl);
     return NextResponse.redirect(loginUrl);
   }
   
