@@ -29,7 +29,6 @@ const Product = require("./Product");
 const Territory = require("./Territory");
 const Distributor = require("./Distributor");
 const DistributorType = require("./DistributorType");
-const DeliveryDepot = require("./DeliveryDepot");
 const DSR = require("./DSR");
 const Offer = require("./Offer");
 const BdBank = require("./BdBank");
@@ -83,7 +82,6 @@ const models = {
   Territory,
   Distributor,
   DistributorType,
-  DeliveryDepot,
   DSR,
   Offer,
   BdBank,
