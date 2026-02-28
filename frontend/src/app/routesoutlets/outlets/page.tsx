@@ -95,8 +95,14 @@ const outletSchema = z.object({
       (val) => !val || /^(\+88)?01[3-9]\d{8}$/.test(val),
       'Invalid mobile format (use 01XXXXXXXXX)'
     ),
-  credit_limit: z.number().min(0).optional().or(z.literal('')),
-  market_size: z.number().min(0).optional().or(z.literal('')),
+  credit_limit: z.preprocess(
+    (val) => (val === '' || val === null || val === undefined ? 0 : Number(val)),
+    z.number().min(0).optional()
+  ),
+  market_size: z.preprocess(
+    (val) => (val === '' || val === null || val === undefined ? 0 : Number(val)),
+    z.number().min(0).optional()
+  ),
   comments: z.string().optional(),
   active: z.boolean(),
 });
