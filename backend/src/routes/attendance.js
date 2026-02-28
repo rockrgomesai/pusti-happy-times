@@ -99,19 +99,31 @@ router.post("/check-in", authenticate, async (req, res) => {
 
       console.log(`SO Attendance Check - User: ${userId}, Today: ${today}`);
 
-      // Convert userId to ObjectId for MongoDB query
-      const userObjectId =
-        userId instanceof mongoose.Types.ObjectId ? userId : new mongoose.Types.ObjectId(userId);
+      // Use employee_id from user record (routes are assigned to employees, not users)
+      const employeeId = user.employee_id;
+      
+      if (!employeeId) {
+        return res.status(400).json({
+          success: false,
+          message: "No employee record linked to this user. Please contact admin.",
+        });
+      }
+
+      // Convert employeeId to ObjectId for MongoDB query
+      const employeeObjectId =
+        employeeId instanceof mongoose.Types.ObjectId ? employeeId : new mongoose.Types.ObjectId(employeeId);
+
+      console.log(`SO Attendance Check - Employee: ${employeeId}, Today: ${today}`);
 
       // Find SO's route for today (check both sr_1 and sr_2 assignments)
       const route = await Route.findOne({
         $or: [
           {
-            "sr_assignments.sr_1.sr_id": userObjectId,
+            "sr_assignments.sr_1.sr_id": employeeObjectId,
             "sr_assignments.sr_1.visit_days": { $in: [today] },
           },
           {
-            "sr_assignments.sr_2.sr_id": userObjectId,
+            "sr_assignments.sr_2.sr_id": employeeObjectId,
             "sr_assignments.sr_2.visit_days": { $in: [today] },
           },
         ],

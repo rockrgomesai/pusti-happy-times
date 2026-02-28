@@ -123,7 +123,16 @@ router.get(
 // @access  Private (mobile app - no specific API permission required)
 router.get("/my-route", authenticate, async (req, res) => {
   try {
-    const userId = req.user._id;
+    // Use employee_id from user record (routes are assigned to employees, not users)
+    const employeeId = req.user.employee_id;
+    
+    if (!employeeId) {
+      return res.status(400).json({
+        success: false,
+        message: "No employee record linked to this user. Please contact admin.",
+      });
+    }
+    
     const { day } = req.query;
 
     // Determine which day to check
@@ -135,21 +144,21 @@ router.get("/my-route", authenticate, async (req, res) => {
       targetDay = daysOfWeek[new Date().getDay()];
     }
 
-    console.log(`[MY-ROUTE] Fetching route for user ${userId}, day: ${targetDay}`);
+    console.log(`[MY-ROUTE] Fetching route for employee ${employeeId}, day: ${targetDay}`);
 
     // Convert to ObjectId for query
-    const userObjectId =
-      userId instanceof mongoose.Types.ObjectId ? userId : new mongoose.Types.ObjectId(userId);
+    const employeeObjectId =
+      employeeId instanceof mongoose.Types.ObjectId ? employeeId : new mongoose.Types.ObjectId(employeeId);
 
-    // Find route assigned to this user for the target day
+    // Find route assigned to this employee for the target day
     const route = await Route.findOne({
       $or: [
         {
-          "sr_assignments.sr_1.sr_id": userObjectId,
+          "sr_assignments.sr_1.sr_id": employeeObjectId,
           "sr_assignments.sr_1.visit_days": { $in: [targetDay] },
         },
         {
-          "sr_assignments.sr_2.sr_id": userObjectId,
+          "sr_assignments.sr_2.sr_id": employeeObjectId,
           "sr_assignments.sr_2.visit_days": { $in: [targetDay] },
         },
       ],
