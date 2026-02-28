@@ -317,6 +317,10 @@ export default function RoutesPage() {
       
       console.log("Setting formData with zone_id:", zoneId, "region_id:", regionId);
       
+      // Extract just the _id from populated sr_id objects
+      const sr1Id = route.sr_assignments?.sr_1?.sr_id?._id || route.sr_assignments?.sr_1?.sr_id || null;
+      const sr2Id = route.sr_assignments?.sr_2?.sr_id?._id || route.sr_assignments?.sr_2?.sr_id || null;
+      
       setFormData({
         route_id: route.route_id,
         route_name: route.route_name,
@@ -325,7 +329,16 @@ export default function RoutesPage() {
         area_id: areaId,
         db_point_id: route.db_point_id._id,
         distributor_id: route.distributor_id._id,
-        sr_assignments: route.sr_assignments,
+        sr_assignments: {
+          sr_1: {
+            sr_id: sr1Id,
+            visit_days: route.sr_assignments?.sr_1?.visit_days || [],
+          },
+          sr_2: {
+            sr_id: sr2Id,
+            visit_days: route.sr_assignments?.sr_2?.visit_days || [],
+          },
+        },
         frequency: route.frequency,
         contribution: route.contribution,
         contribution_mf: route.contribution_mf,
