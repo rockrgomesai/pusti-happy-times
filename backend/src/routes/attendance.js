@@ -101,7 +101,7 @@ router.post("/check-in", authenticate, async (req, res) => {
 
       // Use employee_id from user record (routes are assigned to employees, not users)
       const employeeId = user.employee_id;
-      
+
       if (!employeeId) {
         return res.status(400).json({
           success: false,

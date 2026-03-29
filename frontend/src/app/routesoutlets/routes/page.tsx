@@ -78,7 +78,7 @@ export default function RoutesPage() {
   const [editingRoute, setEditingRoute] = useState<Route | null>(null);
   const [tabValue, setTabValue] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
-  
+
   // Filter states
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedZone, setSelectedZone] = useState<string>("");
@@ -86,7 +86,7 @@ export default function RoutesPage() {
   const [selectedArea, setSelectedArea] = useState<string>("");
   const [selectedDistributor, setSelectedDistributor] = useState<string>("");
   const [showActiveOnly, setShowActiveOnly] = useState(true);
-  
+
   // Dropdown data
   const [zones, setZones] = useState<Array<{ _id: string; name: string; territory_id: string }>>([]);
   const [regions, setRegions] = useState<Array<{ _id: string; name: string; territory_id: string }>>([]);
@@ -94,7 +94,7 @@ export default function RoutesPage() {
   const [dbPoints, setDbPoints] = useState<Array<{ _id: string; name: string; territory_id: string }>>([]);
   const [distributors, setDistributors] = useState<Array<{ _id: string; name: string; distributor_id: string }>>([]);
   const [salesReps, setSalesReps] = useState<Array<{ _id: string; name: string; employee_id: string }>>([]);
-  
+
   // Form state
   const [formData, setFormData] = useState<RouteFormData & { zone_id?: string; region_id?: string }>({
     route_id: "",
@@ -115,10 +115,10 @@ export default function RoutesPage() {
     outlet_qty: 0,
     actual_outlet_qty: 0,
   });
-  
+
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  
+
   const canCreate = hasPermission("routes:create");
   const canUpdate = hasPermission("routes:update");
   const canDelete = hasPermission("routes:delete");
@@ -134,14 +134,14 @@ export default function RoutesPage() {
     try {
       setLoading(true);
       setError(null);
-      const params: { limit: number; active: boolean; search?: string; area_id?: string; distributor_id?: string } = { 
-        limit: 100000, 
-        active: showActiveOnly 
+      const params: { limit: number; active: boolean; search?: string; area_id?: string; distributor_id?: string } = {
+        limit: 100000,
+        active: showActiveOnly
       };
       if (searchTerm) params.search = searchTerm;
       if (selectedArea) params.area_id = selectedArea;
       if (selectedDistributor) params.distributor_id = selectedDistributor;
-      
+
       const data = await listRoutes(params);
       setRoutes(data.routes || []);
     } catch (err) {
@@ -205,11 +205,11 @@ export default function RoutesPage() {
 
   const loadDbPoints = async (areaId: string) => {
     try {
-      const response = await listTerritories({ 
-        limit: 100000, 
-        type: "DB_POINT", 
-        parentId: areaId, 
-        active: true 
+      const response = await listTerritories({
+        limit: 100000,
+        type: "DB_POINT",
+        parentId: areaId,
+        active: true
       });
       setDbPoints(response.data || []);
     } catch (err) {
@@ -255,7 +255,7 @@ export default function RoutesPage() {
       db_point_id: "",
       distributor_id: "",
     });
-    
+
     if (areaId) {
       await loadDbPoints(areaId);
       await loadSalesReps(areaId);
@@ -269,18 +269,18 @@ export default function RoutesPage() {
   const handleOpenDialog = async (route?: Route) => {
     if (route) {
       setEditingRoute(route);
-      
+
       // Extract territory hierarchy from route data
       const areaId = route.area_id._id;
       const dbPointId = route.db_point_id?._id;
-      
+
       // Get region_id from area's parent_id
       const regionId = route.area_id.parent_id || "";
       console.log("Edit Route - Area:", route.area_id, "RegionId:", regionId);
-      
+
       // Load zones first
       await loadZones();
-      
+
       // Fetch the region to get its parent_id (zone_id)
       let zoneId = "";
       if (regionId) {
@@ -289,8 +289,8 @@ export default function RoutesPage() {
           console.log("Region Data:", regionData);
           if (regionData.data?.parent_id) {
             // Extract the ID string from the parent_id (could be populated object or string)
-            zoneId = typeof regionData.data.parent_id === 'string' 
-              ? regionData.data.parent_id 
+            zoneId = typeof regionData.data.parent_id === 'string'
+              ? regionData.data.parent_id
               : regionData.data.parent_id._id;
             console.log("ZoneId from region:", zoneId);
             // Load regions for this zone
@@ -300,27 +300,27 @@ export default function RoutesPage() {
           console.error("Failed to load region details:", err);
         }
       }
-      
+
       // Load areas for the region
       if (regionId) {
         await loadAreas(regionId);
       }
-      
+
       // Load DB points and distributors
       await loadDbPoints(areaId);
       if (dbPointId) {
         await loadDistributors(dbPointId);
       }
-      
+
       // Load sales reps for this area
       await loadSalesReps(areaId);
-      
+
       console.log("Setting formData with zone_id:", zoneId, "region_id:", regionId);
-      
+
       // Extract just the _id from populated sr_id objects
       const sr1Id = route.sr_assignments?.sr_1?.sr_id?._id || route.sr_assignments?.sr_1?.sr_id || null;
       const sr2Id = route.sr_assignments?.sr_2?.sr_id?._id || route.sr_assignments?.sr_2?.sr_id || null;
-      
+
       setFormData({
         route_id: route.route_id,
         route_name: route.route_name,
@@ -385,7 +385,7 @@ export default function RoutesPage() {
     try {
       setError(null);
       setSuccess(null);
-      
+
       if (editingRoute) {
         await updateRoute(editingRoute._id, formData);
         setSuccess("Route updated successfully");
@@ -393,7 +393,7 @@ export default function RoutesPage() {
         await createRoute(formData);
         setSuccess("Route created successfully");
       }
-      
+
       await loadRoutes();
       setTimeout(() => {
         handleCloseDialog();
@@ -406,7 +406,7 @@ export default function RoutesPage() {
 
   const handleDelete = async (id: string) => {
     if (!window.confirm("Are you sure you want to deactivate this route?")) return;
-    
+
     try {
       await deleteRoute(id);
       setSuccess("Route deactivated successfully");
@@ -433,7 +433,7 @@ export default function RoutesPage() {
     const newDays = currentDays.includes(day)
       ? currentDays.filter((d) => d !== day)
       : [...currentDays, day];
-    
+
     setFormData({
       ...formData,
       sr_assignments: {
@@ -699,10 +699,10 @@ export default function RoutesPage() {
       </Paper>
 
       {/* Add/Edit Dialog */}
-      <Dialog 
-        open={openDialog} 
-        onClose={handleCloseDialog} 
-        maxWidth="md" 
+      <Dialog
+        open={openDialog}
+        onClose={handleCloseDialog}
+        maxWidth="md"
         fullWidth
         fullScreen={isMobile}
       >
@@ -757,8 +757,8 @@ export default function RoutesPage() {
                       value={formData.zone_id || ''}
                       onChange={(e) => {
                         const zoneId = e.target.value;
-                        setFormData({ 
-                          ...formData, 
+                        setFormData({
+                          ...formData,
                           zone_id: zoneId,
                           region_id: '',
                           area_id: '',
@@ -789,8 +789,8 @@ export default function RoutesPage() {
                       value={formData.region_id || ''}
                       onChange={(e) => {
                         const regionId = e.target.value;
-                        setFormData({ 
-                          ...formData, 
+                        setFormData({
+                          ...formData,
                           region_id: regionId,
                           area_id: '',
                           db_point_id: '',
@@ -1054,9 +1054,9 @@ export default function RoutesPage() {
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseDialog}>Cancel</Button>
-          <Button 
-            onClick={handleSubmit} 
-            variant="contained" 
+          <Button
+            onClick={handleSubmit}
+            variant="contained"
             disabled={!formData.route_id || !formData.route_name || !formData.area_id || !formData.distributor_id}
           >
             {editingRoute ? "Update" : "Create"}

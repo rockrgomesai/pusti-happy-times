@@ -125,14 +125,14 @@ router.get("/my-route", authenticate, async (req, res) => {
   try {
     // Use employee_id from user record (routes are assigned to employees, not users)
     const employeeId = req.user.employee_id;
-    
+
     if (!employeeId) {
       return res.status(400).json({
         success: false,
         message: "No employee record linked to this user. Please contact admin.",
       });
     }
-    
+
     const { day } = req.query;
 
     // Determine which day to check
