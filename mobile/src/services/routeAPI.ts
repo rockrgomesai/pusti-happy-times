@@ -1,7 +1,6 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
-const API_URL = 'https://tkgerp.com/api/v1';
+import { API_BASE_URL as API_URL } from '../config/api';
 
 interface RouteAPIResponse {
   success: boolean;

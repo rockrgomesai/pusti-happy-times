@@ -20,8 +20,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import Geolocation from '@react-native-community/geolocation';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
-const API_URL = 'https://tkgerp.com/api/v1';
+import { API_BASE_URL as API_URL } from '../config/api';
 
 type RootStackParamList = {
   ShopAction: {
@@ -108,7 +107,16 @@ export default function ShopActionScreen() {
             Alert.alert(
               'Too Far',
               `You are ${Math.round(calculatedDistance)}m away from the outlet. Please get within ${PROXIMITY_THRESHOLD_METERS}m to perform actions.`,
-              [{ text: 'OK', onPress: () => navigation.goBack() }]
+              [
+                { text: 'OK', onPress: () => navigation.goBack() },
+                ...(__DEV__
+                  ? [{
+                      text: 'Bypass (DEV)',
+                      style: 'destructive' as const,
+                      onPress: () => setProximityValid(true),
+                    }]
+                  : []),
+              ]
             );
           }
           setLoading(false);
@@ -281,6 +289,22 @@ export default function ShopActionScreen() {
         <Text style={styles.errorSubtext}>
           Please get within {PROXIMITY_THRESHOLD_METERS}m to perform actions
         </Text>
+        {__DEV__ && (
+          <TouchableOpacity
+            onPress={() => setProximityValid(true)}
+            style={{
+              marginTop: 24,
+              paddingVertical: 12,
+              paddingHorizontal: 24,
+              backgroundColor: '#f44336',
+              borderRadius: 8,
+            }}
+          >
+            <Text style={{ color: '#fff', fontWeight: '600' }}>
+              Bypass Proximity (DEV)
+            </Text>
+          </TouchableOpacity>
+        )}
       </View>
     );
   }

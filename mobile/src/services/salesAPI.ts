@@ -4,8 +4,7 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
-const API_BASE_URL = 'https://tkgerp.com/api/v1';
+import { API_BASE_URL } from '../config/api';
 
 // TypeScript interfaces
 export interface Category {
@@ -68,7 +67,22 @@ export interface OrderSubmission {
   };
   gps_accuracy?: number;
   so_notes?: string;
+  /** Client-generated uid for idempotent offline resubmission. */
+  client_order_uid?: string;
+  /** "online" | "offline" | "manual" — tagged by the mobile app. */
+  entry_mode?: 'online' | 'offline' | 'manual';
+  /** ISO timestamp captured at the moment the order was taken. */
+  order_date?: string;
 }
+
+export interface PendingOrder extends OrderSubmission {
+  client_order_uid: string;
+  queued_at: string;
+  last_error?: string;
+  retry_count: number;
+}
+
+const PENDING_ORDERS_KEY = '@pending_orders_v1';
 
 export interface Order {
   _id: string;
@@ -162,9 +176,24 @@ class SalesAPI {
   }
 
   /**
-   * Place secondary order
+   * Place secondary order with transparent offline queueing.
+   *
+   * Behavior:
+   *   - Always stamps `client_order_uid` + `order_date` + `entry_mode`.
+   *   - If the POST fails with a network error (offline / DNS / timeout),
+   *     the order is saved to AsyncStorage and returned with `queued: true`.
+   *   - If the server returns a 4xx/5xx, the caller sees the original error
+   *     (stock conflicts, validation, etc) — we do NOT queue those.
+   *   - Callers should invoke `syncPendingOrders()` when connectivity returns.
    */
   async placeOrder(orderData: OrderSubmission): Promise<any> {
+    const payload: OrderSubmission = {
+      ...orderData,
+      client_order_uid: orderData.client_order_uid || this.generateOrderUid(),
+      order_date: orderData.order_date || new Date().toISOString(),
+      entry_mode: orderData.entry_mode || 'online',
+    };
+
     try {
       const token = await AsyncStorage.getItem('accessToken');
       const url = `${API_BASE_URL}/mobile/orders`;
@@ -175,23 +204,163 @@ class SalesAPI {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(orderData),
+        body: JSON.stringify(payload),
       });
 
+      // Network succeeded — server responded with JSON
       const result = await response.json();
 
       if (result.success) {
         return result;
-      } else {
-        const error: any = new Error(result.message || 'Failed to place order');
-        error.code = result.code;
-        error.conflicts = result.conflicts;
-        throw error;
       }
-    } catch (error) {
+      const error: any = new Error(result.message || 'Failed to place order');
+      error.code = result.code;
+      error.conflicts = result.conflicts;
+      throw error;
+    } catch (error: any) {
+      // Network-level failure → queue for later sync.
+      if (this.isNetworkError(error)) {
+        await this.enqueueOrder({ ...payload, entry_mode: 'offline' } as any);
+        return {
+          success: true,
+          queued: true,
+          offline: true,
+          message: 'No network — order saved offline and will sync automatically.',
+          client_order_uid: payload.client_order_uid,
+        };
+      }
       console.error('placeOrder error:', error);
       throw error;
     }
+  }
+
+  // ====================================================================
+  // Offline queue helpers
+  // ====================================================================
+
+  private generateOrderUid(): string {
+    // Short, collision-resistant enough for per-user offline queues.
+    const rand = Math.random().toString(36).slice(2, 10);
+    return `ord-${Date.now().toString(36)}-${rand}`;
+  }
+
+  private isNetworkError(error: any): boolean {
+    if (!error) return false;
+    const msg = String(error.message || '').toLowerCase();
+    return (
+      msg.includes('network request failed') ||
+      msg.includes('failed to fetch') ||
+      msg.includes('timeout') ||
+      msg.includes('timed out') ||
+      error.name === 'TypeError' && msg.includes('network')
+    );
+  }
+
+  /** Read the pending queue. */
+  async getPendingOrders(): Promise<PendingOrder[]> {
+    try {
+      const raw = await AsyncStorage.getItem(PENDING_ORDERS_KEY);
+      return raw ? JSON.parse(raw) : [];
+    } catch (e) {
+      console.error('getPendingOrders error:', e);
+      return [];
+    }
+  }
+
+  /** Count pending orders (for the sync badge). */
+  async getPendingCount(): Promise<number> {
+    const q = await this.getPendingOrders();
+    return q.length;
+  }
+
+  /** Add an order to the pending queue. */
+  async enqueueOrder(order: OrderSubmission & { client_order_uid: string }): Promise<void> {
+    const queue = await this.getPendingOrders();
+    // De-dupe by client_order_uid
+    if (queue.some((o) => o.client_order_uid === order.client_order_uid)) return;
+    queue.push({
+      ...order,
+      queued_at: new Date().toISOString(),
+      retry_count: 0,
+    } as PendingOrder);
+    await AsyncStorage.setItem(PENDING_ORDERS_KEY, JSON.stringify(queue));
+  }
+
+  /** Manually add an order that was collected on paper (offline-first entry). */
+  async saveManualOrder(order: OrderSubmission): Promise<string> {
+    const uid = order.client_order_uid || this.generateOrderUid();
+    await this.enqueueOrder({
+      ...order,
+      client_order_uid: uid,
+      order_date: order.order_date || new Date().toISOString(),
+      entry_mode: 'manual',
+    } as any);
+    return uid;
+  }
+
+  /**
+   * Attempt to POST every queued order. Succeeded ones are removed.
+   * Returns a summary. Safe to call repeatedly.
+   */
+  async syncPendingOrders(): Promise<{ synced: number; failed: number; remaining: number; conflicts: any[] }> {
+    const queue = await this.getPendingOrders();
+    if (queue.length === 0) return { synced: 0, failed: 0, remaining: 0, conflicts: [] };
+
+    const token = await AsyncStorage.getItem('accessToken');
+    const url = `${API_BASE_URL}/mobile/orders`;
+    const still: PendingOrder[] = [];
+    const conflicts: any[] = [];
+    let synced = 0;
+    let failed = 0;
+
+    for (const pending of queue) {
+      try {
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(pending),
+        });
+        const result = await response.json().catch(() => ({}));
+        if (result && result.success) {
+          synced += 1;
+          continue; // drop from queue
+        }
+        // Server rejected (stock, validation, etc). Keep queued but record.
+        still.push({
+          ...pending,
+          retry_count: (pending.retry_count || 0) + 1,
+          last_error: result?.message || `HTTP ${response.status}`,
+        });
+        conflicts.push({
+          client_order_uid: pending.client_order_uid,
+          code: result?.code,
+          message: result?.message,
+          conflicts: result?.conflicts,
+        });
+        failed += 1;
+      } catch (e: any) {
+        // Network still down → keep queued
+        still.push({
+          ...pending,
+          retry_count: (pending.retry_count || 0) + 1,
+          last_error: e?.message || 'Network error',
+        });
+        failed += 1;
+      }
+    }
+
+    await AsyncStorage.setItem(PENDING_ORDERS_KEY, JSON.stringify(still));
+    return { synced, failed, remaining: still.length, conflicts };
+  }
+
+  /** Remove a specific queued order (e.g. user discards it from Pending Sync screen). */
+  async discardPendingOrder(clientOrderUid: string): Promise<void> {
+    const queue = await this.getPendingOrders();
+    const next = queue.filter((o) => o.client_order_uid !== clientOrderUid);
+    await AsyncStorage.setItem(PENDING_ORDERS_KEY, JSON.stringify(next));
   }
 
   /**

@@ -20,12 +20,6 @@ const LoginScreen = ({ navigation }: any) => {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  // TEST: This will show once when screen loads
-  React.useEffect(() => {
-    console.log('🧪 LoginScreen loaded - Code is FRESH!');
-    console.log('🌐 Backend URL: https://tkgerp.com/api/v1');
-  }, []);
-
   const handleLogin = async () => {
     if (!username.trim() || !password.trim()) {
       Alert.alert('Error', 'Please enter username and password');

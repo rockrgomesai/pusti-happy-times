@@ -73,6 +73,7 @@ const outletVisitsRoutes = require("./outletVisits");
 const outletAuditsRoutes = require("./outletAudits");
 const mobileCatalogRoutes = require("./mobile/catalog");
 const mobileOrdersRoutes = require("./mobile/orders");
+const secondaryOrdersRoutes = require("./secondary-orders");
 
 const router = express.Router();
 
@@ -370,6 +371,14 @@ router.use("/mobile/catalog", mobileCatalogRoutes);
  * @access  Private (authenticated field officers)
  */
 router.use("/mobile/orders", mobileOrdersRoutes);
+
+/**
+ * Secondary Orders Routes (cross-platform: web + mobile)
+ * @route   /api/secondary-orders/*
+ * @desc    Role-scoped list/detail + Area Manager approve/reject + Distributor deliver
+ * @access  Private (role-based: Admin, Area Managers, Distributors, SO)
+ */
+router.use("/secondary-orders", secondaryOrdersRoutes);
 
 /**
  * Facility Management Routes (Unified Depots & Factories)

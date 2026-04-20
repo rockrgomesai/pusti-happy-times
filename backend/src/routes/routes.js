@@ -189,6 +189,7 @@ router.get("/my-route", authenticate, async (req, res) => {
         data: {
           route_id: route.route_id,
           route_name: route.route_name,
+          distributor_id: route.distributor_id?._id?.toString() || route.distributor_id?.toString(),
           outlets: [],
         },
       });
@@ -211,6 +212,7 @@ router.get("/my-route", authenticate, async (req, res) => {
       data: {
         route_id: route.route_id,
         route_name: route.route_name,
+        distributor_id: route.distributor_id?._id?.toString() || route.distributor_id?.toString(),
         outlets: outlets,
       },
     });

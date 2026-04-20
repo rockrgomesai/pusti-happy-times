@@ -20,8 +20,7 @@ import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
-const API_URL = 'https://tkgerp.com/api/v1';
+import { API_BASE_URL as API_URL } from '../config/api';
 
 type RootStackParamList = {
   NoSalesReason: {
@@ -134,7 +133,7 @@ export default function NoSalesReasonScreen() {
 
       if (data.success) {
         Alert.alert('Success', 'Visit recorded - No sales', [
-          { text: 'OK', onPress: () => navigation.navigate('Home' as any) },
+          { text: 'OK', onPress: () => navigation.navigate('MainApp' as any, { screen: 'Home' }) },
         ]);
       } else {
         Alert.alert('Error', data.message || 'Failed to record visit');

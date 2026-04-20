@@ -36,17 +36,32 @@ router.post(
       .optional()
       .isArray({ min: 2, max: 2 })
       .withMessage("GPS coordinates must be [longitude, latitude]"),
+    body("entry_mode").optional().isIn(["online", "offline", "manual"]),
+    body("client_order_uid").optional().isString().isLength({ max: 120 }),
+    body("order_date").optional().isISO8601(),
   ],
   async (req, res) => {
-    const session = await mongoose.startSession();
-    session.startTransaction();
+    // Detect whether the Mongo deployment supports multi-document transactions.
+    // A standalone mongod (common in local docker-compose dev) returns
+    // `{ ok:0, code:20, codeName:"IllegalOperation" }` from startTransaction.
+    const supportsTx = (() => {
+      const admin = mongoose.connection?.db?.admin?.();
+      const topology = mongoose.connection?.client?.topology;
+      const desc = topology?.description;
+      if (!desc) return false;
+      // ReplicaSetWithPrimary | LoadBalanced | Sharded → transactions supported
+      return ["ReplicaSetWithPrimary", "Sharded", "LoadBalanced"].includes(desc.type);
+    })();
+
+    const session = supportsTx ? await mongoose.startSession() : null;
+    if (session) session.startTransaction();
+    const sessOpt = session ? { session } : {};
 
     try {
       // Validate request
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
-        await session.abortTransaction();
-        session.endSession();
+        if (session) { await session.abortTransaction(); session.endSession(); }
         return res.status(400).json({
           success: false,
           message: "Validation failed",
@@ -54,15 +69,31 @@ router.post(
         });
       }
 
-      const { outlet_id, distributor_id, dsr_id, route_id, items, gps_location, gps_accuracy, so_notes } = req.body;
+      const { outlet_id, distributor_id, dsr_id, route_id, items, gps_location, gps_accuracy, so_notes, entry_mode, client_order_uid, order_date } = req.body;
+
+      // Idempotency: if the mobile client resubmits a queued offline order,
+      // return the existing record instead of creating a duplicate.
+      if (client_order_uid) {
+        const existing = await SecondaryOrder.findOne({ client_order_uid });
+        if (existing) {
+          if (session) { await session.abortTransaction(); session.endSession(); }
+          return res.status(200).json({
+            success: true,
+            duplicate: true,
+            message: "Order already submitted",
+            data: existing,
+          });
+        }
+      }
 
       // Step 1: Validate stock availability (with row locking)
       const stockValidationErrors = [];
       for (const item of items) {
-        const stock = await DistributorStock.findOne({
+        const stockQuery = DistributorStock.findOne({
           distributor_id,
           sku: item.sku,
-        }).session(session);
+        });
+        const stock = session ? await stockQuery.session(session) : await stockQuery;
 
         const available = stock ? parseFloat(stock.qty) : 0;
 
@@ -77,8 +108,7 @@ router.post(
       }
 
       if (stockValidationErrors.length > 0) {
-        await session.abortTransaction();
-        session.endSession();
+        if (session) { await session.abortTransaction(); session.endSession(); }
         return res.status(400).json({
           success: false,
           code: "INSUFFICIENT_STOCK",
@@ -93,6 +123,10 @@ router.post(
         subtotal: item.quantity * item.unit_price,
       }));
 
+      // Order-level totals (model's pre-save hook fires after validation, so we
+      // compute them here to satisfy the required-field checks).
+      const orderSubtotal = itemsWithSubtotals.reduce((s, i) => s + i.subtotal, 0);
+
       // Step 3: Generate order number
       const order_number = await SecondaryOrder.generateOrderNumber();
 
@@ -104,29 +138,36 @@ router.post(
         dsr_id,
         route_id,
         items: itemsWithSubtotals,
+        subtotal: orderSubtotal,
+        discount_amount: 0,
+        total_amount: orderSubtotal,
         order_status: "Submitted",
         gps_location,
         gps_accuracy,
         so_notes,
+        entry_mode: entry_mode || "online",
+        ...(client_order_uid ? { client_order_uid } : {}),
+        ...(order_date ? { order_date: new Date(order_date) } : {}),
       };
 
-      const order = await SecondaryOrder.create([orderData], { session });
+      const order = await SecondaryOrder.create([orderData], sessOpt);
 
       // Step 5: Reduce stock (FIFO) for each item
       for (const item of items) {
-        const stock = await DistributorStock.findOne({
+        const stockQuery = DistributorStock.findOne({
           distributor_id,
           sku: item.sku,
-        }).session(session);
+        });
+        const stock = session ? await stockQuery.session(session) : await stockQuery;
 
         if (stock) {
           const result = stock.reduceStockFIFO(item.quantity);
-          
+
           if (!result.success) {
             throw new Error(`Failed to reduce stock for ${item.sku}: ${result.message}`);
           }
 
-          await stock.save({ session });
+          await stock.save(sessOpt);
         }
       }
 
@@ -148,19 +189,21 @@ router.post(
             so_notes,
           },
         ],
-        { session }
+        sessOpt
       );
 
       // Step 7: Update outlet last_visit_date
       await Outlet.findByIdAndUpdate(
         outlet_id,
         { last_visit_date: new Date() },
-        { session }
+        sessOpt
       );
 
       // Commit transaction
-      await session.commitTransaction();
-      session.endSession();
+      if (session) {
+        await session.commitTransaction();
+        session.endSession();
+      }
 
       // Populate and return order
       const populatedOrder = await SecondaryOrder.findById(order[0]._id)
@@ -181,8 +224,10 @@ router.post(
         },
       });
     } catch (error) {
-      await session.abortTransaction();
-      session.endSession();
+      if (session) {
+        try { await session.abortTransaction(); } catch (_) {}
+        session.endSession();
+      }
       console.error("Error creating order:", error);
       return res.status(500).json({
         success: false,
@@ -291,6 +336,26 @@ router.get("/:id", async (req, res) => {
         success: false,
         message: "Order not found",
       });
+    }
+
+    // Role-based access control: SO can only see their own; Distributor/DSR
+    // only orders for their distributor; Admins/Area Managers see all.
+    const role = req.user?.role_id?.role;
+    const ctx = req.userContext || {};
+    const isAdmin = ["SuperAdmin", "Sales Admin", "Office Admin"].includes(role);
+    const isAreaMgr = ["ASM", "RSM", "ZSM", "HOS"].includes(role);
+    const isDistributor = ["Distributor", "DSR"].includes(role);
+    const isSO = role === "SO";
+
+    let allowed = isAdmin || isAreaMgr;
+    if (!allowed && isDistributor && ctx.distributor_id) {
+      allowed = String(order.distributor_id?._id || order.distributor_id) === String(ctx.distributor_id);
+    }
+    if (!allowed && isSO) {
+      allowed = String(order.dsr_id?._id || order.dsr_id) === String(req.user._id);
+    }
+    if (!allowed) {
+      return res.status(403).json({ success: false, message: "Not allowed to view this order" });
     }
 
     return res.status(200).json({

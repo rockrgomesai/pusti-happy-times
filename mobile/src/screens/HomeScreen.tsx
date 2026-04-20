@@ -23,6 +23,8 @@ import trackingAPI from '../services/trackingAPI';
 import attendanceAPI from '../services/attendanceAPI';
 import DeviceInfo from 'react-native-device-info';
 import syncService, { SyncStatus } from '../services/syncService';
+import { useOfflineSync } from '../hooks/useOfflineSync';
+import { API_BASE_URL as API_URL, resolveAssetUrl } from '../config/api';
 
 // Mock GPS route options
 const MOCK_ROUTE = 'GULSHAN_LOOP'; // Options: GULSHAN_LOOP, DHAKA_COMMUTE, QUICK_TEST
@@ -34,7 +36,6 @@ const UPLOAD_BATCH_SIZE = 20; // Upload when 20 points collected
 const traceRouteIcon = require('../assets/images/trace-route.png');
 const { width, height } = Dimensions.get('window');
 
-const API_URL = 'https://tkgerp.com/api/v1';
 // Using OpenStreetMap - No API key needed!
 
 interface UserData {
@@ -49,6 +50,7 @@ interface UserData {
 }
 
 const HomeScreen = ({ navigation, route }: any) => {
+  const { pendingCount, syncing, isOnline, syncNow } = useOfflineSync();
   const [loading, setLoading] = useState(true);
   const [userPhoto, setUserPhoto] = useState<string | null>(null);
   const [userName, setUserName] = useState<string>('');
@@ -526,8 +528,8 @@ const HomeScreen = ({ navigation, route }: any) => {
           }
         }
 
-        // 🧪 Mock GPS Mode for Testing
-        if (useMockGPS) {
+        // 🧪 Mock GPS Mode for Testing (dev-only)
+        if (__DEV__ && useMockGPS) {
           console.log('🧪 MOCK GPS MODE ENABLED');
           console.log(`📍 Using route: ${MOCK_ROUTE}`);
 
@@ -661,6 +663,18 @@ const HomeScreen = ({ navigation, route }: any) => {
         </View>
 
         <View style={styles.userSection}>
+          {(pendingCount > 0 || !isOnline) && (
+            <TouchableOpacity
+              style={offlineStyles.syncChip}
+              onPress={() => { if (!syncing) syncNow(); }}
+              activeOpacity={0.7}
+            >
+              <Text style={offlineStyles.syncChipIcon}>{!isOnline ? '⚠' : syncing ? '⟳' : '☁'}</Text>
+              <Text style={offlineStyles.syncChipText}>
+                {syncing ? 'Syncing…' : pendingCount > 0 ? `${pendingCount} pending` : 'Offline'}
+              </Text>
+            </TouchableOpacity>
+          )}
           <TouchableOpacity style={styles.notificationIcon}>
             <Text style={styles.bellIcon}>🔔</Text>
             {notificationCount > 0 && (
@@ -688,7 +702,7 @@ const HomeScreen = ({ navigation, route }: any) => {
                 {/* Avatar */}
                 {userPhoto ? (
                   <Image
-                    source={{ uri: `https://tkgerp.com${userPhoto}` }}
+                    source={{ uri: resolveAssetUrl(userPhoto) || undefined }}
                     style={styles.avatar}
                   />
                 ) : (
@@ -929,8 +943,8 @@ const HomeScreen = ({ navigation, route }: any) => {
                 </Text>
               </TouchableOpacity>
 
-              {/* Mock GPS Test Button */}
-              {!isTracking && (
+              {/* Mock GPS Test Button (dev-only) */}
+              {__DEV__ && !isTracking && (
                 <TouchableOpacity
                   style={[styles.mockGPSButton, useMockGPS && styles.mockGPSButtonActive]}
                   onPress={() => {
@@ -1093,15 +1107,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   moduleButtonsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    flexWrap: 'wrap',
-    gap: 15,
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 14,
   },
   moduleButton: {
     backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 20,
+    borderRadius: 14,
+    paddingVertical: 18,
+    paddingHorizontal: 24,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -1109,10 +1124,12 @@ const styles = StyleSheet.create({
     elevation: 3,
     borderWidth: 1,
     borderColor: '#4CAF50',
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    width: '30%',
-    minWidth: 100,
+    justifyContent: 'flex-start',
+    width: '92%',
+    maxWidth: 460,
+    minHeight: 76,
   },
   moduleButtonActive: {
     backgroundColor: '#ffebee',
@@ -1127,18 +1144,21 @@ const styles = StyleSheet.create({
   },
   moduleIcon: {
     fontSize: 36,
-    marginBottom: 8,
+    marginRight: 18,
+    width: 44,
+    textAlign: 'center',
   },
   traceRouteImage: {
-    width: 36,
-    height: 36,
-    marginBottom: 8,
+    width: 40,
+    height: 40,
+    marginRight: 18,
   },
   moduleLabel: {
-    fontSize: 12,
+    fontSize: 16,
     fontWeight: 'bold',
     color: '#4CAF50',
-    textAlign: 'center',
+    textAlign: 'left',
+    flexShrink: 1,
   },
   trackButton: {
     backgroundColor: '#fff',
@@ -1310,6 +1330,30 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#666',
+  },
+});
+
+const offlineStyles = StyleSheet.create({
+  syncChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF3E0',
+    borderColor: '#FB8C00',
+    borderWidth: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 14,
+    marginRight: 8,
+  },
+  syncChipIcon: {
+    fontSize: 12,
+    marginRight: 4,
+    color: '#E65100',
+  },
+  syncChipText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#E65100',
   },
 });
 

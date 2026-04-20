@@ -4,10 +4,8 @@
  */
 
 import axios from 'axios';
-import Config from 'react-native-config';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
-const API_BASE_URL = Config.API_BASE_URL || 'https://tkgerp.com/api/v1';
+import { API_BASE_URL } from '../config/api';
 
 // Create axios instance with interceptors
 const apiClient = axios.create({

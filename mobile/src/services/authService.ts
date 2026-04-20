@@ -1,7 +1,6 @@
 import axios from 'axios';
-
-// Production API
-const API_BASE_URL = 'https://tkgerp.com/api/v1';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { API_BASE_URL } from '../config/api';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -48,7 +47,22 @@ export const authService = {
   },
 
   logout: async () => {
-    // Call logout API if needed
+    try {
+      const keys = await AsyncStorage.getAllKeys();
+      const toRemove = keys.filter(
+        (k) =>
+          k === 'accessToken' ||
+          k === 'refreshToken' ||
+          k === 'user' ||
+          k === '@pending_orders_v1' ||
+          k.startsWith('@sales_cart_'),
+      );
+      if (toRemove.length > 0) {
+        await AsyncStorage.multiRemove(toRemove);
+      }
+    } catch (e) {
+      // Best-effort cleanup; proceed regardless.
+    }
     return true;
   },
 };

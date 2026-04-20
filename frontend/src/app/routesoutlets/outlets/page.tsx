@@ -348,8 +348,8 @@ export default function OutletsPage() {
     let filtered = outlets.filter((outlet) =>
       searchTerm
         ? outlet.outlet_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          outlet.outlet_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          outlet.mobile?.toLowerCase().includes(searchTerm.toLowerCase())
+        outlet.outlet_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        outlet.mobile?.toLowerCase().includes(searchTerm.toLowerCase())
         : true
     );
 

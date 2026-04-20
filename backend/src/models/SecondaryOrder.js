@@ -209,6 +209,17 @@ const secondaryOrderSchema = new mongoose.Schema(
       type: Date,
     },
 
+    // Entry mode — how the order was captured (for offline tracking & audit)
+    entry_mode: {
+      type: String,
+      enum: ["online", "offline", "manual"],
+      default: "online",
+    },
+    client_order_uid: {
+      type: String,
+      index: true, // dedupe offline syncs
+    },
+
     // Timestamps
     created_at: {
       type: Date,

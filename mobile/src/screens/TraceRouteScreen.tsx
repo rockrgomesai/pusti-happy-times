@@ -15,9 +15,9 @@ import {
 } from 'react-native';
 import { WebView } from 'react-native-webview';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { API_BASE_URL as API_URL } from '../config/api';
 
 const { width, height } = Dimensions.get('window');
-const API_URL = 'https://tkgerp.com/api/v1';
 
 interface Outlet {
   _id: string;
@@ -40,6 +40,7 @@ interface Outlet {
 interface RouteData {
   route_id: string;
   route_name: string;
+  distributor_id?: string;
   outlets: Outlet[];
 }
 
@@ -50,6 +51,7 @@ const TraceRouteScreen = ({ navigation }: any) => {
   const [selectedOutlets, setSelectedOutlets] = useState<Outlet[]>([]);
   const [showBottomSheet, setShowBottomSheet] = useState(false);
   const [showOutletsDrawer, setShowOutletsDrawer] = useState(false);
+  const [distributorId, setDistributorId] = useState<string>('');
 
   const webViewRef = useRef<any>(null);
   const bottomSheetAnim = useRef(new Animated.Value(height)).current;
@@ -109,6 +111,7 @@ const TraceRouteScreen = ({ navigation }: any) => {
 
       const routeData: RouteData = data.data;
       setRouteName(routeData.route_name || routeData.route_id);
+      if (routeData.distributor_id) setDistributorId(routeData.distributor_id);
 
       // Filter outlets with valid coordinates
       const validOutlets = routeData.outlets.filter(
@@ -251,6 +254,11 @@ const TraceRouteScreen = ({ navigation }: any) => {
   const handleGetIn = (outlet: Outlet) => {
     hideBottomSheet();
 
+    if (!distributorId) {
+      Alert.alert('Error', 'Distributor information not loaded. Please try again.');
+      return;
+    }
+
     // Navigate to Shop Action screen with outlet details
     navigation.navigate('ShopAction', {
       outletId: outlet._id,
@@ -260,7 +268,7 @@ const TraceRouteScreen = ({ navigation }: any) => {
         latitude: outlet.lati,
         longitude: outlet.longi,
       },
-      distributorId: 'DIST-001', // TODO: Get from route data or user context
+      distributorId,
     });
   };
 
@@ -532,6 +540,16 @@ const TraceRouteScreen = ({ navigation }: any) => {
           <View style={styles.outletCountBadge}>
             <Text style={styles.outletCountText}>{outlets.length} Outlets</Text>
           </View>
+
+          {/* Add New Shop FAB — lets SO register an outlet they've discovered
+              on the current route (backend auto-scopes to today's route). */}
+          <TouchableOpacity
+            style={styles.addOutletFab}
+            onPress={() => navigation.navigate('AddOutlet')}
+            activeOpacity={0.85}>
+            <Text style={styles.addOutletFabIcon}>＋</Text>
+            <Text style={styles.addOutletFabText}>Add Shop</Text>
+          </TouchableOpacity>
         </>
       )}
 
@@ -726,6 +744,34 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   outletCountText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  addOutletFab: {
+    position: 'absolute',
+    bottom: 20,
+    right: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FF6F00',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 28,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 6,
+  },
+  addOutletFabIcon: {
+    color: '#fff',
+    fontSize: 22,
+    fontWeight: 'bold',
+    marginRight: 6,
+    lineHeight: 22,
+  },
+  addOutletFabText: {
     color: '#fff',
     fontSize: 14,
     fontWeight: 'bold',

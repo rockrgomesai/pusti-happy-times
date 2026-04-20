@@ -1,9 +1,10 @@
-import React, {useEffect, useState} from 'react';
-import {NavigationContainer} from '@react-navigation/native';
-import {createNativeStackNavigator} from '@react-navigation/native-stack';
-import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
-import {Alert, Text, View, ActivityIndicator} from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { Alert, Text, View, ActivityIndicator } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { authService } from '../services/authService';
 import LoginScreen from '../screens/LoginScreen';
 import HomeScreen from '../screens/HomeScreen';
 import ProfileScreen from '../screens/ProfileScreen';
@@ -13,6 +14,7 @@ import DamageClaimScreen from '../screens/DamageClaimScreen';
 import NoSalesReasonScreen from '../screens/NoSalesReasonScreen';
 import AuditInventoryScreen from '../screens/AuditInventoryScreen';
 import SalesModuleScreen from '../screens/SalesModuleScreen';
+import AddOutletScreen from '../screens/AddOutletScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -26,16 +28,12 @@ const MainTabs = () => {
       'Logout',
       'Are you sure you want to logout?',
       [
-        {text: 'Cancel', style: 'cancel'},
+        { text: 'Cancel', style: 'cancel' },
         {
           text: 'Logout',
           style: 'destructive',
           onPress: async () => {
-            await AsyncStorage.multiRemove([
-              'accessToken',
-              'refreshToken',
-              'user',
-            ]);
+            await authService.logout();
             navigation.replace('Login');
           },
         },
@@ -66,35 +64,35 @@ const MainTabs = () => {
         name="Home"
         component={HomeScreen}
         options={{
-          tabBarIcon: ({color}) => <HomeIcon color={color} />,
+          tabBarIcon: ({ color }) => <HomeIcon color={color} />,
         }}
       />
       <Tab.Screen
         name="Me"
         component={HomeScreen}
-        initialParams={{openUserInfo: true}}
-        listeners={({navigation}) => ({
+        initialParams={{ openUserInfo: true }}
+        listeners={({ navigation }) => ({
           tabPress: (e) => {
             e.preventDefault();
             // Trigger modal opening in HomeScreen
-            navigation.navigate('Home', {openUserInfo: true});
+            navigation.navigate('Home', { openUserInfo: true });
           },
         })}
         options={{
-          tabBarIcon: ({color}) => <MeIcon color={color} />,
+          tabBarIcon: ({ color }) => <MeIcon color={color} />,
         }}
       />
       <Tab.Screen
         name="Logout"
         component={HomeScreen} // Dummy component, won't be rendered
-        listeners={({navigation}) => ({
+        listeners={({ navigation }) => ({
           tabPress: (e) => {
             e.preventDefault();
             handleLogout(navigation);
           },
         })}
         options={{
-          tabBarIcon: ({color}) => <LogoutIcon color={color} />,
+          tabBarIcon: ({ color }) => <LogoutIcon color={color} />,
         }}
       />
     </Tab.Navigator>
@@ -102,16 +100,16 @@ const MainTabs = () => {
 };
 
 // Simple icon components
-const HomeIcon = ({color}: {color: string}) => (
-  <Text style={{fontSize: 24}}>{color === '#4CAF50' ? '🏠' : '🏡'}</Text>
+const HomeIcon = ({ color }: { color: string }) => (
+  <Text style={{ fontSize: 24 }}>{color === '#4CAF50' ? '🏠' : '🏡'}</Text>
 );
 
-const MeIcon = ({color}: {color: string}) => (
-  <Text style={{fontSize: 24}}>{color === '#4CAF50' ? '👤' : '👥'}</Text>
+const MeIcon = ({ color }: { color: string }) => (
+  <Text style={{ fontSize: 24 }}>{color === '#4CAF50' ? '👤' : '👥'}</Text>
 );
 
-const LogoutIcon = ({color}: {color: string}) => (
-  <Text style={{fontSize: 24}}>{color === '#4CAF50' ? '🚪' : '🔓'}</Text>
+const LogoutIcon = ({ color }: { color: string }) => (
+  <Text style={{ fontSize: 24 }}>{color === '#4CAF50' ? '🚪' : '🔓'}</Text>
 );
 
 const AppNavigator = () => {
@@ -135,7 +133,7 @@ const AppNavigator = () => {
 
   if (isLoading) {
     return (
-      <View style={{flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff'}}>
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' }}>
         <ActivityIndicator size="large" color="#4CAF50" />
       </View>
     );
@@ -153,32 +151,42 @@ const AppNavigator = () => {
         <Stack.Screen
           name="Profile"
           component={ProfileScreen}
-          options={{headerShown: true, title: 'Profile'}}
+          options={{ headerShown: true, title: 'Profile' }}
         />
         <Stack.Screen
           name="TraceRoute"
           component={TraceRouteScreen}
-          options={{headerShown: false}}
+          options={{ headerShown: false }}
         />
         <Stack.Screen
           name="ShopAction"
           component={ShopActionScreen}
-          options={{headerShown: false}}
+          options={{ headerShown: false }}
         />
         <Stack.Screen
           name="DamageClaim"
           component={DamageClaimScreen}
-          options={{headerShown: false}}
+          options={{ headerShown: false }}
         />
         <Stack.Screen
           name="NoSalesReason"
           component={NoSalesReasonScreen}
-          options={{headerShown: false}}
+          options={{ headerShown: false }}
         />
         <Stack.Screen
           name="AuditInventory"
           component={AuditInventoryScreen}
-          options={{headerShown: false}}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="SalesModule"
+          component={SalesModuleScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="AddOutlet"
+          component={AddOutletScreen}
+          options={{ headerShown: false }}
         />
       </Stack.Navigator>
     </NavigationContainer>

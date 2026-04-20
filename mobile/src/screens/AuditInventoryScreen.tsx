@@ -19,6 +19,7 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { API_BASE_URL } from '../config/api';
 
 interface AuditItem {
   product_id: string;
@@ -77,7 +78,7 @@ const AuditInventoryScreen = ({ route, navigation }: any) => {
       // Load products with previous audit
       const token = await AsyncStorage.getItem('accessToken');
       const response = await fetch(
-        `https://tkgerp.com/api/v1/outlet-audits/products?outlet_id=${outletId}`,
+        `${API_BASE_URL}/outlet-audits/products?outlet_id=${outletId}`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -203,7 +204,8 @@ const AuditInventoryScreen = ({ route, navigation }: any) => {
               setSubmitting(true);
 
               const token = await AsyncStorage.getItem('accessToken');
-              const userId = await AsyncStorage.getItem('@user_id');
+              const userJson = await AsyncStorage.getItem('user');
+              const userId = userJson ? JSON.parse(userJson)?._id || JSON.parse(userJson)?.id : null;
 
               const payload = {
                 outlet_id: outletId,
@@ -217,7 +219,7 @@ const AuditInventoryScreen = ({ route, navigation }: any) => {
                 },
               };
 
-              const response = await fetch('https://tkgerp.com/api/v1/outlet-audits', {
+              const response = await fetch(`${API_BASE_URL}/outlet-audits`, {
                 method: 'POST',
                 headers: {
                   Authorization: `Bearer ${token}`,
@@ -234,7 +236,7 @@ const AuditInventoryScreen = ({ route, navigation }: any) => {
                 await AsyncStorage.removeItem(draftKey);
 
                 Alert.alert('Success', 'Audit submitted successfully', [
-                  { text: 'OK', onPress: () => navigation.navigate('Home') },
+                  { text: 'OK', onPress: () => navigation.navigate('MainApp', { screen: 'Home' }) },
                 ]);
               } else {
                 Alert.alert('Submission Failed', result.message || 'Unknown error');

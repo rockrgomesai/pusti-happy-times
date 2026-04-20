@@ -12,8 +12,7 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
 import axios from 'axios';
-
-const API_URL = 'https://tkgerp.com/api/v1';
+import { API_BASE_URL as API_URL, resolveAssetUrl } from '../config/api';
 
 const ProfileScreen = ({ navigation }: any) => {
   const [loading, setLoading] = useState(false);
@@ -144,7 +143,7 @@ const ProfileScreen = ({ navigation }: any) => {
         <View style={styles.photoContainer}>
           {userPhoto ? (
             <Image
-              source={{ uri: `https://tkgerp.com${userPhoto}` }}
+              source={{ uri: resolveAssetUrl(userPhoto) || undefined }}
               style={styles.photo}
             />
           ) : (

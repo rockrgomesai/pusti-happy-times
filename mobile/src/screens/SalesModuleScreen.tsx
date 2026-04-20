@@ -21,13 +21,157 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import salesAPI, { Category, Product, Offer, CartItem } from '../services/salesAPI';
+import { resolveAssetUrl } from '../config/api';
+import { friendlyErrorMessage } from '../utils/logger';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
+// Resolve a backend-relative image URL (e.g. "/images/categories/x.jpg") to an
+// absolute URL. Absolute URLs are returned as-is.
+const resolveImageUri = (url?: string | null): string | null => resolveAssetUrl(url);
 
 interface Props {
   route: any;
   navigation: any;
 }
+
+// Small wrapper that renders a product/category image, falling back to the
+// provided icon if the URL is missing or fails to load.
+const ThumbImage: React.FC<{
+  uri?: string | null;
+  size: number;
+  iconName: string;
+  iconSize?: number;
+  iconColor?: string;
+  borderRadius?: number;
+  backgroundColor?: string;
+}> = ({ uri, size, iconName, iconSize, iconColor = '#4CAF50', borderRadius = 8, backgroundColor = '#f0f0f0' }) => {
+  const resolved = resolveImageUri(uri);
+  const [failed, setFailed] = useState(false);
+  const showIcon = !resolved || failed;
+  return (
+    <View
+      style={{
+        width: size,
+        height: size,
+        borderRadius,
+        backgroundColor,
+        justifyContent: 'center',
+        alignItems: 'center',
+        overflow: 'hidden',
+      }}
+    >
+      {showIcon ? (
+        <Icon name={iconName} size={iconSize ?? Math.round(size * 0.55)} color={iconColor} />
+      ) : (
+        <Image
+          source={{ uri: resolved! }}
+          style={{ width: size, height: size }}
+          resizeMode="cover"
+          onError={() => setFailed(true)}
+        />
+      )}
+    </View>
+  );
+};
+
+// Product row with explicit "Add to Cart" commit button. Uses a local pending
+// quantity separate from the committed cart quantity; `+/-` only mutate the
+// pending value, and the commit button pushes it to the cart.
+const ProductRow: React.FC<{
+  item: Product;
+  cartQty: number;
+  onCommit: (qty: number) => void;
+  onRemove: () => void;
+}> = ({ item, cartQty, onCommit, onRemove }) => {
+  const [editing, setEditing] = useState(false);
+  const [pending, setPending] = useState(1);
+
+  const startEditing = () => {
+    setPending(cartQty > 0 ? cartQty : 1);
+    setEditing(true);
+  };
+  const cancel = () => setEditing(false);
+  const commit = () => {
+    if (pending < 1) onRemove();
+    else onCommit(pending);
+    setEditing(false);
+  };
+
+  const dec = () => setPending((p) => Math.max(0, p - 1));
+  const inc = () => {
+    if (pending < item.available_qty) setPending((p) => p + 1);
+    else Alert.alert('Stock Limit', `Only ${item.available_qty} PCS available`);
+  };
+
+  return (
+    <View style={styles.productCard}>
+      <View style={{ marginRight: 12 }}>
+        <ThumbImage
+          uri={item.image_url}
+          size={60}
+          iconName="package-variant"
+          borderRadius={8}
+          backgroundColor="#f0f0f0"
+        />
+      </View>
+      <View style={styles.productInfo}>
+        <Text style={styles.productName}>{item.bangla_name}</Text>
+        <Text style={styles.productSku}>{item.sku}</Text>
+        <Text style={styles.productPrice}>₹{item.trade_price}/PCS</Text>
+        <Text
+          style={[
+            styles.productStock,
+            { color: item.available_qty > 50 ? '#4CAF50' : item.available_qty > 0 ? '#FF9800' : '#F44336' },
+          ]}
+        >
+          Available: {item.available_qty} PCS
+        </Text>
+        {cartQty > 0 && !editing && (
+          <Text style={styles.inCartBadge}>In cart: {cartQty} PCS</Text>
+        )}
+
+        {editing && (
+          <View style={styles.editBlock}>
+            <View style={styles.quantityStepper}>
+              <TouchableOpacity onPress={dec}>
+                <Icon name="minus-circle" size={28} color="#F44336" />
+              </TouchableOpacity>
+              <Text style={styles.quantityText}>{pending}</Text>
+              <TouchableOpacity onPress={inc}>
+                <Icon name="plus-circle" size={28} color="#4CAF50" />
+              </TouchableOpacity>
+            </View>
+            <View style={styles.commitRow}>
+              <TouchableOpacity style={styles.cancelButton} onPress={cancel}>
+                <Text style={styles.cancelButtonText}>CANCEL</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.commitButton} onPress={commit}>
+                <Icon name="cart-plus" size={18} color="#fff" />
+                <Text style={styles.commitButtonText}>
+                  {cartQty > 0 ? 'UPDATE CART' : 'ADD TO CART'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+      </View>
+
+      {!editing && (
+        <View style={styles.productActions}>
+          <TouchableOpacity style={styles.addButton} onPress={startEditing}>
+            <Text style={styles.addButtonText}>{cartQty > 0 ? 'EDIT' : 'ADD'}</Text>
+          </TouchableOpacity>
+          {cartQty > 0 && (
+            <TouchableOpacity style={styles.removeButton} onPress={onRemove}>
+              <Icon name="trash-can-outline" size={18} color="#F44336" />
+            </TouchableOpacity>
+          )}
+        </View>
+      )}
+    </View>
+  );
+};
 
 const SalesModuleScreen: React.FC<Props> = ({ route, navigation }) => {
   const { outletId, outletName, distributorId, currentLocation } = route.params;
@@ -147,12 +291,19 @@ const SalesModuleScreen: React.FC<Props> = ({ route, navigation }) => {
           try {
             setSubmitting(true);
 
-            const userId = await require('@react-native-async-storage/async-storage').default.getItem('@user_id');
+            const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+            const userJson = await AsyncStorage.getItem('user');
+            const userId = userJson ? JSON.parse(userJson)?._id || JSON.parse(userJson)?.id : null;
+            if (!userId) {
+              Alert.alert('Error', 'Unable to identify logged-in user. Please log in again.');
+              setSubmitting(false);
+              return;
+            }
 
             const orderData = {
               outlet_id: outletId,
               distributor_id: distributorId,
-              dsr_id: userId!,
+              dsr_id: userId,
               items: cart.map((item) => ({
                 product_id: item.product_id,
                 sku: item.sku,
@@ -172,18 +323,27 @@ const SalesModuleScreen: React.FC<Props> = ({ route, navigation }) => {
             setCart([]);
             setShowCartDrawer(false);
 
-            Alert.alert('Success', `Order ${result.data.order_number} placed successfully`, [
-              { text: 'OK', onPress: () => navigation.navigate('Home') },
-            ]);
+            if (result.queued) {
+              // Offline path — order saved locally, will sync automatically.
+              Alert.alert(
+                'Saved Offline',
+                'No network available. Your order has been saved and will sync automatically when you are back online.',
+                [{ text: 'OK', onPress: () => navigation.navigate('MainApp', { screen: 'Home' }) }],
+              );
+            } else {
+              Alert.alert('Success', `Order ${result.data.order_number} placed successfully`, [
+                { text: 'OK', onPress: () => navigation.navigate('MainApp', { screen: 'Home' }) },
+              ]);
+            }
           } catch (error: any) {
             console.error('Submit order error:', error);
 
             if (error.code === 'INSUFFICIENT_STOCK') {
-              Alert.alert('Stock Unavailable', error.message || 'Some items are out of stock', [
+              Alert.alert('Stock Unavailable', friendlyErrorMessage(error, 'Some items are out of stock'), [
                 { text: 'OK' },
               ]);
             } else {
-              Alert.alert('Error', error.message || 'Failed to place order');
+              Alert.alert('Error', friendlyErrorMessage(error, 'Failed to place order'));
             }
           } finally {
             setSubmitting(false);
@@ -231,9 +391,9 @@ const SalesModuleScreen: React.FC<Props> = ({ route, navigation }) => {
                   <Icon name="gift" size={32} color="#fff" />
                   <Text style={styles.offerName}>{item.name}</Text>
                   <Text style={styles.offerDescription}>{item.description || 'Special offer'}</Text>
-                  {item.config.minOrderValue && (
+                  {item.config.minOrderValue > 0 ? (
                     <Text style={styles.offerDetail}>Min Order: ₹{item.config.minOrderValue}</Text>
-                  )}
+                  ) : null}
                   <Text style={styles.offerValidity}>
                     Valid until: {new Date(item.end_date).toLocaleDateString()}
                   </Text>
@@ -258,7 +418,13 @@ const SalesModuleScreen: React.FC<Props> = ({ route, navigation }) => {
                 onPress={() => handleCategoryPress(category)}
               >
                 <View style={styles.categoryIconContainer}>
-                  <Icon name="package-variant" size={40} color="#4CAF50" />
+                  <ThumbImage
+                    uri={category.image_url}
+                    size={56}
+                    iconName="package-variant"
+                    borderRadius={12}
+                    backgroundColor="#f0f0f0"
+                  />
                 </View>
                 <Text style={styles.categoryName} numberOfLines={2}>
                   {category.name}
@@ -302,60 +468,37 @@ const SalesModuleScreen: React.FC<Props> = ({ route, navigation }) => {
               data={products}
               keyExtractor={(item) => item._id}
               contentContainerStyle={styles.productsList}
-              renderItem={({ item }) => {
-                const cartQty = getCartItemQty(item._id);
-                return (
-                  <View style={styles.productCard}>
-                    <View style={styles.productImage}>
-                      <Icon name="package-variant" size={40} color="#4CAF50" />
-                    </View>
-                    <View style={styles.productInfo}>
-                      <Text style={styles.productName}>{item.bangla_name}</Text>
-                      <Text style={styles.productSku}>{item.sku}</Text>
-                      <Text style={styles.productPrice}>₹{item.trade_price}/PCS</Text>
-                      <Text
-                        style={[
-                          styles.productStock,
-                          { color: item.available_qty > 50 ? '#4CAF50' : item.available_qty > 0 ? '#FF9800' : '#F44336' },
-                        ]}
-                      >
-                        Available: {item.available_qty} PCS
-                      </Text>
-                    </View>
-                    <View style={styles.productActions}>
-                      {cartQty > 0 ? (
-                        <View style={styles.quantityStepper}>
-                          <TouchableOpacity
-                            onPress={() => {
-                              if (cartQty > 1) addToCart(item, cartQty - 1);
-                              else removeFromCart(item._id);
-                            }}
-                          >
-                            <Icon name="minus-circle" size={28} color="#F44336" />
-                          </TouchableOpacity>
-                          <Text style={styles.quantityText}>{cartQty}</Text>
-                          <TouchableOpacity
-                            onPress={() => {
-                              if (cartQty < item.available_qty) {
-                                addToCart(item, cartQty + 1);
-                              } else {
-                                Alert.alert('Stock Limit', `Only ${item.available_qty} PCS available`);
-                              }
-                            }}
-                          >
-                            <Icon name="plus-circle" size={28} color="#4CAF50" />
-                          </TouchableOpacity>
-                        </View>
-                      ) : (
-                        <TouchableOpacity style={styles.addButton} onPress={() => addToCart(item, 1)}>
-                          <Text style={styles.addButtonText}>ADD</Text>
-                        </TouchableOpacity>
-                      )}
-                    </View>
-                  </View>
-                );
-              }}
+              renderItem={({ item }) => (
+                <ProductRow
+                  item={item}
+                  cartQty={getCartItemQty(item._id)}
+                  onCommit={(qty) => addToCart(item, qty)}
+                  onRemove={() => removeFromCart(item._id)}
+                />
+              )}
             />
+          )}
+
+          {/* View Cart bar — visible inside the product sheet once cart has items */}
+          {cart.length > 0 && (
+            <TouchableOpacity
+              style={styles.sheetCartBar}
+              onPress={() => {
+                setShowProductSheet(false);
+                setShowCartDrawer(true);
+              }}
+            >
+              <View style={styles.sheetCartLeft}>
+                <Icon name="cart" size={22} color="#fff" />
+                <Text style={styles.sheetCartText}>
+                  {cart.length} item{cart.length > 1 ? 's' : ''} · ₹{calculateCartTotal()}
+                </Text>
+              </View>
+              <View style={styles.sheetCartRight}>
+                <Text style={styles.sheetCartCta}>VIEW CART</Text>
+                <Icon name="chevron-right" size={22} color="#fff" />
+              </View>
+            </TouchableOpacity>
           )}
         </SafeAreaView>
       </Modal>
@@ -604,6 +747,41 @@ const styles = StyleSheet.create({
   },
   productsList: {
     padding: 16,
+    paddingBottom: 90,
+  },
+  sheetCartBar: {
+    position: 'absolute',
+    left: 12,
+    right: 12,
+    bottom: 16,
+    backgroundColor: '#4CAF50',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    elevation: 6,
+  },
+  sheetCartLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  sheetCartText: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '600',
+    marginLeft: 10,
+  },
+  sheetCartRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  sheetCartCta: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginRight: 2,
   },
   productCard: {
     flexDirection: 'row',
@@ -647,6 +825,55 @@ const styles = StyleSheet.create({
   },
   productActions: {
     justifyContent: 'center',
+  },
+  removeButton: {
+    marginTop: 8,
+    alignSelf: 'center',
+    padding: 4,
+  },
+  inCartBadge: {
+    marginTop: 4,
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#4CAF50',
+  },
+  editBlock: {
+    marginTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#eee',
+    paddingTop: 10,
+  },
+  commitRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginTop: 10,
+  },
+  cancelButton: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    marginRight: 8,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#bbb',
+  },
+  cancelButtonText: {
+    color: '#555',
+    fontWeight: '600',
+    fontSize: 12,
+  },
+  commitButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#4CAF50',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 6,
+  },
+  commitButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 12,
+    marginLeft: 6,
   },
   quantityStepper: {
     flexDirection: 'row',

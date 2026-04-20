@@ -2,9 +2,7 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Geolocation from 'react-native-geolocation-service';
 import { PermissionsAndroid, Platform } from 'react-native';
-
-// Production API
-const API_BASE_URL = 'https://tkgerp.com/api/v1';
+import { API_BASE_URL } from '../config/api';
 
 const api = axios.create({
   baseURL: API_BASE_URL,

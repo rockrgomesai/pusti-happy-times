@@ -249,6 +249,64 @@ router.get(
 );
 
 /**
+ * @route   GET /api/v1/outlets/field-register/metadata
+ * @desc    Lookup data (outlet types + channels) for mobile Add-New-Outlet form.
+ *          Placed BEFORE /:id so the literal path matches first.
+ * @access  Private (authenticated)
+ */
+router.get("/field-register/metadata", authenticate, async (req, res) => {
+  try {
+    const [outletTypes, outletChannels] = await Promise.all([
+      OutletType.find({ active: true }).select("_id name").sort({ name: 1 }).lean(),
+      OutletChannel.find({ active: true }).select("_id name").sort({ name: 1 }).lean(),
+    ]);
+    res.json({
+      success: true,
+      data: { outlet_types: outletTypes, outlet_channels: outletChannels },
+    });
+  } catch (error) {
+    console.error("[FIELD-REGISTER] metadata error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching registration metadata",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
+});
+
+/**
+ * @route   GET /api/v1/outlets/field-register/my-registrations
+ * @desc    Outlets registered by current SO (any status).
+ *          Placed BEFORE /:id so the literal path matches first.
+ * @access  Private (authenticated)
+ */
+router.get("/field-register/my-registrations", authenticate, async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const { status, limit = 50 } = req.query;
+    const filter = { created_by: userId };
+    if (status && ["PENDING", "VERIFIED", "REJECTED"].includes(String(status).toUpperCase())) {
+      filter.verification_status = String(status).toUpperCase();
+    }
+    const outlets = await Outlet.find(filter)
+      .populate("route_id", "route_id route_name")
+      .populate("outlet_type", "name")
+      .populate("outlet_channel_id", "name")
+      .sort({ created_date: -1 })
+      .limit(Math.min(Number(limit) || 50, 200))
+      .lean();
+    res.json({ success: true, data: outlets });
+  } catch (error) {
+    console.error("[FIELD-REGISTER] my-registrations error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching your registrations",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
+});
+
+/**
  * @route   GET /api/v1/outlets/:id
  * @desc    Get outlet by ID
  * @access  Private
@@ -650,6 +708,184 @@ router.patch(
       res.status(500).json({
         success: false,
         message: "Error verifying outlet",
+        error: process.env.NODE_ENV === "development" ? error.message : undefined,
+      });
+    }
+  }
+);
+
+/**
+ * =============================================================================
+ * MOBILE FIELD REGISTRATION (SO creates new outlet from mobile app)
+ * =============================================================================
+ * These endpoints let an authenticated Sales Officer register a new outlet
+ * directly from their phone while on route. The outlet is auto-scoped to the
+ * SO's currently assigned route for the day and is created in PENDING state
+ * until an admin/distributor verifies it.
+ *
+ * NOTE: The two GET helpers for this flow (metadata + my-registrations) are
+ * defined earlier in the file, above `GET /:id`, so the literal paths match
+ * before being consumed by the ObjectId route.
+ */
+
+/**
+ * @route   POST /api/v1/outlets/field-register
+ * @desc    SO registers a new outlet from mobile app. GPS is mandatory.
+ *          Route is auto-resolved from the SO's assignment for the given
+ *          (or current) day. Outlet is created with verification_status
+ *          PENDING and immediately added to the route's outlet list so the
+ *          SO can visit it in the same session.
+ * @access  Private (authenticated; does NOT require outlets:create)
+ */
+router.post(
+  "/field-register",
+  authenticate,
+  [
+    body("outlet_name").trim().notEmpty().withMessage("Outlet name is required"),
+    body("outlet_type").isMongoId().withMessage("Valid outlet type is required"),
+    body("outlet_channel_id").isMongoId().withMessage("Valid outlet channel is required"),
+    body("lati").isFloat({ min: -90, max: 90 }).withMessage("Valid latitude is required"),
+    body("longi").isFloat({ min: -180, max: 180 }).withMessage("Valid longitude is required"),
+    body("mobile")
+      .optional({ checkFalsy: true })
+      .matches(/^(\+88)?01[3-9]\d{8}$/)
+      .withMessage("Invalid mobile number format (use 01XXXXXXXXX)"),
+    body("gps_accuracy")
+      .optional()
+      .isFloat({ min: 0 })
+      .withMessage("GPS accuracy must be non-negative"),
+    body("day")
+      .optional()
+      .isIn(["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"])
+      .withMessage("Invalid day"),
+    handleValidationErrors,
+  ],
+  async (req, res) => {
+    try {
+      const userId = req.user._id;
+      const employeeId = req.user.employee_id;
+
+      if (!employeeId) {
+        return res.status(400).json({
+          success: false,
+          message: "No employee record linked to this user. Please contact admin.",
+        });
+      }
+
+      // Reject suspiciously inaccurate GPS (> 100 m). Prevents desk-bound fake
+      // registrations. Mobile should send accuracy from Geolocation API.
+      if (req.body.gps_accuracy !== undefined && Number(req.body.gps_accuracy) > 100) {
+        return res.status(400).json({
+          success: false,
+          message: `GPS accuracy ${req.body.gps_accuracy}m is too low. Move to an open area and retry.`,
+        });
+      }
+
+      // Resolve SO's route for the target day (same logic as /my-route)
+      const daysOfWeek = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
+      const targetDay = (req.body.day || daysOfWeek[new Date().getDay()]).toUpperCase();
+      const employeeObjectId =
+        employeeId instanceof mongoose.Types.ObjectId
+          ? employeeId
+          : new mongoose.Types.ObjectId(employeeId);
+
+      const route = await Route.findOne({
+        $or: [
+          {
+            "sr_assignments.sr_1.sr_id": employeeObjectId,
+            "sr_assignments.sr_1.visit_days": { $in: [targetDay] },
+          },
+          {
+            "sr_assignments.sr_2.sr_id": employeeObjectId,
+            "sr_assignments.sr_2.visit_days": { $in: [targetDay] },
+          },
+        ],
+        active: true,
+      });
+
+      if (!route) {
+        return res.status(404).json({
+          success: false,
+          message: `No active route assigned for ${targetDay}. Cannot register outlet.`,
+        });
+      }
+
+      // Verify lookup references
+      const [outletType, outletChannel] = await Promise.all([
+        OutletType.findById(req.body.outlet_type).lean(),
+        OutletChannel.findById(req.body.outlet_channel_id).lean(),
+      ]);
+      if (!outletType) {
+        return res.status(404).json({ success: false, message: "Outlet type not found" });
+      }
+      if (!outletChannel) {
+        return res.status(404).json({ success: false, message: "Outlet channel not found" });
+      }
+
+      // Auto-generate outlet_id scoped to the resolved route
+      const outletId = await Outlet.generateOutletId(route.route_id);
+
+      // Build outlet payload — force SO-safe defaults regardless of client input
+      const lati = Number(req.body.lati);
+      const longi = Number(req.body.longi);
+      const outletData = {
+        outlet_id: outletId,
+        outlet_name: req.body.outlet_name.trim(),
+        outlet_name_bangla: req.body.outlet_name_bangla?.trim(),
+        route_id: route._id,
+        outlet_type: outletType._id,
+        outlet_channel_id: outletChannel._id,
+        address: req.body.address?.trim(),
+        address_bangla: req.body.address_bangla?.trim(),
+        contact_person: req.body.contact_person?.trim(),
+        mobile: req.body.mobile?.trim(),
+        lati,
+        longi,
+        location: {
+          type: "Point",
+          coordinates: [longi, lati],
+        },
+        shop_photo_url: req.body.shop_photo_url,
+        market_size: Number(req.body.market_size) || 0,
+        credit_limit: Number(req.body.credit_limit) || 0,
+        // Force mobile-registered outlets into approval queue
+        verification_status: "PENDING",
+        active: true,
+        comments: req.body.comments?.trim(),
+        created_by: userId,
+        updated_by: userId,
+        created_date: new Date(),
+        update_date_time: new Date(),
+      };
+
+      const outlet = await Outlet.create(outletData);
+
+      // Attach to route so SO can visit it immediately in the same session
+      await Route.findByIdAndUpdate(route._id, {
+        $addToSet: { outlet_ids: outlet._id },
+        $inc: { actual_outlet_qty: 1 },
+      });
+
+      const populated = await Outlet.findById(outlet._id)
+        .populate("route_id", "route_id route_name")
+        .populate("outlet_type", "name")
+        .populate("outlet_channel_id", "name")
+        .lean();
+
+      console.log(
+        `[FIELD-REGISTER] Employee ${employeeId} registered outlet ${outlet.outlet_id} on route ${route.route_id} (PENDING)`
+      );
+
+      res.status(201).json({
+        success: true,
+        message: "Outlet registered. Awaiting admin verification.",
+        data: populated,
+      });
+    } catch (error) {
+      console.error("[FIELD-REGISTER] error:", error);
+      res.status(500).json({
+        success: false,
+        message: "Error registering outlet",
         error: process.env.NODE_ENV === "development" ? error.message : undefined,
       });
     }

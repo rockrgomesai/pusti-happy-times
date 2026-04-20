@@ -25,6 +25,7 @@ import damageClaimAPI, {
   ProductForClaim,
   CategoryGroup,
 } from '../services/damageClaimAPI';
+import { friendlyErrorMessage } from '../utils/logger';
 
 type RootStackParamList = {
   DamageClaim: {
@@ -100,7 +101,7 @@ export default function DamageClaimScreen() {
         );
       }
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to load products');
+      Alert.alert('Error', friendlyErrorMessage(error, 'Failed to load products'));
     } finally {
       setLoading(false);
     }
@@ -145,7 +146,7 @@ export default function DamageClaimScreen() {
       await damageClaimAPI.saveDraft(outletId, claimItems, soNotes);
       Alert.alert('Saved', 'Draft saved successfully');
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to save draft');
+      Alert.alert('Error', friendlyErrorMessage(error, 'Failed to save draft'));
     }
   };
 
@@ -188,7 +189,7 @@ export default function DamageClaimScreen() {
                   },
                 ]);
               } catch (error: any) {
-                Alert.alert('Error', error.message || 'Failed to submit claim');
+                Alert.alert('Error', friendlyErrorMessage(error, 'Failed to submit claim'));
               } finally {
                 setSubmitting(false);
               }
@@ -197,7 +198,7 @@ export default function DamageClaimScreen() {
         ]
       );
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to submit claim');
+      Alert.alert('Error', friendlyErrorMessage(error, 'Failed to submit claim'));
     }
   };
 

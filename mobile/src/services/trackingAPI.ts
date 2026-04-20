@@ -1,8 +1,6 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
-// Production API
-const API_URL = 'https://tkgerp.com/api/v1';
+import { API_BASE_URL as API_URL } from '../config/api';
 
 interface StartSessionResponse {
   success: boolean;
@@ -63,7 +61,7 @@ class TrackingAPI {
       return response.data;
     } catch (error: any) {
       if (error.code === 'ECONNREFUSED' || error.code === 'ERR_NETWORK') {
-        throw new Error('Cannot connect to server. Please ensure backend is running on port 5000.');
+        throw new Error('Cannot connect to server. Please check your network connection.');
       }
       if (error.response?.status === 401) {
         throw new Error('Authentication failed. Please login again.');
