@@ -37,6 +37,8 @@ interface Props {
 
 // Small wrapper that renders a product/category image, falling back to the
 // provided icon if the URL is missing or fails to load.
+const FALLBACK_LOGO = require('../assets/images/logo-grey.png');
+
 const ThumbImage: React.FC<{
   uri?: string | null;
   size: number;
@@ -45,10 +47,10 @@ const ThumbImage: React.FC<{
   iconColor?: string;
   borderRadius?: number;
   backgroundColor?: string;
-}> = ({ uri, size, iconName, iconSize, iconColor = '#4CAF50', borderRadius = 8, backgroundColor = '#f0f0f0' }) => {
+}> = ({ uri, size, borderRadius = 8, backgroundColor = '#f0f0f0' }) => {
   const resolved = resolveImageUri(uri);
   const [failed, setFailed] = useState(false);
-  const showIcon = !resolved || failed;
+  const showFallback = !resolved || failed;
   return (
     <View
       style={{
@@ -61,8 +63,12 @@ const ThumbImage: React.FC<{
         overflow: 'hidden',
       }}
     >
-      {showIcon ? (
-        <Icon name={iconName} size={iconSize ?? Math.round(size * 0.55)} color={iconColor} />
+      {showFallback ? (
+        <Image
+          source={FALLBACK_LOGO}
+          style={{ width: size * 0.8, height: size * 0.8 }}
+          resizeMode="contain"
+        />
       ) : (
         <Image
           source={{ uri: resolved! }}
