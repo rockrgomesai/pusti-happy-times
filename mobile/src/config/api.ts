@@ -6,11 +6,16 @@
  * sourced from `react-native-config` (`.env` at the mobile/ root).
  *
  * Exports:
- *   API_HOST      — scheme + host + port (no path). Use to build asset URLs.
- *   API_BASE_URL  — host + API version path, e.g. `${API_HOST}/api/v1`.
- *   resolveAssetUrl(path) — prefixes relative `/uploads/...` paths with API_HOST
- *                          and leaves already-absolute URLs untouched.
- *   API_TIMEOUTS  — canonical request timeouts used across services.
+ *   API_HOST       — scheme + host + port (no path). Used to build the API
+ *                    base URL.
+ *   API_ASSET_HOST — scheme + host [+ path prefix] used for static assets
+ *                    (`/images/...`, `/uploads/...`). Defaults to API_HOST
+ *                    but can be overridden when the backend lives behind a
+ *                    path prefix (e.g. `https://tkgerp.com/backend`).
+ *   API_BASE_URL   — host + API version path, e.g. `${API_HOST}/api/v1`.
+ *   resolveAssetUrl(path) — prefixes relative `/uploads/...` paths with
+ *                    API_ASSET_HOST and leaves already-absolute URLs untouched.
+ *   API_TIMEOUTS   — canonical request timeouts used across services.
  */
 
 import Config from 'react-native-config';
@@ -26,6 +31,15 @@ const basePath = ensureLeading(Config.API_BASE_PATH || DEFAULT_PATH);
 export const API_BASE_URL: string = `${API_HOST}${stripTrailing(basePath)}`;
 
 /**
+ * Host (optionally including a path prefix) used to serve static assets such
+ * as product/category images and user profile photos. Falls back to API_HOST
+ * when no dedicated value is configured.
+ */
+export const API_ASSET_HOST: string = stripTrailing(
+  Config.API_ASSET_HOST || API_HOST,
+);
+
+/**
  * Turn a possibly-relative asset path from the backend (e.g. `/uploads/x.jpg`)
  * into a fully-qualified URL. Absolute URLs are returned unchanged. Empty /
  * nullish values return null so callers can render a fallback.
@@ -33,7 +47,7 @@ export const API_BASE_URL: string = `${API_HOST}${stripTrailing(basePath)}`;
 export function resolveAssetUrl(path?: string | null): string | null {
   if (!path) return null;
   if (/^https?:\/\//i.test(path)) return path;
-  return `${API_HOST}${path.startsWith('/') ? path : `/${path}`}`;
+  return `${API_ASSET_HOST}${path.startsWith('/') ? path : `/${path}`}`;
 }
 
 export const API_TIMEOUTS = {
