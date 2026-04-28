@@ -225,7 +225,7 @@ router.post(
       });
     } catch (error) {
       if (session) {
-        try { await session.abortTransaction(); } catch (_) {}
+        try { await session.abortTransaction(); } catch (_) { }
         session.endSession();
       }
       console.error("Error creating order:", error);

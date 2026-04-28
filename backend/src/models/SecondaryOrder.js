@@ -250,10 +250,10 @@ secondaryOrderSchema.index({ gps_location: "2dsphere" });
 secondaryOrderSchema.pre("save", function (next) {
   if (this.isModified("items")) {
     this.subtotal = this.items.reduce((sum, item) => sum + item.subtotal, 0);
-    
+
     // Calculate discount from applied offers
     this.discount_amount = this.applied_offers.reduce((sum, offer) => sum + offer.discount_amount, 0);
-    
+
     // Calculate final total
     this.total_amount = this.subtotal - this.discount_amount;
   }

@@ -111,10 +111,10 @@ export default function ShopActionScreen() {
                 { text: 'OK', onPress: () => navigation.goBack() },
                 ...(__DEV__
                   ? [{
-                      text: 'Bypass (DEV)',
-                      style: 'destructive' as const,
-                      onPress: () => setProximityValid(true),
-                    }]
+                    text: 'Bypass (DEV)',
+                    style: 'destructive' as const,
+                    onPress: () => setProximityValid(true),
+                  }]
                   : []),
               ]
             );

@@ -36,7 +36,7 @@ export const API_BASE_URL: string = `${API_HOST}${stripTrailing(basePath)}`;
  * when no dedicated value is configured.
  */
 export const API_ASSET_HOST: string = stripTrailing(
-  Config.API_ASSET_HOST || API_HOST,
+    Config.API_ASSET_HOST || API_HOST,
 );
 
 /**
@@ -45,14 +45,14 @@ export const API_ASSET_HOST: string = stripTrailing(
  * nullish values return null so callers can render a fallback.
  */
 export function resolveAssetUrl(path?: string | null): string | null {
-  if (!path) return null;
-  if (/^https?:\/\//i.test(path)) return path;
-  return `${API_ASSET_HOST}${path.startsWith('/') ? path : `/${path}`}`;
+    if (!path) return null;
+    if (/^https?:\/\//i.test(path)) return path;
+    return `${API_ASSET_HOST}${path.startsWith('/') ? path : `/${path}`}`;
 }
 
 export const API_TIMEOUTS = {
-  short: 5000,
-  default: 10000,
-  long: 15000,
-  upload: 30000,
+    short: 5000,
+    default: 10000,
+    long: 15000,
+    upload: 30000,
 } as const;
