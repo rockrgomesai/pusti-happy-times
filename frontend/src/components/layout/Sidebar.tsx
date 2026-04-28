@@ -426,8 +426,21 @@ export function Sidebar({ onItemClick }: SidebarProps) {
       }}
     >
       <List sx={{ pt: 0, pb: 0 }}> {/* Removed bottom padding */}
+        {/* Pinned Dashboard — always at the top regardless of permissions */}
+        {renderMenuItem({
+          _id: '__pinned_dashboard__',
+          label: 'Dashboard',
+          href: '/dashboard',
+          icon: 'dashboard',
+          mOrder: -1,
+          parentId: null,
+          isSubmenu: false,
+          isActive: true,
+        })}
         {menuItems
           .filter(item => item.isActive)
+          .filter(item => (item.href ?? '').toLowerCase() !== '/dashboard'
+            && item.label?.toLowerCase() !== 'dashboard')
           .sort((a, b) => a.mOrder - b.mOrder)
           .map(item => renderMenuItem(item))}
       </List>

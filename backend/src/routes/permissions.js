@@ -681,10 +681,12 @@ router.get("/menu-items", authenticate, async (req, res) => {
       .toArray();
 
     let assignedMenuItems = [];
+    const roleOrderMap = new Map(); // menuItemId(string) -> role-specific m_order
 
     // If roleId is provided, get the actual assigned menu items using aggregation
     if (roleId) {
       const Role = require("../models/Role");
+      const { RoleSidebarMenuItem } = require("../models/JunctionTables");
 
       const roleMenuItems = await Role.aggregate([
         { $match: { _id: new mongoose.Types.ObjectId(roleId) } },
@@ -720,19 +722,36 @@ router.get("/menu-items", authenticate, async (req, res) => {
           .filter((id) => id !== null)
           .map((id) => id.toString());
       }
+
+      // Pull per-role ordering directly from the junction table
+      const orderDocs = await RoleSidebarMenuItem.find({
+        role_id: new mongoose.Types.ObjectId(roleId),
+      })
+        .select("sidebar_menu_item_id m_order")
+        .lean();
+      orderDocs.forEach((d) => {
+        if (d.sidebar_menu_item_id != null && d.m_order != null) {
+          roleOrderMap.set(d.sidebar_menu_item_id.toString(), d.m_order);
+        }
+      });
     }
 
     // Add assignment status to all menu items and clean up labels
-    const menuItemsWithAssignments = allMenuItems.map((item) => ({
-      _id: item._id,
-      name: item.label, // Display clean label as 'name' for consistency with permissions
-      href: item.href,
-      m_order: item.m_order,
-      icon: item.icon,
-      parent_id: item.parent_id,
-      is_submenu: item.is_submenu,
-      assigned: assignedMenuItems.includes(item._id.toString()),
-    }));
+    const menuItemsWithAssignments = allMenuItems.map((item) => {
+      const idStr = item._id.toString();
+      const roleOrder = roleOrderMap.has(idStr) ? roleOrderMap.get(idStr) : null;
+      return {
+        _id: item._id,
+        name: item.label, // Display clean label as 'name' for consistency with permissions
+        href: item.href,
+        m_order: item.m_order,
+        role_m_order: roleOrder,
+        icon: item.icon,
+        parent_id: item.parent_id,
+        is_submenu: item.is_submenu,
+        assigned: assignedMenuItems.includes(idStr),
+      };
+    });
 
     res.json({
       success: true,
@@ -917,10 +936,12 @@ router.post("/assign-menus", authenticate, async (req, res) => {
     // Remove existing assignments for this role
     await RoleSidebarMenuItem.deleteMany({ role_id: roleId });
 
-    // Create new assignments
-    const assignments = menuItemIds.map((menuItemId) => ({
+    // Create new assignments. Array index becomes the per-role m_order so the
+    // sidebar respects the SuperAdmin's drag-and-drop ordering for this role.
+    const assignments = menuItemIds.map((menuItemId, idx) => ({
       role_id: roleId,
       sidebar_menu_item_id: menuItemId,
+      m_order: idx,
     }));
 
     if (assignments.length > 0) {

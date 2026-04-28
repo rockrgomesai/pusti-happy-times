@@ -217,8 +217,19 @@ router.get("/user-menu", authenticate, async (req, res) => {
       })
       .lean();
 
-    // Extract populated menu item documents, filter out any null (dangling assignments)
-    const menuItems = roleMenuItems.map((item) => item.sidebar_menu_item_id).filter(Boolean);
+    // Extract populated menu item documents, filter out any null (dangling assignments).
+    // Apply per-role m_order override (set by SuperAdmin via drag-and-drop on the
+    // permissions page) so the sidebar respects the role-specific ordering.
+    const menuItems = roleMenuItems
+      .map((link) => {
+        const item = link.sidebar_menu_item_id;
+        if (!item) return null;
+        if (link.m_order != null) {
+          item.m_order = link.m_order;
+        }
+        return item;
+      })
+      .filter(Boolean);
 
     console.log(
       "[user-menu] role:",

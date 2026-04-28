@@ -34,12 +34,21 @@ const roleSidebarMenuItemSchema = new mongoose.Schema(
       ref: "SidebarMenuItem",
       required: [true, "Sidebar menu item ID is required"],
     },
+
+    // Per-role display order override. When set, takes precedence over
+    // SidebarMenuItem.m_order so SuperAdmin can customise ordering per role
+    // (groups + items within each group). Lower = earlier.
+    m_order: {
+      type: Number,
+      default: null,
+    },
   },
   {
     // Schema options
     timestamps: false, // Database schema doesn't include timestamps
     versionKey: false, // Disable __v field
     collection: "role_sidebar_menu_items", // Explicit collection name
+    strict: false, // Allow legacy docs without m_order to coexist
   }
 );
 

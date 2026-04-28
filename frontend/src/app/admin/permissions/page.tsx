@@ -18,7 +18,11 @@ import {
   Alert,
   CircularProgress,
   Divider,
+  Tooltip,
+  Chip,
 } from "@mui/material";
+import DragIndicatorIcon from "@mui/icons-material/DragIndicator";
+import PushPinIcon from "@mui/icons-material/PushPin";
 import { SelectChangeEvent } from "@mui/material/Select";
 import api from "@/lib/api";
 
@@ -30,10 +34,68 @@ interface Role {
 interface MenuItem {
   _id: string;
   name: string;
-  href: string;
+  href: string | null;
   icon: string;
   m_order: number;
+  role_m_order?: number | null;
+  parent_id?: string | null;
+  is_submenu?: boolean;
   assigned?: boolean;
+}
+
+// Heuristic: treat the dashboard menu row as pinned/locked. It is always shown
+// first in the sidebar regardless of role assignment, so we exclude it from the
+// drag-and-drop reordering UI.
+function isDashboardItem(it: MenuItem): boolean {
+  const href = (it.href ?? "").toLowerCase();
+  const name = (it.name ?? "").toLowerCase();
+  return href === "/dashboard" || name === "dashboard";
+}
+
+interface MenuTreeNode {
+  item: MenuItem;
+  children: MenuTreeNode[];
+}
+
+// Build a parent/child tree from a flat list. Items keep their incoming order
+// (the caller sorts the list once, by role_m_order ?? m_order).
+function buildTree(items: MenuItem[]): MenuTreeNode[] {
+  const byParent = new Map<string | null, MenuItem[]>();
+  items.forEach((it) => {
+    const key = it.parent_id ? String(it.parent_id) : null;
+    const list = byParent.get(key) ?? [];
+    list.push(it);
+    byParent.set(key, list);
+  });
+  const buildLevel = (parentKey: string | null): MenuTreeNode[] =>
+    (byParent.get(parentKey) ?? []).map((it) => ({
+      item: it,
+      children: buildLevel(String(it._id)),
+    }));
+  return buildLevel(null);
+}
+
+// Flatten the tree depth-first, parents before their children. Used when
+// persisting role assignments — the backend writes m_order = arrayIndex.
+function flattenTree(items: MenuItem[]): MenuItem[] {
+  const tree = buildTree(items);
+  const out: MenuItem[] = [];
+  const walk = (nodes: MenuTreeNode[]) => {
+    nodes.forEach((n) => {
+      out.push(n.item);
+      if (n.children.length) walk(n.children);
+    });
+  };
+  walk(tree);
+  return out;
+}
+
+// Reorder helper: returns a new array with `from` moved to `to`.
+function arrayMove<T>(arr: T[], from: number, to: number): T[] {
+  const next = arr.slice();
+  const [moved] = next.splice(from, 1);
+  next.splice(to, 0, moved);
+  return next;
 }
 
 interface Permission {
@@ -112,8 +174,18 @@ export default function PermissionsPage() {
       const menuResponse = await api.get(`/permissions/menu-items?roleId=${selectedRole}`);
       
       if (menuResponse.data?.success) {
-        setMenuItems(menuResponse.data.data || []);
-        console.log("Menu items loaded:", menuResponse.data.data);
+        const raw: MenuItem[] = menuResponse.data.data || [];
+        // Stable sort: prefer per-role order when set, fall back to global m_order.
+        const ordered = [...raw].sort((a, b) => {
+          const ao = a.role_m_order ?? null;
+          const bo = b.role_m_order ?? null;
+          if (ao != null && bo != null) return ao - bo;
+          if (ao != null) return -1;
+          if (bo != null) return 1;
+          return (a.m_order ?? 0) - (b.m_order ?? 0);
+        });
+        setMenuItems(ordered);
+        console.log("Menu items loaded:", ordered);
       } else {
         setMenuItems([]);
       }
@@ -182,6 +254,68 @@ export default function PermissionsPage() {
     );
   };
 
+  // ── Drag-and-drop reordering ────────────────────────────────────────────────
+  // Two scopes are supported:
+  //   1. Top-level groups (parent_id == null) reorder among themselves.
+  //   2. Children of the same parent reorder among themselves.
+  // Cross-parent moves are intentionally disabled to keep the model simple.
+  // The Dashboard row is locked at the top and never participates.
+  const dragRef = React.useRef<{
+    parentKey: string | null;
+    fromIndex: number;
+  } | null>(null);
+
+  const reorderWithinScope = useCallback(
+    (parentKey: string | null, fromIndex: number, toIndex: number) => {
+      if (fromIndex === toIndex) return;
+      setMenuItems((prev) => {
+        // Indices into `prev` of items belonging to this scope, preserving
+        // their current relative order. We move within those positions only.
+        const scopeIndices: number[] = [];
+        prev.forEach((it, idx) => {
+          if (isDashboardItem(it)) return;
+          const itParent = it.parent_id ? String(it.parent_id) : null;
+          if (itParent === parentKey) scopeIndices.push(idx);
+        });
+        if (
+          fromIndex < 0 ||
+          toIndex < 0 ||
+          fromIndex >= scopeIndices.length ||
+          toIndex >= scopeIndices.length
+        ) {
+          return prev;
+        }
+        const reorderedScope = arrayMove(scopeIndices, fromIndex, toIndex);
+        // Rebuild `prev` by walking original indices, substituting scope
+        // members in their new order.
+        let cursor = 0;
+        return prev.map((it, idx) => {
+          if (scopeIndices.includes(idx)) {
+            const replacement = prev[reorderedScope[cursor]];
+            cursor += 1;
+            return replacement;
+          }
+          return it;
+        });
+      });
+    },
+    []
+  );
+
+  const onDragStart = (parentKey: string | null, fromIndex: number) => {
+    dragRef.current = { parentKey, fromIndex };
+  };
+  const onDragOver = (e: React.DragEvent) => {
+    if (dragRef.current) e.preventDefault(); // allow drop
+  };
+  const onDrop = (parentKey: string | null, toIndex: number) => {
+    const d = dragRef.current;
+    dragRef.current = null;
+    if (!d) return;
+    if (d.parentKey !== parentKey) return; // ignore cross-scope drops
+    reorderWithinScope(parentKey, d.fromIndex, toIndex);
+  };
+
   const handlePagePermissionToggle = (permissionId: string) => {
     setPagePermissions((prev) =>
       prev.map((perm) =>
@@ -203,7 +337,9 @@ export default function PermissionsPage() {
 
     setLoading(true);
     try {
-      const selectedMenuIds = menuItems
+      // Send IDs in the user's chosen tree order (parents first, then their
+      // children) so the backend persists per-role m_order matching the UI.
+      const selectedMenuIds = flattenTree(menuItems)
         .filter((item) => item.assigned)
         .map((item) => item._id);
       await api.post('/permissions/assign-menus', {
@@ -351,6 +487,10 @@ export default function PermissionsPage() {
                 <Typography variant="h6" gutterBottom>
                   Menu Items
                 </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                  Drag rows to reorder groups and the items within each group.
+                  Dashboard is always pinned at the top.
+                </Typography>
                 {loading ? (
                   <CircularProgress />
                 ) : menuItems.length === 0 ? (
@@ -359,30 +499,168 @@ export default function PermissionsPage() {
                   <>
                     <Box
                       sx={{
-                        maxHeight: 400,
+                        maxHeight: 480,
                         overflow: 'auto',
                         border: '1px solid',
                         borderColor: 'divider',
                         borderRadius: 1,
-                        p: 2,
+                        p: 1,
                         mb: 2,
                         backgroundColor: 'background.paper'
                       }}
                     >
-                      <FormGroup>
-                        {menuItems.map((item) => (
-                          <FormControlLabel
-                            key={item._id}
-                            control={
-                              <Checkbox
-                                checked={item.assigned || false}
-                                onChange={() => handleMenuItemToggle(item._id)}
-                              />
-                            }
-                            label={`${item.name} (${item.href})`}
-                          />
-                        ))}
-                      </FormGroup>
+                      {/* Pinned Dashboard row — always first, never draggable */}
+                      {(() => {
+                        const dash = menuItems.find(isDashboardItem);
+                        if (!dash) return null;
+                        return (
+                          <Box
+                            sx={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 1,
+                              px: 1,
+                              py: 0.5,
+                              mb: 1,
+                              borderRadius: 1,
+                              bgcolor: 'action.hover',
+                            }}
+                          >
+                            <Tooltip title="Pinned to top for every role">
+                              <PushPinIcon fontSize="small" color="primary" />
+                            </Tooltip>
+                            <Checkbox
+                              checked={dash.assigned || false}
+                              onChange={() => handleMenuItemToggle(dash._id)}
+                            />
+                            <Typography sx={{ flex: 1, fontWeight: 600 }}>
+                              {dash.name}{' '}
+                              <Typography
+                                component="span"
+                                variant="caption"
+                                color="text.secondary"
+                              >
+                                ({dash.href})
+                              </Typography>
+                            </Typography>
+                            <Chip size="small" label="Pinned" color="primary" />
+                          </Box>
+                        );
+                      })()}
+
+                      {/* Top-level groups — drag to reorder among themselves. */}
+                      {(() => {
+                        const tree = buildTree(
+                          menuItems.filter((it) => !isDashboardItem(it))
+                        );
+                        return tree.map((node, topIdx) => {
+                          const isGroup = node.children.length > 0;
+                          return (
+                            <Box
+                              key={node.item._id}
+                              draggable
+                              onDragStart={() => onDragStart(null, topIdx)}
+                              onDragOver={onDragOver}
+                              onDrop={() => onDrop(null, topIdx)}
+                              sx={{
+                                border: '1px solid',
+                                borderColor: 'divider',
+                                borderRadius: 1,
+                                mb: 1,
+                                bgcolor: 'background.default',
+                              }}
+                            >
+                              <Box
+                                sx={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: 1,
+                                  px: 1,
+                                  py: 0.5,
+                                }}
+                              >
+                                <Tooltip title="Drag to reorder">
+                                  <DragIndicatorIcon
+                                    fontSize="small"
+                                    sx={{ cursor: 'grab', color: 'text.secondary' }}
+                                  />
+                                </Tooltip>
+                                <Checkbox
+                                  checked={node.item.assigned || false}
+                                  onChange={() => handleMenuItemToggle(node.item._id)}
+                                />
+                                <Typography
+                                  sx={{ flex: 1, fontWeight: isGroup ? 600 : 400 }}
+                                >
+                                  {node.item.name}{' '}
+                                  <Typography
+                                    component="span"
+                                    variant="caption"
+                                    color="text.secondary"
+                                  >
+                                    ({node.item.href ?? 'group'})
+                                  </Typography>
+                                </Typography>
+                                {isGroup && (
+                                  <Chip size="small" label="Group" variant="outlined" />
+                                )}
+                              </Box>
+
+                              {/* Children — drag to reorder within this group only. */}
+                              {isGroup && (
+                                <Box sx={{ pl: 4, pr: 1, pb: 1 }}>
+                                  {node.children.map((child, childIdx) => (
+                                    <Box
+                                      key={child.item._id}
+                                      draggable
+                                      onDragStart={(e) => {
+                                        e.stopPropagation();
+                                        onDragStart(String(node.item._id), childIdx);
+                                      }}
+                                      onDragOver={onDragOver}
+                                      onDrop={(e) => {
+                                        e.stopPropagation();
+                                        onDrop(String(node.item._id), childIdx);
+                                      }}
+                                      sx={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: 1,
+                                        px: 1,
+                                        py: 0.25,
+                                        borderRadius: 1,
+                                        '&:hover': { bgcolor: 'action.hover' },
+                                      }}
+                                    >
+                                      <DragIndicatorIcon
+                                        fontSize="small"
+                                        sx={{ cursor: 'grab', color: 'text.secondary' }}
+                                      />
+                                      <Checkbox
+                                        size="small"
+                                        checked={child.item.assigned || false}
+                                        onChange={() =>
+                                          handleMenuItemToggle(child.item._id)
+                                        }
+                                      />
+                                      <Typography variant="body2" sx={{ flex: 1 }}>
+                                        {child.item.name}{' '}
+                                        <Typography
+                                          component="span"
+                                          variant="caption"
+                                          color="text.secondary"
+                                        >
+                                          ({child.item.href ?? '—'})
+                                        </Typography>
+                                      </Typography>
+                                    </Box>
+                                  ))}
+                                </Box>
+                              )}
+                            </Box>
+                          );
+                        });
+                      })()}
                     </Box>
                     <Button
                       variant="contained"
