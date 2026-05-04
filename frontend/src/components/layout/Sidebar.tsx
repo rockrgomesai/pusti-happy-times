@@ -123,12 +123,12 @@ const iconMap: Record<string, typeof Dashboard> = {
   people: People,
   business: Business,
   settings: Settings,
-  
+
   // Database icons (FontAwesome names mapped to Material-UI)
   // Main Navigation
   FaRectangleList: Dashboard, // Dashboard - Main overview icon
   FaCrown: AdminPanelSettings, // Admin/SuperAdmin - Crown represents authority
-  
+
   // User & Security Management
   FaUsers: PeopleAlt, // Users (plural) - Group of people
   FaUser: Person, // Single user
@@ -140,44 +140,44 @@ const iconMap: Record<string, typeof Dashboard> = {
   FaAddressCard: BadgeIcon, // Contact card
   FaShieldAlt: Security, // Permissions/Security - Shield icon
   FaUserShield: VerifiedUser, // Verified user with shield
-  
+
   // Master Data & Database
   FaDatabase: Storage, // Master data - Database icon
-  
+
   // Product Management
   FaBox: Inventory2, // Products - Box/Package icon
   FaBoxOpen: BoxIcon, // Open box variant
   FaTag: TagIcon, // Single tag - Brand/Label
   FaTags: CategoryIcon, // Multiple tags - Categories
-  
+
   // Offers & Promotions
   FaOffers: CardGiftcard, // Offers (CRUD) - Gift card represents offers/promotions
   FaBrowseOffers: Sell, // Browse Offers - Selling/discount tag
-  
+
   // Order Management (Parent)
   FaShoppingCart: ShoppingBag, // Order Management parent - Shopping bag icon (UNIQUE)
-  
+
   // Demand Orders & Related
   FaDemandOrders: AddShoppingCart, // Demand Orders - Add to cart icon (UNIQUE)
   FaFileInvoice: ReceiptLong, // Invoice/Document - Receipt document
   FaDO: ReceiptLong, // DO - Receipt/Order document
-  
+
   // Inventory & Warehousing
   FaWarehouse: WarehouseIcon, // Warehouse/Depot - Building with storage
   FaLayerGroup: Layers, // Inventory layers/stock levels
-  
+
   // Logistics & Transport
   FaTruck: LocalShipping, // Transport - Delivery truck
-  
+
   // Manufacturing & Production
   FaFactory: FactoryOutlined, // Factory - Industrial building
-  
+
   // HR & People Management
   FaPeople: PeopleAlt, // HR/People management - Multiple people icon
-  
+
   // Finance (Parent)
   FaMoneyBillWave: MonetizationOn, // Finance parent - Money with waves (UNIQUE)
-  
+
   // Finance Operations
   FaMoneyBill: AttachMoney, // Payments - Dollar sign
   FaCoins: PointOfSale, // Collections - Point of sale
@@ -187,20 +187,20 @@ const iconMap: Record<string, typeof Dashboard> = {
   FaWallet: AccountBalanceWallet, // Wallet - Balance wallet
   FaDollarSign: LocalAtm, // ATM/Dollar operations
   Payment: Payment, // Generic payment icon
-  
+
   // Sales & Territories
   FaMapMarkedAlt: Map, // Territories - Map with markers
-  
+
   // Routes & Outlets
   FaRoute: RouteIcon, // Routes - Route/path icon
   FaSitemap: AccountTree, // Outlet channels - Hierarchical structure
   FaChartBar: BarChart, // Market sizes - Bar chart
-  
+
   // Distributors & Stores
   FaStore: Storefront, // Distributors - Store front with awning (UNIQUE)
   FaShop: Store, // Shop/Business location - Simple store
   FaBuilding: Domain, // Building/Organization
-  
+
   // Documents & Reports
   FaFileAlt: Description, // Documents/Files
   FaListAlt: ListAlt, // Lists/Reports
@@ -208,11 +208,11 @@ const iconMap: Record<string, typeof Dashboard> = {
   FaClipboard: Assignment, // Assignments/Tasks
   FaClipboardCheck: AssignmentTurnedIn, // Completed tasks
   FaBookOpen: LibraryBooks, // Open book/Library
-  
+
   // Inventory Operations
   FaBoxes: Inventory, // Multiple boxes - Inventory
   FaDolly: ShoppingBasket, // Requisitions - Shopping basket/cart
-  
+
   // Additional Specific Icons
   FaUserCircle: AccountCircle, // User profile circle
 };
@@ -258,7 +258,7 @@ export function Sidebar({ onItemClick }: SidebarProps) {
   const fetchMenuItems = useCallback(async () => {
     try {
       setLoading(true);
-      
+
       // Fetch from API
       const response = await apiClient.get<MenuApiResponse>('/menu-items/user-menu');
       console.log('📋 Menu API Response:', response);
@@ -320,7 +320,7 @@ export function Sidebar({ onItemClick }: SidebarProps) {
     ) {
       IconComponent = WarehouseIcon;
     }
-    
+
     // Always render the actual icon, but make it smaller for child items
     return (
       <Box sx={{ fontSize: isChild ? '1.1rem' : '1.5rem', display: 'flex', alignItems: 'center' }}>
@@ -373,7 +373,7 @@ export function Sidebar({ onItemClick }: SidebarProps) {
             >
               {renderIcon(item.icon, isChild, item.label)}
             </ListItemIcon>
-            
+
             <ListItemText
               primary={item.label}
               primaryTypographyProps={{
@@ -381,7 +381,7 @@ export function Sidebar({ onItemClick }: SidebarProps) {
                 fontWeight: itemIsActive ? 600 : 400,
               }}
             />
-            
+
             {hasChildren && (
               isOpen ? <ExpandLess /> : <ExpandMore />
             )}
@@ -416,9 +416,9 @@ export function Sidebar({ onItemClick }: SidebarProps) {
   }
 
   return (
-    <Box 
-      sx={{ 
-        height: '100%', 
+    <Box
+      sx={{
+        height: '100%',
         overflow: 'auto',
         backgroundColor: 'background.paper',
         borderRight: 1,

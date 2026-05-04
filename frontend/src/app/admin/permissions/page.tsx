@@ -152,8 +152,8 @@ export default function PermissionsPage() {
       const response = await api.get("/roles", {
         params: { limit: 100000 }
       });
-      const rolesData = response.data?.data && Array.isArray(response.data.data) 
-        ? response.data.data 
+      const rolesData = response.data?.data && Array.isArray(response.data.data)
+        ? response.data.data
         : [];
       setRoles(rolesData);
     } catch (error) {
@@ -172,7 +172,7 @@ export default function PermissionsPage() {
     try {
       // Fetch menu items with role assignments
       const menuResponse = await api.get(`/permissions/menu-items?roleId=${selectedRole}`);
-      
+
       if (menuResponse.data?.success) {
         const raw: MenuItem[] = menuResponse.data.data || [];
         // Stable sort: prefer per-role order when set, fall back to global m_order.
@@ -192,22 +192,22 @@ export default function PermissionsPage() {
 
       // Fetch page permissions from pg_permissions collection
       const pageResponse = await api.get(`/permissions/page-permissions?roleId=${selectedRole}`);
-      
+
       if (pageResponse.data?.success) {
         setPagePermissions(pageResponse.data.data || []);
       } else {
         setPagePermissions([]);
       }
-      
+
       // Fetch API permissions from api_permissions collection
       const apiResponse = await api.get(`/permissions/api-permissions?roleId=${selectedRole}`);
-      
+
       if (apiResponse.data?.success) {
         setApiPermissions(apiResponse.data.data || []);
       } else {
         setApiPermissions([]);
       }
-      
+
     } catch (error: any) {
       console.error("Error fetching permissions:", error);
       console.error("Error response:", error.response?.data);

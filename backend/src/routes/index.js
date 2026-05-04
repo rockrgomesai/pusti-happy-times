@@ -27,6 +27,7 @@ const facilityRoutes = require("./facilities"); // Unified facility routes
 const transportRoutes = require("./transports");
 const bankRoutes = require("./master/banks");
 const bdBankRoutes = require("./master/bd-banks");
+const timePassRegisterRoutes = require("./master/time-pass-register");
 const menuRoutes = require("./menu-items");
 const permissionRoutes = require("./permissions");
 const designationRoutes = require("./designationRoutes");
@@ -403,6 +404,14 @@ router.use("/master/banks", bankRoutes);
  * @access  Private (authenticated users)
  */
 router.use("/master/bd-banks", bdBankRoutes);
+
+/**
+ * Time Pass Register Routes
+ * @route   /api/master/time-pass-register/*
+ * @desc    Monthly working-day configuration for Time Pass % calculation
+ * @access  Private (SuperAdmin)
+ */
+router.use("/master/time-pass-register", timePassRegisterRoutes);
 
 /**
  * Designation Management Routes
