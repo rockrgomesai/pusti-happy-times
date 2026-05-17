@@ -21,6 +21,7 @@ pusti-happy-times/
 **Stack:** Express 4.18, Mongoose 7.5, JWT (jsonwebtoken 9), Redis 4.6 (refresh tokens), socket.io 4.8, bcryptjs, helmet, cors, express-mongo-sanitize, hpp, express-validator.
 
 **Layout** (`backend/src/`):
+
 | Dir | Purpose |
 |---|---|
 | `config/` | DB + Redis connections |
@@ -37,6 +38,7 @@ pusti-happy-times/
 **Auth chain:** `authenticate` → `requireRole(['SO','ASM',...])` → handler. Defined in `middleware/auth.js` and `middleware/roleCheck.js`.
 
 **Access-token payload:**
+
 ```ts
 {
   userId, username, roleId,
@@ -55,9 +57,11 @@ pusti-happy-times/
 **Validation:** express-validator inline per route (`body()`, `query()`, `param()` + `validationResult(req)`). Example: `backend/src/routes/auth.js#L71-L83`.
 
 **Error shape (always):**
+
 ```json
 { "success": false, "message": "...", "code": "STABLE_ENUM", "error": "...", "details": [...] }
 ```
+
 Central middleware: `backend/src/middleware/errorHandler.js`. Mongoose CastError→404, dup key→409, ValidationError→400, JWT→401.
 
 **Naming:** DB fields `snake_case`, JS vars `camelCase`. Routes files `kebab-case.js` (`demand-orders.js`), models `PascalCase.js`. Logic lives in route files (controllers are rare).
@@ -67,6 +71,7 @@ Central middleware: `backend/src/middleware/errorHandler.js`. Mongoose CastError
 **Stack:** RN 0.83.1, React 19.2, react-navigation 7 (NativeStack), axios 1.13, AsyncStorage 2.2, react-native-config 1.6, react-native-geolocation-service 5.3, mapbox 10.2 + leaflet 1.9.
 
 **Layout** (`mobile/src/`):
+
 | Dir | Purpose |
 |---|---|
 | `screens/` | All screens (`LoginScreen`, `HomeScreen`, `SalesModuleScreen`, `ShopActionScreen`, `TraceRouteScreen`, …) |
@@ -80,12 +85,14 @@ Central middleware: `backend/src/middleware/errorHandler.js`. Mongoose CastError
 **API config:** `mobile/src/config/api.ts` reads `Config.API_HOST` (`react-native-config`) and exports `API_BASE_URL = ${API_HOST}${API_BASE_PATH}` and `resolveAssetUrl(path)`. Default fallback `http://10.0.2.2:5000` (emulator).
 
 **`.env` flow:**
+
 - `mobile/.env` → active values (consumed at build time).
 - `mobile/.env.production` → production values (`API_HOST=https://tkgerp.com`).
 - Swap before release: `cp .env .env.local.bak && cp .env.production .env && ./gradlew assembleRelease && cp .env.local.bak .env`.
 - **`android/app/build.gradle` MUST `apply from: dotenv.gradle`** (already wired) — without it `Config.*` is `undefined` at runtime and the app silently falls back to `10.0.2.2`.
 
 **New screen procedure:**
+
 1. Add `XxxScreen.tsx` under `screens/`.
 2. Register in `mobile/src/navigation/AppNavigator.tsx`.
 3. Add tile in `HomeScreen.tsx` (gated via the existing role helpers).
@@ -94,9 +101,11 @@ Central middleware: `backend/src/middleware/errorHandler.js`. Mongoose CastError
 **Auth:** `services/authService.ts`. Stores `accessToken` + `refreshToken` in AsyncStorage. Logout clears tokens, pending orders, carts.
 
 **Offline sync:** `services/syncService.ts` + `hooks/useOfflineSync.tsx`. Queue persisted at AsyncStorage key `@sync_queue`. Item shape:
+
 ```ts
 { id, type, priority: 1|2, endpoint, method, data, timestamp, retryCount, maxRetries, lastError }
 ```
+
 Auto-retries on connectivity (exponential 2s→60s). Currently used by tracking; pattern is reusable for any offline write.
 
 **Permissions:** AndroidManifest declares `INTERNET`, `CAMERA`, `READ/WRITE_EXTERNAL_STORAGE`, `READ_MEDIA_IMAGES`, `ACCESS_FINE/COARSE_LOCATION`. Runtime requests are screen-local (PermissionsAndroid).
@@ -108,6 +117,7 @@ Auto-retries on connectivity (exponential 2s→60s). Currently used by tracking;
 **Stack:** Next.js 14.2 (app router), React 18.3, MUI 7, axios, react-hook-form + zod, js-cookie.
 
 **Layout** (`frontend/src/`):
+
 | Dir | Purpose |
 |---|---|
 | `app/` | App-router pages (login, dashboard, admin, master, inventory, ordermanagement, …) |
@@ -130,9 +140,10 @@ Auto-retries on connectivity (exponential 2s→60s). Currently used by tracking;
 
 (Dev port 27019 to avoid local mongod collision.)
 
-**~48 collections.** Key groupings — Auth: `users`, `roles`, `api_permissions`, `page_permissions`, `sidebar_menu_items`. Master: `products`, `brands`, `categories`, `territories`, `facilities`, `employees`, `distributors`. Geo: `routes`, `outlets`, `outlet_types`, `outlet_channels`. Inventory: `distributor_stock`, `depot_stock`, `inventory_requisitions`, `requisition_chalans`, `delivery_chalans`, `delivery_invoices`. Orders: `demand_orders`, `secondary_orders`, `collections`, `customer_ledger`. Tracking: `tracking_sessions`, `location_points`. Ops: `outlet_visits`, `damage_claims`, `dsr`, `attendance`.
+**~48 collections.** Key groupings — Auth: `users`, `roles`, `api_permissions`, `page_permissions`, `sidebar_menu_items`. Master: `products`, `brands`, `categories`, `territories`, `facilities`, `employees`, `distributors`. Geo: `routes`, `outlets`, `outlet_types`, `outlet_channels`. Inventory: `distributor_stock`, `depot_stock`, `inventory_requisitions`, `requisition_chalans`, `delivery_chalans`, `delivery_invoices`. Orders: `demand_orders`, `secondary_orders`, `collections`, `customer_ledger`, `monthly_targets`. Tracking: `tracking_sessions`, `location_points`. Ops: `outlet_visits`, `damage_claims`, `dsr`, `attendance`.
 
 **Conventions (NON-NEGOTIABLE):**
+
 1. **Soft delete:** `active: boolean` (default `true`); list/get queries filter `{ active: true }`.
 2. **Audit fields:** `created_at`, `updated_at`, `created_by` (→`User._id`), `updated_by`.
 3. **Decimal128** for money/qty (DistributorStock, DepotStock).
@@ -146,6 +157,7 @@ Auto-retries on connectivity (exponential 2s→60s). Currently used by tracking;
 **Roles:** SuperAdmin, SalesAdmin, SO, ASM, RSM, ZSM, Distributor, Production, Inventory, Collection, DSR (full list in `roles` collection).
 
 **User types:**
+
 - `employee` → `employee_type: "field" | "facility" | "system_admin"`.
   - **field** ⇒ requires `territory_assignments.{zone|region|area|db_point}_ids` populated; `User.validateRoleContext` enforces SO/ASM need `area_ids`, RSM needs `region_ids`, ZSM needs `zone_ids`.
   - **facility** ⇒ requires `facility_id` (Inventory→Depot, Production→Factory).
@@ -181,6 +193,7 @@ Auto-retries on connectivity (exponential 2s→60s). Currently used by tracking;
 ## 9. Common task recipes
 
 **New backend endpoint** (e.g. `GET /api/v1/widgets/:id`):
+
 1. Add model `backend/src/models/Widget.js` (audit fields + `active`).
 2. Create `backend/src/routes/widgets.js`: `router.get("/:id", authenticate, requireRole(['Admin']), [param('id').isMongoId()], async (req,res,next) => { ... })`.
 3. Mount in `backend/src/app.js`: `app.use("/api/v1/widgets", require("./routes/widgets"))`.
@@ -212,3 +225,38 @@ Auto-retries on connectivity (exponential 2s→60s). Currently used by tracking;
 4. If touching auth/RBAC: re-read §6 and `validateRoleContext` (`backend/src/models/User.js#L326`).
 5. If seeding: use raw-driver pattern; emit a summary block with the credentials/IDs you created.
 6. Run lints/tests for any package you touched before declaring done.
+
+## 13. Monthly Targets module
+
+New module planned 2026-05-11. Prompts: **P7** (backend), **P8** (frontend).
+
+Collection: `monthly_targets` — unique compound index on `[month, distributor_id, so_id, product_id]` (`so_id` nullable — null = distributor-only target). Upsert with `prev_qty_b4_last_upd` captured before overwrite. FK resolution via ERP IDs (`Distributor.erp_id`, `Product.erp_id`, `Employee.employee_id`) in a dedicated `/validate` phase before `/upload` writes records. Allowed roles: `SuperAdmin`, `SalesAdmin`, `HOS`, `MIS`.
+
+Routes: `POST /api/v1/monthly-targets/validate`, `POST /api/v1/monthly-targets/upload`, `GET /api/v1/monthly-targets`.
+
+Session doc: [MONTHLY_TARGETS_SESSION_START.md](MONTHLY_TARGETS_SESSION_START.md).
+
+## 14. Sales Order Screen Redesign (SalesModuleScreen)
+
+Planned 2026-05-16. Prompt: **P9**.
+
+**Backend** (`backend/src/routes/mobile/catalog.js`): extend `GET /mobile/catalog/products` to include `fifo_batches[]` (`batch_id`, `available_pcs`, `unit_price`, `received_at`) sorted oldest-first (FIFO), filtered to `qty > 0` only. Also expose `ctn_pcs` on Product.
+
+**Mobile** (`mobile/src/screens/SalesModuleScreen.tsx`): replace category grid + bottom-sheet modal with two-zone layout — **Zone 1** (~160 px): manual offers carousel with left/right arrow navigation + dot indicators; **Zone 2** (`flex:1`): category accordion `FlatList` with lazy-loaded product + FIFO batch sub-rows. Cart key changes to `${product_id}_${batch_id}` (same SKU, two batches = two line items at different unit prices). Batch 2+ rows are dimmed/locked until the preceding batch is fully committed. Language toggle (BN ↔ EN) persisted to `AsyncStorage('@lang_pref')`.
+
+**salesAPI.ts**: `CartItem` gains `batch_id`; `addToCart` updated accordingly.
+
+## 15. DSR Delivery Panel (DsrDeliveryScreen)
+
+Planned 2026-05-16. Prompt: **P10**.
+
+DSR (Distributor Sales Representative) mobile screen for daily outlet delivery management. DSR users have `user_type: "distributor"` + `distributor_id` in context.
+
+**Backend changes:**
+- `SecondaryOrder` model: add `Hold` and `Bounced` to `order_status` enum; add `delivery_items[]` (actual delivered/damage/extra-discount per SKU), `cash_collected`, `extra_delivery_discount`, `payable_amount`, `credit_balance_before`, `credit_balance_after`, `hold_reason`, `bounced_reason`.
+- New route file `backend/src/routes/mobile/dsr-delivery.js` mounted at `/api/v1/mobile/dsr`. Endpoints: `GET /schedule`, `GET /outlet-credit/:outlet_id`, `GET /catalog-search`, `POST /orders/:id/confirm`, `POST /orders/:id/bounce`, `POST /orders/:id/hold`.
+- Stock deduction via `DistributorStock.reduceStockFIFO()` on confirm (same pattern as P3 web portal, but separate mobile endpoint).
+
+**Mobile:** New `DsrDeliveryScreen.tsx` + `dsrDeliveryAPI.ts`. Layout: gradient header + 4-stat summary bar + outlet `FlatList` with left-border color status coding. Tap outlet → full-screen Modal with inline-editable product rows (delivered/damage/extra-disc), "Add Extra SKU" search modal, financial summary card (Payable / Prev. Credit / Cash Collected / Credit B/L), and Bounced (red) / Hold (amber) / Confirm (green) action buttons.
+
+**Financial formula:** `payable = total_delivered - extra_discount` → `total_payable = payable + credit_before` → `credit_after = total_payable - cash_collected`.

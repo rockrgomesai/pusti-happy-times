@@ -15,6 +15,13 @@ export interface Category {
   product_count: number;
 }
 
+export interface FIFOBatch {
+  batch_id:      string;
+  available_pcs: number;
+  unit_price:    number;
+  received_at:   string;
+}
+
 export interface Product {
   _id: string;
   sku: string;
@@ -22,8 +29,10 @@ export interface Product {
   bangla_name: string;
   trade_price: number;
   unit_per_case: number;
+  ctn_pcs?: number;
   image_url?: string;
   available_qty: number;
+  fifo_batches: FIFOBatch[];
 }
 
 export interface Offer {
@@ -42,6 +51,7 @@ export interface Offer {
 
 export interface CartItem {
   product_id: string;
+  batch_id: string;
   sku: string;
   bangla_name: string;
   english_name: string;
@@ -102,9 +112,8 @@ class SalesAPI {
   /**
    * Get categories with product counts
    */
-  async getCategories(distributorId: string, segment?: 'BIS' | 'BEV'): Promise<Category[]> {
+  async getCategories(token: string, distributorId: string, segment?: 'BIS' | 'BEV'): Promise<Category[]> {
     try {
-      const token = await AsyncStorage.getItem('accessToken');
       let url = `${API_BASE_URL}/mobile/catalog/categories?distributor_id=${distributorId}`;
       if (segment) url += `&segment=${segment}`;
 
@@ -126,11 +135,10 @@ class SalesAPI {
   }
 
   /**
-   * Get products by category with stock
+   * Get products by category with FIFO stock
    */
-  async getProducts(categoryId: string, distributorId: string): Promise<Product[]> {
+  async getProducts(token: string, distributorId: string, categoryId: string): Promise<Product[]> {
     try {
-      const token = await AsyncStorage.getItem('accessToken');
       const url = `${API_BASE_URL}/mobile/catalog/products?category_id=${categoryId}&distributor_id=${distributorId}`;
 
       const response = await fetch(url, {
@@ -151,12 +159,11 @@ class SalesAPI {
   }
 
   /**
-   * Get eligible offers for outlet
+   * Get eligible offers for distributor
    */
-  async getOffers(outletId: string, distributorId: string): Promise<Offer[]> {
+  async getOffers(token: string, distributorId: string): Promise<Offer[]> {
     try {
-      const token = await AsyncStorage.getItem('accessToken');
-      const url = `${API_BASE_URL}/mobile/catalog/offers?outlet_id=${outletId}&distributor_id=${distributorId}`;
+      const url = `${API_BASE_URL}/mobile/catalog/offers?outlet_id=${distributorId}&distributor_id=${distributorId}`;
 
       const response = await fetch(url, {
         headers: { Authorization: `Bearer ${token}` },
@@ -166,12 +173,11 @@ class SalesAPI {
 
       if (result.success) {
         return result.data;
-      } else {
-        throw new Error(result.message || 'Failed to fetch offers');
       }
+      return [];
     } catch (error) {
       console.error('getOffers error:', error);
-      throw error;
+      return [];
     }
   }
 
@@ -435,29 +441,33 @@ class SalesAPI {
     }
   }
 
+  private readonly CART_KEY = '@sales_cart_active';
+
   /**
-   * Save cart to AsyncStorage
+   * Save cart Map to AsyncStorage.
+   * Key format: `${product_id}_${batch_id}`
    */
-  async saveCart(outletId: string, cart: CartItem[]): Promise<void> {
+  async saveCart(cart: Map<string, CartItem>): Promise<void> {
     try {
-      const cartKey = `@sales_cart_${outletId}`;
-      await AsyncStorage.setItem(cartKey, JSON.stringify(cart));
+      const arr = [...cart.entries()];
+      await AsyncStorage.setItem(this.CART_KEY, JSON.stringify(arr));
     } catch (error) {
       console.error('saveCart error:', error);
     }
   }
 
   /**
-   * Load cart from AsyncStorage
+   * Load cart from AsyncStorage as a Map.
    */
-  async loadCart(outletId: string): Promise<CartItem[]> {
+  async loadCart(): Promise<Map<string, CartItem>> {
     try {
-      const cartKey = `@sales_cart_${outletId}`;
-      const cartData = await AsyncStorage.getItem(cartKey);
-      return cartData ? JSON.parse(cartData) : [];
+      const data = await AsyncStorage.getItem(this.CART_KEY);
+      if (!data) return new Map();
+      const arr: [string, CartItem][] = JSON.parse(data);
+      return new Map(arr);
     } catch (error) {
       console.error('loadCart error:', error);
-      return [];
+      return new Map();
     }
   }
 
@@ -466,8 +476,9 @@ class SalesAPI {
    */
   async clearCart(outletId: string): Promise<void> {
     try {
-      const cartKey = `@sales_cart_${outletId}`;
-      await AsyncStorage.removeItem(cartKey);
+      await AsyncStorage.removeItem(this.CART_KEY);
+      // Also remove any legacy outlet-keyed cart
+      await AsyncStorage.removeItem(`@sales_cart_${outletId}`);
     } catch (error) {
       console.error('clearCart error:', error);
     }

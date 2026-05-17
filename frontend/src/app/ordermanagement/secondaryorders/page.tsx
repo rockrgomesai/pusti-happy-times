@@ -55,7 +55,7 @@ import api from "@/lib/api";
 import { formatDateForDisplay } from "@/lib/dateUtils";
 import { useAuth } from "@/contexts/AuthContext";
 
-type OrderStatus = "Submitted" | "Approved" | "Cancelled" | "Delivered";
+type OrderStatus = "Submitted" | "Approved" | "Cancelled" | "Delivered" | "Hold" | "Bounced";
 
 interface OrderRow {
     _id: string;
@@ -92,7 +92,7 @@ interface OrderDetail extends OrderRow {
     delivered_at?: string;
 }
 
-const STATUSES: (OrderStatus | "")[] = ["", "Submitted", "Approved", "Delivered", "Cancelled"];
+const STATUSES: (OrderStatus | "")[] = ["", "Submitted", "Approved", "Delivered", "Cancelled", "Hold", "Bounced"];
 
 const ADMIN_ROLES = ["SuperAdmin", "Sales Admin", "Office Admin"];
 const AREA_MGR_ROLES = ["ASM", "RSM", "ZSM", "HOS"];
@@ -104,6 +104,8 @@ function statusColor(s: OrderStatus): "default" | "warning" | "info" | "success"
         case "Approved": return "info";
         case "Delivered": return "success";
         case "Cancelled": return "error";
+        case "Hold": return "warning";
+        case "Bounced": return "error";
         default: return "default";
     }
 }
@@ -118,7 +120,7 @@ export default function SecondaryOrdersPage() {
     const { user } = useAuth();
     const role = user?.role?.role || "";
     const canApprove = ADMIN_ROLES.includes(role) || AREA_MGR_ROLES.includes(role);
-    const canDeliver = ADMIN_ROLES.includes(role) || DISTRIBUTOR_ROLES.includes(role);
+    const canDeliver = !!role;
 
     const [rows, setRows] = useState<OrderRow[]>([]);
     const [loading, setLoading] = useState(false);
@@ -209,16 +211,6 @@ export default function SecondaryOrdersPage() {
     const detailActions = useMemo(() => {
         if (!detail) return null;
         const buttons: React.ReactNode[] = [];
-        if (canApprove && detail.order_status === "Submitted") {
-            buttons.push(
-                <Button key="approve" color="success" variant="contained" startIcon={<CheckCircle />} onClick={() => { setActionOpen("approve"); setActionNotes(""); }}>
-                    Approve
-                </Button>,
-                <Button key="reject" color="error" variant="outlined" startIcon={<Cancel />} onClick={() => { setActionOpen("reject"); setActionNotes(""); }}>
-                    Reject
-                </Button>
-            );
-        }
         if (canApprove && detail.order_status === "Approved") {
             buttons.push(
                 <Button key="reject2" color="error" variant="outlined" startIcon={<Cancel />} onClick={() => { setActionOpen("reject"); setActionNotes(""); }}>
@@ -226,7 +218,7 @@ export default function SecondaryOrdersPage() {
                 </Button>
             );
         }
-        if (canDeliver && detail.order_status === "Approved") {
+        if (canDeliver && (detail.order_status === "Approved" || detail.order_status === "Submitted")) {
             buttons.push(
                 <Button key="deliver" color="primary" variant="contained" startIcon={<LocalShipping />} onClick={() => { setActionOpen("deliver"); setActionNotes(""); }}>
                     Mark Delivered

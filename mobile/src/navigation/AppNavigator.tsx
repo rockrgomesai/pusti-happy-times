@@ -15,6 +15,8 @@ import NoSalesReasonScreen from '../screens/NoSalesReasonScreen';
 import AuditInventoryScreen from '../screens/AuditInventoryScreen';
 import SalesModuleScreen from '../screens/SalesModuleScreen';
 import AddOutletScreen from '../screens/AddOutletScreen';
+import OutletDetailScreen from '../screens/OutletDetailScreen';
+import DsrDeliveryScreen from '../screens/DsrDeliveryScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -186,6 +188,16 @@ const AppNavigator = () => {
         <Stack.Screen
           name="AddOutlet"
           component={AddOutletScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="OutletDetail"
+          component={OutletDetailScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="DsrDelivery"
+          component={DsrDeliveryScreen}
           options={{ headerShown: false }}
         />
       </Stack.Navigator>

@@ -15,6 +15,8 @@ const express = require("express");
 const router = express.Router();
 const { body, query, param, validationResult } = require("express-validator");
 const SecondaryOrder = require("../models/SecondaryOrder");
+const Notification = require("../models/Notification");
+const { Outlet, Product, User, DistributorStock } = require("../models");
 
 const ADMIN_ROLES = ["SuperAdmin", "Sales Admin", "Office Admin"];
 const AREA_MANAGER_ROLES = ["ASM", "RSM", "ZSM", "HOS"];
@@ -50,9 +52,142 @@ function canApprove(req) {
     return ADMIN_ROLES.includes(role) || AREA_MANAGER_ROLES.includes(role);
 }
 function canDeliver(req) {
+    // Any authenticated role that has access to the order can arrange delivery
     const role = roleOf(req);
-    return ADMIN_ROLES.includes(role) || DISTRIBUTOR_ROLES.includes(role);
+    return !!role;
 }
+
+// ====================
+// POST /secondary-orders  (SO creates a new order)
+// ====================
+router.post(
+    "/",
+    [
+        body("outlet_id").isMongoId(),
+        body("distributor_id").isMongoId(),
+        body("route_id").optional().isMongoId(),
+        body("items").isArray({ min: 1 }),
+        body("items.*.product_id").isMongoId(),
+        body("items.*.sku").isString().notEmpty().toUpperCase(),
+        body("items.*.quantity").isInt({ min: 1 }),
+        body("so_notes").optional().isString().isLength({ max: 1000 }),
+        body("entry_mode").optional().isIn(["online", "offline", "manual"]),
+        body("client_order_uid").optional().isString(),
+        body("price_locked").optional().isBoolean(),
+    ],
+    async (req, res) => {
+        try {
+            // 1. Role guard
+            const role = roleOf(req);
+            if (!SO_ROLES.includes(role)) {
+                return res.status(403).json({ success: false, message: "Only SOs can create orders" });
+            }
+
+            // 2. Validation errors
+            const errors = validationResult(req);
+            if (!errors.isEmpty()) {
+                return res.status(400).json({ success: false, message: "Validation failed", errors: errors.array() });
+            }
+
+            const {
+                outlet_id,
+                distributor_id,
+                route_id,
+                items,
+                so_notes,
+                entry_mode = "online",
+                client_order_uid,
+                price_locked = false,
+            } = req.body;
+
+            // 3. Idempotency check (offline sync dedup)
+            if (client_order_uid) {
+                const existing = await SecondaryOrder.findOne({ client_order_uid }).lean();
+                if (existing) return res.status(200).json({ success: true, data: existing });
+            }
+
+            // 4. Verify outlet is active
+            const outlet = await Outlet.findOne({ _id: outlet_id, active: true }).select("name code").lean();
+            if (!outlet) return res.status(404).json({ success: false, message: "Outlet not found or inactive" });
+
+            // 5. Snapshot prices from Product catalog
+            const builtItems = [];
+            for (const it of items) {
+                const product = await Product.findOne({ _id: it.product_id, active: true }).select("trade_price sku").lean();
+                if (!product) {
+                    return res.status(404).json({ success: false, message: `Product ${it.product_id} not found or inactive` });
+                }
+                builtItems.push({
+                    product_id: it.product_id,
+                    sku: it.sku.toUpperCase(),
+                    quantity: it.quantity,
+                    unit_price: product.trade_price,
+                    subtotal: it.quantity * product.trade_price,
+                });
+            }
+
+            // 6. Generate order number and create document
+            const order_number = await SecondaryOrder.generateOrderNumber();
+            const order = new SecondaryOrder({
+                order_number,
+                outlet_id,
+                distributor_id,
+                dsr_id: req.user._id,
+                route_id: route_id || undefined,
+                order_date: new Date(),
+                items: builtItems,
+                order_status: "Approved",
+                approved_by: req.user._id,
+                approved_at: new Date(),
+                entry_mode,
+                client_order_uid: client_order_uid || undefined,
+                price_locked,
+                so_notes: so_notes || undefined,
+            });
+            await order.save(); // pre-save hook computes subtotal + total_amount
+
+            // 7. Notify Distributor users (non-critical)
+            try {
+                const recipients = await User.find({
+                    user_type: "distributor",
+                    distributor_id,
+                    active: true,
+                }).select("_id").lean();
+
+                if (recipients.length > 0) {
+                    await Notification.bulkCreate(
+                        recipients.map((u) => ({
+                            user_id: u._id,
+                            type: "order_status",
+                            title: "New Sales Order",
+                            message: `Order ${order.order_number} from ${outlet.name} — BDT ${order.total_amount}`,
+                            priority: "normal",
+                            action_url: `/distributor/orders/${order._id}`,
+                            action_label: "View Order",
+                            expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+                        }))
+                    );
+                }
+
+                if (global.io) {
+                    global.io.emit("secondary_order:new", {
+                        orderId: order._id,
+                        distributor_id,
+                        order_number: order.order_number,
+                    });
+                }
+            } catch (notifyErr) {
+                // Notifications are non-critical — log but don't fail the request
+                console.error("Notify error on order create:", notifyErr);
+            }
+
+            return res.status(201).json({ success: true, data: order });
+        } catch (err) {
+            console.error("Create secondary order error:", err);
+            return res.status(500).json({ success: false, message: "Failed to create order", error: err.message });
+        }
+    }
+);
 
 // ====================
 // GET /secondary-orders
@@ -61,7 +196,7 @@ function canDeliver(req) {
 router.get(
     "/",
     [
-        query("status").optional().isIn(["Submitted", "Approved", "Cancelled", "Delivered"]),
+        query("status").optional().isIn(["Submitted", "Approved", "Cancelled", "Delivered", "Hold", "Bounced"]),
         query("outlet_id").optional().isMongoId(),
         query("distributor_id").optional().isMongoId(),
         query("dsr_id").optional().isMongoId(),
@@ -229,30 +364,145 @@ router.post(
 // ====================
 router.post(
     "/:id/deliver",
-    [param("id").isMongoId(), body("delivery_chalan_no").optional().isString().isLength({ max: 100 })],
+    [
+        param("id").isMongoId(),
+        body("delivery_chalan_no").optional().isString().isLength({ max: 100 }),
+        body("items").optional().isArray(),
+        body("items.*.sku").optional().isString().toUpperCase(),
+        body("items.*.delivery_qty").optional().isInt({ min: 1 }),
+    ],
     async (req, res) => {
         try {
-            if (!canDeliver(req)) return res.status(403).json({ success: false, message: "Only Distributor / Admins can mark delivered" });
+            // Guard
+            if (!canDeliver(req)) {
+                return res.status(403).json({ success: false, message: "Not authorized" });
+            }
             const errors = validationResult(req);
-            if (!errors.isEmpty()) return res.status(400).json({ success: false, message: "Validation failed", errors: errors.array() });
+            if (!errors.isEmpty()) {
+                return res.status(400).json({ success: false, message: "Validation failed", errors: errors.array() });
+            }
 
             const scope = accessFilter(req);
             if (scope === null) return res.status(403).json({ success: false, message: "Not allowed" });
 
             const order = await SecondaryOrder.findOne({ _id: req.params.id, ...scope });
             if (!order) return res.status(404).json({ success: false, message: "Order not found" });
-            if (order.order_status !== "Approved") {
-                return res.status(409).json({ success: false, message: `Cannot deliver an order in status '${order.order_status}'. Must be Approved first.` });
+            if (!["Approved", "Submitted"].includes(order.order_status)) {
+                return res.status(409).json({
+                    success: false,
+                    message: `Cannot deliver an order in status '${order.order_status}'.`,
+                });
             }
 
+            // Build delivery quantities from body, or default to full order quantities
+            const deliveryMap = new Map(); // sku -> delivery_qty
+            if (Array.isArray(req.body.items) && req.body.items.length > 0) {
+                req.body.items.forEach((it) => deliveryMap.set(it.sku.toUpperCase(), it.delivery_qty));
+            } else {
+                order.items.forEach((it) => deliveryMap.set(it.sku, it.quantity));
+            }
+
+            // Step 1: validate stock availability for ALL items before touching anything
+            const stockDocs = new Map(); // sku -> DistributorStock document
+            const insufficientItems = [];
+
+            for (const [sku, deliveryQty] of deliveryMap.entries()) {
+                const stock = await DistributorStock.findOne({ distributor_id: order.distributor_id, sku });
+                if (!stock || parseFloat(stock.qty) < deliveryQty) {
+                    insufficientItems.push({
+                        sku,
+                        requested: deliveryQty,
+                        available: stock ? parseFloat(stock.qty) : 0,
+                    });
+                } else {
+                    stockDocs.set(sku, stock);
+                }
+            }
+
+            if (insufficientItems.length > 0) {
+                return res.status(409).json({
+                    success: false,
+                    code: "INSUFFICIENT_STOCK",
+                    message: "Insufficient stock for one or more SKUs",
+                    details: insufficientItems,
+                });
+            }
+
+            // Step 2: deduct stock and compute delivery prices
+            for (const orderItem of order.items) {
+                const deliveryQty = deliveryMap.get(orderItem.sku);
+                if (!deliveryQty) continue; // item not in this delivery
+
+                // Price re-evaluation
+                let deliveryUnitPrice = orderItem.unit_price; // fallback
+                if (!order.price_locked) {
+                    const product = await Product.findOne({ sku: orderItem.sku }).select("trade_price").lean();
+                    if (product?.trade_price != null) deliveryUnitPrice = product.trade_price;
+                }
+
+                // FIFO deduction
+                const stock = stockDocs.get(orderItem.sku);
+                const result = stock.reduceStockFIFO(deliveryQty);
+                // result.success is guaranteed true (we pre-checked above)
+                await stock.save();
+
+                // Write delivery fields back onto the order item
+                orderItem.delivery_qty = deliveryQty;
+                orderItem.delivery_unit_price = deliveryUnitPrice;
+                orderItem.delivery_subtotal = deliveryQty * deliveryUnitPrice;
+                orderItem.fifo_cogs = result.costOfGoodsSold;
+                orderItem.fifo_batches_used = result.batchesUsed.map((b) => ({
+                    batch_id: b.batch_id,
+                    qty: b.qty_used,
+                    unit_cost: b.unit_price,
+                }));
+            }
+
+            // Step 3: update order header
+            order.delivery_total_amount = order.items.reduce(
+                (sum, it) => sum + (it.delivery_subtotal ?? 0),
+                0
+            );
             order.order_status = "Delivered";
             order.delivered_by = req.user._id;
             order.delivered_at = new Date();
             order.delivery_date = new Date();
             if (req.body.delivery_chalan_no) order.delivery_chalan_no = req.body.delivery_chalan_no;
+
             await order.save();
 
-            return res.status(200).json({ success: true, message: "Order marked delivered", data: { _id: order._id, order_status: order.order_status } });
+            // Step 4: socket event + SO notification
+            if (global.io) {
+                global.io.emit("secondary_order:delivered", {
+                    orderId: order._id,
+                    distributor_id: order.distributor_id,
+                    so_id: order.dsr_id,
+                });
+            }
+
+            try {
+                await Notification.create({
+                    user_id: order.dsr_id,
+                    type: "order_status",
+                    title: "Order Delivered",
+                    message: `Order ${order.order_number} has been delivered — Invoice BDT ${order.delivery_total_amount}`,
+                    priority: "normal",
+                    action_url: `/orders/${order._id}`,
+                    expires_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
+                });
+            } catch (notifyErr) {
+                console.error("Notify error on deliver:", notifyErr);
+            }
+
+            return res.status(200).json({
+                success: true,
+                message: "Order marked delivered",
+                data: {
+                    _id: order._id,
+                    order_status: order.order_status,
+                    delivery_total_amount: order.delivery_total_amount,
+                },
+            });
         } catch (err) {
             console.error("Deliver order error:", err);
             return res.status(500).json({ success: false, message: "Failed to mark delivered", error: err.message });

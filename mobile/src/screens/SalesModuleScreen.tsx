@@ -1,290 +1,202 @@
 /**
  * Sales Module Screen
- * Browse products by category, view offers, and create orders
+ * Two-zone layout: manual offers carousel (Zone 1) + category accordion with FIFO batch rows (Zone 2)
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   FlatList,
   TouchableOpacity,
-  TextInput,
   Alert,
   ActivityIndicator,
   SafeAreaView,
-  Modal,
-  Image,
-  Dimensions,
 } from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import salesAPI, { Category, Product, Offer, CartItem } from '../services/salesAPI';
-import { resolveAssetUrl } from '../config/api';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import salesAPI, { Category, Product, Offer, CartItem, FIFOBatch } from '../services/salesAPI';
 import { friendlyErrorMessage } from '../utils/logger';
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-
-// Resolve a backend-relative image URL (e.g. "/images/categories/x.jpg") to an
-// absolute URL. Absolute URLs are returned as-is.
-const resolveImageUri = (url?: string | null): string | null => resolveAssetUrl(url);
 
 interface Props {
   route: any;
   navigation: any;
 }
 
-// Small wrapper that renders a product/category image, falling back to the
-// provided icon if the URL is missing or fails to load.
-const FALLBACK_LOGO = require('../assets/images/logo-grey.png');
+// ── Types ─────────────────────────────────────────────────────────────────────
 
-const ThumbImage: React.FC<{
-  uri?: string | null;
-  size: number;
-  iconName: string;
-  iconSize?: number;
-  iconColor?: string;
-  borderRadius?: number;
-  backgroundColor?: string;
-}> = ({ uri, size, borderRadius = 8, backgroundColor = '#f0f0f0' }) => {
-  const resolved = resolveImageUri(uri);
-  const [failed, setFailed] = useState(false);
-  const showFallback = !resolved || failed;
-  return (
-    <View
-      style={{
-        width: size,
-        height: size,
-        borderRadius,
-        backgroundColor,
-        justifyContent: 'center',
-        alignItems: 'center',
-        overflow: 'hidden',
-      }}
-    >
-      {showFallback ? (
-        <Image
-          source={FALLBACK_LOGO}
-          style={{ width: size * 0.8, height: size * 0.8 }}
-          resizeMode="contain"
-        />
-      ) : (
-        <Image
-          source={{ uri: resolved! }}
-          style={{ width: size, height: size }}
-          resizeMode="cover"
-          onError={() => setFailed(true)}
-        />
-      )}
-    </View>
-  );
-};
+type AccordionRowType = 'header' | 'loading' | 'product';
 
-// Product row with explicit "Add to Cart" commit button. Uses a local pending
-// quantity separate from the committed cart quantity; `+/-` only mutate the
-// pending value, and the commit button pushes it to the cart.
-const ProductRow: React.FC<{
-  item: Product;
-  cartQty: number;
-  onCommit: (qty: number) => void;
-  onRemove: () => void;
-}> = ({ item, cartQty, onCommit, onRemove }) => {
-  const [editing, setEditing] = useState(false);
-  const [pending, setPending] = useState(1);
+interface AccordionRow {
+  type:          AccordionRowType;
+  id:            string;
+  categoryId?:   string;
+  categoryName?: string;
+  productId?:    string;
+  product?:      Product;
+  batchIndex?:   number;
+  batch?:        FIFOBatch;
+}
 
-  const startEditing = () => {
-    setPending(cartQty > 0 ? cartQty : 1);
-    setEditing(true);
-  };
-  const cancel = () => setEditing(false);
-  const commit = () => {
-    if (pending < 1) onRemove();
-    else onCommit(pending);
-    setEditing(false);
-  };
-
-  const dec = () => setPending((p) => Math.max(0, p - 1));
-  const inc = () => {
-    if (pending < item.available_qty) setPending((p) => p + 1);
-    else Alert.alert('Stock Limit', `Only ${item.available_qty} PCS available`);
-  };
-
-  return (
-    <View style={styles.productCard}>
-      <View style={{ marginRight: 12 }}>
-        <ThumbImage
-          uri={item.image_url}
-          size={60}
-          iconName="package-variant"
-          borderRadius={8}
-          backgroundColor="#f0f0f0"
-        />
-      </View>
-      <View style={styles.productInfo}>
-        <Text style={styles.productName}>{item.bangla_name}</Text>
-        <Text style={styles.productSku}>{item.sku}</Text>
-        <Text style={styles.productPrice}>₹{item.trade_price}/PCS</Text>
-        <Text
-          style={[
-            styles.productStock,
-            { color: item.available_qty > 50 ? '#4CAF50' : item.available_qty > 0 ? '#FF9800' : '#F44336' },
-          ]}
-        >
-          Available: {item.available_qty} PCS
-        </Text>
-        {cartQty > 0 && !editing && (
-          <Text style={styles.inCartBadge}>In cart: {cartQty} PCS</Text>
-        )}
-
-        {editing && (
-          <View style={styles.editBlock}>
-            <View style={styles.quantityStepper}>
-              <TouchableOpacity onPress={dec}>
-                <Icon name="minus-circle" size={28} color="#F44336" />
-              </TouchableOpacity>
-              <Text style={styles.quantityText}>{pending}</Text>
-              <TouchableOpacity onPress={inc}>
-                <Icon name="plus-circle" size={28} color="#4CAF50" />
-              </TouchableOpacity>
-            </View>
-            <View style={styles.commitRow}>
-              <TouchableOpacity style={styles.cancelButton} onPress={cancel}>
-                <Text style={styles.cancelButtonText}>CANCEL</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.commitButton} onPress={commit}>
-                <Icon name="cart-plus" size={18} color="#fff" />
-                <Text style={styles.commitButtonText}>
-                  {cartQty > 0 ? 'UPDATE CART' : 'ADD TO CART'}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        )}
-      </View>
-
-      {!editing && (
-        <View style={styles.productActions}>
-          <TouchableOpacity style={styles.addButton} onPress={startEditing}>
-            <Text style={styles.addButtonText}>{cartQty > 0 ? 'EDIT' : 'ADD'}</Text>
-          </TouchableOpacity>
-          {cartQty > 0 && (
-            <TouchableOpacity style={styles.removeButton} onPress={onRemove}>
-              <Icon name="trash-can-outline" size={18} color="#F44336" />
-            </TouchableOpacity>
-          )}
-        </View>
-      )}
-    </View>
-  );
-};
+// ─────────────────────────────────────────────────────────────────────────────
 
 const SalesModuleScreen: React.FC<Props> = ({ route, navigation }) => {
   const { outletId, outletName, distributorId, currentLocation } = route.params;
 
-  const [offers, setOffers] = useState<Offer[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [cart, setCart] = useState<CartItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  // ── Category accordion state ──────────────────────────────────
+  const [categories,         setCategories]         = useState<Category[]>([]);
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+  const [categoryProducts,   setCategoryProducts]   = useState<Map<string, Product[]>>(new Map());
+  const [loadingCategories,  setLoadingCategories]  = useState<Set<string>>(new Set());
 
-  // Product bottom sheet
-  const [showProductSheet, setShowProductSheet] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loadingProducts, setLoadingProducts] = useState(false);
+  // ── Offers carousel ───────────────────────────────────────────
+  const [offers,     setOffers]     = useState<Offer[]>([]);
+  const [offerIndex, setOfferIndex] = useState(0);
 
-  // Cart drawer
-  const [showCartDrawer, setShowCartDrawer] = useState(false);
+  // ── Language toggle ───────────────────────────────────────────
+  const [language, setLanguage] = useState<'bn' | 'en'>('bn');
+
+  // ── Cart ──────────────────────────────────────────────────────
+  // Cart key: `${product_id}_${batch_id}`
+  const [cart, setCart] = useState<Map<string, CartItem>>(new Map());
+
+  // ── App state ─────────────────────────────────────────────────
   const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
+  // ── loadData ──────────────────────────────────────────────────
   const loadData = async () => {
+    const token     = await AsyncStorage.getItem('@auth_token');
+    const distId    = await AsyncStorage.getItem('@distributor_id');
+    const savedLang = (await AsyncStorage.getItem('@lang_pref')) as 'bn' | 'en' | null;
+    if (savedLang) setLanguage(savedLang);
+
+    const [cats, ofrs, savedCart] = await Promise.all([
+      salesAPI.getCategories(token!, distId!),
+      salesAPI.getOffers(token!, distId!),
+      salesAPI.loadCart(),
+    ]);
+    setCategories(cats);
+    setOffers(ofrs);
+    if (savedCart.size > 0) setCart(savedCart);
+  };
+
+  useEffect(() => { loadData(); }, []);
+
+  // ── Language helpers ──────────────────────────────────────────
+  const productName = (p: Product) =>
+    language === 'bn' ? p.bangla_name : p.english_name;
+
+  const toggleLanguage = async () => {
+    const next: 'bn' | 'en' = language === 'bn' ? 'en' : 'bn';
+    setLanguage(next);
+    await AsyncStorage.setItem('@lang_pref', next);
+  };
+
+  // ── Category expand / collapse ────────────────────────────────
+  const handleCategoryToggle = async (categoryId: string) => {
+    const next = new Set(expandedCategories);
+    if (next.has(categoryId)) {
+      next.delete(categoryId);
+      setExpandedCategories(next);
+      return;
+    }
+    next.add(categoryId);
+    setExpandedCategories(next);
+
+    if (categoryProducts.has(categoryId)) return; // already loaded
+
+    setLoadingCategories(prev => new Set(prev).add(categoryId));
     try {
-      setLoading(true);
-
-      // Load offers, categories, and saved cart in parallel
-      const [offersData, categoriesData, savedCart] = await Promise.all([
-        salesAPI.getOffers(outletId, distributorId),
-        salesAPI.getCategories(distributorId),
-        salesAPI.loadCart(outletId),
-      ]);
-
-      setOffers(offersData);
-      setCategories(categoriesData);
-      setCart(savedCart);
-    } catch (error) {
-      console.error('Load data error:', error);
-      Alert.alert('Error', 'Failed to load catalog');
+      const token  = await AsyncStorage.getItem('@auth_token');
+      const distId = await AsyncStorage.getItem('@distributor_id');
+      const products = await salesAPI.getProducts(token!, distId!, categoryId);
+      setCategoryProducts(prev => new Map(prev).set(categoryId, products));
     } finally {
-      setLoading(false);
+      setLoadingCategories(prev => {
+        const s = new Set(prev); s.delete(categoryId); return s;
+      });
     }
   };
 
-  const handleCategoryPress = async (category: Category) => {
-    try {
-      setSelectedCategory(category);
-      setShowProductSheet(true);
-      setLoadingProducts(true);
-
-      const productsData = await salesAPI.getProducts(category._id, distributorId);
-      setProducts(productsData);
-    } catch (error) {
-      console.error('Load products error:', error);
-      Alert.alert('Error', 'Failed to load products');
-    } finally {
-      setLoadingProducts(false);
-    }
-  };
-
-  const addToCart = async (product: Product, quantity: number) => {
-    const existingIndex = cart.findIndex((item) => item.product_id === product._id);
-
-    let newCart: CartItem[];
-    if (existingIndex >= 0) {
-      // Update existing item
-      newCart = [...cart];
-      newCart[existingIndex].quantity = quantity;
-      newCart[existingIndex].subtotal = quantity * product.trade_price;
-    } else {
-      // Add new item
-      newCart = [
-        ...cart,
-        {
-          product_id: product._id,
-          sku: product.sku,
-          bangla_name: product.bangla_name,
+  // ── addToCart ─────────────────────────────────────────────────
+  const addToCart = (product: Product, batch: FIFOBatch, qty: number) => {
+    const key = `${product._id}_${batch.batch_id}`;
+    setCart(prev => {
+      const next = new Map(prev);
+      if (qty <= 0) {
+        next.delete(key);
+      } else {
+        next.set(key, {
+          product_id:   product._id,
+          batch_id:     batch.batch_id,
+          sku:          product.sku,
+          bangla_name:  product.bangla_name,
           english_name: product.english_name,
-          quantity,
-          unit_price: product.trade_price,
-          subtotal: quantity * product.trade_price,
-        },
-      ];
+          quantity:     qty,
+          unit_price:   batch.unit_price,
+          subtotal:     qty * batch.unit_price,
+        });
+      }
+      salesAPI.saveCart(next);
+      return next;
+    });
+  };
+
+  // ── accordionData (useMemo) ───────────────────────────────────
+  const accordionData = useMemo<AccordionRow[]>(() => {
+    const rows: AccordionRow[] = [];
+    for (const cat of categories) {
+      rows.push({
+        type:         'header',
+        id:           `h_${cat._id}`,
+        categoryId:   cat._id,
+        categoryName: cat.name,
+      });
+      if (!expandedCategories.has(cat._id)) continue;
+
+      if (loadingCategories.has(cat._id)) {
+        rows.push({ type: 'loading', id: `l_${cat._id}`, categoryId: cat._id });
+        continue;
+      }
+
+      const products = categoryProducts.get(cat._id) || [];
+      for (const product of products) {
+        const batches = product.fifo_batches || [];
+        if (batches.length === 0) {
+          rows.push({ type: 'product', id: `p_${product._id}_no_stock`, product, batchIndex: -1 });
+          continue;
+        }
+        for (let bi = 0; bi < batches.length; bi++) {
+          rows.push({
+            type:       'product',
+            id:         `p_${product._id}_b${bi}`,
+            product,
+            batchIndex: bi,
+            batch:      batches[bi],
+          });
+        }
+      }
     }
+    return rows;
+  }, [categories, expandedCategories, loadingCategories, categoryProducts]);
 
-    setCart(newCart);
-    await salesAPI.saveCart(outletId, newCart);
+  // ── FIFO batch ordering gate ──────────────────────────────────
+  const isBatchLocked = (product: Product, batchIndex: number): boolean => {
+    if (batchIndex === 0) return false;
+    const prevBatch  = product.fifo_batches[batchIndex - 1];
+    const prevKey    = `${product._id}_${prevBatch.batch_id}`;
+    const prevInCart = cart.get(prevKey)?.quantity ?? 0;
+    return prevInCart < prevBatch.available_pcs;
   };
 
-  const removeFromCart = async (productId: string) => {
-    const newCart = cart.filter((item) => item.product_id !== productId);
-    setCart(newCart);
-    await salesAPI.saveCart(outletId, newCart);
-  };
+  // ── calculateCartTotal ────────────────────────────────────────
+  const calculateCartTotal = (): number =>
+    [...cart.values()].reduce((s, i) => s + i.subtotal, 0);
 
-  const getCartItemQty = (productId: string): number => {
-    const item = cart.find((i) => i.product_id === productId);
-    return item ? item.quantity : 0;
-  };
-
-  const calculateCartTotal = (): number => {
-    return cart.reduce((sum, item) => sum + item.subtotal, 0);
-  };
-
+  // ── handleSubmitOrder ─────────────────────────────────────────
   const handleSubmitOrder = async () => {
-    if (cart.length === 0) {
+    if (cart.size === 0) {
       Alert.alert('Cart Empty', 'Please add items to cart first');
       return;
     }
@@ -307,17 +219,18 @@ const SalesModuleScreen: React.FC<Props> = ({ route, navigation }) => {
             }
 
             const orderData = {
-              outlet_id: outletId,
+              outlet_id:      outletId,
               distributor_id: distributorId,
-              dsr_id: userId,
-              items: cart.map((item) => ({
+              dsr_id:         userId,
+              items: [...cart.values()].map((item) => ({
                 product_id: item.product_id,
-                sku: item.sku,
-                quantity: item.quantity,
+                sku:        item.sku,
+                batch_id:   item.batch_id,
+                quantity:   item.quantity,
                 unit_price: item.unit_price,
               })),
               gps_location: {
-                type: 'Point',
+                type:        'Point',
                 coordinates: [currentLocation?.lng || 0, currentLocation?.lat || 0],
               },
             };
@@ -326,8 +239,7 @@ const SalesModuleScreen: React.FC<Props> = ({ route, navigation }) => {
 
             // Clear cart
             await salesAPI.clearCart(outletId);
-            setCart([]);
-            setShowCartDrawer(false);
+            setCart(new Map());
 
             if (result.queued) {
               // Offline path — order saved locally, will sync automatically.
@@ -359,628 +271,319 @@ const SalesModuleScreen: React.FC<Props> = ({ route, navigation }) => {
     ]);
   };
 
-  if (loading) {
-    return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#4CAF50" />
-        <Text style={styles.loadingText}>Loading catalog...</Text>
-      </View>
-    );
-  }
-
+  // ── render ────────────────────────────────────────────────────
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#f5f5f5' }}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Icon name="arrow-left" size={24} color="#fff" />
+        <TouchableOpacity onPress={() => navigation.goBack()}>
+          <MaterialIcons name="arrow-back" size={24} color="#fff" />
         </TouchableOpacity>
-        <View style={styles.headerTextContainer}>
-          <Text style={styles.headerTitle}>Sales & Orders</Text>
-          <Text style={styles.headerSubtitle}>{outletName}</Text>
-        </View>
+        <Text style={styles.headerTitle}>Sales Order</Text>
+        <TouchableOpacity onPress={toggleLanguage} style={styles.langToggle}>
+          <Text style={styles.langToggleText}>{language === 'bn' ? 'EN' : 'বাং'}</Text>
+        </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.content}>
-        {/* Offers Carousel */}
-        {offers.length > 0 && (
-          <View style={styles.offersSection}>
-            <Text style={styles.sectionTitle}>Active Offers</Text>
-            <FlatList
-              horizontal
-              data={offers}
-              keyExtractor={(item) => item._id}
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.offersCarousel}
-              renderItem={({ item }) => (
-                <View style={styles.offerCard}>
-                  <Icon name="gift" size={32} color="#fff" />
-                  <Text style={styles.offerName}>{item.name}</Text>
-                  <Text style={styles.offerDescription}>{item.description || 'Special offer'}</Text>
-                  {item.config.minOrderValue > 0 ? (
-                    <Text style={styles.offerDetail}>Min Order: ₹{item.config.minOrderValue}</Text>
-                  ) : null}
-                  <Text style={styles.offerValidity}>
-                    Valid until: {new Date(item.end_date).toLocaleDateString()}
-                  </Text>
-                  <View style={styles.autoApplyBadge}>
-                    <Icon name="check-circle" size={14} color="#4CAF50" />
-                    <Text style={styles.autoApplyText}>Auto-applies if eligible</Text>
-                  </View>
-                </View>
-              )}
-            />
-          </View>
-        )}
+      {/* Zone 1 — Offers carousel (~160px, hidden if empty) */}
+      {offers.length > 0 && (
+        <View style={styles.carouselZone}>
+          <TouchableOpacity
+            onPress={() => setOfferIndex(i => Math.max(0, i - 1))}
+            disabled={offerIndex === 0}
+            style={[styles.carouselArrow, offerIndex === 0 && styles.arrowDisabled]}>
+            <MaterialIcons name="chevron-left" size={28} color="#fff" />
+          </TouchableOpacity>
 
-        {/* Categories Grid */}
-        <View style={styles.categoriesSection}>
-          <Text style={styles.sectionTitle}>Browse by Category</Text>
-          <View style={styles.categoriesGrid}>
-            {categories.map((category) => (
-              <TouchableOpacity
-                key={category._id}
-                style={styles.categoryCard}
-                onPress={() => handleCategoryPress(category)}
-              >
-                <View style={styles.categoryIconContainer}>
-                  <ThumbImage
-                    uri={category.image_url}
-                    size={56}
-                    iconName="package-variant"
-                    borderRadius={12}
-                    backgroundColor="#f0f0f0"
-                  />
-                </View>
-                <Text style={styles.categoryName} numberOfLines={2}>
-                  {category.name}
-                </Text>
-                <Text style={styles.categoryCount}>{category.product_count} items</Text>
-              </TouchableOpacity>
+          <View style={styles.carouselCard}>
+            <Text style={styles.offerTitle}>{offers[offerIndex]?.name}</Text>
+            <Text style={styles.offerBody}>{offers[offerIndex]?.description}</Text>
+          </View>
+
+          <TouchableOpacity
+            onPress={() => setOfferIndex(i => Math.min(offers.length - 1, i + 1))}
+            disabled={offerIndex === offers.length - 1}
+            style={[styles.carouselArrow, offerIndex === offers.length - 1 && styles.arrowDisabled]}>
+            <MaterialIcons name="chevron-right" size={28} color="#fff" />
+          </TouchableOpacity>
+
+          {/* Dot indicators */}
+          <View style={styles.dotRow}>
+            {offers.map((_, i) => (
+              <View key={i} style={[styles.dot, i === offerIndex && styles.dotActive]} />
             ))}
           </View>
         </View>
-      </ScrollView>
-
-      {/* Floating Cart Button */}
-      {cart.length > 0 && (
-        <TouchableOpacity style={styles.floatingCart} onPress={() => setShowCartDrawer(true)}>
-          <View style={styles.cartBadge}>
-            <Icon name="cart" size={24} color="#fff" />
-            <View style={styles.cartBadgeCount}>
-              <Text style={styles.cartBadgeText}>{cart.length}</Text>
-            </View>
-          </View>
-          <Text style={styles.cartTotal}>₹{calculateCartTotal()}</Text>
-        </TouchableOpacity>
       )}
 
-      {/* Product Bottom Sheet */}
-      <Modal visible={showProductSheet} animationType="slide" onRequestClose={() => setShowProductSheet(false)}>
-        <SafeAreaView style={styles.sheetContainer}>
-          <View style={styles.sheetHeader}>
-            <Text style={styles.sheetTitle}>{selectedCategory?.name}</Text>
-            <TouchableOpacity onPress={() => setShowProductSheet(false)}>
-              <Icon name="close" size={24} color="#333" />
-            </TouchableOpacity>
-          </View>
-
-          {loadingProducts ? (
-            <View style={styles.centered}>
-              <ActivityIndicator size="large" color="#4CAF50" />
-            </View>
-          ) : (
-            <FlatList
-              data={products}
-              keyExtractor={(item) => item._id}
-              contentContainerStyle={styles.productsList}
-              renderItem={({ item }) => (
-                <ProductRow
-                  item={item}
-                  cartQty={getCartItemQty(item._id)}
-                  onCommit={(qty) => addToCart(item, qty)}
-                  onRemove={() => removeFromCart(item._id)}
+      {/* Zone 2 — Category accordion */}
+      <FlatList
+        style={{ flex: 1 }}
+        data={accordionData}
+        keyExtractor={item => item.id}
+        renderItem={({ item }) => {
+          if (item.type === 'header') {
+            const isOpen = expandedCategories.has(item.categoryId!);
+            return (
+              <TouchableOpacity
+                style={styles.categoryHeader}
+                onPress={() => handleCategoryToggle(item.categoryId!)}>
+                <Text style={styles.categoryHeaderText}>{item.categoryName}</Text>
+                <MaterialIcons
+                  name={isOpen ? 'expand-less' : 'expand-more'}
+                  size={24}
+                  color="#555"
                 />
-              )}
-            />
-          )}
+              </TouchableOpacity>
+            );
+          }
 
-          {/* View Cart bar — visible inside the product sheet once cart has items */}
-          {cart.length > 0 && (
-            <TouchableOpacity
-              style={styles.sheetCartBar}
-              onPress={() => {
-                setShowProductSheet(false);
-                setShowCartDrawer(true);
-              }}
-            >
-              <View style={styles.sheetCartLeft}>
-                <Icon name="cart" size={22} color="#fff" />
-                <Text style={styles.sheetCartText}>
-                  {cart.length} item{cart.length > 1 ? 's' : ''} · ₹{calculateCartTotal()}
+          if (item.type === 'loading') {
+            return (
+              <View style={styles.loadingRow}>
+                <ActivityIndicator size="small" />
+                <Text style={{ marginLeft: 8, color: '#777' }}>Loading products…</Text>
+              </View>
+            );
+          }
+
+          // type === 'product'
+          const { product, batch, batchIndex } = item;
+          if (!product) return null;
+
+          if (batchIndex === -1 || !batch) {
+            return (
+              <View style={[styles.productRow, styles.noStockRow]}>
+                <Text style={styles.productName}>{productName(product)}</Text>
+                <Text style={styles.noStockText}>Out of stock</Text>
+              </View>
+            );
+          }
+
+          const locked    = isBatchLocked(product, batchIndex!);
+          const cartKey   = `${product._id}_${batch.batch_id}`;
+          const qtyInCart = cart.get(cartKey)?.quantity ?? 0;
+
+          return (
+            <View style={[styles.productRow, locked && styles.productRowLocked]}>
+              <View style={{ flex: 1 }}>
+                {batchIndex === 0 && (
+                  <Text style={styles.productName}>{productName(product)}</Text>
+                )}
+                <Text style={styles.batchLabel}>
+                  Batch {batchIndex! + 1} — {batch.available_pcs} pcs @ ৳{batch.unit_price.toFixed(2)}
                 </Text>
               </View>
-              <View style={styles.sheetCartRight}>
-                <Text style={styles.sheetCartCta}>VIEW CART</Text>
-                <Icon name="chevron-right" size={22} color="#fff" />
-              </View>
-            </TouchableOpacity>
-          )}
-        </SafeAreaView>
-      </Modal>
-
-      {/* Cart Drawer */}
-      <Modal visible={showCartDrawer} animationType="slide" onRequestClose={() => setShowCartDrawer(false)}>
-        <SafeAreaView style={styles.drawerContainer}>
-          <View style={styles.drawerHeader}>
-            <TouchableOpacity onPress={() => setShowCartDrawer(false)}>
-              <Icon name="arrow-left" size={24} color="#333" />
-            </TouchableOpacity>
-            <Text style={styles.drawerTitle}>Your Order ({cart.length} items)</Text>
-          </View>
-
-          <ScrollView style={styles.drawerContent}>
-            {cart.map((item) => (
-              <View key={item.product_id} style={styles.cartItem}>
-                <View style={styles.cartItemInfo}>
-                  <Text style={styles.cartItemName}>{item.bangla_name}</Text>
-                  <Text style={styles.cartItemDetail}>
-                    ₹{item.unit_price} × {item.quantity} PCS = ₹{item.subtotal}
-                  </Text>
-                </View>
-                <TouchableOpacity onPress={() => removeFromCart(item.product_id)}>
-                  <Icon name="close-circle" size={24} color="#F44336" />
+              <View style={styles.qtyControl}>
+                <TouchableOpacity
+                  disabled={locked || qtyInCart === 0}
+                  onPress={() => addToCart(product, batch, qtyInCart - 1)}>
+                  <MaterialIcons
+                    name="remove-circle-outline"
+                    size={28}
+                    color={locked || qtyInCart === 0 ? '#ccc' : '#e53935'}
+                  />
+                </TouchableOpacity>
+                <Text style={styles.qtyText}>{qtyInCart}</Text>
+                <TouchableOpacity
+                  disabled={locked || qtyInCart >= batch.available_pcs}
+                  onPress={() => addToCart(product, batch, qtyInCart + 1)}>
+                  <MaterialIcons
+                    name="add-circle-outline"
+                    size={28}
+                    color={locked || qtyInCart >= batch.available_pcs ? '#ccc' : '#43a047'}
+                  />
                 </TouchableOpacity>
               </View>
-            ))}
-          </ScrollView>
-
-          <View style={styles.drawerFooter}>
-            <View style={styles.totalRow}>
-              <Text style={styles.totalLabel}>Subtotal:</Text>
-              <Text style={styles.totalValue}>₹{calculateCartTotal()}</Text>
             </View>
-            <TouchableOpacity
-              style={[styles.placeOrderButton, submitting && styles.buttonDisabled]}
-              onPress={handleSubmitOrder}
-              disabled={submitting}
-            >
-              {submitting ? (
-                <ActivityIndicator size="small" color="#fff" />
-              ) : (
-                <Text style={styles.placeOrderText}>Place Order</Text>
-              )}
-            </TouchableOpacity>
-          </View>
-        </SafeAreaView>
-      </Modal>
+          );
+        }}
+      />
+
+      {/* Submit bar */}
+      {cart.size > 0 && (
+        <View style={styles.submitBar}>
+          <Text style={styles.submitCartSummary}>
+            {cart.size} line(s) — ৳
+            {[...cart.values()].reduce((s, i) => s + i.subtotal, 0).toFixed(2)}
+          </Text>
+          <TouchableOpacity
+            style={styles.submitButton}
+            onPress={handleSubmitOrder}
+            disabled={submitting}>
+            {submitting
+              ? <ActivityIndicator color="#1565c0" />
+              : <Text style={styles.submitButtonText}>Submit Order</Text>}
+          </TouchableOpacity>
+        </View>
+      )}
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-  centered: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: 12,
-    fontSize: 16,
-    color: '#666',
-  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#4CAF50',
+    justifyContent: 'space-between',
+    backgroundColor: '#1565c0',
     paddingHorizontal: 16,
     paddingVertical: 12,
     elevation: 4,
-  },
-  backButton: {
-    marginRight: 12,
-  },
-  headerTextContainer: {
-    flex: 1,
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     color: '#fff',
-  },
-  headerSubtitle: {
-    fontSize: 12,
-    color: '#fff',
-    opacity: 0.9,
-  },
-  content: {
     flex: 1,
+    textAlign: 'center',
+    marginHorizontal: 8,
   },
-  offersSection: {
-    padding: 16,
-    backgroundColor: '#fff',
-    marginBottom: 8,
+  langToggle: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: '#fff',
   },
-  sectionTitle: {
+  langToggleText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 13,
+  },
+  carouselZone: {
+    height: 160,
+    backgroundColor: '#1565c0',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    position: 'relative',
+  },
+  carouselCard: {
+    flex: 1,
+    paddingHorizontal: 12,
+  },
+  offerTitle: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 12,
-  },
-  offersCarousel: {
-    paddingRight: 16,
-  },
-  offerCard: {
-    width: SCREEN_WIDTH * 0.8,
-    backgroundColor: '#667eea',
-    borderRadius: 16,
-    padding: 20,
-    marginRight: 12,
-    elevation: 4,
-  },
-  offerName: {
-    fontSize: 18,
-    fontWeight: 'bold',
     color: '#fff',
-    marginTop: 8,
+    marginBottom: 6,
   },
-  offerDescription: {
-    fontSize: 14,
-    color: '#fff',
-    opacity: 0.9,
-    marginTop: 4,
+  offerBody: {
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.85)',
   },
-  offerDetail: {
-    fontSize: 12,
-    color: '#fff',
-    marginTop: 8,
+  carouselArrow: {
+    padding: 4,
   },
-  offerValidity: {
-    fontSize: 12,
-    color: '#fff',
-    opacity: 0.8,
-    marginTop: 4,
+  arrowDisabled: {
+    opacity: 0.3,
   },
-  autoApplyBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 12,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-    alignSelf: 'flex-start',
-  },
-  autoApplyText: {
-    fontSize: 11,
-    color: '#fff',
-    marginLeft: 4,
-  },
-  categoriesSection: {
-    padding: 16,
-    backgroundColor: '#fff',
-  },
-  categoriesGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-  },
-  categoryCard: {
-    width: '31%',
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 12,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-    elevation: 2,
-  },
-  categoryIconContainer: {
-    marginBottom: 8,
-  },
-  categoryName: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#333',
-    textAlign: 'center',
-    marginBottom: 4,
-  },
-  categoryCount: {
-    fontSize: 10,
-    color: '#666',
-  },
-  floatingCart: {
+  dotRow: {
     position: 'absolute',
-    bottom: 20,
-    left: 20,
-    right: 20,
-    backgroundColor: '#4CAF50',
-    borderRadius: 30,
-    paddingHorizontal: 24,
-    paddingVertical: 16,
+    bottom: 8,
+    left: 0,
+    right: 0,
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    elevation: 8,
-  },
-  cartBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  cartBadgeCount: {
-    position: 'absolute',
-    top: -8,
-    right: -8,
-    backgroundColor: '#F44336',
-    borderRadius: 10,
-    width: 20,
-    height: 20,
     justifyContent: 'center',
-    alignItems: 'center',
   },
-  cartBadgeText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: 'bold',
+  dot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: 'rgba(255,255,255,0.4)',
+    marginHorizontal: 3,
   },
-  cartTotal: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#fff',
+  dotActive: {
+    backgroundColor: '#fff',
   },
-  sheetContainer: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-  sheetHeader: {
+  categoryHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 16,
     backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
-  },
-  sheetTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  productsList: {
-    padding: 16,
-    paddingBottom: 90,
-  },
-  sheetCartBar: {
-    position: 'absolute',
-    left: 12,
-    right: 12,
-    bottom: 16,
-    backgroundColor: '#4CAF50',
-    borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    elevation: 6,
+    borderBottomWidth: 1,
+    borderColor: '#e0e0e0',
   },
-  sheetCartLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  sheetCartText: {
-    color: '#fff',
+  categoryHeaderText: {
     fontSize: 15,
     fontWeight: '600',
-    marginLeft: 10,
+    color: '#333',
   },
-  sheetCartRight: {
+  loadingRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    padding: 16,
+    backgroundColor: '#fafafa',
   },
-  sheetCartCta: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: 'bold',
-    marginRight: 2,
-  },
-  productCard: {
+  productRow: {
     flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
     backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 12,
-    elevation: 2,
+    borderBottomWidth: 1,
+    borderColor: '#f0f0f0',
   },
-  productImage: {
-    width: 60,
-    height: 60,
-    borderRadius: 8,
-    backgroundColor: '#f0f0f0',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
+  productRowLocked: {
+    opacity: 0.4,
   },
-  productInfo: {
-    flex: 1,
+  noStockRow: {
+    backgroundColor: '#fafafa',
+  },
+  noStockText: {
+    fontSize: 12,
+    color: '#999',
+    marginLeft: 8,
   },
   productName: {
     fontSize: 14,
     fontWeight: '600',
     color: '#333',
   },
-  productSku: {
-    fontSize: 11,
+  batchLabel: {
+    fontSize: 12,
     color: '#666',
     marginTop: 2,
   },
-  productPrice: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#4CAF50',
-    marginTop: 4,
-  },
-  productStock: {
-    fontSize: 11,
-    marginTop: 2,
-  },
-  productActions: {
-    justifyContent: 'center',
-  },
-  removeButton: {
-    marginTop: 8,
-    alignSelf: 'center',
-    padding: 4,
-  },
-  inCartBadge: {
-    marginTop: 4,
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#4CAF50',
-  },
-  editBlock: {
-    marginTop: 10,
-    borderTopWidth: 1,
-    borderTopColor: '#eee',
-    paddingTop: 10,
-  },
-  commitRow: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    marginTop: 10,
-  },
-  cancelButton: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    marginRight: 8,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: '#bbb',
-  },
-  cancelButtonText: {
-    color: '#555',
-    fontWeight: '600',
-    fontSize: 12,
-  },
-  commitButton: {
+  qtyControl: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#4CAF50',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 6,
+    marginLeft: 8,
   },
-  commitButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 12,
-    marginLeft: 6,
-  },
-  quantityStepper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  quantityText: {
+  qtyText: {
     fontSize: 16,
     fontWeight: 'bold',
-    marginHorizontal: 8,
-    minWidth: 30,
+    minWidth: 28,
     textAlign: 'center',
+    color: '#333',
   },
-  addButton: {
-    backgroundColor: '#4CAF50',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 6,
-  },
-  addButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 12,
-  },
-  drawerContainer: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-  drawerHeader: {
+  submitBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
-  },
-  drawerTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-    marginLeft: 16,
-  },
-  drawerContent: {
-    flex: 1,
-    padding: 16,
-  },
-  cartItem: {
-    flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    padding: 16,
-    borderRadius: 8,
-    marginBottom: 8,
-  },
-  cartItemInfo: {
-    flex: 1,
-  },
-  cartItemName: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
-  },
-  cartItemDetail: {
-    fontSize: 12,
-    color: '#666',
-    marginTop: 4,
-  },
-  drawerFooter: {
-    backgroundColor: '#fff',
-    padding: 16,
+    backgroundColor: '#1565c0',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     elevation: 8,
   },
-  totalRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  totalLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-  },
-  totalValue: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#4CAF50',
-  },
-  placeOrderButton: {
-    backgroundColor: '#4CAF50',
-    paddingVertical: 16,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  placeOrderText: {
+  submitCartSummary: {
     color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
+    fontSize: 14,
+    fontWeight: '600',
   },
-  buttonDisabled: {
-    opacity: 0.5,
+  submitButton: {
+    backgroundColor: '#fff',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 6,
+  },
+  submitButtonText: {
+    color: '#1565c0',
+    fontWeight: 'bold',
+    fontSize: 14,
   },
 });
 

@@ -141,13 +141,15 @@ router.post(
         subtotal: orderSubtotal,
         discount_amount: 0,
         total_amount: orderSubtotal,
-        order_status: "Submitted",
+        order_status: "Approved",
         gps_location,
         gps_accuracy,
         so_notes,
         entry_mode: entry_mode || "online",
         ...(client_order_uid ? { client_order_uid } : {}),
         ...(order_date ? { order_date: new Date(order_date) } : {}),
+        approved_by: dsr_id,
+        approved_at: new Date(),
       };
 
       const order = await SecondaryOrder.create([orderData], sessOpt);
@@ -249,7 +251,7 @@ router.get(
     query("outlet_id").optional().isMongoId().withMessage("Invalid outlet ID"),
     query("status")
       .optional()
-      .isIn(["Submitted", "Approved", "Cancelled", "Delivered"])
+      .isIn(["Submitted", "Approved", "Cancelled", "Delivered", "Hold", "Bounced"])
       .withMessage("Invalid order status"),
     query("date_from").optional().isISO8601().withMessage("Invalid date format for date_from"),
     query("date_to").optional().isISO8601().withMessage("Invalid date format for date_to"),

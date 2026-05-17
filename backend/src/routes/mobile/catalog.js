@@ -136,7 +136,7 @@ router.get(
         category_id,
         active: true,
       })
-        .select("sku english_name bangla_name trade_price unit_per_case image_url")
+        .select("sku english_name bangla_name trade_price unit_per_case ctn_pcs image_url")
         .sort({ english_name: 1 })
         .lean();
 
@@ -146,27 +146,42 @@ router.get(
         distributor_id,
         sku: { $in: skus },
       })
-        .select("sku qty")
+        .select("sku qty batches")
         .lean();
 
-      // Create stock map
-      const stockMap = {};
-      stocks.forEach((stock) => {
-        stockMap[stock.sku] = parseFloat(stock.qty) || 0;
-      });
+      // Create FIFO stock map
+      const stockMap = new Map(
+        stocks.map((s) => {
+          const fifo_batches = (s.batches || [])
+            .filter((b) => parseFloat(b.qty?.toString() || "0") > 0)
+            .sort((a, b) => new Date(a.received_at) - new Date(b.received_at))
+            .map((b) => ({
+              batch_id:      b.batch_id?.toString(),
+              available_pcs: parseFloat(b.qty?.toString() || "0"),
+              unit_price:    parseFloat(b.unit_price?.toString() || "0"),
+              received_at:   b.received_at,
+            }));
+          return [s.sku, { total_qty: parseFloat(s.qty?.toString() || "0"), fifo_batches }];
+        })
+      );
 
       // Attach stock to products
       const productsWithStock = products
-        .map((product) => ({
-          _id: product._id,
-          sku: product.sku,
-          english_name: product.english_name,
-          bangla_name: product.bangla_name,
-          trade_price: product.trade_price,
-          unit_per_case: product.unit_per_case,
-          image_url: product.image_url,
-          available_qty: stockMap[product.sku] || 0,
-        }))
+        .map((product) => {
+          const stock = stockMap.get(product.sku);
+          return {
+            _id:           product._id,
+            sku:           product.sku,
+            english_name:  product.english_name,
+            bangla_name:   product.bangla_name,
+            trade_price:   product.trade_price,
+            unit_per_case: product.unit_per_case,
+            ctn_pcs:       product.ctn_pcs,
+            image_url:     product.image_url,
+            available_qty: stock?.total_qty ?? 0,
+            fifo_batches:  stock?.fifo_batches ?? [],
+          };
+        })
         .filter((p) => p.available_qty > 0); // Only show products with stock
 
       return res.status(200).json({

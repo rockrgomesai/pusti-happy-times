@@ -74,7 +74,9 @@ const outletVisitsRoutes = require("./outletVisits");
 const outletAuditsRoutes = require("./outletAudits");
 const mobileCatalogRoutes = require("./mobile/catalog");
 const mobileOrdersRoutes = require("./mobile/orders");
+const mobileDsrDeliveryRoutes = require("./mobile/dsr-delivery");
 const secondaryOrdersRoutes = require("./secondary-orders");
+const monthlyTargetsRoutes = require("./monthlyTargets");
 
 const router = express.Router();
 
@@ -374,12 +376,21 @@ router.use("/mobile/catalog", mobileCatalogRoutes);
 router.use("/mobile/orders", mobileOrdersRoutes);
 
 /**
+ * Mobile DSR Delivery Routes
+ * @route   /api/mobile/dsr/*
+ * @desc    DSR daily delivery management — schedule, confirm, hold, bounce
+ * @access  Private (distributor / dsr user_type only)
+ */
+router.use("/mobile/dsr", mobileDsrDeliveryRoutes);
+
+/**
  * Secondary Orders Routes (cross-platform: web + mobile)
  * @route   /api/secondary-orders/*
  * @desc    Role-scoped list/detail + Area Manager approve/reject + Distributor deliver
  * @access  Private (role-based: Admin, Area Managers, Distributors, SO)
  */
 router.use("/secondary-orders", secondaryOrdersRoutes);
+router.use("/monthly-targets", monthlyTargetsRoutes);
 
 /**
  * Facility Management Routes (Unified Depots & Factories)

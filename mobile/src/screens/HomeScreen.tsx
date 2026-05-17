@@ -784,6 +784,17 @@ const HomeScreen = ({ navigation, route }: any) => {
               </TouchableOpacity>
             </View>
           )}
+
+          {(userType === 'distributor' || userDetails?.type === 'distributor') && (
+            <View style={styles.moduleButtonsContainer}>
+              <TouchableOpacity
+                style={styles.moduleButton}
+                onPress={() => navigation.navigate('DsrDelivery')}>
+                <Text style={styles.moduleIcon}>🚚</Text>
+                <Text style={styles.moduleLabel}>Delivery</Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
       )}
 

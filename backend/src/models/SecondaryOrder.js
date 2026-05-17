@@ -82,6 +82,37 @@ const secondaryOrderSchema = new mongoose.Schema(
           required: true,
           min: [0, "Subtotal cannot be negative"],
         },
+        delivery_qty: {
+          type: Number,
+          default: null,
+          min: 0,
+        },
+        delivery_unit_price: {
+          type: Number,
+          default: null,
+          min: 0,
+        },
+        delivery_subtotal: {
+          type: Number,
+          default: null,
+          min: 0,
+        },
+        fifo_cogs: {
+          type: Number,
+          default: null,
+          min: 0,
+        },
+        fifo_batches_used: {
+          type: [
+            {
+              batch_id: { type: String },
+              qty: { type: Number },
+              unit_cost: { type: Number },
+              _id: false,
+            },
+          ],
+          default: [],
+        },
       },
     ],
 
@@ -126,7 +157,7 @@ const secondaryOrderSchema = new mongoose.Schema(
       type: String,
       required: true,
       enum: {
-        values: ["Submitted", "Approved", "Cancelled", "Delivered"],
+        values: ["Submitted", "Approved", "Cancelled", "Delivered", "Hold", "Bounced"],
         message: "Invalid order status",
       },
       default: "Submitted",
@@ -209,6 +240,34 @@ const secondaryOrderSchema = new mongoose.Schema(
       type: Date,
     },
 
+    // DSR delivery detail fields
+    // Actual delivery items — may differ from ordered items[].
+    // Empty array means full delivery was made without qty changes.
+    delivery_items: [
+      {
+        product_id: { type: mongoose.Schema.Types.ObjectId, ref: "Product" },
+        sku: { type: String, uppercase: true, trim: true },
+        ordered_qty: { type: Number, default: 0 },
+        delivered_qty: { type: Number, default: 0 },
+        damage_qty: { type: Number, default: 0 },
+        unit_price: { type: Number, default: 0 },
+        extra_item_discount: { type: Number, default: 0 },
+        line_total: { type: Number, default: 0 },
+        is_extra_item: { type: Boolean, default: false },
+      },
+    ],
+
+    // Order-level delivery financials
+    cash_collected: { type: Number, default: 0 },
+    extra_delivery_discount: { type: Number, default: 0 },
+    payable_amount: { type: Number, default: 0 },
+    credit_balance_before: { type: Number, default: 0 },
+    credit_balance_after: { type: Number, default: 0 },
+
+    // Status reasons
+    hold_reason: { type: String, trim: true },
+    bounced_reason: { type: String, trim: true },
+
     // Entry mode — how the order was captured (for offline tracking & audit)
     entry_mode: {
       type: String,
@@ -218,6 +277,18 @@ const secondaryOrderSchema = new mongoose.Schema(
     client_order_uid: {
       type: String,
       index: true, // dedupe offline syncs
+    },
+    price_locked: {
+      type: Boolean,
+      default: false,
+      // false = re-read Product.trade_price at delivery time (correct for oils)
+      // true  = bill at the unit_price captured when the order was created
+    },
+    delivery_total_amount: {
+      type: Number,
+      default: null,
+      min: 0,
+      // Computed at delivery: Σ delivery_subtotal across all delivered items
     },
 
     // Timestamps
