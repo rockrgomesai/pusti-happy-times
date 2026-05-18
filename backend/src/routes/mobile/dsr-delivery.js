@@ -47,7 +47,7 @@ router.get("/schedule", authenticate, guardDsr, async (req, res) => {
         })
             .sort({ order_date: 1 })
             .select("order_number outlet_id order_date total_amount order_status items credit_balance_after")
-            .populate("outlet_id", "name code address phone")
+            .populate("outlet_id", "outlet_name code address phone")
             .populate("items.product_id", "sku bangla_name english_name image_url ctn_pcs")
             .lean();
 
@@ -105,6 +105,45 @@ router.get(
         }
     }
 );
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GET /api/v1/mobile/dsr/delivered-today
+// Returns today's Delivered and Bounced orders for the DSR's distributor.
+// Query: date? (YYYY-MM-DD, defaults to today)
+// ─────────────────────────────────────────────────────────────────────────────
+router.get("/delivered-today", authenticate, guardDsr, async (req, res) => {
+    try {
+        const did = distId(req);
+        if (!did) return res.status(400).json({ success: false, message: "distributor_id missing from user context" });
+
+        const date = req.query.date ? new Date(req.query.date) : new Date();
+        const dayStart = new Date(date); dayStart.setHours(0, 0, 0, 0);
+        const dayEnd = new Date(date); dayEnd.setHours(23, 59, 59, 999);
+
+        const orders = await SecondaryOrder.find({
+            distributor_id: did,
+            order_status: { $in: ["Delivered", "Bounced"] },
+            delivered_at: { $gte: dayStart, $lte: dayEnd },
+        })
+            .sort({ delivered_at: -1 })
+            .select("order_number outlet_id order_date delivered_at order_status payable_amount cash_collected credit_balance_after credit_balance_before bounced_reason delivery_items total_amount")
+            .populate("outlet_id", "outlet_name code address")
+            .lean();
+
+        const delivered = orders.filter(o => o.order_status === "Delivered");
+        const summary = {
+            total: orders.length,
+            delivered: delivered.length,
+            bounced: orders.filter(o => o.order_status === "Bounced").length,
+            total_cash: delivered.reduce((s, o) => s + (o.cash_collected || 0), 0),
+            total_credit: delivered.reduce((s, o) => s + Math.max(0, o.credit_balance_after || 0), 0),
+        };
+
+        res.json({ success: true, data: { orders, summary } });
+    } catch (err) {
+        res.status(500).json({ success: false, message: "Failed to fetch delivered orders", error: err.message });
+    }
+});
 
 // ─────────────────────────────────────────────────────────────────────────────
 // GET /api/v1/mobile/dsr/catalog-search
@@ -191,29 +230,8 @@ router.post(
                 credit_balance_before,
             } = req.body;
 
-            // ── Stock deduction — validate ALL items first, then deduct ─────────────
-            const insufficient = [];
-            for (const item of delivery_items) {
-                if (item.delivered_qty <= 0) continue;
-                const stock = await DistributorStock.findOne({ distributor_id: did, sku: item.sku });
-                const available = stock ? parseFloat(stock.qty?.toString() || "0") : 0;
-                if (available < item.delivered_qty) {
-                    insufficient.push({ sku: item.sku, requested: item.delivered_qty, available });
-                }
-            }
-            if (insufficient.length > 0) {
-                return res.status(409).json({
-                    success: false,
-                    message: "Insufficient stock for one or more items",
-                    insufficient,
-                });
-            }
-
-            for (const item of delivery_items) {
-                if (item.delivered_qty <= 0) continue;
-                const stock = await DistributorStock.findOne({ distributor_id: did, sku: item.sku });
-                if (stock) await stock.reduceStockFIFO(item.delivered_qty);
-            }
+            // ── Stock was already deducted at SO creation (orders.js). ─────────────
+            // Delivery confirmation only records actual quantities — no second deduction.
 
             // ── Compute financials ────────────────────────────────────────────────
             const deliveredItems = delivery_items.map(item => ({

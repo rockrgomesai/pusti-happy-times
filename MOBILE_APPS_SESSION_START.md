@@ -1,9 +1,9 @@
 # MOBILE APPS - Session Start Context
 
-**Last Updated:** February 18, 2026  
+**Last Updated:** May 18, 2026  
 **Platform:** React Native 0.83.1 (iOS + Android)  
 **Backend API:** Node.js + Express.js  
-**Status:** Open Shop Implementation Complete (4/5 Modules) ✅
+**Status:** DSR Delivery Panel Complete ✅
 
 ---
 
@@ -1203,10 +1203,76 @@ Request: {
 **Features:**
 
 - [ ] Order summary
-- [ ] Delivery summary
+- [x] Delivery summary (DsrDeliveredScreen) ✅
 - [ ] Target vs achievement
 - [ ] Visit summary
 - [ ] Offline report generation
+
+---
+
+### Phase 8: DSR Delivery Panel ✅ COMPLETE
+
+**Purpose:** Allow DSRs to confirm deliveries, record cash collected, and bounce/hold orders
+
+**Features:**
+- View today's approved orders scheduled for delivery
+- Confirm delivery with per-item quantities (delivered / damage)
+- Record cash collected and credit balance tracking
+- Tap Credit Balance row → auto-fills Cash Collected field
+- Bounce order with reason
+- Put order on hold
+- Delivered Orders feedback screen (today's delivered/bounced orders)
+
+**Screens:**
+- `mobile/src/screens/DsrDeliveryScreen.tsx` — Delivery confirmation panel
+- `mobile/src/screens/DsrDeliveredScreen.tsx` — Delivered orders feedback (NEW)
+
+**HomeScreen buttons (DSR role):**
+- 🚚 **Deliver Orders** → `DsrDelivery` screen
+- ✅ **Delivered** → `DsrDelivered` screen
+
+**Financial Flow:**
+```
+totalPayable = payable + creditBalanceBefore
+creditBalanceAfter = totalPayable - cashCollected
+Tap "Credit Balance" row → cashCollected = totalPayable (zero balance)
+```
+
+**API Endpoints:**
+```
+GET  /api/v1/mobile/dsr/schedule
+     Returns today's Approved orders for DSR's distributor
+
+GET  /api/v1/mobile/dsr/outlet-credit/:outlet_id
+     Returns outlet's current credit balance
+
+POST /api/v1/mobile/dsr/orders/:id/confirm
+     Body: { delivery_items[], extra_delivery_discount, cash_collected, credit_balance_before }
+     Confirms delivery, deducts stock, updates credit balance
+
+GET  /api/v1/mobile/dsr/delivered-today
+     Returns today's Delivered/Bounced orders with summary stats
+```
+
+**DeliveredOrder Summary Stats:**
+```typescript
+{
+  total: number,
+  delivered: number,
+  bounced: number,
+  totalCash: number,
+  totalCreditDue: number
+}
+```
+
+**Key Bug Fixed:** Outlet model uses `outlet_name` (not `name`). Backend populate and all frontend references corrected.
+
+**Files:**
+- `mobile/src/screens/DsrDeliveryScreen.tsx`
+- `mobile/src/screens/DsrDeliveredScreen.tsx`
+- `mobile/src/services/dsrDeliveryAPI.ts`
+- `backend/src/routes/mobile/dsr-delivery.js`
+
 
 ---
 

@@ -17,9 +17,28 @@ import SalesModuleScreen from '../screens/SalesModuleScreen';
 import AddOutletScreen from '../screens/AddOutletScreen';
 import OutletDetailScreen from '../screens/OutletDetailScreen';
 import DsrDeliveryScreen from '../screens/DsrDeliveryScreen';
+import DsrDeliveredScreen from '../screens/DsrDeliveredScreen';
 
 const Stack = createNativeStackNavigator();
+const HomeStack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
+
+// All screens reachable from Home — nested inside the Home tab so tab bar stays visible
+const HomeStackNavigator = () => (
+  <HomeStack.Navigator screenOptions={{ headerShown: false }}>
+    <HomeStack.Screen name="HomeMain" component={HomeScreen} />
+    <HomeStack.Screen name="TraceRoute" component={TraceRouteScreen} />
+    <HomeStack.Screen name="ShopAction" component={ShopActionScreen} />
+    <HomeStack.Screen name="DamageClaim" component={DamageClaimScreen} />
+    <HomeStack.Screen name="NoSalesReason" component={NoSalesReasonScreen} />
+    <HomeStack.Screen name="AuditInventory" component={AuditInventoryScreen} />
+    <HomeStack.Screen name="SalesModule" component={SalesModuleScreen} />
+    <HomeStack.Screen name="AddOutlet" component={AddOutletScreen} />
+    <HomeStack.Screen name="OutletDetail" component={OutletDetailScreen} />
+    <HomeStack.Screen name="DsrDelivery" component={DsrDeliveryScreen} />
+    <HomeStack.Screen name="DsrDelivered" component={DsrDeliveredScreen} />
+  </HomeStack.Navigator>
+);
 
 // Bottom Tab Navigator for authenticated users
 const MainTabs = () => {
@@ -64,7 +83,7 @@ const MainTabs = () => {
       }}>
       <Tab.Screen
         name="Home"
-        component={HomeScreen}
+        component={HomeStackNavigator}
         options={{
           tabBarIcon: ({ color }) => <HomeIcon color={color} />,
         }}
@@ -77,7 +96,7 @@ const MainTabs = () => {
           tabPress: (e) => {
             e.preventDefault();
             // Trigger modal opening in HomeScreen
-            navigation.navigate('Home', { openUserInfo: true });
+            navigation.navigate('Home', { screen: 'HomeMain', params: { openUserInfo: true } });
           },
         })}
         options={{
@@ -154,51 +173,6 @@ const AppNavigator = () => {
           name="Profile"
           component={ProfileScreen}
           options={{ headerShown: true, title: 'Profile' }}
-        />
-        <Stack.Screen
-          name="TraceRoute"
-          component={TraceRouteScreen}
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen
-          name="ShopAction"
-          component={ShopActionScreen}
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen
-          name="DamageClaim"
-          component={DamageClaimScreen}
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen
-          name="NoSalesReason"
-          component={NoSalesReasonScreen}
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen
-          name="AuditInventory"
-          component={AuditInventoryScreen}
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen
-          name="SalesModule"
-          component={SalesModuleScreen}
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen
-          name="AddOutlet"
-          component={AddOutletScreen}
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen
-          name="OutletDetail"
-          component={OutletDetailScreen}
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen
-          name="DsrDelivery"
-          component={DsrDeliveryScreen}
-          options={{ headerShown: false }}
         />
       </Stack.Navigator>
     </NavigationContainer>

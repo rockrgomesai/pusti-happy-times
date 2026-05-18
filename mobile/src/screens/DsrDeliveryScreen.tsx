@@ -183,7 +183,7 @@ const DsrDeliveryScreen = ({ navigation }: any) => {
                 credit_balance_before: creditBalanceBefore,
             });
             setModalVisible(false);
-            Alert.alert('Delivered ✓', `${selectedOrder.outlet_id.name} — delivery confirmed.`);
+            Alert.alert('Delivered ✓', `${selectedOrder.outlet_id.outlet_name} — delivery confirmed.`);
             await loadSchedule();
         } catch (err: any) {
             Alert.alert('Error', err.message || 'Confirm failed');
@@ -200,12 +200,12 @@ const DsrDeliveryScreen = ({ navigation }: any) => {
                 await bounceOrder(selectedOrder._id, reason.trim());
                 setReasonModalVisible(false);
                 setModalVisible(false);
-                Alert.alert('Bounced', `${selectedOrder.outlet_id.name} — order bounced.`);
+                Alert.alert('Bounced', `${selectedOrder.outlet_id.outlet_name} — order bounced.`);
             } else if (pendingAction === 'hold') {
                 await holdOrder(selectedOrder._id, reason.trim());
                 setReasonModalVisible(false);
                 setModalVisible(false);
-                Alert.alert('On Hold', `${selectedOrder.outlet_id.name} — order put on hold.`);
+                Alert.alert('On Hold', `${selectedOrder.outlet_id.outlet_name} — order put on hold.`);
             }
             await loadSchedule();
         } catch (err: any) {
@@ -227,7 +227,7 @@ const DsrDeliveryScreen = ({ navigation }: any) => {
             onPress={() => openModal(item)}
             activeOpacity={0.8}>
             <View style={{ flex: 1 }}>
-                <Text style={styles.outletName}>{item.outlet_id.name}</Text>
+                <Text style={styles.outletName}>{item.outlet_id.outlet_name}</Text>
                 <Text style={styles.outletAddress}>{item.outlet_id.address}</Text>
                 <Text style={styles.outletOrderNum}>#{item.order_number}</Text>
             </View>
@@ -247,10 +247,6 @@ const DsrDeliveryScreen = ({ navigation }: any) => {
 
     const renderProductRow = (row: DeliveryRow, index: number) => (
         <View key={row.sku + index} style={styles.productRow}>
-            <Image
-                source={row.image_url ? { uri: row.image_url } : require('../assets/images/default-product.png')}
-                style={styles.productThumb}
-            />
             <View style={styles.productInfo}>
                 <Text style={styles.productName} numberOfLines={2}>{row.bangla_name}</Text>
                 <Text style={styles.productSku}>{row.sku}  ৳{row.unit_price}</Text>
@@ -290,13 +286,6 @@ const DsrDeliveryScreen = ({ navigation }: any) => {
                     value={String(row.extra_item_discount)}
                     onChangeText={v => updateRow(index, 'extra_item_discount', Number(v) || 0)}
                 />
-            </View>
-
-            <View style={[styles.qtyBlock, { minWidth: 60 }]}>
-                <Text style={styles.qtyLabel}>Total</Text>
-                <Text style={styles.qtyTotal}>
-                    ৳{(row.delivered_qty * row.unit_price - row.extra_item_discount).toFixed(0)}
-                </Text>
             </View>
 
             {row.is_extra_item && (
@@ -363,7 +352,7 @@ const DsrDeliveryScreen = ({ navigation }: any) => {
                         </TouchableOpacity>
                         <View style={{ flex: 1, marginLeft: 12 }}>
                             <Text style={styles.headerTitle} numberOfLines={1}>
-                                {selectedOrder?.outlet_id.name}
+                                {selectedOrder?.outlet_id.outlet_name}
                             </Text>
                             <Text style={{ color: '#b3c5ff', fontSize: 11 }}>
                                 #{selectedOrder?.order_number}
@@ -426,15 +415,19 @@ const DsrDeliveryScreen = ({ navigation }: any) => {
                                     placeholder="0"
                                 />
                             </View>
-                            <View style={styles.financialRow}>
-                                <Text style={styles.finLabel}>Credit Balance</Text>
+                            <TouchableOpacity
+                                style={styles.financialRow}
+                                onPress={() => setCashCollected(totalPayable.toFixed(2))}
+                                activeOpacity={0.6}
+                            >
+                                <Text style={[styles.finLabel, { textDecorationLine: 'underline' }]}>Credit Balance</Text>
                                 <Text style={[
                                     styles.finValue,
-                                    { color: creditBalanceAfter > 0 ? '#c62828' : '#2e7d32', fontWeight: '700' },
+                                    { color: creditBalanceAfter > 0 ? '#c62828' : '#2e7d32', fontWeight: '700', textDecorationLine: 'underline' },
                                 ]}>
                                     ৳{creditBalanceAfter.toFixed(2)}
                                 </Text>
-                            </View>
+                            </TouchableOpacity>
                         </View>
                     </ScrollView>
 
@@ -579,15 +572,15 @@ const styles = StyleSheet.create({
 
     // Product row
     productRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, paddingHorizontal: 8, borderBottomWidth: 1, borderColor: '#f0f0f0', backgroundColor: '#fff' },
-    productThumb: { width: 42, height: 42, borderRadius: 6, marginRight: 10, backgroundColor: '#eee' },
-    productInfo: { width: 120, marginRight: 8 },
+    productThumb: { width: 40, height: 40, borderRadius: 6, marginRight: 8, backgroundColor: '#eee' },
+    productInfo: { flex: 1, marginRight: 6 },
     productName: { fontSize: 12, fontWeight: '600', color: '#222' },
     productSku: { fontSize: 10, color: '#777', marginTop: 2 },
     extraBadge: { fontSize: 9, color: '#fff', backgroundColor: '#1565c0', borderRadius: 4, paddingHorizontal: 4, paddingVertical: 1, alignSelf: 'flex-start', marginTop: 2 },
-    qtyBlock: { alignItems: 'center', minWidth: 52, marginHorizontal: 4 },
+    qtyBlock: { alignItems: 'center', minWidth: 48, marginHorizontal: 2 },
     qtyLabel: { fontSize: 9, color: '#999', marginBottom: 4 },
-    qtyValue: { fontSize: 14, color: '#444' },
-    qtyInput: { borderWidth: 1, borderColor: '#ccc', borderRadius: 6, textAlign: 'center', width: 48, height: 34, fontSize: 14, backgroundColor: '#fafafa', color: '#111' },
+    qtyValue: { fontSize: 11, color: '#444' },
+    qtyInput: { borderWidth: 1, borderColor: '#ccc', borderRadius: 6, textAlign: 'center', width: 46, height: 34, fontSize: 11, backgroundColor: '#fafafa', color: '#111' },
     qtyInputWarning: { borderColor: '#f57c00', backgroundColor: '#fff3e0' },
     qtyTotal: { fontSize: 13, fontWeight: '700', color: '#1a237e' },
 

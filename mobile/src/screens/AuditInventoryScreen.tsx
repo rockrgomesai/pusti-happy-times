@@ -262,8 +262,8 @@ const AuditInventoryScreen = ({ route, navigation }: any) => {
       ...cat,
       products: cat.products.filter(
         (p) =>
-          p.english_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          p.sku.toLowerCase().includes(searchQuery.toLowerCase())
+          (p.english_name ?? '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+          (p.sku ?? '').toLowerCase().includes(searchQuery.toLowerCase())
       ),
     }))
     .filter((cat) => cat.products.length > 0);

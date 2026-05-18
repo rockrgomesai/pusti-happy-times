@@ -7,6 +7,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
+  TextInput,
   StyleSheet,
   FlatList,
   TouchableOpacity,
@@ -29,14 +30,14 @@ interface Props {
 type AccordionRowType = 'header' | 'loading' | 'product';
 
 interface AccordionRow {
-  type:          AccordionRowType;
-  id:            string;
-  categoryId?:   string;
+  type: AccordionRowType;
+  id: string;
+  categoryId?: string;
   categoryName?: string;
-  productId?:    string;
-  product?:      Product;
-  batchIndex?:   number;
-  batch?:        FIFOBatch;
+  productId?: string;
+  product?: Product;
+  batchIndex?: number;
+  batch?: FIFOBatch;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -45,13 +46,13 @@ const SalesModuleScreen: React.FC<Props> = ({ route, navigation }) => {
   const { outletId, outletName, distributorId, currentLocation } = route.params;
 
   // ── Category accordion state ──────────────────────────────────
-  const [categories,         setCategories]         = useState<Category[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
-  const [categoryProducts,   setCategoryProducts]   = useState<Map<string, Product[]>>(new Map());
-  const [loadingCategories,  setLoadingCategories]  = useState<Set<string>>(new Set());
+  const [categoryProducts, setCategoryProducts] = useState<Map<string, Product[]>>(new Map());
+  const [loadingCategories, setLoadingCategories] = useState<Set<string>>(new Set());
 
   // ── Offers carousel ───────────────────────────────────────────
-  const [offers,     setOffers]     = useState<Offer[]>([]);
+  const [offers, setOffers] = useState<Offer[]>([]);
   const [offerIndex, setOfferIndex] = useState(0);
 
   // ── Language toggle ───────────────────────────────────────────
@@ -66,14 +67,13 @@ const SalesModuleScreen: React.FC<Props> = ({ route, navigation }) => {
 
   // ── loadData ──────────────────────────────────────────────────
   const loadData = async () => {
-    const token     = await AsyncStorage.getItem('@auth_token');
-    const distId    = await AsyncStorage.getItem('@distributor_id');
+    const token = await AsyncStorage.getItem('accessToken');
     const savedLang = (await AsyncStorage.getItem('@lang_pref')) as 'bn' | 'en' | null;
     if (savedLang) setLanguage(savedLang);
 
     const [cats, ofrs, savedCart] = await Promise.all([
-      salesAPI.getCategories(token!, distId!),
-      salesAPI.getOffers(token!, distId!),
+      salesAPI.getCategories(token!, distributorId),
+      salesAPI.getOffers(token!, distributorId),
       salesAPI.loadCart(),
     ]);
     setCategories(cats);
@@ -108,9 +108,8 @@ const SalesModuleScreen: React.FC<Props> = ({ route, navigation }) => {
 
     setLoadingCategories(prev => new Set(prev).add(categoryId));
     try {
-      const token  = await AsyncStorage.getItem('@auth_token');
-      const distId = await AsyncStorage.getItem('@distributor_id');
-      const products = await salesAPI.getProducts(token!, distId!, categoryId);
+      const token = await AsyncStorage.getItem('accessToken');
+      const products = await salesAPI.getProducts(token!, distributorId, categoryId);
       setCategoryProducts(prev => new Map(prev).set(categoryId, products));
     } finally {
       setLoadingCategories(prev => {
@@ -128,14 +127,14 @@ const SalesModuleScreen: React.FC<Props> = ({ route, navigation }) => {
         next.delete(key);
       } else {
         next.set(key, {
-          product_id:   product._id,
-          batch_id:     batch.batch_id,
-          sku:          product.sku,
-          bangla_name:  product.bangla_name,
+          product_id: product._id,
+          batch_id: batch.batch_id,
+          sku: product.sku,
+          bangla_name: product.bangla_name,
           english_name: product.english_name,
-          quantity:     qty,
-          unit_price:   batch.unit_price,
-          subtotal:     qty * batch.unit_price,
+          quantity: qty,
+          unit_price: batch.unit_price,
+          subtotal: qty * batch.unit_price,
         });
       }
       salesAPI.saveCart(next);
@@ -148,9 +147,9 @@ const SalesModuleScreen: React.FC<Props> = ({ route, navigation }) => {
     const rows: AccordionRow[] = [];
     for (const cat of categories) {
       rows.push({
-        type:         'header',
-        id:           `h_${cat._id}`,
-        categoryId:   cat._id,
+        type: 'header',
+        id: `h_${cat._id}`,
+        categoryId: cat._id,
         categoryName: cat.name,
       });
       if (!expandedCategories.has(cat._id)) continue;
@@ -169,11 +168,11 @@ const SalesModuleScreen: React.FC<Props> = ({ route, navigation }) => {
         }
         for (let bi = 0; bi < batches.length; bi++) {
           rows.push({
-            type:       'product',
-            id:         `p_${product._id}_b${bi}`,
+            type: 'product',
+            id: `p_${product._id}_b${bi}`,
             product,
             batchIndex: bi,
-            batch:      batches[bi],
+            batch: batches[bi],
           });
         }
       }
@@ -184,8 +183,8 @@ const SalesModuleScreen: React.FC<Props> = ({ route, navigation }) => {
   // ── FIFO batch ordering gate ──────────────────────────────────
   const isBatchLocked = (product: Product, batchIndex: number): boolean => {
     if (batchIndex === 0) return false;
-    const prevBatch  = product.fifo_batches[batchIndex - 1];
-    const prevKey    = `${product._id}_${prevBatch.batch_id}`;
+    const prevBatch = product.fifo_batches[batchIndex - 1];
+    const prevKey = `${product._id}_${prevBatch.batch_id}`;
     const prevInCart = cart.get(prevKey)?.quantity ?? 0;
     return prevInCart < prevBatch.available_pcs;
   };
@@ -219,18 +218,18 @@ const SalesModuleScreen: React.FC<Props> = ({ route, navigation }) => {
             }
 
             const orderData = {
-              outlet_id:      outletId,
+              outlet_id: outletId,
               distributor_id: distributorId,
-              dsr_id:         userId,
+              dsr_id: userId,
               items: [...cart.values()].map((item) => ({
                 product_id: item.product_id,
-                sku:        item.sku,
-                batch_id:   item.batch_id,
-                quantity:   item.quantity,
+                sku: item.sku,
+                batch_id: item.batch_id,
+                quantity: item.quantity,
                 unit_price: item.unit_price,
               })),
               gps_location: {
-                type:        'Point',
+                type: 'Point',
                 coordinates: [currentLocation?.lng || 0, currentLocation?.lat || 0],
               },
             };
@@ -360,17 +359,18 @@ const SalesModuleScreen: React.FC<Props> = ({ route, navigation }) => {
             );
           }
 
-          const locked    = isBatchLocked(product, batchIndex!);
-          const cartKey   = `${product._id}_${batch.batch_id}`;
+          const locked = isBatchLocked(product, batchIndex!);
+          const cartKey = `${product._id}_${batch.batch_id}`;
           const qtyInCart = cart.get(cartKey)?.quantity ?? 0;
 
           return (
             <View style={[styles.productRow, locked && styles.productRowLocked]}>
               <View style={{ flex: 1 }}>
                 {batchIndex === 0 && (
-                  <Text style={styles.productName}>{productName(product)}</Text>
+                  <Text style={[styles.productName, !locked && { color: '#000' }]}>{productName(product)}</Text>
                 )}
-                <Text style={styles.batchLabel}>
+                <Text style={[styles.skuText, !locked && { color: '#000' }]}>SKU: {product.sku}</Text>
+                <Text style={[styles.batchLabel, !locked && { color: '#000' }]}>
                   Batch {batchIndex! + 1} — {batch.available_pcs} pcs @ ৳{batch.unit_price.toFixed(2)}
                 </Text>
               </View>
@@ -384,7 +384,20 @@ const SalesModuleScreen: React.FC<Props> = ({ route, navigation }) => {
                     color={locked || qtyInCart === 0 ? '#ccc' : '#e53935'}
                   />
                 </TouchableOpacity>
-                <Text style={styles.qtyText}>{qtyInCart}</Text>
+                <TextInput
+                  style={[styles.qtyInput, locked && styles.qtyInputLocked]}
+                  keyboardType="number-pad"
+                  value={qtyInCart === 0 ? '' : String(qtyInCart)}
+                  placeholder="0"
+                  placeholderTextColor="#aaa"
+                  editable={!locked}
+                  maxLength={5}
+                  onChangeText={(text) => {
+                    const parsed = parseInt(text, 10);
+                    const qty = isNaN(parsed) ? 0 : Math.min(Math.max(parsed, 0), batch.available_pcs);
+                    addToCart(product, batch, qty);
+                  }}
+                />
                 <TouchableOpacity
                   disabled={locked || qtyInCart >= batch.available_pcs}
                   onPress={() => addToCart(product, batch, qtyInCart + 1)}>
@@ -543,6 +556,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#333',
   },
+  skuText: {
+    fontSize: 11,
+    color: '#888',
+    marginTop: 1,
+    marginBottom: 2,
+  },
   batchLabel: {
     fontSize: 12,
     color: '#666',
@@ -553,12 +572,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginLeft: 8,
   },
-  qtyText: {
-    fontSize: 16,
+  qtyInput: {
+    fontSize: 15,
     fontWeight: 'bold',
-    minWidth: 28,
+    minWidth: 44,
     textAlign: 'center',
     color: '#333',
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 6,
+    paddingVertical: 2,
+    paddingHorizontal: 4,
+    backgroundColor: '#fff',
+  },
+  qtyInputLocked: {
+    backgroundColor: '#f0f0f0',
+    color: '#aaa',
+    borderColor: '#e0e0e0',
   },
   submitBar: {
     flexDirection: 'row',

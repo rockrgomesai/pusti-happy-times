@@ -21,7 +21,7 @@ export interface ScheduleOrder {
     credit_balance_after: number;
     outlet_id: {
         _id: string;
-        name: string;
+        outlet_name: string;
         code: string;
         address?: string;
         phone?: string;
@@ -119,6 +119,49 @@ export async function holdOrder(orderId: string, reason: string) {
         headers,
         body: JSON.stringify({ reason }),
     });
+    const json = await res.json();
+    if (!json.success) throw new Error(json.message);
+    return json.data;
+}
+
+export interface DeliveredOrder {
+    _id: string;
+    order_number: string;
+    order_status: 'Delivered' | 'Bounced';
+    delivered_at: string;
+    order_date: string;
+    payable_amount: number;
+    cash_collected: number;
+    credit_balance_after: number;
+    credit_balance_before: number;
+    bounced_reason?: string;
+    total_amount: number;
+    outlet_id: {
+        _id: string;
+        outlet_name: string;
+        code: string;
+        address?: string;
+    };
+    delivery_items: {
+        sku: string;
+        delivered_qty: number;
+        unit_price: number;
+        line_total: number;
+    }[];
+}
+
+export interface DeliveredSummary {
+    total: number;
+    delivered: number;
+    bounced: number;
+    total_cash: number;
+    total_credit: number;
+}
+
+export async function fetchDeliveredOrders(date?: string): Promise<{ orders: DeliveredOrder[]; summary: DeliveredSummary }> {
+    const headers = await authHeaders();
+    const query = date ? `?date=${date}` : '';
+    const res = await fetch(`${API_BASE_URL}/mobile/dsr/delivered-today${query}`, { headers });
     const json = await res.json();
     if (!json.success) throw new Error(json.message);
     return json.data;

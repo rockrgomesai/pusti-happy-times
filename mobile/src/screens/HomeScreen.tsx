@@ -785,16 +785,24 @@ const HomeScreen = ({ navigation, route }: any) => {
             </View>
           )}
 
-          {(userType === 'distributor' || userDetails?.type === 'distributor') && (
-            <View style={styles.moduleButtonsContainer}>
-              <TouchableOpacity
-                style={styles.moduleButton}
-                onPress={() => navigation.navigate('DsrDelivery')}>
-                <Text style={styles.moduleIcon}>🚚</Text>
-                <Text style={styles.moduleLabel}>Delivery</Text>
-              </TouchableOpacity>
-            </View>
-          )}
+          {(userType === 'distributor' || userType === 'dsr' ||
+            userDetails?.type === 'distributor' ||
+            userDetails?.type === 'dsr' || userRole === 'DSR') && (
+              <View style={styles.moduleButtonsContainer}>
+                <TouchableOpacity
+                  style={styles.moduleButton}
+                  onPress={() => navigation.navigate('DsrDelivery')}>
+                  <Text style={styles.moduleIcon}>🚚</Text>
+                  <Text style={styles.moduleLabel}>Deliver Orders</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.moduleButton}
+                  onPress={() => navigation.navigate('DsrDelivered')}>
+                  <Text style={styles.moduleIcon}>✅</Text>
+                  <Text style={styles.moduleLabel}>Delivered</Text>
+                </TouchableOpacity>
+              </View>
+            )}
         </View>
       )}
 
