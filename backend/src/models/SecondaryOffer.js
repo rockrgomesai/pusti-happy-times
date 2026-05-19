@@ -16,6 +16,7 @@ const OFFER_TYPES = [
   "FIRST_ORDER",
   "LOYALTY_POINTS",
   "FLASH_SALE",
+  "BUY_X_GET_1_FREE",
 ];
 
 const OFFER_STATUS = ["Draft", "Active", "Paused", "Expired", "Completed"];
@@ -132,6 +133,14 @@ const skuDiscountSchema = new mongoose.Schema(
   { _id: false }
 );
 
+const skuFreeItemSchema = new mongoose.Schema(
+  {
+    productId: { type: mongoose.Schema.Types.ObjectId, ref: "Product", required: true },
+    buyQty: { type: Number, required: true, min: 1 },
+  },
+  { _id: false }
+);
+
 const secondaryOfferSchema = new mongoose.Schema(
   {
     name: { type: String, required: true, trim: true, index: true },
@@ -175,6 +184,7 @@ const secondaryOfferSchema = new mongoose.Schema(
       buyQuantity: { type: Number, min: 1, default: 1 },
       getQuantity: { type: Number, min: 1, default: 1 },
       skuDiscounts: [skuDiscountSchema],
+      skuFreeItems: [skuFreeItemSchema],
       cashbackPercentage: { type: Number, min: 0, max: 100 },
       cashbackAmount: { type: Number, min: 0 },
       maxCashback: { type: Number, min: 0 },

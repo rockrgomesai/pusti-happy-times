@@ -18,6 +18,7 @@ import AddOutletScreen from '../screens/AddOutletScreen';
 import OutletDetailScreen from '../screens/OutletDetailScreen';
 import DsrDeliveryScreen from '../screens/DsrDeliveryScreen';
 import DsrDeliveredScreen from '../screens/DsrDeliveredScreen';
+import CartScreen from '../screens/CartScreen';
 
 const Stack = createNativeStackNavigator();
 const HomeStack = createNativeStackNavigator();
@@ -37,6 +38,7 @@ const HomeStackNavigator = () => (
     <HomeStack.Screen name="OutletDetail" component={OutletDetailScreen} />
     <HomeStack.Screen name="DsrDelivery" component={DsrDeliveryScreen} />
     <HomeStack.Screen name="DsrDelivered" component={DsrDeliveredScreen} />
+    <HomeStack.Screen name="Cart" component={CartScreen} />
   </HomeStack.Navigator>
 );
 

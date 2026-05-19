@@ -183,10 +183,17 @@ const DsrDeliveryScreen = ({ navigation }: any) => {
                 credit_balance_before: creditBalanceBefore,
             });
             setModalVisible(false);
-            Alert.alert('Delivered ✓', `${selectedOrder.outlet_id.outlet_name} — delivery confirmed.`);
-            await loadSchedule();
+            Alert.alert('Delivered ✓', `${selectedOrder.outlet_id.outlet_name} — delivery confirmed.`, [
+                { text: 'OK', onPress: () => navigation.popToTop() },
+            ]);
         } catch (err: any) {
-            Alert.alert('Error', err.message || 'Confirm failed');
+            const msg = err.message || 'Confirm failed';
+            const alreadyDone = msg.toLowerCase().includes('cannot confirm') || msg.toLowerCase().includes('already');
+            Alert.alert(
+                alreadyDone ? 'Already Submitted' : 'Error',
+                alreadyDone ? 'This order has already been processed today.' : msg,
+                alreadyDone ? [{ text: 'OK', onPress: () => navigation.popToTop() }] : undefined,
+            );
         } finally {
             setSubmitting(false);
         }
@@ -200,14 +207,17 @@ const DsrDeliveryScreen = ({ navigation }: any) => {
                 await bounceOrder(selectedOrder._id, reason.trim());
                 setReasonModalVisible(false);
                 setModalVisible(false);
-                Alert.alert('Bounced', `${selectedOrder.outlet_id.outlet_name} — order bounced.`);
+                Alert.alert('Bounced', `${selectedOrder.outlet_id.outlet_name} — order bounced.`, [
+                    { text: 'OK', onPress: () => navigation.popToTop() },
+                ]);
             } else if (pendingAction === 'hold') {
                 await holdOrder(selectedOrder._id, reason.trim());
                 setReasonModalVisible(false);
                 setModalVisible(false);
-                Alert.alert('On Hold', `${selectedOrder.outlet_id.outlet_name} — order put on hold.`);
+                Alert.alert('On Hold', `${selectedOrder.outlet_id.outlet_name} — order put on hold.`, [
+                    { text: 'OK', onPress: () => navigation.popToTop() },
+                ]);
             }
-            await loadSchedule();
         } catch (err: any) {
             Alert.alert('Error', err.message || 'Action failed');
         } finally {

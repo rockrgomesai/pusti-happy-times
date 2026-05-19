@@ -3,7 +3,8 @@
  * Two-zone layout: manual offers carousel (Zone 1) + category accordion with FIFO batch rows (Zone 2)
  */
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import {
   View,
   Text,
@@ -11,14 +12,12 @@ import {
   StyleSheet,
   FlatList,
   TouchableOpacity,
-  Alert,
   ActivityIndicator,
   SafeAreaView,
 } from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import salesAPI, { Category, Product, Offer, CartItem, FIFOBatch } from '../services/salesAPI';
-import { friendlyErrorMessage } from '../utils/logger';
 
 interface Props {
   route: any;
@@ -62,8 +61,11 @@ const SalesModuleScreen: React.FC<Props> = ({ route, navigation }) => {
   // Cart key: `${product_id}_${batch_id}`
   const [cart, setCart] = useState<Map<string, CartItem>>(new Map());
 
-  // ── App state ─────────────────────────────────────────────────
-  const [submitting, setSubmitting] = useState(false);
+
+  // ── Search ────────────────────────────────────────────────────
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<Product[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
 
   // ── loadData ──────────────────────────────────────────────────
   const loadData = async () => {
@@ -71,17 +73,36 @@ const SalesModuleScreen: React.FC<Props> = ({ route, navigation }) => {
     const savedLang = (await AsyncStorage.getItem('@lang_pref')) as 'bn' | 'en' | null;
     if (savedLang) setLanguage(savedLang);
 
-    const [cats, ofrs, savedCart] = await Promise.all([
+    const [cats, ofrs] = await Promise.all([
       salesAPI.getCategories(token!, distributorId),
-      salesAPI.getOffers(token!, distributorId),
-      salesAPI.loadCart(),
+      salesAPI.getOffers(token!, outletId, distributorId),
     ]);
     setCategories(cats);
     setOffers(ofrs);
-    if (savedCart.size > 0) setCart(savedCart);
   };
 
   useEffect(() => { loadData(); }, []);
+
+  // Reload cart whenever this screen gains focus (e.g. returning from CartScreen)
+  useFocusEffect(
+    useCallback(() => {
+      salesAPI.loadCart().then(setCart);
+    }, []),
+  );
+
+  // ── handleSearch ──────────────────────────────────────────────
+  const handleSearch = async (text: string) => {
+    setSearchQuery(text);
+    if (text.trim().length < 2) { setSearchResults([]); return; }
+    setSearchLoading(true);
+    try {
+      const token = await AsyncStorage.getItem('accessToken');
+      const results = await salesAPI.searchProducts(token!, distributorId, text.trim());
+      setSearchResults(results);
+    } finally {
+      setSearchLoading(false);
+    }
+  };
 
   // ── Language helpers ──────────────────────────────────────────
   const productName = (p: Product) =>
@@ -119,7 +140,7 @@ const SalesModuleScreen: React.FC<Props> = ({ route, navigation }) => {
   };
 
   // ── addToCart ─────────────────────────────────────────────────
-  const addToCart = (product: Product, batch: FIFOBatch, qty: number) => {
+  const addToCart = (product: Product, batch: FIFOBatch, qty: number, batchIdx: number) => {
     const key = `${product._id}_${batch.batch_id}`;
     setCart(prev => {
       const next = new Map(prev);
@@ -133,8 +154,12 @@ const SalesModuleScreen: React.FC<Props> = ({ route, navigation }) => {
           bangla_name: product.bangla_name,
           english_name: product.english_name,
           quantity: qty,
-          unit_price: batch.unit_price,
-          subtotal: qty * batch.unit_price,
+          unit_price: product.trade_price / product.ctn_pcs,
+          subtotal: qty * (product.trade_price / product.ctn_pcs),
+          image_url: product.image_url,
+          ctn_pcs: product.ctn_pcs,
+          available_pcs: batch.available_pcs,
+          batch_index: batchIdx,
         });
       }
       salesAPI.saveCart(next);
@@ -180,6 +205,29 @@ const SalesModuleScreen: React.FC<Props> = ({ route, navigation }) => {
     return rows;
   }, [categories, expandedCategories, loadingCategories, categoryProducts]);
 
+  // ── searchFlatData (useMemo) ──────────────────────────────────
+  const searchFlatData = useMemo<AccordionRow[]>(() => {
+    if (searchQuery.trim().length < 2) return [];
+    const rows: AccordionRow[] = [];
+    for (const product of searchResults) {
+      const batches = product.fifo_batches || [];
+      if (batches.length === 0) {
+        rows.push({ type: 'product', id: `s_${product._id}_no_stock`, product, batchIndex: -1 });
+      } else {
+        for (let bi = 0; bi < batches.length; bi++) {
+          rows.push({
+            type: 'product',
+            id: `s_${product._id}_b${bi}`,
+            product,
+            batchIndex: bi,
+            batch: batches[bi],
+          });
+        }
+      }
+    }
+    return rows;
+  }, [searchResults, searchQuery]);
+
   // ── FIFO batch ordering gate ──────────────────────────────────
   const isBatchLocked = (product: Product, batchIndex: number): boolean => {
     if (batchIndex === 0) return false;
@@ -193,81 +241,15 @@ const SalesModuleScreen: React.FC<Props> = ({ route, navigation }) => {
   const calculateCartTotal = (): number =>
     [...cart.values()].reduce((s, i) => s + i.subtotal, 0);
 
-  // ── handleSubmitOrder ─────────────────────────────────────────
-  const handleSubmitOrder = async () => {
-    if (cart.size === 0) {
-      Alert.alert('Cart Empty', 'Please add items to cart first');
-      return;
-    }
-
-    Alert.alert('Confirm Order', `Place order for ₹${calculateCartTotal()}?`, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Place Order',
-        onPress: async () => {
-          try {
-            setSubmitting(true);
-
-            const AsyncStorage = require('@react-native-async-storage/async-storage').default;
-            const userJson = await AsyncStorage.getItem('user');
-            const userId = userJson ? JSON.parse(userJson)?._id || JSON.parse(userJson)?.id : null;
-            if (!userId) {
-              Alert.alert('Error', 'Unable to identify logged-in user. Please log in again.');
-              setSubmitting(false);
-              return;
-            }
-
-            const orderData = {
-              outlet_id: outletId,
-              distributor_id: distributorId,
-              dsr_id: userId,
-              items: [...cart.values()].map((item) => ({
-                product_id: item.product_id,
-                sku: item.sku,
-                batch_id: item.batch_id,
-                quantity: item.quantity,
-                unit_price: item.unit_price,
-              })),
-              gps_location: {
-                type: 'Point',
-                coordinates: [currentLocation?.lng || 0, currentLocation?.lat || 0],
-              },
-            };
-
-            const result = await salesAPI.placeOrder(orderData);
-
-            // Clear cart
-            await salesAPI.clearCart(outletId);
-            setCart(new Map());
-
-            if (result.queued) {
-              // Offline path — order saved locally, will sync automatically.
-              Alert.alert(
-                'Saved Offline',
-                'No network available. Your order has been saved and will sync automatically when you are back online.',
-                [{ text: 'OK', onPress: () => navigation.navigate('MainApp', { screen: 'Home' }) }],
-              );
-            } else {
-              Alert.alert('Success', `Order ${result.data.order_number} placed successfully`, [
-                { text: 'OK', onPress: () => navigation.navigate('MainApp', { screen: 'Home' }) },
-              ]);
-            }
-          } catch (error: any) {
-            console.error('Submit order error:', error);
-
-            if (error.code === 'INSUFFICIENT_STOCK') {
-              Alert.alert('Stock Unavailable', friendlyErrorMessage(error, 'Some items are out of stock'), [
-                { text: 'OK' },
-              ]);
-            } else {
-              Alert.alert('Error', friendlyErrorMessage(error, 'Failed to place order'));
-            }
-          } finally {
-            setSubmitting(false);
-          }
-        },
-      },
-    ]);
+  // ── navigateToCart ────────────────────────────────────────────
+  const navigateToCart = () => {
+    navigation.navigate('Cart', {
+      outletId,
+      outletName,
+      distributorId,
+      currentLocation,
+      offers,
+    });
   };
 
   // ── render ────────────────────────────────────────────────────
@@ -296,7 +278,23 @@ const SalesModuleScreen: React.FC<Props> = ({ route, navigation }) => {
 
           <View style={styles.carouselCard}>
             <Text style={styles.offerTitle}>{offers[offerIndex]?.name}</Text>
-            <Text style={styles.offerBody}>{offers[offerIndex]?.description}</Text>
+            {offers[offerIndex]?.offer_type === 'BUY_X_GET_1_FREE' &&
+              (offers[offerIndex]?.skuFreeItems?.length ?? 0) > 0 ? (
+              <>
+                {offers[offerIndex]!.skuFreeItems!.slice(0, 3).map((item) => (
+                  <Text key={item.productId} style={styles.offerBody}>
+                    {item.sku}: Buy {item.buyQty} → 1 Free
+                  </Text>
+                ))}
+                {(offers[offerIndex]!.skuFreeItems!.length) > 3 && (
+                  <Text style={styles.offerBody}>
+                    +{offers[offerIndex]!.skuFreeItems!.length - 3} more SKUs
+                  </Text>
+                )}
+              </>
+            ) : (
+              <Text style={styles.offerBody}>{offers[offerIndex]?.description}</Text>
+            )}
           </View>
 
           <TouchableOpacity
@@ -315,11 +313,36 @@ const SalesModuleScreen: React.FC<Props> = ({ route, navigation }) => {
         </View>
       )}
 
-      {/* Zone 2 — Category accordion */}
+      {/* Search bar */}
+      <View style={styles.searchBar}>
+        <MaterialIcons name="search" size={20} color="#888" style={{ marginRight: 8 }} />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search by SKU or product name…"
+          placeholderTextColor="#aaa"
+          value={searchQuery}
+          onChangeText={handleSearch}
+          returnKeyType="search"
+        />
+        {searchQuery.length > 0 && (
+          <TouchableOpacity onPress={() => handleSearch('')}>
+            <MaterialIcons name="close" size={20} color="#888" />
+          </TouchableOpacity>
+        )}
+      </View>
+
+      {/* Zone 2 — Category accordion / search results */}
       <FlatList
         style={{ flex: 1 }}
-        data={accordionData}
+        data={searchQuery.trim().length >= 2 ? searchFlatData : accordionData}
         keyExtractor={item => item.id}
+        ListEmptyComponent={
+          searchQuery.trim().length >= 2
+            ? (searchLoading
+              ? <ActivityIndicator style={{ marginTop: 40 }} />
+              : <Text style={styles.emptySearch}>No products found</Text>)
+            : null
+        }
         renderItem={({ item }) => {
           if (item.type === 'header') {
             const isOpen = expandedCategories.has(item.categoryId!);
@@ -371,13 +394,13 @@ const SalesModuleScreen: React.FC<Props> = ({ route, navigation }) => {
                 )}
                 <Text style={[styles.skuText, !locked && { color: '#000' }]}>SKU: {product.sku}</Text>
                 <Text style={[styles.batchLabel, !locked && { color: '#000' }]}>
-                  Batch {batchIndex! + 1} — {batch.available_pcs} pcs @ ৳{batch.unit_price.toFixed(2)}
+                  Batch {batchIndex! + 1} — {batch.available_pcs} pcs @ ৳{(product.trade_price / product.ctn_pcs).toFixed(2)}
                 </Text>
               </View>
               <View style={styles.qtyControl}>
                 <TouchableOpacity
                   disabled={locked || qtyInCart === 0}
-                  onPress={() => addToCart(product, batch, qtyInCart - 1)}>
+                  onPress={() => addToCart(product, batch, qtyInCart - 1, batchIndex!)}>
                   <MaterialIcons
                     name="remove-circle-outline"
                     size={28}
@@ -391,16 +414,16 @@ const SalesModuleScreen: React.FC<Props> = ({ route, navigation }) => {
                   placeholder="0"
                   placeholderTextColor="#aaa"
                   editable={!locked}
-                  maxLength={5}
+                  maxLength={6}
                   onChangeText={(text) => {
                     const parsed = parseInt(text, 10);
                     const qty = isNaN(parsed) ? 0 : Math.min(Math.max(parsed, 0), batch.available_pcs);
-                    addToCart(product, batch, qty);
+                    addToCart(product, batch, qty, batchIndex!);
                   }}
                 />
                 <TouchableOpacity
                   disabled={locked || qtyInCart >= batch.available_pcs}
-                  onPress={() => addToCart(product, batch, qtyInCart + 1)}>
+                  onPress={() => addToCart(product, batch, qtyInCart + 1, batchIndex!)}>
                   <MaterialIcons
                     name="add-circle-outline"
                     size={28}
@@ -417,16 +440,13 @@ const SalesModuleScreen: React.FC<Props> = ({ route, navigation }) => {
       {cart.size > 0 && (
         <View style={styles.submitBar}>
           <Text style={styles.submitCartSummary}>
-            {cart.size} line(s) — ৳
-            {[...cart.values()].reduce((s, i) => s + i.subtotal, 0).toFixed(2)}
+            {cart.size} item(s) — ৳
+            {calculateCartTotal().toFixed(2)}
           </Text>
           <TouchableOpacity
             style={styles.submitButton}
-            onPress={handleSubmitOrder}
-            disabled={submitting}>
-            {submitting
-              ? <ActivityIndicator color="#1565c0" />
-              : <Text style={styles.submitButtonText}>Submit Order</Text>}
+            onPress={navigateToCart}>
+            <Text style={styles.submitButtonText}>View Cart</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -613,6 +633,27 @@ const styles = StyleSheet.create({
   submitButtonText: {
     color: '#1565c0',
     fontWeight: 'bold',
+    fontSize: 14,
+  },
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 14,
+    color: '#333',
+    paddingVertical: 4,
+  },
+  emptySearch: {
+    textAlign: 'center',
+    color: '#999',
+    marginTop: 40,
     fontSize: 14,
   },
 });

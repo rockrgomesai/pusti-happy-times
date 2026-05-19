@@ -16,10 +16,10 @@ export interface Category {
 }
 
 export interface FIFOBatch {
-  batch_id:      string;
+  batch_id: string;
   available_pcs: number;
-  unit_price:    number;
-  received_at:   string;
+  unit_price: number;
+  received_at: string;
 }
 
 export interface Product {
@@ -46,7 +46,24 @@ export interface Offer {
     minOrderValue?: number;
     discountPercentage?: number;
     discountAmount?: number;
+    /** DISCOUNT_SLAB_PCT / DISCOUNT_SLAB_AMT */
+    slabs?: Array<{
+      minValue: number;
+      maxValue: number;
+      discountPercentage?: number;
+      discountAmount?: number;
+    }>;
+    /** CASHBACK */
+    cashbackPercentage?: number;
+    cashbackAmount?: number;
+    maxCashback?: number;
   };
+  skuFreeItems?: Array<{
+    productId: string;
+    sku: string;
+    englishName: string;
+    buyQty: number;
+  }>;
 }
 
 export interface CartItem {
@@ -58,6 +75,12 @@ export interface CartItem {
   quantity: number;
   unit_price: number;
   subtotal: number;
+  image_url?: string;
+  ctn_pcs?: number;
+  /** Max orderable qty for this batch (FIFO stock). Used to cap input in CartScreen. */
+  available_pcs?: number;
+  /** Zero-based index of this batch within the product's FIFO batch list. Used to enforce FIFO ordering in CartScreen. */
+  batch_index?: number;
 }
 
 export interface OrderSubmission {
@@ -68,8 +91,13 @@ export interface OrderSubmission {
   items: {
     product_id: string;
     sku: string;
+    batch_id?: string;
     quantity: number;
     unit_price: number;
+    /** True for offer/free items — unit_price will be 0. */
+    is_free?: boolean;
+    /** ID of the offer that generated this free item. */
+    offer_id?: string;
   }[];
   gps_location?: {
     type: string;
@@ -159,11 +187,11 @@ class SalesAPI {
   }
 
   /**
-   * Get eligible offers for distributor
+   * Get eligible offers for an outlet
    */
-  async getOffers(token: string, distributorId: string): Promise<Offer[]> {
+  async getOffers(token: string, outletId: string, distributorId: string): Promise<Offer[]> {
     try {
-      const url = `${API_BASE_URL}/mobile/catalog/offers?outlet_id=${distributorId}&distributor_id=${distributorId}`;
+      const url = `${API_BASE_URL}/mobile/catalog/offers?outlet_id=${outletId}&distributor_id=${distributorId}`;
 
       const response = await fetch(url, {
         headers: { Authorization: `Bearer ${token}` },
@@ -177,6 +205,26 @@ class SalesAPI {
       return [];
     } catch (error) {
       console.error('getOffers error:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Search products by SKU or name with distributor stock
+   */
+  async searchProducts(token: string, distributorId: string, q: string): Promise<Product[]> {
+    try {
+      const url = `${API_BASE_URL}/mobile/catalog/search?q=${encodeURIComponent(q)}&distributor_id=${distributorId}`;
+      const response = await fetch(url, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const result = await response.json();
+      if (result.success) {
+        return result.data;
+      }
+      return [];
+    } catch (error) {
+      console.error('searchProducts error:', error);
       return [];
     }
   }

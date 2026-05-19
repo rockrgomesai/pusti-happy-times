@@ -133,7 +133,11 @@ export default function NoSalesReasonScreen() {
 
       if (data.success) {
         Alert.alert('Success', 'Visit recorded - No sales', [
-          { text: 'OK', onPress: () => navigation.navigate('MainApp' as any, { screen: 'Home' }) },
+          { text: 'OK', onPress: () => navigation.popToTop() },
+        ]);
+      } else if (response.status === 409) {
+        Alert.alert('Already Submitted', 'A visit for this outlet has already been recorded today.', [
+          { text: 'OK', onPress: () => navigation.popToTop() },
         ]);
       } else {
         Alert.alert('Error', data.message || 'Failed to record visit');

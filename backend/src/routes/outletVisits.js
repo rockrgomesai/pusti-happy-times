@@ -108,6 +108,33 @@ router.post(
         });
       }
 
+      // Check for same-day mutual exclusion: shop_closed blocks everything, everything blocks shop_closed
+      const dayStart = new Date(); dayStart.setHours(0, 0, 0, 0);
+      const dayEnd = new Date(); dayEnd.setHours(23, 59, 59, 999);
+      const existingVisit = await OutletVisit.findOne({
+        outlet_id,
+        so_id: req.user._id,
+        visit_date: { $gte: dayStart, $lte: dayEnd },
+      });
+      if (existingVisit) {
+        if (existingVisit.visit_type === 'shop_closed') {
+          return res.status(409).json({
+            success: false,
+            message: 'Shop was marked as closed today. No other transactions are allowed for this outlet.',
+          });
+        }
+        if (visit_type === 'shop_closed') {
+          return res.status(409).json({
+            success: false,
+            message: 'Other transactions already recorded today. Cannot mark shop as closed.',
+          });
+        }
+        return res.status(409).json({
+          success: false,
+          message: 'A visit for this outlet has already been recorded today',
+        });
+      }
+
       // Calculate distance from outlet
       const outletCoords = outlet.location?.coordinates || [outlet.longi, outlet.lati];
       const distance = calculateDistance(

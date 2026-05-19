@@ -18,7 +18,10 @@ export type OfferType =
   | "CROSS_CATEGORY"
   | "FIRST_ORDER"
   | "LOYALTY_POINTS"
-  | "FLASH_SALE";
+  | "FLASH_SALE"
+  | "BUY_X_GET_1_FREE";
+
+export type OfferTypeCode = OfferType;
 
 export type OfferStatus = "Draft" | "Active" | "Paused" | "Expired" | "Completed";
 export type ProductSegment = "BIS" | "BEV";
@@ -111,6 +114,11 @@ export interface SKUDiscount {
   endDate: Date | string;
 }
 
+export interface SkuFreeItem {
+  productId: string;
+  buyQty: number;
+}
+
 export interface OfferConfig {
   selectedProducts?: string[];
   applyToAllProducts?: boolean;
@@ -126,6 +134,7 @@ export interface OfferConfig {
   buyQuantity?: number;
   getQuantity?: number;
   skuDiscounts?: SKUDiscount[];
+  skuFreeItems?: SkuFreeItem[];
   cashbackPercentage?: number;
   cashbackAmount?: number;
   maxCashback?: number;
@@ -208,7 +217,7 @@ export interface CreateSecondaryOfferInput {
   internal_notes?: string;
 }
 
-export interface UpdateSecondaryOfferInput extends Partial<CreateSecondaryOfferInput> {}
+export interface UpdateSecondaryOfferInput extends Partial<CreateSecondaryOfferInput> { }
 
 export interface SecondaryOfferFilters {
   status?: OfferStatus;
@@ -298,6 +307,7 @@ export const OFFER_TYPE_LABELS: Record<OfferType, string> = {
   FIRST_ORDER: "First Order",
   LOYALTY_POINTS: "Loyalty Points",
   FLASH_SALE: "Flash Sale",
+  BUY_X_GET_1_FREE: "Buy X Get 1 Free (Per SKU)",
 };
 
 export const STATUS_COLORS: Record<OfferStatus, string> = {

@@ -160,21 +160,21 @@ export default function ShopActionScreen() {
   };
 
   const handleShopClosed = () => {
-    Alert.prompt(
+    if (!currentLocation) {
+      Alert.alert('Error', 'Location not available');
+      return;
+    }
+
+    Alert.alert(
       'Shop Closed',
-      'Enter reason for closure (optional):',
+      'Confirm marking this shop as closed? No other transactions will be allowed for this outlet today.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Submit',
-          onPress: async (reason) => {
+          text: 'Confirm',
+          style: 'destructive',
+          onPress: async () => {
             try {
-              if (!currentLocation) {
-                Alert.alert('Error', 'Location not available');
-                return;
-              }
-
-              // Call API to record shop closed visit
               const token = await AsyncStorage.getItem('accessToken');
               const response = await fetch(`${API_URL}/outlet-visits`, {
                 method: 'POST',
@@ -186,7 +186,6 @@ export default function ShopActionScreen() {
                   outlet_id: outletId,
                   visit_type: 'shop_closed',
                   shop_status: 'Closed',
-                  shop_closed_reason: reason || undefined,
                   gps_location: {
                     coordinates: [currentLocation.longitude, currentLocation.latitude],
                   },
@@ -196,9 +195,14 @@ export default function ShopActionScreen() {
 
               const data = await response.json();
 
+              if (response.status === 409) {
+                Alert.alert('Not Allowed', data.message || 'Cannot record shop closed today');
+                return;
+              }
+
               if (data.success) {
                 Alert.alert('Success', 'Shop closed status recorded', [
-                  { text: 'OK', onPress: () => navigation.goBack() },
+                  { text: 'OK', onPress: () => navigation.popToTop() },
                 ]);
               } else {
                 Alert.alert('Error', data.message || 'Failed to record visit');
@@ -209,8 +213,7 @@ export default function ShopActionScreen() {
             }
           },
         },
-      ],
-      'plain-text'
+      ]
     );
   };
 

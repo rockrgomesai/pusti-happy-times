@@ -8,6 +8,7 @@ const router = express.Router();
 const { body, query, validationResult } = require("express-validator");
 const OutletAudit = require("../models/OutletAudit");
 const Product = require("../models/Product");
+const Category = require("../models/Category");
 const Outlet = require("../models/Outlet");
 const OutletVisit = require("../models/OutletVisit");
 
@@ -52,8 +53,9 @@ router.get(
 
       // Get all active products grouped by category
       const products = await Product.find({ active: true })
-        .select("sku english_name bangla_name unit_per_case trade_price category hierarchy")
-        .sort({ "hierarchy.category": 1, english_name: 1 })
+        .select("sku english_name bangla_name unit_per_case trade_price category_id")
+        .populate({ path: "category_id", select: "name" })
+        .sort({ english_name: 1 })
         .lean();
 
       // Build previous quantities map
@@ -69,7 +71,7 @@ router.get(
       // Group products by category and attach previous quantities
       const categorizedProducts = {};
       products.forEach((product) => {
-        const category = product.hierarchy?.category || "Uncategorized";
+        const category = product.category_id?.name || "Uncategorized";
         if (!categorizedProducts[category]) {
           categorizedProducts[category] = [];
         }
@@ -100,9 +102,9 @@ router.get(
           },
           previous_audit: previousAudit
             ? {
-                audit_id: previousAudit.audit_id,
-                audit_date: previousAudit.audit_date,
-              }
+              audit_id: previousAudit.audit_id,
+              audit_date: previousAudit.audit_date,
+            }
             : null,
           categories,
         },
@@ -193,6 +195,18 @@ router.post(
         variance: item.audited_qty_pcs - (previousQtyMap[item.product_id] || 0),
       }));
 
+      // Calculate summary totals
+      const total_items = itemsWithVariance.length;
+      const total_qty_pcs = itemsWithVariance.reduce((sum, item) => sum + item.audited_qty_pcs, 0);
+      const total_variance = itemsWithVariance.reduce((sum, item) => sum + (item.variance || 0), 0);
+
+      // Only include gps_location if coordinates are valid numbers
+      const validGps =
+        gps_location &&
+        Array.isArray(gps_location.coordinates) &&
+        gps_location.coordinates.length === 2 &&
+        gps_location.coordinates.every((c) => typeof c === "number" && isFinite(c));
+
       // Create audit
       const audit = new OutletAudit({
         audit_id,
@@ -204,8 +218,11 @@ router.post(
         so_notes,
         status: "Submitted",
         previous_audit_id: previousAudit ? previousAudit._id : null,
-        gps_location,
+        ...(validGps && { gps_location }),
         gps_accuracy,
+        total_items,
+        total_qty_pcs,
+        total_variance,
       });
 
       await audit.save();
@@ -221,7 +238,7 @@ router.post(
         visit_type: "audit",
         audit_id: audit._id,
         check_in_time: new Date(),
-        gps_location,
+        ...(validGps && { gps_location }),
         so_notes,
       });
       await visit.save();

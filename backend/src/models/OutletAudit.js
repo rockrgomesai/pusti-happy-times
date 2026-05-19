@@ -128,7 +128,6 @@ const outletAuditSchema = new mongoose.Schema(
       type: {
         type: String,
         enum: ["Point"],
-        default: "Point",
       },
       coordinates: {
         type: [Number], // [longitude, latitude]
@@ -173,7 +172,7 @@ outletAuditSchema.index({ audit_date: -1 });
 outletAuditSchema.index({ outlet_id: 1, audit_date: -1 });
 outletAuditSchema.index({ so_id: 1, audit_date: -1 });
 outletAuditSchema.index({ status: 1, audit_date: -1 });
-outletAuditSchema.index({ gps_location: "2dsphere" });
+outletAuditSchema.index({ gps_location: "2dsphere" }, { sparse: true });
 
 // Pre-save middleware: Auto-calculate totals and variance
 outletAuditSchema.pre("save", function (next) {

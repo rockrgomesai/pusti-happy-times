@@ -3,7 +3,7 @@
 **Last Updated:** May 18, 2026  
 **Platform:** React Native 0.83.1 (iOS + Android)  
 **Backend API:** Node.js + Express.js  
-**Status:** DSR Delivery Panel Complete ✅
+**Status:** Shop Closed Mutual Exclusion Complete ✅
 
 ---
 
@@ -107,10 +107,43 @@ npx react-native run-android
 - Username: `superadmin`
 - Password: `admin123`
 
+### Linux Quick Start (Current Environment)
+
+**Step 1: Start Backend**
+
+```bash
+cd /home/rock/apps/tkg/pusti-happy-times/backend
+pkill -f "node server.js" 2>/dev/null; sleep 1
+nohup node server.js > /tmp/backend.log 2>&1 &
+# Check: tail -f /tmp/backend.log
+```
+
+**Step 2: Start Metro Bundler** (keep running)
+
+```bash
+cd /home/rock/apps/tkg/pusti-happy-times/mobile
+/home/rock/apps/tkg/pusti-happy-times/mobile/node_modules/.bin/rnc-cli start --reset-cache
+```
+
+**Step 3: Build & Install APK**
+
+```bash
+~/Android/Sdk/platform-tools/adb shell pm uninstall com.tkgpustihtsalesapp 2>/dev/null
+cd /home/rock/apps/tkg/pusti-happy-times/mobile/android
+./gradlew installDebug 2>&1 | tail -8
+```
+
+**Test Credentials:**
+
+- SO: `so_test` / `Test@1234`
+- DSR: `DSR-DPBEV1-D1` / `Test@1234`
+
+**Backend:** Port 5000 | **Emulator:** `http://10.0.2.2:5000/api/v1`
+
 ### Important Configuration Notes
 
-- **Backend must be running on port 8080**
-- Metro bundler may ask about port 8081 - choose "Yes" for alternate port
+- **Backend runs on port 5000** (not 8080)
+- Metro bundler runs on port 8081
 - First build takes 2-3 minutes (Gradle downloads dependencies)
 - Subsequent builds are faster due to caching
 - **HTTP cleartext traffic is enabled** in AndroidManifest.xml for development
@@ -423,6 +456,7 @@ SUSPICIOUS_PATTERN_PENALTY: 10;
 **Purpose:** Central hub that presents 5 action options after GPS proximity validation
 
 **Features:**
+
 - GPS proximity validation (10m threshold)
 - Haversine distance calculation
 - Real-time location accuracy display
@@ -431,6 +465,7 @@ SUSPICIOUS_PATTERN_PENALTY: 10;
 - Auto-navigation to selected action
 
 **Proximity Validation:**
+
 ```typescript
 // Validation flow
 1. Request GPS permissions
@@ -441,6 +476,7 @@ SUSPICIOUS_PATTERN_PENALTY: 10;
 ```
 
 **5 Action Options:**
+
 1. 🏪 Shop Closed (Orange)
 2. 🚫 No Sales (Purple)  
 3. 📋 Audit Inventory (Cyan)
@@ -448,9 +484,11 @@ SUSPICIOUS_PATTERN_PENALTY: 10;
 5. 📦 Damage Claim (Red)
 
 **Files:**
+
 - `mobile/src/screens/ShopActionScreen.tsx` (504 lines)
 
 **API Integration:**
+
 - None (Navigation hub only)
 
 ---
@@ -460,19 +498,27 @@ SUSPICIOUS_PATTERN_PENALTY: 10;
 **Purpose:** Record when outlet is found closed during visit
 
 **Features:**
-- One-tap marking with optional reason
+
+- Confirmation dialog (Android-compatible — `Alert.alert`, not `Alert.prompt`)
 - GPS coordinates capture
 - Automatic visit record creation
-- Close reason prompt (optional text)
 - Immediate sync to backend
+- Mutual exclusion enforced server-side
+- Navigation returns to home via `popToTop()` on success
+
+**Mutual Exclusion Rules:**
+
+- If `shop_closed` visit exists today for outlet → all other transactions blocked (409)
+- If any other visit/order exists today for outlet → `shop_closed` is blocked (409)
+- Same check in `POST /api/v1/mobile/orders` — blocks order if shop was closed today
 
 **Visit Record:**
+
 ```typescript
 {
   outlet_id: ObjectId,
   visit_type: "shop_closed",
   shop_status: "Closed",
-  shop_closed_reason: string (optional),
   gps_location: { coordinates: [lng, lat] },
   check_in_time: Date,
   so_notes: string
@@ -480,13 +526,22 @@ SUSPICIOUS_PATTERN_PENALTY: 10;
 ```
 
 **API:**
+
 ```
 POST /api/v1/outlet-visits
 Body: { outlet_id, visit_type: "shop_closed", ... }
+
+409 responses:
+  - "Shop was marked as closed today. No other transactions are allowed for this outlet."
+  - "Other transactions already recorded today. Cannot mark shop as closed."
+  - "A visit for this outlet has already been recorded today"
 ```
 
 **Files:**
+
 - Integrated in `ShopActionScreen.tsx` (inline handler)
+- `backend/src/routes/outletVisits.js` — mutual exclusion logic
+- `backend/src/routes/mobile/orders.js` — blocks orders if shop_closed today
 
 ---
 
@@ -495,6 +550,7 @@ Body: { outlet_id, visit_type: "shop_closed", ... }
 **Purpose:** Record why no order was placed at open outlet
 
 **Features:**
+
 - 8 predefined reasons with descriptions
 - Radio button selection
 - Required notes for "Other" reason
@@ -503,6 +559,7 @@ Body: { outlet_id, visit_type: "shop_closed", ... }
 - Visit tracking
 
 **Reasons:**
+
 1. Previous Order Not Delivered
 2. Payment Issues
 3. Overstocked
@@ -513,6 +570,7 @@ Body: { outlet_id, visit_type: "shop_closed", ... }
 8. Other (requires notes)
 
 **Visit Record:**
+
 ```typescript
 {
   outlet_id: ObjectId,
@@ -525,6 +583,7 @@ Body: { outlet_id, visit_type: "shop_closed", ... }
 ```
 
 **API:**
+
 ```
 POST /api/v1/outlet-visits
 Body: { 
@@ -536,6 +595,7 @@ Body: {
 ```
 
 **Files:**
+
 - `mobile/src/screens/NoSalesReasonScreen.tsx` (420 lines)
 
 ---
@@ -545,6 +605,7 @@ Body: {
 **Purpose:** Count outlet's stock by category for variance tracking
 
 **Features:**
+
 - Product listing by category
 - Accordion UI (expandable categories)
 - Previous audit comparison
@@ -555,6 +616,7 @@ Body: {
 - Optional notes
 
 **Audit Flow:**
+
 ```
 1. Load products with previous audit data
 2. Expand category → Show products
@@ -565,6 +627,7 @@ Body: {
 ```
 
 **Variance Display:**
+
 ```typescript
 // Color coding
 variance > 0  → Green (+50 PCS)
@@ -573,6 +636,7 @@ variance = 0  → Gray (0 PCS)
 ```
 
 **Audit Data Structure:**
+
 ```typescript
 {
   audit_id: string (auto-generated),
@@ -595,6 +659,7 @@ variance = 0  → Gray (0 PCS)
 ```
 
 **API:**
+
 ```
 GET /api/v1/outlet-audits/products?outlet_id=...
 Response: {
@@ -614,11 +679,13 @@ Body: { outlet_id, so_id, items[], so_notes }
 ```
 
 **Files:**
+
 - `mobile/src/screens/AuditInventoryScreen.tsx` (716 lines)
 - `backend/src/routes/outletAudits.js` (403 lines)
 - `backend/src/models/OutletAudit.js`
 
 **Draft Storage:**
+
 - AsyncStorage key: `@audit_draft_{outletId}`
 - Restores on revisit with timestamp
 
@@ -631,6 +698,7 @@ Body: { outlet_id, so_id, items[], so_notes }
 **Status:** COMPLETE
 
 **Features:**
+
 - Product catalog by category (3-column grid)
 - Offers carousel (auto-apply eligible offers)
 - Add to cart with quantity stepper
@@ -642,6 +710,7 @@ Body: { outlet_id, so_id, items[], so_notes }
 - Insufficient stock handling
 
 **UI Layout:**
+
 ```
 ┌─────────────────────────┐
 │  Header (Outlet Name)   │
@@ -671,6 +740,7 @@ Body: { outlet_id, so_id, items[], so_notes }
 ```
 
 **Stock Color Coding:**
+
 ```
 > 50 PCS  → Green
 10-50 PCS → Orange
@@ -679,6 +749,7 @@ Body: { outlet_id, so_id, items[], so_notes }
 ```
 
 **Order Creation Flow:**
+
 ```javascript
 1. SO adds products to cart (local)
 2. Cart saved to AsyncStorage per outlet
@@ -696,6 +767,7 @@ Body: { outlet_id, so_id, items[], so_notes }
 ```
 
 **Order Data Structure:**
+
 ```typescript
 {
   order_number: string,  // Auto-generated SO2602XXXX
@@ -721,6 +793,7 @@ Body: { outlet_id, so_id, items[], so_notes }
 ```
 
 **FIFO Stock Reduction:**
+
 ```javascript
 // DistributorStock.reduceStockFIFO(quantity)
 // Reduces oldest batches first
@@ -735,6 +808,7 @@ for each batch:
 ```
 
 **API Endpoints:**
+
 ```
 GET /api/v1/mobile/catalog/categories?distributor_id=...
 Response: {
@@ -784,6 +858,7 @@ Response: {
 ```
 
 **Files:**
+
 - `mobile/src/screens/SalesModuleScreen.tsx` (754 lines)
 - `mobile/src/services/salesAPI.ts` (308 lines)
 - `backend/src/routes/mobile/catalog.js` (263 lines)
@@ -791,10 +866,12 @@ Response: {
 - `backend/src/models/SecondaryOrder.js` (320 lines)
 
 **Cart Storage:**
+
 - AsyncStorage key: `@sales_cart_{outletId}`
 - Structure: `CartItem[]` with product_id, sku, quantity, unit_price, subtotal
 
 **Stock Synchronization:**
+
 - Fresh stock fetched per outlet visit (no reservation)
 - Validation at submission (atomic transaction)
 - SO sees real-time availability
@@ -807,6 +884,7 @@ Response: {
 **Purpose:** Report damaged/expired products found at outlets
 
 **Features:**
+
 - Product selection (from delivery history)
 - 7 damage reasons with icons
 - Quantity input (PCS)
@@ -817,6 +895,7 @@ Response: {
 - GPS capture
 
 **Damage Reasons:**
+
 1. Physical Damage
 2. Expired
 3. Defective/Quality Issue
@@ -826,6 +905,7 @@ Response: {
 7. Quality Issue
 
 **Claim Flow:**
+
 ```
 1. Load products (from outlet's delivery history)
 2. Tap product → Open modal
@@ -836,6 +916,7 @@ Response: {
 ```
 
 **Claim Data Structure:**
+
 ```typescript
 {
   claim_id: string (auto-generated),
@@ -862,6 +943,7 @@ Response: {
 ```
 
 **API:**
+
 ```
 GET /api/v1/damage-claims/products?outlet_id=...&distributor_id=...
 Response: {
@@ -885,12 +967,14 @@ Body: {
 ```
 
 **Files:**
+
 - `mobile/src/screens/DamageClaimScreen.tsx` (899 lines)
 - `mobile/src/services/damageClaimAPI.ts` (268 lines)
 - `backend/src/routes/damageClaims.js`
 - `backend/src/models/DamageClaim.js`
 
 **Draft Storage:**
+
 - AsyncStorage key: `@damage_claim_draft_{outletId}`
 - Restores with timestamp prompt
 
@@ -903,6 +987,7 @@ Body: {
 **Status:** COMPLETE
 
 **Features:**
+
 - Duration calculation (check_out_time - check_in_time)
 - Today's visit summary endpoint
 - Display in TraceRouteScreen outlet list
@@ -910,6 +995,7 @@ Body: {
 - Color-coded display
 
 **Backend Implementation:**
+
 ```javascript
 // OutletVisit model pre-save hook
 if (this.check_out_time && this.check_in_time) {
@@ -920,6 +1006,7 @@ if (this.check_out_time && this.check_in_time) {
 ```
 
 **API Endpoint:**
+
 ```
 GET /api/v1/outlet-visits/today-summary?outlet_ids=id1,id2,id3
 Response: {
@@ -935,6 +1022,7 @@ Response: {
 ```
 
 **Mobile Integration:**
+
 ```typescript
 // TraceRouteScreen fetch logic
 1. Load outlets for route
@@ -948,6 +1036,7 @@ Response: {
 ```
 
 **UI Display:**
+
 ```tsx
 // Outlet list item
 {item.is_visited_today && item.is_checked_out && (
@@ -964,16 +1053,19 @@ Response: {
 ```
 
 **Color Coding:**
+
 ```
 Completed visit: Green (#4CAF50)
 In progress: Orange (#FF9800)
 ```
 
 **Files:**
+
 - `mobile/src/screens/TraceRouteScreen.tsx` (modified lines 23-36, 95-148, 587-612, 814-832)
 - `backend/src/routes/outletVisits.js` (added lines 323-381)
 
 **Performance:**
+
 - Single batch query for all outlets
 - Map structure for O(1) lookup
 - Graceful degradation (continues without visit data if fetch fails)
@@ -1155,6 +1247,8 @@ Request: {
 
 - [x] Check-in to outlet (GPS validated)
 - [x] Shop status marking (Open/Closed) ✅
+- [x] Shop Closed mutual exclusion (same-day block) ✅
+- [x] Same-day duplicate visit prevention ✅
 - [x] Visit duration tracking ✅
 - [x] No sales reason recording ✅
 - [x] Offline visit recording (via sync queue)
@@ -1215,6 +1309,7 @@ Request: {
 **Purpose:** Allow DSRs to confirm deliveries, record cash collected, and bounce/hold orders
 
 **Features:**
+
 - View today's approved orders scheduled for delivery
 - Confirm delivery with per-item quantities (delivered / damage)
 - Record cash collected and credit balance tracking
@@ -1224,14 +1319,17 @@ Request: {
 - Delivered Orders feedback screen (today's delivered/bounced orders)
 
 **Screens:**
+
 - `mobile/src/screens/DsrDeliveryScreen.tsx` — Delivery confirmation panel
 - `mobile/src/screens/DsrDeliveredScreen.tsx` — Delivered orders feedback (NEW)
 
 **HomeScreen buttons (DSR role):**
+
 - 🚚 **Deliver Orders** → `DsrDelivery` screen
 - ✅ **Delivered** → `DsrDelivered` screen
 
 **Financial Flow:**
+
 ```
 totalPayable = payable + creditBalanceBefore
 creditBalanceAfter = totalPayable - cashCollected
@@ -1239,6 +1337,7 @@ Tap "Credit Balance" row → cashCollected = totalPayable (zero balance)
 ```
 
 **API Endpoints:**
+
 ```
 GET  /api/v1/mobile/dsr/schedule
      Returns today's Approved orders for DSR's distributor
@@ -1255,6 +1354,7 @@ GET  /api/v1/mobile/dsr/delivered-today
 ```
 
 **DeliveredOrder Summary Stats:**
+
 ```typescript
 {
   total: number,
@@ -1265,14 +1365,21 @@ GET  /api/v1/mobile/dsr/delivered-today
 }
 ```
 
-**Key Bug Fixed:** Outlet model uses `outlet_name` (not `name`). Backend populate and all frontend references corrected.
+**Key Bugs Fixed:**
+
+- Outlet model uses `outlet_name` (not `name`). Backend populate and all frontend references corrected.
+- All action screens (`DsrDeliveryScreen`, `NoSalesReasonScreen`, `ShopActionScreen`) now navigate via `navigation.popToTop()` on success.
+- `NoSalesReasonScreen` handles 409 (duplicate same-day visit) with user-friendly alert.
+- `ShopActionScreen` `handleShopClosed` replaced iOS-only `Alert.prompt` with Android-compatible `Alert.alert`.
+- Same-day duplicate visit prevention added in `outletVisits.js` with mutual exclusion: `shop_closed` blocks all other visit types and vice versa.
+- `mobile/orders.js` blocks order creation if a `shop_closed` visit exists today for the outlet.
 
 **Files:**
+
 - `mobile/src/screens/DsrDeliveryScreen.tsx`
 - `mobile/src/screens/DsrDeliveredScreen.tsx`
 - `mobile/src/services/dsrDeliveryAPI.ts`
 - `backend/src/routes/mobile/dsr-delivery.js`
-
 
 ---
 

@@ -125,7 +125,6 @@ const outletVisitSchema = new mongoose.Schema(
       type: {
         type: String,
         enum: ["Point"],
-        default: "Point",
       },
       coordinates: {
         type: [Number], // [longitude, latitude]
@@ -190,7 +189,7 @@ outletVisitSchema.index({ visit_date: -1 });
 outletVisitSchema.index({ outlet_id: 1, visit_date: -1 });
 outletVisitSchema.index({ so_id: 1, visit_date: -1 });
 outletVisitSchema.index({ visit_type: 1, visit_date: -1 });
-outletVisitSchema.index({ gps_location: "2dsphere" });
+outletVisitSchema.index({ gps_location: "2dsphere" }, { sparse: true });
 
 // Pre-save middleware: Calculate check-out duration
 outletVisitSchema.pre("save", function (next) {

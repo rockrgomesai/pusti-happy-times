@@ -86,7 +86,23 @@ router.post(
         }
       }
 
-      // Step 1: Validate stock availability (with row locking)
+      // Step 1: Block order if shop was marked closed today
+      const orderDayStart = new Date(); orderDayStart.setHours(0, 0, 0, 0);
+      const orderDayEnd = new Date(); orderDayEnd.setHours(23, 59, 59, 999);
+      const closedVisit = await OutletVisit.findOne({
+        outlet_id,
+        visit_type: 'shop_closed',
+        visit_date: { $gte: orderDayStart, $lte: orderDayEnd },
+      });
+      if (closedVisit) {
+        if (session) { await session.abortTransaction(); session.endSession(); }
+        return res.status(409).json({
+          success: false,
+          message: 'Shop was marked as closed today. No orders can be placed.',
+        });
+      }
+
+      // Step 2: Validate stock availability (with row locking)
       const stockValidationErrors = [];
       for (const item of items) {
         const stockQuery = DistributorStock.findOne({

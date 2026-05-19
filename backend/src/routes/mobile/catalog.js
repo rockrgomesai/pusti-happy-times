@@ -156,10 +156,10 @@ router.get(
             .filter((b) => parseFloat(b.qty?.toString() || "0") > 0)
             .sort((a, b) => new Date(a.received_at) - new Date(b.received_at))
             .map((b) => ({
-              batch_id:      b.batch_id?.toString(),
+              batch_id: b.batch_id?.toString(),
               available_pcs: parseFloat(b.qty?.toString() || "0"),
-              unit_price:    parseFloat(b.unit_price?.toString() || "0"),
-              received_at:   b.received_at,
+              unit_price: parseFloat(b.unit_price?.toString() || "0"),
+              received_at: b.received_at,
             }));
           return [s.sku, { total_qty: parseFloat(s.qty?.toString() || "0"), fifo_batches }];
         })
@@ -170,16 +170,16 @@ router.get(
         .map((product) => {
           const stock = stockMap.get(product.sku);
           return {
-            _id:           product._id,
-            sku:           product.sku,
-            english_name:  product.english_name,
-            bangla_name:   product.bangla_name,
-            trade_price:   product.trade_price,
+            _id: product._id,
+            sku: product.sku,
+            english_name: product.english_name,
+            bangla_name: product.bangla_name,
+            trade_price: product.trade_price,
             unit_per_case: product.unit_per_case,
-            ctn_pcs:       product.ctn_pcs,
-            image_url:     product.image_url,
+            ctn_pcs: product.ctn_pcs,
+            image_url: product.image_url,
             available_qty: stock?.total_qty ?? 0,
-            fifo_batches:  stock?.fifo_batches ?? [],
+            fifo_batches: stock?.fifo_batches ?? [],
           };
         })
         .filter((p) => p.available_qty > 0); // Only show products with stock
@@ -246,6 +246,18 @@ router.get(
       // Remove duplicates and format response
       const uniqueOffers = Array.from(new Map(allOffers.map((offer) => [offer._id.toString(), offer])).values());
 
+      // Batch-fetch product info for BUY_X_GET_1_FREE offers
+      const skuFreeProductIds = uniqueOffers
+        .filter((o) => o.offer_type === "BUY_X_GET_1_FREE")
+        .flatMap((o) => o.config?.skuFreeItems?.map((i) => i.productId) || []);
+      const skuFreeProducts =
+        skuFreeProductIds.length > 0
+          ? await Product.find({ _id: { $in: skuFreeProductIds } })
+            .select("sku english_name bangla_name")
+            .lean()
+          : [];
+      const skuFreeProductMap = new Map(skuFreeProducts.map((p) => [p._id.toString(), p]));
+
       const formattedOffers = uniqueOffers.map((offer) => ({
         _id: offer._id,
         name: offer.name,
@@ -257,7 +269,23 @@ router.get(
           minOrderValue: offer.config?.minOrderValue || 0,
           discountPercentage: offer.config?.discountPercentage || 0,
           discountAmount: offer.config?.discountAmount || 0,
+          // Slab offers
+          slabs: offer.config?.slabs || undefined,
+          // Cashback offers
+          cashbackPercentage: offer.config?.cashbackPercentage || undefined,
+          cashbackAmount: offer.config?.cashbackAmount || undefined,
+          maxCashback: offer.config?.maxCashback || undefined,
         },
+        skuFreeItems:
+          offer.offer_type === "BUY_X_GET_1_FREE"
+            ? (offer.config?.skuFreeItems || []).map((i) => ({
+              productId: i.productId,
+              sku: skuFreeProductMap.get(i.productId?.toString())?.sku || "",
+              englishName:
+                skuFreeProductMap.get(i.productId?.toString())?.english_name || "",
+              buyQty: i.buyQty,
+            }))
+            : undefined,
       }));
 
       return res.status(200).json({
@@ -271,6 +299,86 @@ router.get(
         message: "Failed to fetch offers",
         error: error.message,
       });
+    }
+  }
+);
+
+// ====================
+// GET /api/mobile/catalog/search
+// Search products by SKU or name with distributor stock
+// ====================
+router.get(
+  "/search",
+  [
+    query("q").notEmpty().isLength({ min: 2 }).withMessage("Query must be at least 2 characters"),
+    query("distributor_id")
+      .notEmpty()
+      .withMessage("Distributor ID is required")
+      .isMongoId()
+      .withMessage("Invalid distributor ID"),
+  ],
+  async (req, res) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ success: false, message: "Validation failed", errors: errors.array() });
+      }
+
+      const { q, distributor_id } = req.query;
+      const escaped = q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const regex = new RegExp(escaped, "i");
+
+      const products = await Product.find({
+        active: true,
+        $or: [{ sku: regex }, { english_name: regex }, { bangla_name: regex }],
+      })
+        .select("sku english_name bangla_name trade_price unit_per_case ctn_pcs image_url")
+        .sort({ english_name: 1 })
+        .limit(50)
+        .lean();
+
+      const skus = products.map((p) => p.sku);
+      const stocks = await DistributorStock.find({ distributor_id, sku: { $in: skus } })
+        .select("sku qty batches")
+        .lean();
+
+      const stockMap = new Map(
+        stocks.map((s) => {
+          const fifo_batches = (s.batches || [])
+            .filter((b) => parseFloat(b.qty?.toString() || "0") > 0)
+            .sort((a, b) => new Date(a.received_at) - new Date(b.received_at))
+            .map((b) => ({
+              batch_id: b.batch_id?.toString(),
+              available_pcs: parseFloat(b.qty?.toString() || "0"),
+              unit_price: parseFloat(b.unit_price?.toString() || "0"),
+              received_at: b.received_at,
+            }));
+          return [s.sku, { total_qty: parseFloat(s.qty?.toString() || "0"), fifo_batches }];
+        })
+      );
+
+      const data = products
+        .map((p) => {
+          const stock = stockMap.get(p.sku);
+          return {
+            _id: p._id,
+            sku: p.sku,
+            english_name: p.english_name,
+            bangla_name: p.bangla_name,
+            trade_price: p.trade_price,
+            unit_per_case: p.unit_per_case,
+            ctn_pcs: p.ctn_pcs,
+            image_url: p.image_url,
+            available_qty: stock?.total_qty ?? 0,
+            fifo_batches: stock?.fifo_batches ?? [],
+          };
+        })
+        .filter((p) => p.available_qty > 0);
+
+      return res.status(200).json({ success: true, data });
+    } catch (error) {
+      console.error("Catalog search error:", error);
+      return res.status(500).json({ success: false, message: "Search failed", error: error.message });
     }
   }
 );
