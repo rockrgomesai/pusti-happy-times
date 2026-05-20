@@ -13,6 +13,7 @@ import {
     Alert,
     ActivityIndicator,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
     fetchSchedule,
     fetchOutletCredit,
@@ -23,6 +24,7 @@ import {
     ScheduleOrder,
     CatalogProduct,
 } from '../services/dsrDeliveryAPI';
+import salesAPI from '../services/salesAPI';
 import { useFocusEffect } from '@react-navigation/native';
 
 type OrderStatus = 'Approved' | 'Hold' | 'Delivered' | 'Bounced';
@@ -60,6 +62,7 @@ const DsrDeliveryScreen = ({ navigation }: any) => {
     const [refreshing, setRefreshing] = useState(false);
     const [selectedOrder, setSelectedOrder] = useState<ScheduleOrder | null>(null);
     const [modalVisible, setModalVisible] = useState(false);
+    const [distributorId, setDistributorId] = useState<string | null>(null);
 
     // Modal state
     const [deliveryRows, setDeliveryRows] = useState<DeliveryRow[]>([]);
@@ -82,6 +85,34 @@ const DsrDeliveryScreen = ({ navigation }: any) => {
     const totalPayable = payable + creditBalanceBefore;
     const creditBalanceAfter = totalPayable - Number(cashCollected || 0);
 
+    // Load distributorId from stored user profile
+    const loadDistributorId = async () => {
+        try {
+            const userStr = await AsyncStorage.getItem('user');
+            if (userStr) {
+                const user = JSON.parse(userStr);
+                const did = user?.context?.distributor_id || user?.distributor_id || null;
+                setDistributorId(did);
+            }
+        } catch {
+            // ignore
+        }
+    };
+
+    const handleNewOrder = async (order: ScheduleOrder) => {
+        if (!distributorId) {
+            Alert.alert('Error', 'Cannot identify distributor. Please re-login.');
+            return;
+        }
+        await salesAPI.clearCart(order.outlet_id._id);
+        navigation.navigate('SalesModule', {
+            outletId: order.outlet_id._id,
+            outletName: order.outlet_id.outlet_name,
+            distributorId,
+            currentLocation: null,
+        });
+    };
+
     const loadSchedule = async () => {
         try {
             const data = await fetchSchedule();
@@ -98,6 +129,7 @@ const DsrDeliveryScreen = ({ navigation }: any) => {
         useCallback(() => {
             setLoading(true);
             loadSchedule();
+            loadDistributorId();
         }, [])
     );
 
@@ -232,27 +264,37 @@ const DsrDeliveryScreen = ({ navigation }: any) => {
     const bounced = orders.filter(o => o.order_status === 'Bounced').length;
 
     const renderOutletCard = ({ item }: { item: ScheduleOrder }) => (
-        <TouchableOpacity
-            style={[styles.outletCard, { borderLeftColor: statusColor[item.order_status] }]}
-            onPress={() => openModal(item)}
-            activeOpacity={0.8}>
-            <View style={{ flex: 1 }}>
-                <Text style={styles.outletName}>{item.outlet_id.outlet_name}</Text>
-                <Text style={styles.outletAddress}>{item.outlet_id.address}</Text>
-                <Text style={styles.outletOrderNum}>#{item.order_number}</Text>
-            </View>
-            <View style={{ alignItems: 'flex-end' }}>
-                <View style={[styles.statusChip, { backgroundColor: statusColor[item.order_status] + '22' }]}>
-                    <Text style={[styles.statusChipText, { color: statusColor[item.order_status] }]}>
-                        {item.order_status}
+        <View style={[styles.outletCard, { borderLeftColor: statusColor[item.order_status] }]}>
+            <TouchableOpacity
+                style={{ flex: 1, flexDirection: 'row' }}
+                onPress={() => openModal(item)}
+                activeOpacity={0.8}>
+                <View style={{ flex: 1 }}>
+                    <Text style={styles.outletName}>{item.outlet_id.outlet_name}</Text>
+                    <Text style={styles.outletAddress}>{item.outlet_id.address}</Text>
+                    <Text style={styles.outletOrderNum}>#{item.order_number}</Text>
+                </View>
+                <View style={{ alignItems: 'flex-end' }}>
+                    <View style={[styles.statusChip, { backgroundColor: statusColor[item.order_status] + '22' }]}>
+                        <Text style={[styles.statusChipText, { color: statusColor[item.order_status] }]}>
+                            {item.order_status}
+                        </Text>
+                    </View>
+                    <Text style={styles.orderAmount}>৳{item.total_amount.toLocaleString()}</Text>
+                    <Text style={styles.orderPcs}>
+                        {item.items.reduce((s, i) => s + ((i as any).ordered_qty || (i as any).quantity || 0), 0)} pcs
                     </Text>
                 </View>
-                <Text style={styles.orderAmount}>৳{item.total_amount.toLocaleString()}</Text>
-                <Text style={styles.orderPcs}>
-                    {item.items.reduce((s, i) => s + ((i as any).ordered_qty || (i as any).quantity || 0), 0)} pcs
-                </Text>
+            </TouchableOpacity>
+            <View style={styles.cardFooter}>
+                <TouchableOpacity
+                    style={styles.newOrderBtn}
+                    onPress={() => handleNewOrder(item)}
+                    activeOpacity={0.8}>
+                    <Text style={styles.newOrderBtnText}>＋ New Order</Text>
+                </TouchableOpacity>
             </View>
-        </TouchableOpacity>
+        </View>
     );
 
     const renderProductRow = (row: DeliveryRow, index: number) => (
@@ -571,10 +613,13 @@ const styles = StyleSheet.create({
     statLabel: { color: '#b3c5ff', fontSize: 10, marginTop: 2 },
 
     // Outlet card
-    outletCard: { backgroundColor: '#fff', marginHorizontal: 12, marginTop: 8, borderRadius: 10, padding: 14, flexDirection: 'row', borderLeftWidth: 4, elevation: 2, shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 4 },
+    outletCard: { backgroundColor: '#fff', marginHorizontal: 12, marginTop: 8, borderRadius: 10, paddingHorizontal: 14, paddingTop: 14, paddingBottom: 8, borderLeftWidth: 4, elevation: 2, shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 4 },
     outletName: { fontSize: 15, fontWeight: '700', color: '#1a1a2e' },
     outletAddress: { fontSize: 12, color: '#666', marginTop: 2 },
     outletOrderNum: { fontSize: 11, color: '#999', marginTop: 4 },
+    cardFooter: { borderTopWidth: 1, borderTopColor: '#f0f0f0', marginTop: 8, paddingTop: 6, alignItems: 'flex-end' },
+    newOrderBtn: { backgroundColor: '#1565c0', borderRadius: 6, paddingHorizontal: 14, paddingVertical: 5 },
+    newOrderBtnText: { color: '#fff', fontSize: 12, fontWeight: '700' },
     statusChip: { borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3, marginBottom: 4 },
     statusChipText: { fontSize: 11, fontWeight: '700' },
     orderAmount: { fontSize: 16, fontWeight: '700', color: '#1a237e' },
