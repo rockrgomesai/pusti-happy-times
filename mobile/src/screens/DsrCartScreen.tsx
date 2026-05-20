@@ -334,11 +334,11 @@ const DsrCartScreen: React.FC<Props> = ({ route, navigation }) => {
 
     rows.push({ type: 'total_row', id: 'total', total: deliveryTotal });
 
+    rows.push({ type: 'financial_card', id: 'fin' });
+
     offerNotes.forEach(note => {
       rows.push({ type: 'offer_note', id: `on_${note.offer_id}`, note });
     });
-
-    rows.push({ type: 'financial_card', id: 'fin' });
 
     return rows;
   }, [items, computedOfferItems, deliveryTotal, offerNotes]);
