@@ -32,13 +32,15 @@ const formatDate = (d: Date) => {
 
 const DsrDeliveryScreen = ({ navigation }: any) => {
     const [orders, setOrders] = useState<ScheduleOrder[]>([]);
+    const [distributorId, setDistributorId] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
 
     const loadSchedule = async () => {
         try {
-            const data = await fetchSchedule();
+            const { orders: data, distributor_id: did } = await fetchSchedule();
             setOrders(data);
+            setDistributorId(did);
         } catch (err: any) {
             Alert.alert('Error', err.message || 'Failed to load schedule');
         } finally {
@@ -68,7 +70,7 @@ const DsrDeliveryScreen = ({ navigation }: any) => {
     const renderOutletCard = ({ item }: { item: ScheduleOrder }) => (
         <TouchableOpacity
             style={[styles.outletCard, { borderLeftColor: statusColor[item.order_status] }]}
-            onPress={() => navigation.navigate('DsrCart', { order: item })}
+            onPress={() => navigation.navigate('DsrCart', { order: item, distributorId })}
             activeOpacity={0.8}>
             <View style={{ flex: 1 }}>
                 <Text style={styles.outletName}>{item.outlet_id.outlet_name}</Text>

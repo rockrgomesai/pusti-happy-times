@@ -63,13 +63,13 @@ async function authHeaders() {
     return { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
 }
 
-export async function fetchSchedule(date?: string): Promise<ScheduleOrder[]> {
+export async function fetchSchedule(date?: string): Promise<{ orders: ScheduleOrder[]; distributor_id: string | null }> {
     const headers = await authHeaders();
     const query = date ? `?date=${date}` : '';
     const res = await fetch(`${API_BASE_URL}/mobile/dsr/schedule${query}`, { headers });
     const json = await res.json();
     if (!json.success) throw new Error(json.message);
-    return json.data.orders;
+    return { orders: json.data.orders, distributor_id: json.data.distributor_id ?? null };
 }
 
 export async function fetchOutletCredit(outletId: string): Promise<number> {

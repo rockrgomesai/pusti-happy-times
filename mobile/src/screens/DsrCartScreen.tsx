@@ -77,7 +77,7 @@ interface Props {
 // ─────────────────────────────────────────────────────────────────────────────
 
 const DsrCartScreen: React.FC<Props> = ({ route, navigation }) => {
-  const { order } = route.params as { order: ScheduleOrder };
+  const { order, distributorId } = route.params as { order: ScheduleOrder; distributorId?: string | null };
   const outletId = order.outlet_id._id;
   const outletName = order.outlet_id.outlet_name;
 
@@ -112,9 +112,8 @@ const DsrCartScreen: React.FC<Props> = ({ route, navigation }) => {
   useEffect(() => {
     const init = async () => {
       try {
-        const [savedLang, userJson, credit] = await Promise.all([
+        const [savedLang, credit] = await Promise.all([
           AsyncStorage.getItem('@lang_pref'),
-          AsyncStorage.getItem('user'),
           fetchOutletCredit(outletId),
         ]);
         if (savedLang) setLanguage(savedLang as 'bn' | 'en');
@@ -122,8 +121,6 @@ const DsrCartScreen: React.FC<Props> = ({ route, navigation }) => {
 
         // Fetch offers for free-item computation
         const token = await AsyncStorage.getItem('accessToken');
-        const user = userJson ? JSON.parse(userJson) : null;
-        const distributorId = user?.context?.distributor_id ?? user?.distributor_id;
         if (token && distributorId) {
           const fetchedOffers = await salesAPI.getOffers(token, outletId, distributorId);
           setOffers(fetchedOffers);

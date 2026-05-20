@@ -66,6 +66,7 @@ router.get("/schedule", authenticate, guardDsr, async (req, res) => {
             success: true,
             data: {
                 orders,
+                distributor_id: did,
                 summary: { total, pending, on_hold, confirmed: 0, bounced: 0 },
             },
         });
