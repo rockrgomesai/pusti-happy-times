@@ -81,9 +81,10 @@ const DsrCartScreen: React.FC<Props> = ({ route, navigation }) => {
   const outletId = order.outlet_id._id;
   const outletName = order.outlet_id.outlet_name;
 
-  // Pre-populate items from order
+  // Pre-populate items from order — exclude free items (unit_price === 0) as they
+  // are computed dynamically from offers and shown in a separate FREE OFFER ITEMS section
   const [items, setItems] = useState<DsrCartItem[]>(() =>
-    order.items.map(item => ({
+    order.items.filter(item => item.unit_price > 0).map(item => ({
       product_id: (item.product_id?._id ?? item.product_id) as string,
       sku: item.sku,
       bangla_name: item.product_id?.bangla_name ?? item.bangla_name ?? '',
