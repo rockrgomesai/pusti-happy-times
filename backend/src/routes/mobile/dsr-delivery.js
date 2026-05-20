@@ -35,9 +35,15 @@ router.get("/schedule", authenticate, guardDsr, async (req, res) => {
         const did = distId(req);
         if (!did) return res.status(400).json({ success: false, message: "distributor_id missing from user context" });
 
-        const date = req.query.date ? new Date(req.query.date) : new Date();
-        const dayStart = new Date(date); dayStart.setHours(0, 0, 0, 0);
-        const dayEnd = new Date(date); dayEnd.setHours(23, 59, 59, 999);
+        // All date math in Bangladesh Standard Time (UTC+6) so orders placed
+        // after midnight BDT are visible on the correct calendar day even when
+        // the server is running in UTC.
+        const BDT_OFFSET_MS = 6 * 60 * 60 * 1000;
+        const bdtDateStr = req.query.date
+            ? req.query.date  // caller-supplied YYYY-MM-DD is already BDT
+            : new Date(Date.now() + BDT_OFFSET_MS).toISOString().slice(0, 10);
+        const dayStart = new Date(`${bdtDateStr}T00:00:00+06:00`);
+        const dayEnd   = new Date(`${bdtDateStr}T23:59:59.999+06:00`);
 
         // Approved orders for this distributor placed today (or on the requested date)
         const orders = await SecondaryOrder.find({
@@ -116,9 +122,12 @@ router.get("/delivered-today", authenticate, guardDsr, async (req, res) => {
         const did = distId(req);
         if (!did) return res.status(400).json({ success: false, message: "distributor_id missing from user context" });
 
-        const date = req.query.date ? new Date(req.query.date) : new Date();
-        const dayStart = new Date(date); dayStart.setHours(0, 0, 0, 0);
-        const dayEnd = new Date(date); dayEnd.setHours(23, 59, 59, 999);
+        const BDT_OFFSET_MS = 6 * 60 * 60 * 1000;
+        const bdtDateStr = req.query.date
+            ? req.query.date
+            : new Date(Date.now() + BDT_OFFSET_MS).toISOString().slice(0, 10);
+        const dayStart = new Date(`${bdtDateStr}T00:00:00+06:00`);
+        const dayEnd   = new Date(`${bdtDateStr}T23:59:59.999+06:00`);
 
         const orders = await SecondaryOrder.find({
             distributor_id: did,

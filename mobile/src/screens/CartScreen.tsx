@@ -213,11 +213,8 @@ const CartScreen: React.FC<Props> = ({ route, navigation }) => {
       const maxQty = item.available_pcs ?? Infinity;
       const clampedQty = Math.min(Math.max(newQty, 0), maxQty);
 
-      if (clampedQty <= 0) {
-        next.delete(cartKey);
-      } else {
-        next.set(cartKey, { ...item, quantity: clampedQty, subtotal: clampedQty * item.unit_price });
-      }
+      // Keep item in cart even at qty 0 — submission filters them out
+      next.set(cartKey, { ...item, quantity: clampedQty, subtotal: clampedQty * item.unit_price });
 
       // FIFO enforcement: if this batch is no longer fully consumed (qty < available_pcs),
       // all subsequent batches of the same product become invalid and are removed.
@@ -256,7 +253,8 @@ const CartScreen: React.FC<Props> = ({ route, navigation }) => {
 
   // ── handleSubmitOrder ─────────────────────────────────────────
   const handleSubmitOrder = async () => {
-    if (cart.size === 0) {
+    const activeItems = [...cart.values()].filter(i => i.quantity > 0);
+    if (activeItems.length === 0) {
       Alert.alert('Cart Empty', 'Please add items before submitting');
       return;
     }
@@ -277,13 +275,15 @@ const CartScreen: React.FC<Props> = ({ route, navigation }) => {
               return;
             }
 
-            const regularItems = [...cart.values()].map(item => ({
-              product_id: item.product_id,
-              sku: item.sku,
-              batch_id: item.batch_id,
-              quantity: item.quantity,
-              unit_price: item.unit_price,
-            }));
+            const regularItems = [...cart.values()]
+              .filter(item => item.quantity > 0)
+              .map(item => ({
+                product_id: item.product_id,
+                sku: item.sku,
+                batch_id: item.batch_id,
+                quantity: item.quantity,
+                unit_price: item.unit_price,
+              }));
 
             const freeItems = computedOfferItems.map(item => ({
               product_id: item.product_id,
@@ -431,21 +431,21 @@ const CartScreen: React.FC<Props> = ({ route, navigation }) => {
               <View style={styles.qtyControl}>
                 <TouchableOpacity
                   onPress={() => updateQty(cartKey, ci.quantity - 1)}
-                  disabled={ci.quantity <= 1}>
+                  disabled={ci.quantity <= 0}>
                   <MaterialIcons
                     name="remove-circle-outline"
                     size={28}
-                    color={ci.quantity <= 1 ? '#ccc' : '#e53935'}
+                    color={ci.quantity <= 0 ? '#ccc' : '#e53935'}
                   />
                 </TouchableOpacity>
                 <TextInput
                   style={styles.qtyInput}
                   keyboardType="number-pad"
                   value={String(ci.quantity)}
-                  maxLength={5}
+                  maxLength={6}
                   onChangeText={text => {
                     const v = parseInt(text, 10);
-                    if (!isNaN(v) && v > 0) { updateQty(cartKey, v); }
+                    updateQty(cartKey, isNaN(v) ? 0 : Math.max(v, 0));
                   }}
                 />
                 <TouchableOpacity
