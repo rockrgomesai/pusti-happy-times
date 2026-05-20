@@ -1,7 +1,7 @@
 /**
  * DsrCartScreen
  * DSR delivery confirmation — cart-style UI pre-populated from a ScheduleOrder.
- * Per-item: delivered_qty, damage_qty, extra_discount.
+ * Per-item: delivered_qty, extra_discount.
  * Financial panel: sum discounts, prev credit, payable, cash collected, credit balance after.
  * Actions: Bounce | Hold | ✓ Confirm
  */
@@ -41,7 +41,6 @@ interface DsrCartItem {
   image_url?: string;
   ordered_qty: number;
   delivered_qty: number;
-  damage_qty: number;
   unit_price: number;
   extra_discount: number;
   ctn_pcs?: number;
@@ -92,7 +91,6 @@ const DsrCartScreen: React.FC<Props> = ({ route, navigation }) => {
       image_url: item.product_id?.image_url ?? item.image_url,
       ordered_qty: item.ordered_qty ?? (item as any).quantity ?? 0,
       delivered_qty: item.ordered_qty ?? (item as any).quantity ?? 0,
-      damage_qty: 0,
       unit_price: item.unit_price,
       extra_discount: 0,
       ctn_pcs: item.ctn_pcs,
@@ -264,7 +262,7 @@ const DsrCartScreen: React.FC<Props> = ({ route, navigation }) => {
                 sku: i.sku,
                 ordered_qty: i.ordered_qty,
                 delivered_qty: i.delivered_qty,
-                damage_qty: i.damage_qty,
+                damage_qty: 0,
                 unit_price: i.unit_price,
                 extra_item_discount: i.extra_discount,
                 is_extra_item: false,
@@ -409,19 +407,6 @@ const DsrCartScreen: React.FC<Props> = ({ route, navigation }) => {
               </View>
               <Text style={styles.itemSubtotal}>৳{(ci.delivered_qty * ci.unit_price).toFixed(2)}</Text>
               <View style={styles.extraFields}>
-                <View style={styles.extraFieldBlock}>
-                  <Text style={styles.extraFieldLabel}>Damage</Text>
-                  <TextInput
-                    style={styles.extraInput}
-                    keyboardType="number-pad"
-                    value={String(ci.damage_qty)}
-                    maxLength={4}
-                    onChangeText={t => {
-                      const v = parseInt(t, 10);
-                      updateItem(idx, 'damage_qty', isNaN(v) ? 0 : Math.max(v, 0));
-                    }}
-                  />
-                </View>
                 <View style={styles.extraFieldBlock}>
                   <Text style={styles.extraFieldLabel}>Disc ৳</Text>
                   <TextInput
