@@ -493,27 +493,28 @@ class SalesAPI {
     }
   }
 
-  private readonly CART_KEY = '@sales_cart_active';
+  private cartKey(outletId: string): string {
+    return `@sales_cart_${outletId}`;
+  }
 
   /**
-   * Save cart Map to AsyncStorage.
-   * Key format: `${product_id}_${batch_id}`
+   * Save cart Map to AsyncStorage, keyed by outletId.
    */
-  async saveCart(cart: Map<string, CartItem>): Promise<void> {
+  async saveCart(cart: Map<string, CartItem>, outletId: string): Promise<void> {
     try {
       const arr = [...cart.entries()];
-      await AsyncStorage.setItem(this.CART_KEY, JSON.stringify(arr));
+      await AsyncStorage.setItem(this.cartKey(outletId), JSON.stringify(arr));
     } catch (error) {
       console.error('saveCart error:', error);
     }
   }
 
   /**
-   * Load cart from AsyncStorage as a Map.
+   * Load cart from AsyncStorage for a specific outlet.
    */
-  async loadCart(): Promise<Map<string, CartItem>> {
+  async loadCart(outletId: string): Promise<Map<string, CartItem>> {
     try {
-      const data = await AsyncStorage.getItem(this.CART_KEY);
+      const data = await AsyncStorage.getItem(this.cartKey(outletId));
       if (!data) return new Map();
       const arr: [string, CartItem][] = JSON.parse(data);
       return new Map(arr);
@@ -524,13 +525,13 @@ class SalesAPI {
   }
 
   /**
-   * Clear cart from AsyncStorage
+   * Clear cart from AsyncStorage for a specific outlet.
    */
   async clearCart(outletId: string): Promise<void> {
     try {
-      await AsyncStorage.removeItem(this.CART_KEY);
-      // Also remove any legacy outlet-keyed cart
-      await AsyncStorage.removeItem(`@sales_cart_${outletId}`);
+      await AsyncStorage.removeItem(this.cartKey(outletId));
+      // Also remove legacy global key
+      await AsyncStorage.removeItem('@sales_cart_active');
     } catch (error) {
       console.error('clearCart error:', error);
     }

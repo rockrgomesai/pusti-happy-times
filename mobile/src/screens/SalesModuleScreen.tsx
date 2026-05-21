@@ -86,8 +86,8 @@ const SalesModuleScreen: React.FC<Props> = ({ route, navigation }) => {
   // Reload cart whenever this screen gains focus (e.g. returning from CartScreen)
   useFocusEffect(
     useCallback(() => {
-      salesAPI.loadCart().then(setCart);
-    }, []),
+      salesAPI.loadCart(outletId).then(setCart);
+    }, [outletId]),
   );
 
   // ── handleSearch ──────────────────────────────────────────────
@@ -163,7 +163,7 @@ const SalesModuleScreen: React.FC<Props> = ({ route, navigation }) => {
           extra_discount: 0,
         });
       }
-      salesAPI.saveCart(next);
+      salesAPI.saveCart(next, outletId);
       return next;
     });
   };

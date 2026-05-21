@@ -66,7 +66,7 @@ const CartScreen: React.FC<Props> = ({ route, navigation }) => {
     useEffect(() => {
         const init = async () => {
             const [savedCart, savedLang] = await Promise.all([
-                salesAPI.loadCart(),
+                salesAPI.loadCart(outletId),
                 AsyncStorage.getItem('@lang_pref'),
             ]);
             setCart(savedCart);
@@ -231,10 +231,10 @@ const CartScreen: React.FC<Props> = ({ route, navigation }) => {
                 }
             }
 
-            salesAPI.saveCart(next);
+            salesAPI.saveCart(next, outletId);
             return next;
         });
-    }, []);
+    }, [outletId]);
 
     const updateExtraDiscount = useCallback((cartKey: string, newDisc: number) => {
         setCart(prev => {
@@ -242,10 +242,10 @@ const CartScreen: React.FC<Props> = ({ route, navigation }) => {
             const item = next.get(cartKey);
             if (!item) { return prev; }
             next.set(cartKey, { ...item, extra_discount: Math.max(newDisc, 0) });
-            salesAPI.saveCart(next);
+            salesAPI.saveCart(next, outletId);
             return next;
         });
-    }, []);
+    }, [outletId]);
 
     // ── handleClearCart ───────────────────────────────────────────
     const handleClearCart = () => {
