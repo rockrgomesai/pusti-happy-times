@@ -21,7 +21,10 @@ function guardDsr(req, res, next) {
 }
 
 function distId(req) {
-    return req.user?.distributor_id || req.userContext?.distributor_id || null;
+    const raw = req.userContext?.distributor_id || req.user?.distributor_id || null;
+    if (!raw) return null;
+    // raw may be a populated Mongoose document or an ObjectId — normalise to string
+    return raw._id ? raw._id.toString() : raw.toString();
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -43,7 +46,7 @@ router.get("/schedule", authenticate, guardDsr, async (req, res) => {
             ? req.query.date  // caller-supplied YYYY-MM-DD is already BDT
             : new Date(Date.now() + BDT_OFFSET_MS).toISOString().slice(0, 10);
         const dayStart = new Date(`${bdtDateStr}T00:00:00+06:00`);
-        const dayEnd   = new Date(`${bdtDateStr}T23:59:59.999+06:00`);
+        const dayEnd = new Date(`${bdtDateStr}T23:59:59.999+06:00`);
 
         // Approved orders for this distributor placed today (or on the requested date)
         const orders = await SecondaryOrder.find({
@@ -128,7 +131,7 @@ router.get("/delivered-today", authenticate, guardDsr, async (req, res) => {
             ? req.query.date
             : new Date(Date.now() + BDT_OFFSET_MS).toISOString().slice(0, 10);
         const dayStart = new Date(`${bdtDateStr}T00:00:00+06:00`);
-        const dayEnd   = new Date(`${bdtDateStr}T23:59:59.999+06:00`);
+        const dayEnd = new Date(`${bdtDateStr}T23:59:59.999+06:00`);
 
         const orders = await SecondaryOrder.find({
             distributor_id: did,
