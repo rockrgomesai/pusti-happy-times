@@ -160,6 +160,7 @@ const SalesModuleScreen: React.FC<Props> = ({ route, navigation }) => {
           ctn_pcs: product.ctn_pcs,
           available_pcs: batch.available_pcs,
           batch_index: batchIdx,
+          extra_discount: 0,
         });
       }
       salesAPI.saveCart(next);

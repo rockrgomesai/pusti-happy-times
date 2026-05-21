@@ -81,6 +81,8 @@ export interface CartItem {
   available_pcs?: number;
   /** Zero-based index of this batch within the product's FIFO batch list. Used to enforce FIFO ordering in CartScreen. */
   batch_index?: number;
+  /** Per-item hidden discount given by the SO (applied at order time). */
+  extra_discount?: number;
 }
 
 export interface OrderSubmission {
@@ -94,6 +96,8 @@ export interface OrderSubmission {
     batch_id?: string;
     quantity: number;
     unit_price: number;
+    /** Per-item hidden discount given by the SO. */
+    extra_discount?: number;
     /** True for offer/free items — unit_price will be 0. */
     is_free?: boolean;
     /** ID of the offer that generated this free item. */

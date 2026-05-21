@@ -136,7 +136,8 @@ router.post(
       // Step 2: Calculate subtotals for each item
       const itemsWithSubtotals = items.map((item) => ({
         ...item,
-        subtotal: item.quantity * item.unit_price,
+        extra_discount: item.extra_discount || 0,
+        subtotal: item.quantity * item.unit_price - (item.extra_discount || 0),
       }));
 
       // Order-level totals (model's pre-save hook fires after validation, so we

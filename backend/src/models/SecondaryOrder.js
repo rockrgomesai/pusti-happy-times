@@ -82,6 +82,11 @@ const secondaryOrderSchema = new mongoose.Schema(
           required: true,
           min: [0, "Subtotal cannot be negative"],
         },
+        extra_discount: {
+          type: Number,
+          default: 0,
+          min: 0,
+        },
         delivery_qty: {
           type: Number,
           default: null,

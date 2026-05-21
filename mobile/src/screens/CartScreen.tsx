@@ -235,6 +235,17 @@ const CartScreen: React.FC<Props> = ({ route, navigation }) => {
         });
     }, []);
 
+    const updateExtraDiscount = useCallback((cartKey: string, newDisc: number) => {
+        setCart(prev => {
+            const next = new Map(prev);
+            const item = next.get(cartKey);
+            if (!item) { return prev; }
+            next.set(cartKey, { ...item, extra_discount: Math.max(newDisc, 0) });
+            salesAPI.saveCart(next);
+            return next;
+        });
+    }, []);
+
     // ── handleClearCart ───────────────────────────────────────────
     const handleClearCart = () => {
         Alert.alert('Clear Cart', 'Remove all items from the cart?', [
@@ -283,6 +294,7 @@ const CartScreen: React.FC<Props> = ({ route, navigation }) => {
                                 batch_id: item.batch_id,
                                 quantity: item.quantity,
                                 unit_price: item.unit_price,
+                                extra_discount: item.extra_discount || 0,
                             }));
 
                         const freeItems = computedOfferItems.map(item => ({
@@ -459,6 +471,21 @@ const CartScreen: React.FC<Props> = ({ route, navigation }) => {
                                 </TouchableOpacity>
                             </View>
                             <Text style={styles.itemSubtotal}>৳{ci.subtotal.toFixed(2)}</Text>
+                            <View style={styles.extraFields}>
+                                <View style={styles.extraFieldBlock}>
+                                    <Text style={styles.extraFieldLabel}>Extra Discount</Text>
+                                    <TextInput
+                                        style={[styles.extraInput, styles.discInput]}
+                                        keyboardType="number-pad"
+                                        value={String(ci.extra_discount ?? 0)}
+                                        maxLength={6}
+                                        onChangeText={t => {
+                                            const v = parseInt(t, 10);
+                                            updateExtraDiscount(cartKey, isNaN(v) ? 0 : v);
+                                        }}
+                                    />
+                                </View>
+                            </View>
                         </View>
                     </View>
                 );
@@ -731,7 +758,23 @@ const styles = StyleSheet.create({
         fontSize: 14,
         fontWeight: '700',
         color: '#000',
+        marginBottom: 6,
     },
+    extraFields: { flexDirection: 'row', gap: 8 },
+    extraFieldBlock: { alignItems: 'center' },
+    extraFieldLabel: { fontSize: 12, color: '#555', marginBottom: 2 },
+    extraInput: {
+        width: 72,
+        height: 34,
+        textAlign: 'center',
+        fontSize: 14,
+        color: '#000',
+        borderWidth: 1,
+        borderColor: '#ccc',
+        borderRadius: 6,
+        backgroundColor: '#fafafa',
+    },
+    discInput: { borderColor: '#f57c00' },
     offerQty: {
         fontSize: 16,
         fontWeight: '700',
