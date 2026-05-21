@@ -470,19 +470,19 @@ const CartScreen: React.FC<Props> = ({ route, navigation }) => {
                                     />
                                 </TouchableOpacity>
                             </View>
-                            <Text style={styles.itemSubtotal}>৳{ci.subtotal.toFixed(2)}</Text>
+                            <Text style={styles.itemSubtotal}>৳{(ci.subtotal - (ci.extra_discount ?? 0)).toFixed(2)}</Text>
                             <View style={styles.extraFields}>
                                 <View style={styles.extraFieldBlock}>
                                     <Text style={styles.extraFieldLabel}>Extra Discount</Text>
                                     <TextInput
                                         style={[styles.extraInput, styles.discInput]}
-                                        keyboardType="number-pad"
+                                        keyboardType="decimal-pad"
                                         value={(ci.extra_discount ?? 0) > 0 ? String(ci.extra_discount) : ''}
                                         placeholder="0"
                                         placeholderTextColor="#aaa"
-                                        maxLength={6}
+                                        maxLength={8}
                                         onChangeText={t => {
-                                            const v = parseInt(t, 10);
+                                            const v = parseFloat(t);
                                             updateExtraDiscount(cartKey, isNaN(v) ? 0 : v);
                                         }}
                                     />
