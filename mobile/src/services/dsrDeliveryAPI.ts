@@ -9,6 +9,7 @@ export interface DeliveryOrderItem {
     image_url?: string;
     ordered_qty: number;
     unit_price: number;
+    extra_discount?: number;
     ctn_pcs?: number;
 }
 

@@ -93,7 +93,7 @@ const DsrCartScreen: React.FC<Props> = ({ route, navigation }) => {
             ordered_qty: item.ordered_qty ?? (item as any).quantity ?? 0,
             delivered_qty: item.ordered_qty ?? (item as any).quantity ?? 0,
             unit_price: item.unit_price,
-            extra_discount: 0,
+            extra_discount: item.extra_discount ?? 0,
             ctn_pcs: item.ctn_pcs,
         }))
     );
