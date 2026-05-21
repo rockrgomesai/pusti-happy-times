@@ -106,9 +106,9 @@ const CartScreen: React.FC<Props> = ({ route, navigation }) => {
         return items;
     }, [cart, offers]);
 
-    // ── Cart total (regular items only) ──────────────────────────
+    // ── Cart total (regular items only, after per-item extra discounts) ──
     const cartTotal = useMemo(
-        () => [...cart.values()].reduce((s, i) => s + i.subtotal, 0),
+        () => [...cart.values()].reduce((s, i) => s + i.subtotal - (i.extra_discount ?? 0), 0),
         [cart],
     );
 
@@ -780,11 +780,12 @@ const styles = StyleSheet.create({
         width: 72,
         height: 34,
         textAlign: 'center',
-        fontSize: 16,
+        fontSize: 13,
         color: '#000',
         borderWidth: 1,
         borderColor: '#ccc',
         borderRadius: 6,
+        paddingVertical: 0,
         backgroundColor: '#fafafa',
     },
     discInput: { borderColor: '#f57c00' },
