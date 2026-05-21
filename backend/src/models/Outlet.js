@@ -198,6 +198,50 @@ const outletSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+
+    // Extended field-register fields
+    shop_class: {
+      type: String,
+      enum: ["A", "B", "C"],
+      trim: true,
+    },
+    market_type: {
+      type: String,
+      enum: ["Urban", "Rural", "Wet Market", "Urban Neighborhood"],
+      trim: true,
+    },
+    category_market_size: [
+      {
+        category_id: { type: mongoose.Schema.Types.ObjectId, ref: "Category" },
+        category_name: { type: String, trim: true },
+        ctn: { type: Number, default: 0 },
+      },
+    ],
+    pusti_consumer_sales: {
+      type: Number,
+      default: 0,
+    },
+    pos_contribution: {
+      type: Number,
+      default: 0,
+    },
+    paid_display_outlet: {
+      type: Boolean,
+      default: false,
+    },
+    paid_amount: {
+      type: Number,
+      default: 0,
+    },
+    total_market_size_revenue: {
+      type: Number,
+      default: 0,
+    },
+    payment_mode: {
+      type: String,
+      enum: ["Cash", "Credit"],
+    },
+
     active: {
       type: Boolean,
       default: true,

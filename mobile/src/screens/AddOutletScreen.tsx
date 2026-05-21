@@ -5,7 +5,7 @@
  * enforces this and creates the outlet in PENDING verification state.
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
     View,
     Text,
@@ -26,8 +26,21 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import outletAPI, {
     OutletTypeOption,
     OutletChannelOption,
+    ParentCategoryOption,
 } from '../services/outletAPI';
 import { friendlyErrorMessage } from '../utils/logger';
+
+const MARKET_TYPE_OPTIONS = [
+    { _id: 'Urban', name: 'Urban' },
+    { _id: 'Rural', name: 'Rural' },
+    { _id: 'Wet Market', name: 'Wet Market' },
+    { _id: 'Urban Neighborhood', name: 'Urban Neighborhood' },
+];
+
+const PAYMENT_MODE_OPTIONS = [
+    { _id: 'Cash', name: 'Cash' },
+    { _id: 'Credit', name: 'Credit' },
+];
 
 const AddOutletScreen = ({ navigation }: any) => {
     // Form state
@@ -39,6 +52,17 @@ const AddOutletScreen = ({ navigation }: any) => {
     const [marketSize, setMarketSize] = useState('');
     const [comments, setComments] = useState('');
 
+    // Extended fields
+    const [shopClass, setShopClass] = useState<'A' | 'B' | 'C' | null>(null);
+    const [marketType, setMarketType] = useState<string | null>(null);
+    const [categoryCtns, setCategoryCtns] = useState<Record<string, string>>({});
+    const [pustiConsumerSales, setPustiConsumerSales] = useState('');
+    const [paidDisplayOutlet, setPaidDisplayOutlet] = useState(false);
+    const [paidAmount, setPaidAmount] = useState('');
+    const [totalMarketSizeRevenue, setTotalMarketSizeRevenue] = useState('');
+    const [paymentMode, setPaymentMode] = useState<'Cash' | 'Credit' | null>(null);
+    const [parentCategories, setParentCategories] = useState<ParentCategoryOption[]>([]);
+
     // Dropdowns
     const [outletTypes, setOutletTypes] = useState<OutletTypeOption[]>([]);
     const [outletChannels, setOutletChannels] = useState<OutletChannelOption[]>([]);
@@ -47,6 +71,8 @@ const AddOutletScreen = ({ navigation }: any) => {
         useState<OutletChannelOption | null>(null);
     const [typePickerOpen, setTypePickerOpen] = useState(false);
     const [channelPickerOpen, setChannelPickerOpen] = useState(false);
+    const [marketTypePickerOpen, setMarketTypePickerOpen] = useState(false);
+    const [paymentModePickerOpen, setPaymentModePickerOpen] = useState(false);
 
     // GPS
     const [gps, setGps] = useState<{ lat: number; lng: number; accuracy: number } | null>(
@@ -57,6 +83,14 @@ const AddOutletScreen = ({ navigation }: any) => {
     // Submission
     const [loadingMeta, setLoadingMeta] = useState(true);
     const [submitting, setSubmitting] = useState(false);
+
+    // Derived
+    const posContribution = useMemo(() => {
+        const sales = parseFloat(pustiConsumerSales) || 0;
+        const market = parseFloat(totalMarketSizeRevenue) || 0;
+        if (market === 0) return null;
+        return (sales / market) * 100;
+    }, [pustiConsumerSales, totalMarketSizeRevenue]);
 
     useEffect(() => {
         loadMetadata();
@@ -69,6 +103,7 @@ const AddOutletScreen = ({ navigation }: any) => {
             const meta = await outletAPI.getMetadata();
             setOutletTypes(meta.outlet_types);
             setOutletChannels(meta.outlet_channels);
+            setParentCategories(meta.parent_categories || []);
         } catch (e: any) {
             Alert.alert('Error', e?.response?.data?.message || e.message || 'Failed to load form data');
         } finally {
@@ -131,6 +166,13 @@ const AddOutletScreen = ({ navigation }: any) => {
         }
         try {
             setSubmitting(true);
+            const categoryMarketSize = parentCategories
+                .filter(cat => parseFloat(categoryCtns[cat._id] || '0') > 0)
+                .map(cat => ({
+                    category_id: cat._id,
+                    category_name: cat.name,
+                    ctn: parseFloat(categoryCtns[cat._id]) || 0,
+                }));
             const res = await outletAPI.registerOutlet({
                 outlet_name: outletName.trim(),
                 outlet_name_bangla: outletNameBangla.trim() || undefined,
@@ -144,6 +186,15 @@ const AddOutletScreen = ({ navigation }: any) => {
                 lati: gps!.lat,
                 longi: gps!.lng,
                 gps_accuracy: gps!.accuracy,
+                shop_class: shopClass || undefined,
+                market_type: marketType || undefined,
+                category_market_size: categoryMarketSize.length > 0 ? categoryMarketSize : undefined,
+                pusti_consumer_sales: pustiConsumerSales ? parseFloat(pustiConsumerSales) : undefined,
+                pos_contribution: posContribution !== null ? parseFloat(posContribution.toFixed(2)) : undefined,
+                paid_display_outlet: paidDisplayOutlet,
+                paid_amount: paidDisplayOutlet && paidAmount ? parseFloat(paidAmount) : undefined,
+                total_market_size_revenue: totalMarketSizeRevenue ? parseFloat(totalMarketSizeRevenue) : undefined,
+                payment_mode: paymentMode || undefined,
             });
             Alert.alert(
                 'Registered',
@@ -293,7 +344,7 @@ const AddOutletScreen = ({ navigation }: any) => {
                         keyboardType="numeric"
                     />
 
-                    <Text style={styles.label}>Notes</Text>
+                    <Text style={styles.label}>Remarks</Text>
                     <TextInput
                         style={[styles.input, { height: 70, textAlignVertical: 'top' }]}
                         value={comments}
@@ -302,6 +353,118 @@ const AddOutletScreen = ({ navigation }: any) => {
                         placeholderTextColor="#999"
                         multiline
                     />
+                </View>
+
+                {/* Classification */}
+                <View style={styles.card}>
+                    <Text style={styles.cardTitle}>Classification</Text>
+
+                    <Text style={styles.label}>Shop Class</Text>
+                    <View style={{ flexDirection: 'row', gap: 8, marginTop: 4 }}>
+                        {(['A', 'B', 'C'] as const).map(cls => (
+                            <TouchableOpacity
+                                key={cls}
+                                style={[styles.classBtn, shopClass === cls && styles.classBtnActive]}
+                                onPress={() => setShopClass(shopClass === cls ? null : cls)}>
+                                <Text style={[styles.classBtnText, shopClass === cls && styles.classBtnTextActive]}>{cls}</Text>
+                            </TouchableOpacity>
+                        ))}
+                    </View>
+
+                    <Text style={styles.label}>Market Type</Text>
+                    <TouchableOpacity style={styles.input} onPress={() => setMarketTypePickerOpen(true)}>
+                        <Text style={{ color: marketType ? '#333' : '#999' }}>
+                            {marketType || 'Select market type'}
+                        </Text>
+                    </TouchableOpacity>
+
+                    <Text style={styles.label}>Payment Mode</Text>
+                    <TouchableOpacity style={styles.input} onPress={() => setPaymentModePickerOpen(true)}>
+                        <Text style={{ color: paymentMode ? '#333' : '#999' }}>
+                            {paymentMode || 'Select payment mode'}
+                        </Text>
+                    </TouchableOpacity>
+                </View>
+
+                {/* Market Size by Category */}
+                {parentCategories.length > 0 && (
+                    <View style={styles.card}>
+                        <Text style={styles.cardTitle}>Market Size (CTN/Month)</Text>
+                        {parentCategories.map(cat => (
+                            <View key={cat._id} style={styles.categoryRow}>
+                                <Text style={styles.categoryName} numberOfLines={1}>{cat.name}</Text>
+                                <TextInput
+                                    style={styles.ctnInput}
+                                    value={categoryCtns[cat._id] || ''}
+                                    onChangeText={text =>
+                                        setCategoryCtns(prev => ({ ...prev, [cat._id]: text }))
+                                    }
+                                    placeholder="0"
+                                    placeholderTextColor="#999"
+                                    keyboardType="numeric"
+                                />
+                                <Text style={styles.ctnUnit}>CTN</Text>
+                            </View>
+                        ))}
+                    </View>
+                )}
+
+                {/* Sales & POS Contribution */}
+                <View style={styles.card}>
+                    <Text style={styles.cardTitle}>Sales Information</Text>
+
+                    <Text style={styles.label}>Pusti Consumer Sales for Month (Tk)</Text>
+                    <TextInput
+                        style={styles.input}
+                        value={pustiConsumerSales}
+                        onChangeText={setPustiConsumerSales}
+                        placeholder="0"
+                        placeholderTextColor="#999"
+                        keyboardType="numeric"
+                    />
+
+                    <Text style={styles.label}>Total Market Size — Pusti &amp; Competitors (BDT)</Text>
+                    <TextInput
+                        style={styles.input}
+                        value={totalMarketSizeRevenue}
+                        onChangeText={setTotalMarketSizeRevenue}
+                        placeholder="0"
+                        placeholderTextColor="#999"
+                        keyboardType="numeric"
+                    />
+
+                    {posContribution !== null && (
+                        <View style={styles.posRow}>
+                            <Text style={styles.posLabel}>POS Contribution</Text>
+                            <Text style={styles.posValue}>{posContribution.toFixed(1)}%</Text>
+                        </View>
+                    )}
+
+                    <Text style={styles.label}>Paid Display Outlet</Text>
+                    <View style={{ flexDirection: 'row', gap: 8, marginTop: 4 }}>
+                        {(['Yes', 'No'] as const).map(label => (
+                            <TouchableOpacity
+                                key={label}
+                                style={[styles.classBtn, paidDisplayOutlet === (label === 'Yes') && styles.classBtnActive]}
+                                onPress={() => setPaidDisplayOutlet(label === 'Yes')}>
+                                <Text style={[styles.classBtnText, paidDisplayOutlet === (label === 'Yes') && styles.classBtnTextActive]}>{label}</Text>
+                            </TouchableOpacity>
+                        ))}
+                    </View>
+
+                    {paidDisplayOutlet && (
+                        <>
+                            <Text style={styles.label}>Paid Amount (BDT)</Text>
+                            <TextInput
+                                style={styles.input}
+                                value={paidAmount}
+                                onChangeText={setPaidAmount}
+                                placeholder="0"
+                                placeholderTextColor="#999"
+                                keyboardType="numeric"
+                            />
+                        </>
+                    )}
                 </View>
 
                 <View style={styles.notice}>
@@ -351,6 +514,32 @@ const AddOutletScreen = ({ navigation }: any) => {
                     setChannelPickerOpen(false);
                 }}
                 onClose={() => setChannelPickerOpen(false)}
+            />
+
+            {/* Market Type picker */}
+            <PickerModal
+                visible={marketTypePickerOpen}
+                title="Select Market Type"
+                options={MARKET_TYPE_OPTIONS}
+                selectedId={marketType || undefined}
+                onSelect={o => {
+                    setMarketType(o._id);
+                    setMarketTypePickerOpen(false);
+                }}
+                onClose={() => setMarketTypePickerOpen(false)}
+            />
+
+            {/* Payment Mode picker */}
+            <PickerModal
+                visible={paymentModePickerOpen}
+                title="Select Payment Mode"
+                options={PAYMENT_MODE_OPTIONS}
+                selectedId={paymentMode || undefined}
+                onSelect={o => {
+                    setPaymentMode(o._id as 'Cash' | 'Credit');
+                    setPaymentModePickerOpen(false);
+                }}
+                onClose={() => setPaymentModePickerOpen(false)}
             />
         </KeyboardAvoidingView>
     );
@@ -509,6 +698,76 @@ const styles = StyleSheet.create({
         borderBottomColor: '#f0f0f0',
     },
     optionText: { fontSize: 15, color: '#333' },
+    classBtn: {
+        paddingHorizontal: 18,
+        paddingVertical: 10,
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: '#4CAF50',
+        backgroundColor: '#fff',
+        minWidth: 52,
+        alignItems: 'center',
+    },
+    classBtnActive: {
+        backgroundColor: '#4CAF50',
+    },
+    classBtnText: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#4CAF50',
+    },
+    classBtnTextActive: {
+        color: '#fff',
+    },
+    categoryRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 10,
+        borderBottomWidth: 1,
+        borderBottomColor: '#f0f0f0',
+        gap: 8,
+    },
+    categoryName: {
+        flex: 1,
+        fontSize: 14,
+        color: '#333',
+    },
+    ctnInput: {
+        width: 72,
+        borderWidth: 1,
+        borderColor: '#ddd',
+        borderRadius: 6,
+        paddingVertical: 6,
+        paddingHorizontal: 8,
+        fontSize: 14,
+        color: '#333',
+        textAlign: 'right',
+        backgroundColor: '#fafafa',
+    },
+    ctnUnit: {
+        fontSize: 13,
+        color: '#666',
+        width: 28,
+    },
+    posRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        backgroundColor: '#E8F5E9',
+        borderRadius: 8,
+        padding: 12,
+        marginTop: 12,
+    },
+    posLabel: {
+        fontSize: 14,
+        color: '#2E7D32',
+        fontWeight: '600',
+    },
+    posValue: {
+        fontSize: 18,
+        color: '#1B5E20',
+        fontWeight: 'bold',
+    },
 });
 
 export default AddOutletScreen;

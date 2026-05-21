@@ -18,9 +18,15 @@ export interface OutletChannelOption {
     name: string;
 }
 
+export interface ParentCategoryOption {
+    _id: string;
+    name: string;
+}
+
 export interface RegistrationMetadata {
     outlet_types: OutletTypeOption[];
     outlet_channels: OutletChannelOption[];
+    parent_categories: ParentCategoryOption[];
 }
 
 export interface RegisterOutletPayload {
@@ -40,6 +46,16 @@ export interface RegisterOutletPayload {
     shop_photo_url?: string;
     comments?: string;
     day?: 'SUN' | 'MON' | 'TUE' | 'WED' | 'THU' | 'FRI' | 'SAT';
+    // Extended fields
+    shop_class?: 'A' | 'B' | 'C';
+    market_type?: string;
+    category_market_size?: Array<{ category_id: string; category_name: string; ctn: number }>;
+    pusti_consumer_sales?: number;
+    pos_contribution?: number;
+    paid_display_outlet?: boolean;
+    paid_amount?: number;
+    total_market_size_revenue?: number;
+    payment_mode?: 'Cash' | 'Credit';
 }
 
 export interface RegisteredOutlet {

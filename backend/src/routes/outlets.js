@@ -10,6 +10,7 @@ const Outlet = require("../models/Outlet");
 const Route = require("../models/Route");
 const OutletType = require("../models/OutletType");
 const OutletChannel = require("../models/OutletChannel");
+const Category = require("../models/Category");
 const { authenticate, requireApiPermission } = require("../middleware/auth");
 
 const router = express.Router();
@@ -256,13 +257,16 @@ router.get(
  */
 router.get("/field-register/metadata", authenticate, async (req, res) => {
   try {
-    const [outletTypes, outletChannels] = await Promise.all([
+    const [outletTypes, outletChannels, parentCategories] = await Promise.all([
       OutletType.find({ active: true }).select("_id name").sort({ name: 1 }).lean(),
       OutletChannel.find({ active: true }).select("_id name").sort({ name: 1 }).lean(),
+      Category.find(
+        { $or: [{ parent_id: null }, { parent_id: { $exists: false } }], active: true }
+      ).select("_id name").sort({ name: 1 }).lean(),
     ]);
     res.json({
       success: true,
-      data: { outlet_types: outletTypes, outlet_channels: outletChannels },
+      data: { outlet_types: outletTypes, outlet_channels: outletChannels, parent_categories: parentCategories },
     });
   } catch (error) {
     console.error("[FIELD-REGISTER] metadata error:", error);
@@ -848,6 +852,28 @@ router.post(
         shop_photo_url: req.body.shop_photo_url,
         market_size: Number(req.body.market_size) || 0,
         credit_limit: Number(req.body.credit_limit) || 0,
+        // Extended field-register fields
+        shop_class: req.body.shop_class || undefined,
+        market_type: req.body.market_type || undefined,
+        category_market_size: Array.isArray(req.body.category_market_size)
+          ? req.body.category_market_size
+          : undefined,
+        pusti_consumer_sales: req.body.pusti_consumer_sales !== undefined
+          ? Number(req.body.pusti_consumer_sales) || 0
+          : undefined,
+        pos_contribution: req.body.pos_contribution !== undefined
+          ? Number(req.body.pos_contribution) || 0
+          : undefined,
+        paid_display_outlet: req.body.paid_display_outlet !== undefined
+          ? Boolean(req.body.paid_display_outlet)
+          : undefined,
+        paid_amount: req.body.paid_amount !== undefined
+          ? Number(req.body.paid_amount) || 0
+          : undefined,
+        total_market_size_revenue: req.body.total_market_size_revenue !== undefined
+          ? Number(req.body.total_market_size_revenue) || 0
+          : undefined,
+        payment_mode: req.body.payment_mode || undefined,
         // Force mobile-registered outlets into approval queue
         verification_status: "PENDING",
         active: true,
