@@ -386,7 +386,7 @@ const DsrCartScreen: React.FC<Props> = ({ route, navigation }) => {
                 const ci = items[item.index];
                 const idx = item.index;
                 const ctnVal = (ci.ctn_pcs && ci.ctn_pcs > 0)
-                    ? parseFloat((ci.delivered_qty / ci.ctn_pcs).toFixed(2))
+                    ? `${Math.floor(ci.delivered_qty / ci.ctn_pcs)}.${ci.delivered_qty % ci.ctn_pcs}`
                     : null;
                 return (
                     <View style={styles.regularRow}>
