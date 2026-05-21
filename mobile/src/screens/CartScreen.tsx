@@ -477,7 +477,9 @@ const CartScreen: React.FC<Props> = ({ route, navigation }) => {
                                     <TextInput
                                         style={[styles.extraInput, styles.discInput]}
                                         keyboardType="number-pad"
-                                        value={String(ci.extra_discount ?? 0)}
+                                        value={(ci.extra_discount ?? 0) > 0 ? String(ci.extra_discount) : ''}
+                                        placeholder="0"
+                                        placeholderTextColor="#aaa"
                                         maxLength={6}
                                         onChangeText={t => {
                                             const v = parseInt(t, 10);
@@ -761,13 +763,13 @@ const styles = StyleSheet.create({
         marginBottom: 6,
     },
     extraFields: { flexDirection: 'row', gap: 8 },
-    extraFieldBlock: { alignItems: 'center' },
-    extraFieldLabel: { fontSize: 12, color: '#555', marginBottom: 2 },
+    extraFieldBlock: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    extraFieldLabel: { fontSize: 12, color: '#555' },
     extraInput: {
         width: 72,
         height: 34,
         textAlign: 'center',
-        fontSize: 14,
+        fontSize: 16,
         color: '#000',
         borderWidth: 1,
         borderColor: '#ccc',
