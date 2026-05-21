@@ -254,7 +254,7 @@ const DsrCartScreen: React.FC<Props> = ({ route, navigation }) => {
                 onPress: async () => {
                     setSubmitting(true);
                     try {
-                        await confirmDelivery(order._id, {
+                        const confirmedData = await confirmDelivery(order._id, {
                             delivery_items: items.map(i => ({
                                 product_id: i.product_id,
                                 sku: i.sku,
@@ -269,9 +269,35 @@ const DsrCartScreen: React.FC<Props> = ({ route, navigation }) => {
                             cash_collected: Number(cashCollected || 0),
                             credit_balance_before: creditBalanceBefore,
                         });
-                        Alert.alert('Delivered ✓', `${outletName} — delivery confirmed.`, [
-                            { text: 'OK', onPress: () => navigation.popToTop() },
-                        ]);
+                        const cashIn = confirmedData?.cash_collected ?? Number(cashCollected || 0);
+                        const creditAfter = confirmedData?.credit_balance_after ?? creditBalanceAfter;
+                        navigation.replace('DsrMemo', {
+                            outletName,
+                            orderNumber: order.order_number ?? order._id,
+                            confirmedAt: new Date().toISOString(),
+                            result: {
+                                delivery_items: items.map(i => ({
+                                    sku: i.sku,
+                                    english_name: i.english_name,
+                                    bangla_name: i.bangla_name,
+                                    ordered_qty: i.ordered_qty,
+                                    delivered_qty: i.delivered_qty,
+                                    unit_price: i.unit_price,
+                                    extra_discount: i.extra_discount,
+                                })),
+                                offer_items: computedOfferItems.map(oi => ({
+                                    offer_name: oi.offer_name,
+                                    english_name: oi.english_name,
+                                    quantity: oi.quantity,
+                                })),
+                                delivery_total: deliveryTotal,
+                                extra_delivery_discount: sumExtraDiscounts,
+                                payable,
+                                cash_collected: cashIn,
+                                credit_balance_before: creditBalanceBefore,
+                                credit_balance_after: creditAfter,
+                            },
+                        });
                     } catch (err: any) {
                         const msg = err.message || 'Confirm failed';
                         const alreadyDone = msg.toLowerCase().includes('cannot confirm') || msg.toLowerCase().includes('already');

@@ -19,6 +19,7 @@ import OutletDetailScreen from '../screens/OutletDetailScreen';
 import DsrDeliveryScreen from '../screens/DsrDeliveryScreen';
 import DsrDeliveredScreen from '../screens/DsrDeliveredScreen';
 import DsrCartScreen from '../screens/DsrCartScreen';
+import DsrMemoScreen from '../screens/DsrMemoScreen';
 import CartScreen from '../screens/CartScreen';
 
 const Stack = createNativeStackNavigator();
@@ -40,6 +41,7 @@ const HomeStackNavigator = () => (
     <HomeStack.Screen name="DsrDelivery" component={DsrDeliveryScreen} />
     <HomeStack.Screen name="DsrDelivered" component={DsrDeliveredScreen} />
     <HomeStack.Screen name="DsrCart" component={DsrCartScreen} />
+    <HomeStack.Screen name="DsrMemo" component={DsrMemoScreen} />
     <HomeStack.Screen name="Cart" component={CartScreen} />
   </HomeStack.Navigator>
 );
