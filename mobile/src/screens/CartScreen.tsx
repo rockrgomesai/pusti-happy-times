@@ -418,9 +418,9 @@ const CartScreen: React.FC<Props> = ({ route, navigation }) => {
 
             case 'regular_item': {
                 const { cartKey, item: ci } = item;
-                const ctnWhole = (ci.ctn_pcs && ci.ctn_pcs > 0) ? Math.floor(ci.quantity / ci.ctn_pcs) : 0;
-                const ctnVal = ctnWhole > 0
-                    ? `${ctnWhole}.${ci.quantity % ci.ctn_pcs}`
+                const ctnWhole = (ci.ctn_pcs && ci.ctn_pcs > 0) ? Math.floor(ci.quantity / ci.ctn_pcs) : null;
+                const ctnVal = ctnWhole !== null
+                    ? `${ctnWhole}.${ci.quantity % ci.ctn_pcs!}`
                     : null;
                 return (
                     <View style={styles.regularRow}>
@@ -770,7 +770,6 @@ const styles = StyleSheet.create({
         height: 34,
         textAlign: 'center',
         fontSize: 16,
-        fontFamily: 'Roboto',
         color: '#000',
         borderWidth: 1,
         borderColor: '#ccc',

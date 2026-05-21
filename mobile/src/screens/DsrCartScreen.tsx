@@ -385,9 +385,9 @@ const DsrCartScreen: React.FC<Props> = ({ route, navigation }) => {
             case 'regular_item': {
                 const ci = items[item.index];
                 const idx = item.index;
-                const ctnWhole = (ci.ctn_pcs && ci.ctn_pcs > 0) ? Math.floor(ci.delivered_qty / ci.ctn_pcs) : 0;
-                const ctnVal = ctnWhole > 0
-                    ? `${ctnWhole}.${ci.delivered_qty % ci.ctn_pcs}`
+                const ctnWhole = (ci.ctn_pcs && ci.ctn_pcs > 0) ? Math.floor(ci.delivered_qty / ci.ctn_pcs) : null;
+                const ctnVal = ctnWhole !== null
+                    ? `${ctnWhole}.${ci.delivered_qty % ci.ctn_pcs!}`
                     : null;
                 return (
                     <View style={styles.regularRow}>
@@ -704,7 +704,6 @@ const styles = StyleSheet.create({
         height: 34,
         textAlign: 'center',
         fontSize: 16,
-        fontFamily: 'Roboto',
         color: '#000',
         borderWidth: 1,
         borderColor: '#ccc',
