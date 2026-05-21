@@ -385,8 +385,9 @@ const DsrCartScreen: React.FC<Props> = ({ route, navigation }) => {
             case 'regular_item': {
                 const ci = items[item.index];
                 const idx = item.index;
-                const ctnVal = (ci.ctn_pcs && ci.ctn_pcs > 0)
-                    ? `${Math.floor(ci.delivered_qty / ci.ctn_pcs)}.${ci.delivered_qty % ci.ctn_pcs}`
+                const ctnWhole = (ci.ctn_pcs && ci.ctn_pcs > 0) ? Math.floor(ci.delivered_qty / ci.ctn_pcs) : 0;
+                const ctnVal = ctnWhole > 0
+                    ? `${ctnWhole}.${ci.delivered_qty % ci.ctn_pcs}`
                     : null;
                 return (
                     <View style={styles.regularRow}>
@@ -432,7 +433,7 @@ const DsrCartScreen: React.FC<Props> = ({ route, navigation }) => {
                             <Text style={styles.itemSubtotal}>৳{(ci.delivered_qty * ci.unit_price).toFixed(2)}</Text>
                             <View style={styles.extraFields}>
                                 <View style={styles.extraFieldBlock}>
-                                    <Text style={styles.extraFieldLabel}>Disc ৳</Text>
+                                    <Text style={styles.extraFieldLabel}>Extra Discount</Text>
                                     <TextInput
                                         style={[styles.extraInput, styles.discInput]}
                                         keyboardType="number-pad"
@@ -695,12 +696,12 @@ const styles = StyleSheet.create({
     itemSubtotal: { fontSize: 14, fontWeight: '700', color: '#000', marginBottom: 6 },
     extraFields: { flexDirection: 'row', gap: 8 },
     extraFieldBlock: { alignItems: 'center' },
-    extraFieldLabel: { fontSize: 10, color: '#888', marginBottom: 2 },
+    extraFieldLabel: { fontSize: 12, color: '#555', marginBottom: 2 },
     extraInput: {
-        width: 48,
-        height: 32,
+        width: 72,
+        height: 34,
         textAlign: 'center',
-        fontSize: 12,
+        fontSize: 14,
         color: '#000',
         borderWidth: 1,
         borderColor: '#ccc',

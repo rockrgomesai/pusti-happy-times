@@ -406,8 +406,9 @@ const CartScreen: React.FC<Props> = ({ route, navigation }) => {
 
             case 'regular_item': {
                 const { cartKey, item: ci } = item;
-                const ctnVal = (ci.ctn_pcs && ci.ctn_pcs > 0)
-                    ? `${Math.floor(ci.quantity / ci.ctn_pcs)}.${ci.quantity % ci.ctn_pcs}`
+                const ctnWhole = (ci.ctn_pcs && ci.ctn_pcs > 0) ? Math.floor(ci.quantity / ci.ctn_pcs) : 0;
+                const ctnVal = ctnWhole > 0
+                    ? `${ctnWhole}.${ci.quantity % ci.ctn_pcs}`
                     : null;
                 return (
                     <View style={styles.regularRow}>
