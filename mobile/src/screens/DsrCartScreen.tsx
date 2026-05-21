@@ -103,7 +103,14 @@ const DsrCartScreen: React.FC<Props> = ({ route, navigation }) => {
     const [submitting, setSubmitting] = useState(false);
     const [language, setLanguage] = useState<'bn' | 'en'>('bn');
     const [offers, setOffers] = useState<Offer[]>([]);
-    const [discountInputText, setDiscountInputText] = useState<Map<number, string>>(new Map());
+    const [discountInputText, setDiscountInputText] = useState<Map<number, string>>(() => {
+        const map = new Map<number, string>();
+        order.items.filter(item => item.unit_price > 0).forEach((item, idx) => {
+            const disc = (item as any).extra_discount;
+            if (disc && disc > 0) { map.set(idx, String(disc)); }
+        });
+        return map;
+    });
 
     // Reason modal
     const [reasonModalVisible, setReasonModalVisible] = useState(false);
