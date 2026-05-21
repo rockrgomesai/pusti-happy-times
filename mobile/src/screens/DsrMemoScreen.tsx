@@ -18,7 +18,7 @@ import {
     ActivityIndicator,
 } from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import { generatePDF } from 'react-native-html-to-pdf';
+import RNHTMLtoPDF from 'react-native-html-to-pdf';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -249,7 +249,7 @@ const DsrMemoScreen: React.FC<Props> = ({ route, navigation }) => {
         setPrinting(true);
         try {
             const html = buildHtml(outletName, orderNumber, confirmedAt, result);
-            const pdf = await generatePDF({
+            const pdf = await RNHTMLtoPDF.convert({
                 html,
                 fileName: `delivery-memo-${orderNumber}`,
                 directory: 'Documents',
