@@ -770,6 +770,7 @@ const styles = StyleSheet.create({
         height: 34,
         textAlign: 'center',
         fontSize: 16,
+        fontFamily: 'Roboto',
         color: '#000',
         borderWidth: 1,
         borderColor: '#ccc',
