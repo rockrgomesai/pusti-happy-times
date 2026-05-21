@@ -103,6 +103,7 @@ const DsrCartScreen: React.FC<Props> = ({ route, navigation }) => {
     const [submitting, setSubmitting] = useState(false);
     const [language, setLanguage] = useState<'bn' | 'en'>('bn');
     const [offers, setOffers] = useState<Offer[]>([]);
+    const [discountInputText, setDiscountInputText] = useState<Map<number, string>>(new Map());
 
     // Reason modal
     const [reasonModalVisible, setReasonModalVisible] = useState(false);
@@ -437,13 +438,21 @@ const DsrCartScreen: React.FC<Props> = ({ route, navigation }) => {
                                     <TextInput
                                         style={[styles.extraInput, styles.discInput]}
                                         keyboardType="decimal-pad"
-                                        value={ci.extra_discount > 0 ? String(ci.extra_discount) : ''}
+                                        value={discountInputText.get(idx) ?? (ci.extra_discount > 0 ? String(ci.extra_discount) : '')}
                                         placeholder="0"
                                         placeholderTextColor="#aaa"
                                         maxLength={8}
                                         onChangeText={t => {
-                                            const v = parseFloat(t);
+                                            const cleaned = t.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');
+                                            setDiscountInputText(prev => new Map(prev).set(idx, cleaned));
+                                            const v = parseFloat(cleaned);
                                             updateItem(idx, 'extra_discount', isNaN(v) ? 0 : Math.max(v, 0));
+                                        }}
+                                        onBlur={() => {
+                                            const raw = discountInputText.get(idx) ?? '';
+                                            if (raw.endsWith('.')) {
+                                                setDiscountInputText(prev => new Map(prev).set(idx, raw.slice(0, -1)));
+                                            }
                                         }}
                                     />
                                 </View>

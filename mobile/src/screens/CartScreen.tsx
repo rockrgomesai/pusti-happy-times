@@ -61,6 +61,7 @@ const CartScreen: React.FC<Props> = ({ route, navigation }) => {
     const [cart, setCart] = useState<Map<string, CartItem>>(new Map());
     const [submitting, setSubmitting] = useState(false);
     const [language, setLanguage] = useState<'bn' | 'en'>('bn');
+    const [discountInputText, setDiscountInputText] = useState<Map<string, string>>(new Map());
 
     useEffect(() => {
         const init = async () => {
@@ -477,13 +478,23 @@ const CartScreen: React.FC<Props> = ({ route, navigation }) => {
                                     <TextInput
                                         style={[styles.extraInput, styles.discInput]}
                                         keyboardType="decimal-pad"
-                                        value={(ci.extra_discount ?? 0) > 0 ? String(ci.extra_discount) : ''}
+                                        value={discountInputText.get(cartKey) ?? ((ci.extra_discount ?? 0) > 0 ? String(ci.extra_discount) : '')}
                                         placeholder="0"
                                         placeholderTextColor="#aaa"
                                         maxLength={8}
                                         onChangeText={t => {
-                                            const v = parseFloat(t);
+                                            // Allow digits, one dot, leading dot (e.g. ".7")
+                                            const cleaned = t.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');
+                                            setDiscountInputText(prev => new Map(prev).set(cartKey, cleaned));
+                                            const v = parseFloat(cleaned);
                                             updateExtraDiscount(cartKey, isNaN(v) ? 0 : v);
+                                        }}
+                                        onBlur={() => {
+                                            // Clean up trailing dot on blur
+                                            const raw = discountInputText.get(cartKey) ?? '';
+                                            if (raw.endsWith('.')) {
+                                                setDiscountInputText(prev => new Map(prev).set(cartKey, raw.slice(0, -1)));
+                                            }
                                         }}
                                     />
                                 </View>
