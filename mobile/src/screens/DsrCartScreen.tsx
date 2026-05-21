@@ -363,7 +363,7 @@ const DsrCartScreen: React.FC<Props> = ({ route, navigation }) => {
             });
         }
 
-        rows.push({ type: 'total_row', id: 'total', total: deliveryTotal });
+        rows.push({ type: 'total_row', id: 'total', total: payable });
 
         rows.push({ type: 'financial_card', id: 'fin' });
 
@@ -372,7 +372,7 @@ const DsrCartScreen: React.FC<Props> = ({ route, navigation }) => {
         });
 
         return rows;
-    }, [items, computedOfferItems, deliveryTotal, offerNotes]);
+    }, [items, computedOfferItems, deliveryTotal, sumExtraDiscounts, offerNotes]);
 
     // ── renderRow ─────────────────────────────────────────────────
     const renderRow = ({ item }: { item: DsrRow }) => {
